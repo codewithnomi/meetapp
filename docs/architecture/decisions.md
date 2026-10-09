@@ -174,3 +174,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-09)
 - **Decision:** A session-start hook puts mise's locked tools on Claude's PATH. `progress.md` is kept short (5 newest sessions; older entries go to `docs/history/`). Every hook has automated tests (`tools/hooks.test.ts`). Code edits also require a feature with approved tasks in progress. Context7, Playwright and Postgres MCP are enabled for the project. The lint hook uses a cache. New skills: `/fix-ci`, `/deps-update`, `/add-dependency`, `/db-migration`. VS Code extension recommendations added.
 - **Why:** remove the recurring sources of friction (wrong tool versions, context bloat, silent hook breakage, stale library knowledge, CI and dependency toil, risky database changes) before they cost development time.
+
+### D033: Build pace: pause at milestones
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** During building, Claude continues from task to task on its own (each tested, committed, pushed, with a one-line update) and pauses only at milestones the owner can see or try, on failures it can't fix, or when a decision, cost or install is needed. Milestone tasks are marked "(milestone)" in tasks.md.

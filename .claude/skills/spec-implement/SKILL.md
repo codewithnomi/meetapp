@@ -20,4 +20,7 @@ argument-hint: <feature id, e.g. F05>
 11. **Auto-save to GitHub:** commit everything for this task with a Conventional Commit message (`feat(<ID>): <task> (T<n>)`, with the attribution line) and push the feature branch. Never push to `main`, never force-push.
 11b. If CI runs for this branch and fails, use the `fix-ci` skill before moving on.
 12. If this was the **last** task, a hook will remind you to run the `spec-verify` skill. It opens the Pull Request automatically on PASS. Only spec-verify may set the status to `done`.
-13. Explain to the owner, in simple words, what now works and how they can see it. Stop and wait before starting the next task.
+13. **Pace (owner decision D033): pause at milestones.** Continue straight to the next task on your own, giving the owner a one-line update, unless one of these is true; then explain in simple words what now works, how to see it, and wait:
+   - the task produced something the owner can see or try (a running service, a screen, the gallery, a dashboard), or the tasks.md entry is marked **(milestone)**
+   - a test or check is failing and can't be fixed within the task
+   - a decision, a cost, an install on the owner's Mac, or anything outside the approved design is needed

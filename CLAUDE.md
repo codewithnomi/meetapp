@@ -77,6 +77,7 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - Read current library docs (Context7 MCP) before using a library; don't code library APIs from memory.
 - Start dev servers, Storybook and Electron in the background; stop them when done.
 - One feature branch at a time. `docs/progress.md` and `docs/specs/INDEX.md` are only changed on the active branch, to avoid merge conflicts.
+- Pace (D033): keep building task after task; pause only at milestones, unfixable failures, or decisions/costs/installs.
 - Hooks are code too: when a hook changes, update `tools/hooks.test.ts`.
 
 ## When compacting a long conversation, keep

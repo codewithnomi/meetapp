@@ -22,7 +22,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [ ] **T4: Local services.** `infra/docker-compose.yml` (LiveKit, Postgres+pgvector, Redis with AOF, MinIO pinned + bucket init, Mailpit), all ports on 127.0.0.1, named volumes, health checks; `infra/livekit.yaml`; `.env.example` with every setting documented.
   Covers: AC-F00-06, 23, 35, 40. Tests: TC-F00-12, 13, 55, 56, 82. Check: `docker compose up --wait` is healthy; a LAN-address connection is refused; data survives `down`/`up`.
 
-- [ ] **T5: The start command.** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
+- [ ] **T5: The start command. (milestone)** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
   Covers: AC-F00-01. Tests: TC-F00-02, 03, 04, 05, 06. Check: every failure message appears within 10 s; a second run works.
 
 - [ ] **T6: Database package.** `packages/db` with Drizzle, the `feature_flags` table, migrations, `pnpm seed` / `seed:clear`, `pnpm flag <key> on|off` with input validation.
@@ -46,13 +46,13 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [ ] **T12: Remaining atoms and Settings molecules.** Input, Toggle, Avatar, Badge; molecules SegmentedControl and AccentPicker.
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 34 (these components). Check: same as T11.
 
-- [ ] **T13: Visual and accessibility pipeline.** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
+- [ ] **T13: Visual and accessibility pipeline. (milestone)** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
   Covers: AC-F00-13, 14, 33. Tests: TC-F00-28, 35, 71. Check: a changed padding fails with a before/after diff; zero a11y violations.
 
 - [ ] **T14: Renderer app.** `apps/web`: React 19 + Tailwind + i18next (`en.json`); bundled fonts; starter home screen (wordmark, welcome, Settings button); Appearance panel; appearance store applied before first render; `useFlag` (15 s, unknown or failed = off).
   Covers: AC-F00-08, 10, 13b, 34. Tests: TC-F00-16, 17, 18, 20, 21, 72, 74. Check: theme and accent switch instantly and survive reload; corrupted saved values fall back to defaults.
 
-- [ ] **T15: Desktop app.** `apps/desktop` with electron-vite: sandbox, context isolation, CSP, permission denial, navigation/new-window blocking, `app://meetapp` scheme, CJS preload, Sentry for Electron (optional). Playwright Electron e2e suite.
+- [ ] **T15: Desktop app. (milestone)** `apps/desktop` with electron-vite: sandbox, context isolation, CSP, permission denial, navigation/new-window blocking, `app://meetapp` scheme, CJS preload, Sentry for Electron (optional). Playwright Electron e2e suite.
   Covers: AC-F00-03, 08, 09, 13b, 22, 24. Tests: TC-F00-09, 19, 30, 31, 58, 59, 60, 61. Check: the window opens within 5 s; security assertions pass; fonts work offline with no Google requests.
 
 - [ ] **T16: The test command.** `pnpm test`: starts the test services (clear message without Docker), one root Vitest run with merged coverage and 80% thresholds on the business-logic folders, then the Electron e2e.
@@ -64,13 +64,13 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [ ] **T18: API container.** Multi-stage `apps/api/Dockerfile` (`node:24-slim`, `pnpm deploy`, non-root, Node-based HEALTHCHECK, no `.env`).
   Covers: AC-F00-39. Tests: TC-F00-81. Check: the image is healthy, `id -u` ≠ 0, gitleaks finds nothing in the exported image.
 
-- [ ] **T19: CI on GitHub.** `ci.yml` (check, test, e2e with the AppArmor fix, ui, security incl. Semgrep and the gitleaks CLI, container; on PR and on push to main; cancel-in-progress; "Do not merge" comment on failure) and `nightly-windows.yml` (skips when main hasn't changed).
+- [ ] **T19: CI on GitHub. (milestone)** `ci.yml` (check, test, e2e with the AppArmor fix, ui, security incl. Semgrep and the gitleaks CLI, container; on PR and on push to main; cancel-in-progress; "Do not merge" comment on failure) and `nightly-windows.yml` (skips when main hasn't changed).
   Covers: AC-F00-19, plus CI coverage of 17, 31, 33, 39. Tests: TC-F00-45, 46, 47, 48. Check: a test PR shows every check; a deliberately failing check marks the PR failing and posts the warning.
 
-- [ ] **T20: Monitoring.** `--profile monitoring`: Gatus (all services, 30 s, threshold 2, resolved alerts), Prometheus + exporters + cAdvisor via Alloy, Loki, Tempo, Grafana (provisioned "MeetApp overview" dashboard and alert rules), `tools/notifier.ts` (macOS notification), `pnpm monitoring`.
+- [ ] **T20: Monitoring. (milestone)** `--profile monitoring`: Gatus (all services, 30 s, threshold 2, resolved alerts), Prometheus + exporters + cAdvisor via Alloy, Loki, Tempo, Grafana (provisioned "MeetApp overview" dashboard and alert rules), `tools/notifier.ts` (macOS notification), `pnpm monitoring`.
   Covers: AC-F00-41, 42, 43, 44. Tests: TC-F00-84, 85, 86, 87, 88, 89, 90. Check: stopping Redis → red within 60 s, "down" email in 60–120 s, "recovered" after restart; a 20 s blip sends nothing.
 
-- [ ] **T21: Documentation and final checks.** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
+- [ ] **T21: Documentation and final checks. (milestone)** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
   Covers: AC-F00-01, 25, 26, 36, 40, plus the owner's look check for 13. Tests: TC-F00-77, 93 (automated); TC-F00-01, 29, 83, 92 (manual, recorded in verification.md). Check: the owner runs `pnpm dev` from the guide and reviews the gallery.
 
 ## Coverage check
