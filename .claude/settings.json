@@ -36,7 +36,26 @@
       "Bash(git push -u origin fix/:*)",
       "Bash(git push -u origin docs/:*)",
       "Bash(git push)",
-      "mcp__postgres"
+      "mcp__postgres",
+      "Bash(pnpm run:*)",
+      "Bash(pnpm exec:*)",
+      "Bash(pnpm -s:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm preflight:*)",
+      "Bash(pnpm seed:*)",
+      "Bash(pnpm flag:*)",
+      "Bash(pnpm storybook:*)",
+      "Bash(pnpm monitoring:*)",
+      "Bash(node tools/:*)",
+      "Bash(mise x:*)",
+      "Bash(mise latest:*)",
+      "Bash(docker info:*)",
+      "Bash(docker run --rm:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)",
+      "mcp__playwright",
+      "mcp__github"
     ],
     "ask": [
       "Bash(rm:*)",
@@ -62,17 +81,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo '=== MeetApp progress (docs/progress.md) ==='; cat \"$CLAUDE_PROJECT_DIR/docs/progress.md\"; echo; echo '=== Spec status (docs/specs/INDEX.md) ==='; cat \"$CLAUDE_PROJECT_DIR/docs/specs/INDEX.md\""
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo 'Reminder: the conversation is being compacted. Run /save-progress afterwards so docs/progress.md has everything from this session.'"
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\""
           }
         ]
       }
@@ -131,5 +140,10 @@
   "statusLine": {
     "type": "command",
     "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/statusline.sh\""
-  }
+  },
+  "enabledMcpjsonServers": [
+    "context7",
+    "playwright",
+    "postgres"
+  ]
 }

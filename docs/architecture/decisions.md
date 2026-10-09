@@ -169,3 +169,8 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D031: Merge guard on GitHub's free plan
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** Stay on the free plan. Claude never opens or recommends merging a Pull Request with a failing check, and failing runs post a "Do not merge" comment. GitHub Pro (~$4/month, hard block) can be added later.
+
+### D032: Architecture review: guard rails for smooth development
+- **Status:** accepted (2026-10-09)
+- **Decision:** A session-start hook puts mise's locked tools on Claude's PATH. `progress.md` is kept short (5 newest sessions; older entries go to `docs/history/`). Every hook has automated tests (`tools/hooks.test.ts`). Code edits also require a feature with approved tasks in progress. Context7, Playwright and Postgres MCP are enabled for the project. The lint hook uses a cache. New skills: `/fix-ci`, `/deps-update`, `/add-dependency`, `/db-migration`. VS Code extension recommendations added.
+- **Why:** remove the recurring sources of friction (wrong tool versions, context bloat, silent hook breakage, stale library knowledge, CI and dependency toil, risky database changes) before they cost development time.

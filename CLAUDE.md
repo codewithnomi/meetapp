@@ -42,6 +42,10 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - `/spec-implement <feature>`: build the next unchecked task with its tests (only after tasks are approved)
 - `/spec-verify <feature>`: run ALL tests + acceptance check + security audit; the only way a feature becomes `done`. Runs automatically when the last task is ticked (hook).
 - `/new-component <level> <Name>`: create an Atomic Design component with story + test
+- `/fix-ci`: a GitHub check is red: read logs, reproduce, fix, confirm green
+- `/deps-update`: review library updates (Dependabot), fix breakages, recommend merge
+- `/add-dependency`: vet a new library (need, license, maintenance, size) before adding it
+- `/db-migration`: change the database safely (no data loss, no long locks, tested)
 - `/diagnose`: something is down or broken: find the root cause, explain, fix
 - `/pr`: branch + commit + push + Pull Request (runs automatically after spec-verify PASS and save-progress)
 - `/spec-status`: show where every feature stands
@@ -67,6 +71,13 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - **Free first (D017):** use free tools and free tiers only; nothing deployed online until the owner decides. Ask before anything that costs money.
 - **Git (D026):** repo https://github.com/codewithnomi/meetapp. Never commit to `main`. One branch per feature (`feat/F02-meetings`); commit + push automatically after each finished task; spec-verify PASS opens the Pull Request automatically; the owner merges.
 - Ask before: deleting files, `git push`, installing global tools, spending money (paid APIs).
+
+## Working rules for Claude
+- Commands run with the locked tool versions (mise shims on PATH via the session-start hook). If `node -v` isn't 24, prefix commands with `mise x --`.
+- Read current library docs (Context7 MCP) before using a library; don't code library APIs from memory.
+- Start dev servers, Storybook and Electron in the background; stop them when done.
+- One feature branch at a time. `docs/progress.md` and `docs/specs/INDEX.md` are only changed on the active branch, to avoid merge conflicts.
+- Hooks are code too: when a hook changes, update `tools/hooks.test.ts`.
 
 ## When compacting a long conversation, keep
 The current feature and task, the branch, failing tests and their errors, decisions made this session that aren't written down yet, and what the owner asked for last. Everything else is in `docs/`.
