@@ -156,7 +156,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** Before coding, the look is designed with Claude's design tools and approved by the owner:
   1. **Design system** (colors in light/dark with 8 accents, fonts, spacing, Atomic components): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ
-  2. **Screen designs** on a design canvas (sign in, home, pre-join, meeting room, minutes, Ask AI, settings).
+  2. **Screen designs** on a design canvas (sign in, home, pre-join, meeting room, minutes, Ask AI, settings): https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
   F00 then builds `packages/design-tokens` and the atoms **exactly** from the approved design system; each feature's design.md links its screens. `ui-reviewer` checks built screens against them.
 - **Fonts:** Figtree (interface) + JetBrains Mono (codes, timestamps), both free (Google Fonts).
 - **Why:** changing a design takes minutes; changing built code takes hours.
