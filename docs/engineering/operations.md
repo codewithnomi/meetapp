@@ -7,7 +7,22 @@ updated: 2026-10-09
 
 How we know the app is healthy, find problems before users complain, and recover from disasters.
 
-## 1. Monitoring (proposed tools, see decisions log)
+## 0. Monitoring from day one (local, free; part of F00, D027)
+The same monitoring runs on the owner's Mac now and on servers later, so we always know **what is down and why**.
+
+| Question | Tool | What you see |
+|---|---|---|
+| **What is down right now?** | **Uptime Kuma** (status page) | A green/red list: Backend, Database, Cache, Call server, File storage, Email, AI worker. Checked every 30 seconds, with history. |
+| **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests, errors, response times, CPU/memory, database connections, queue length, calls and participants |
+| Numbers over time (metrics) | **Prometheus** | Collected from the backend (`/metrics`), PostgreSQL and Redis exporters, LiveKit (built-in), MinIO |
+| What happened (logs) | **Loki** | All services' logs in one place, searchable by request ID |
+| Where a request failed (traces) | **Tempo** + **OpenTelemetry** | Each request's path through backend → database → AI worker, with timings and the failing step |
+| Crashes with code location | **Sentry** (free, optional) | Error + stack trace + which release |
+| Being told | **Alerts** in Grafana | Mac notification / email (Mailpit locally) when a service is down > 1 min, errors spike, or the disk is nearly full |
+
+Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, and the addresses are printed. Claude uses the same tools through `/diagnose`.
+
+## 1. Monitoring later in production (same tools, plus)
 | What | Tool | Example |
 |---|---|---|
 | App errors and crashes (desktop, web, backend) | **Sentry** | "Join button crashed for 12 users on Windows" |

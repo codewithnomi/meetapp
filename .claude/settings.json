@@ -6,13 +6,44 @@
       "Edit(./docs/**)",
       "Bash(ls:*)",
       "Bash(cat:*)",
+      "Bash(pwd)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout -b:*)",
+      "Bash(git switch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm dev:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm check:*)",
+      "Bash(pnpm build:*)",
+      "Bash(pnpm --filter:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker logs:*)",
+      "Bash(mise install:*)",
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "mcp__context7",
+      "Bash(git push -u origin feat/:*)",
+      "Bash(git push -u origin fix/:*)",
+      "Bash(git push -u origin docs/:*)",
+      "Bash(git push)",
+      "mcp__postgres"
     ],
     "ask": [
-      "Bash(git push:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(brew install:*)",
+      "Bash(npm install -g:*)"
     ],
     "deny": [
       "Read(./.env)",
@@ -20,7 +51,9 @@
       "Read(./**/.env)",
       "Edit(./**/.env)",
       "Read(./**/.env.local)",
-      "Read(./**/.env.production)"
+      "Read(./**/.env.production)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)"
     ]
   },
   "hooks": {
@@ -58,6 +91,45 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-coding.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-protected-files.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-git.sh\""
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude needs your input\" with title \"MeetApp\" sound name \"Glass\"' >/dev/null 2>&1 || true"
+          }
+        ]
+      }
     ]
+  },
+  "enableAllProjectMcpServers": false,
+  "statusLine": {
+    "type": "command",
+    "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/statusline.sh\""
   }
 }

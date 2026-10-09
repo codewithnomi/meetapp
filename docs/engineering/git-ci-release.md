@@ -6,9 +6,10 @@ updated: 2026-10-09
 # Git, Automatic Checks (CI) and Releases
 
 ## 1. Git & GitHub
-- Code lives in a **private GitHub repository**.
+- Code lives in a **private GitHub repository**: https://github.com/codewithnomi/meetapp
 - `main` is always working and releasable. Nobody pushes directly to `main`.
-- Each task is built on a short-lived branch: `feat/F02-T3-screen-share`, `fix/F02-mute-bug`, `docs/…`.
+- **One branch per feature**: `feat/F02-meetings` (or `fix/…`, `docs/…`). It carries the feature's specs and code.
+- **Automatic saving (D026):** Claude commits and pushes after every finished task. When `/spec-verify` passes, Claude opens the Pull Request automatically and the owner clicks **Merge**. A failed verification never opens a PR. Document-only changes are pushed and PR'd by `/save-progress`.
 - Commit messages follow **Conventional Commits**: `feat(F02): add screen share`, `fix(F05): …`, `docs: …`. These generate the changelog automatically.
 - Each branch becomes a **Pull Request (PR)** using a template with: which feature/task, which ACs are covered, test results, screenshots, and a docs-updated checkbox.
 - **Before every commit** (automatic, via husky + lint-staged): format, lint, and a secrets check on changed files.

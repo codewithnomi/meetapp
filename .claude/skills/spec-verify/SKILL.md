@@ -19,7 +19,11 @@ argument-hint: <feature id, e.g. F05>
    - `code-quality-reviewer`: clean code, design patterns, layering, duplication, complexity
 6. Write `verification.md` in the feature folder using `docs/specs/_templates/verification.md`.
 7. **Verdict:**
-   - **PASS** requires all tests to pass, every AC to pass, no Critical/High security issues, no "Must fix" UI or code-quality issues, and the docs to be up to date. Set the feature's status to `done`.
-   - **FAIL** means you add a "Fix" task to `tasks.md` for each problem (T-fix-1, T-fix-2…), keep the status `in-progress`, and tell the owner what's wrong in simple words.
+   - **PASS** requires all tests to pass, every AC to pass, no Critical/High security issues, no "Must fix" UI or code-quality issues, and the docs to be up to date. Set the feature's status to `done`, then **automatically**:
+     1. commit `verification.md` + status updates and push the feature branch;
+     2. open the Pull Request to `main` with the GitHub MCP tools (follow the `pr` skill), titled `feat(<ID>): <feature name>`. Fill the template with every AC and a link to `verification.md`;
+     3. wait for the CI checks on the PR; if one fails, fix it, push, and re-check;
+     4. tell the owner: "F0X is done and verified. Here's the Pull Request: <link>. Click **Merge** to add it to the app." Never merge yourself unless the owner says so.
+   - **FAIL**: **no Pull Request.** Commit and push the report to the feature branch, add a "Fix" task to `tasks.md` for each problem (T-fix-1, T-fix-2…), keep the status `in-progress`, and tell the owner what's wrong in simple words.
 8. Update `docs/specs/INDEX.md` and `docs/progress.md`.
 9. Tell the owner the result in plain words: what was checked, what passed, and what needs fixing.
