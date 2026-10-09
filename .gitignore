@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+dist-electron/
+build/
+release/
+out/
+storybook-static/
+.turbo/
+coverage/
+
+# Secrets: never commit (see .env.example once it exists)
+.env
+.env.*
+!.env.example
+
+# Claude Code personal settings (shared settings in .claude/settings.json ARE committed)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Flutter / Dart
+.dart_tool/
+
+# Test & tool output
+playwright-report/
+test-results/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
