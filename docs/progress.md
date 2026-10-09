@@ -34,6 +34,9 @@
 
 ## Session log
 
+### 2026-10-09: Session 1 (automation + monitoring)
+- Auto commit/push after every task; auto Pull Request when a feature passes verification (D026). Monitoring from day one in F00 (D027). Postgres MCP read-only (D028). New `/diagnose`, protected-files hook, status bar, compaction guidance. F00 ACs 41–45.
+
 ### 2026-10-09: Session 1 (Claude setup for coding)
 - Added `docs/engineering/project-structure.md` (code map + naming), hooks that enforce rules (no code before go-ahead; no commits/pushes to main; Mac notification), `/pr` command, Context7 + Playwright MCP (`.mcp.json`), development permissions. Server infrastructure plan drafted in `docs/architecture/infrastructure.md` (for later).
 

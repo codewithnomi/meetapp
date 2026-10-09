@@ -11,4 +11,5 @@ description: Save what happened in this session to docs/progress.md so nothing i
 4. Add a new entry at the top of **Session log** with today's date: what was decided, what was written or built, and which files changed.
 5. Make sure every decision made in this session is in `docs/architecture/decisions.md`.
 6. Make sure `docs/specs/INDEX.md` matches the spec files.
-7. Tell the owner in one or two lines what was saved.
+7. **Auto-save to GitHub:** if you're on a feature branch, commit and push there. Otherwise (document-only changes) follow the `pr` skill: `docs/<short-name>` branch, commit, push, open a Pull Request.
+8. Tell the owner in one or two lines what was saved, with the Pull Request link if one was opened.

@@ -22,7 +22,8 @@ meetapp/
 ├── docs/                          ALL documentation (see docs/README.md)
 ├── infra/
 │   ├── docker-compose.yml         Local services: LiveKit, Postgres, Redis, MinIO, Mailpit
-│   └── livekit.yaml               Local call-server settings
+│   ├── livekit.yaml               Local call-server settings
+│   └── monitoring/                Prometheus, Grafana dashboards + alerts, Loki, Tempo, Uptime Kuma config
 │
 ├── apps/
 │   ├── desktop/                   Electron shell (F04)
@@ -65,7 +66,8 @@ meetapp/
 │   │   │   ├── pipelines/         transcription, minutes, indexing
 │   │   │   └── prompts/           Versioned prompt files: minutes.v1.md …
 │   │   ├── evals/                 AI quality test set (sample meetings + expected results)
-│   │   └── tests/
+│   │   ├── docs/runbooks/                 Step-by-step fixes for known problems (written by /diagnose)
+└── tests/
 │   │
 │   └── mobile/                    Flutter app (F11), added later
 │

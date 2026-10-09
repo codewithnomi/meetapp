@@ -136,3 +136,18 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D025: Infrastructure stages and tool versions
 - **Status:** Stage 1 accepted, rest proposed (2026-10-09)
 - **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage; LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.
+
+### D026: Automatic commit, push and Pull Request
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** Claude commits and pushes after every finished task (feature branch `feat/FXX-name`). When `/spec-verify` passes, Claude opens the Pull Request automatically and waits for CI; the owner clicks **Merge**. A failed verification never opens a PR. Document-only changes are pushed/PR'd by `/save-progress`. Pushes to `main` and force pushes stay blocked by a hook.
+- **Why:** nothing is lost, no extra commands for the owner; the merge click is the last human check (free private repos have no branch protection).
+
+### D027: Monitoring from day one: Uptime Kuma, Prometheus, Grafana, Loki, Tempo (OpenTelemetry), optional Sentry
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** Built in F00 as a local Docker "monitoring" profile, then reused unchanged on servers. Status page = what's down; dashboards, logs and traces = why. Alerts via notification/email. Claude reads them through `/diagnose`.
+- **Why:** the owner wants to see in real time what is down and why, and problems are cheaper to fix when caught early.
+
+### D028: Database access for Claude via Postgres MCP (read-only)
+- **Status:** accepted (2026-10-09)
+- **Decision:** `postgres-mcp` in restricted (read-only) mode, connected only to the local database. Claude can inspect tables, data, slow queries and indexes, but cannot change or delete anything. Schema changes only through migration files (a hook blocks editing old migrations).
+- **Later MCPs:** Sentry MCP (when a Sentry account exists) and Grafana MCP (query metrics/logs) are added when those services are in use.

@@ -21,6 +21,7 @@ Routes never talk to the database directly. Services never know about HTTP.
 - **API docs:** generated automatically as OpenAPI from the Zod schemas, published at `/docs` in development. The Flutter mobile app's API client is generated from this file (D019).
 - **API versioning:** all routes under `/api/v1/…`. The desktop and mobile apps can be older than the server, so breaking changes require a new version.
 - **Database:** PostgreSQL, Drizzle ORM. Every change is a **migration** file (never edit the database by hand). Every table has `id`, `created_at`, `updated_at`; soft-delete where users can delete things.
+- **Observability:** every service exposes `/metrics` (Prometheus) and a detailed health check, and sends traces with **OpenTelemetry**. The request ID appears in logs, traces and error responses, so one ID shows the whole story.
 - **Logging:** structured JSON logs (pino) with a request ID. Never log transcripts, messages, passwords or tokens (rule S10).
 - **Config:** all settings come from environment variables, validated at startup; the app refuses to start if one is missing.
 - **Idempotent jobs:** background jobs can safely run twice (e.g. regenerating minutes doesn't create duplicates).

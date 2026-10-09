@@ -31,10 +31,14 @@
       "Bash(mise install:*)",
       "Bash(uv run:*)",
       "Bash(uv sync:*)",
-      "mcp__context7"
+      "mcp__context7",
+      "Bash(git push -u origin feat/:*)",
+      "Bash(git push -u origin fix/:*)",
+      "Bash(git push -u origin docs/:*)",
+      "Bash(git push)",
+      "mcp__postgres"
     ],
     "ask": [
-      "Bash(git push:*)",
       "Bash(rm:*)",
       "Bash(git reset:*)",
       "Bash(git rebase:*)",
@@ -95,6 +99,10 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-coding.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-protected-files.sh\""
           }
         ]
       },
@@ -119,5 +127,9 @@
       }
     ]
   },
-  "enableAllProjectMcpServers": false
+  "enableAllProjectMcpServers": false,
+  "statusLine": {
+    "type": "command",
+    "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/statusline.sh\""
+  }
 }

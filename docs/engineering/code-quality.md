@@ -50,6 +50,8 @@ Avoid: god-classes/files, global mutable state, deep inheritance (prefer composi
 | Layer violations (e.g. route → database directly, atom → organism) | not allowed |
 | `console.log` in committed code | not allowed (use the logger) |
 | TODO without a linked task | not allowed |
+| Focused or skipped tests (`.only`, `.skip`) committed | not allowed |
+| Desktop/web bundle size | budget per screen, checked in CI (size-limit); growth must be justified |
 
 A limit may be broken only with a comment explaining why, and the reviewer must agree.
 

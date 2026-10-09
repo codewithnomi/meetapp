@@ -16,7 +16,7 @@ Build the invisible base of MeetApp: the project setup, the look-and-feel system
 - **End users** see only the result: the app window, themes and colors.
 
 ## Depends on decisions
-D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D021, D023, D024, D025. All must be **accepted** before this spec is approved.
+D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D021, D023, D024, D025, D026, D027, D028. All must be **accepted** before this spec is approved.
 
 ## User stories
 - As the owner, I want **one command** to start everything on my Mac, so I can try the app without technical steps.
@@ -90,6 +90,13 @@ D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D0
 - **AC-F00-38:** WHEN the project runs locally, THEN local file storage (MinIO, same API as Cloudflare R2) is available, and the backend can store and read back a test file.
 - **AC-F00-39:** WHEN CI runs, THEN the backend is built into a container image that starts and answers the health check; the image runs as a non-root user and contains no secrets.
 - **AC-F00-40:** WHEN the Mac restarts, THEN local data (database, files, queued jobs) is still there.
+
+### Monitoring (D027)
+- **AC-F00-41:** WHEN the owner runs the monitoring command, THEN a status page (Uptime Kuma) shows green/red for backend, database, cache, call server, file storage and email, checked every 30 seconds; stopping any one turns it red within 1 minute.
+- **AC-F00-42:** WHEN the monitoring is running, THEN a Grafana "MeetApp overview" dashboard shows live request count, error rate, response times, database connections, cache status and CPU/memory for each service.
+- **AC-F00-43:** WHEN a request fails, THEN its request ID can be used to find the matching log lines (Loki) and the request's trace (Tempo) showing which step failed.
+- **AC-F00-44:** WHEN a service is down for more than 1 minute, THEN an alert is sent (Mac notification and an email visible in Mailpit), and another when it recovers.
+- **AC-F00-45:** WHEN the project is set up, THEN local seed data (sample users, a workspace) can be loaded with one command for testing, and removed with one command.
 
 ### Documentation
 - **AC-F00-25:** WHEN someone follows the "Getting started" guide on a Mac with macOS 12+ that has only the prerequisites listed in the guide (Docker, Node LTS, pnpm), THEN they can run the project using only the steps written there.
