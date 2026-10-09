@@ -1,7 +1,7 @@
 ---
 feature: F00
 title: Foundation
-status: draft
+status: approved
 updated: 2026-10-09
 ---
 

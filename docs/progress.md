@@ -35,6 +35,9 @@
 
 ## Session log
 
+### 2026-10-09: Session 1 (building starts)
+- Owner approved F00 design, tests and tasks. Building on branch `feat/F00-foundation`, starting with T1.
+
 ### 2026-10-09: Session 1 (F00 plan ready)
 - F00 requirements approved + coding go-ahead. Wrote F00 design (reviewed by spec-reviewer, 13 must-fix items applied), tests.md (93 test cases, all ACs covered, by test-writer), tasks.md (21 steps). Owner decisions: Gatus, seed scope, macOS per Docker, free-plan merge guard (D030, D031). Waiting for owner approval of design + tests + tasks, then building starts on `feat/F00-foundation`.
 
