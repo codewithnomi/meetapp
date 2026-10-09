@@ -151,3 +151,12 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-09)
 - **Decision:** `postgres-mcp` in restricted (read-only) mode, connected only to the local database. Claude can inspect tables, data, slow queries and indexes, but cannot change or delete anything. Schema changes only through migration files (a hook blocks editing old migrations).
 - **Later MCPs:** Sentry MCP (when a Sentry account exists) and Grafana MCP (query metrics/logs) are added when those services are in use.
+
+### D029: Design first: design system, then screens, then code
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** Before coding, the look is designed with Claude's design tools and approved by the owner:
+  1. **Design system** (colors in light/dark with 8 accents, fonts, spacing, Atomic components): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ
+  2. **Screen designs** on a design canvas (sign in, home, pre-join, meeting room, minutes, Ask AI, settings).
+  F00 then builds `packages/design-tokens` and the atoms **exactly** from the approved design system; each feature's design.md links its screens. `ui-reviewer` checks built screens against them.
+- **Fonts:** Figtree (interface) + JetBrains Mono (codes, timestamps), both free (Google Fonts).
+- **Why:** changing a design takes minutes; changing built code takes hours.

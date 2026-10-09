@@ -6,7 +6,8 @@
 ## Current state
 - **Coding go-ahead:** no
 - **Stage:** Planning / documentation. No code exists yet (on purpose).
-- **Next step:** F00 Foundation requirements are drafted and reviewed (`docs/specs/F00-foundation/requirements.md`). Owner answered all questions. **Waiting for the owner to read it and say "approved".** Then `/next` writes the F00 design. **Coding waits for the owner's "go ahead".**
+- **Design phase (D029):** design system v1 published, waiting for owner review: https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Then screen designs.
+- **Next step (after design):** F00 Foundation requirements are drafted and reviewed (`docs/specs/F00-foundation/requirements.md`). Owner answered all questions. **Waiting for the owner to read it and say "approved".** Then `/next` writes the F00 design. **Coding waits for the owner's "go ahead".**
 
 ## Open questions (need the owner's answer)
 1. **App name:** is "MeetApp" final, or a working name?
@@ -33,6 +34,9 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-09: Session 1 (design system)
+- Owner chose design-first (D029). Published design system v1: 63 contrast-checked color tokens (light/dark, 8 accents, sky default), Figtree + JetBrains Mono, spacing/radius/shadows, 16 components (9 atoms, 5 molecules, 2 organisms) with live previews and usage rules.
 
 ### 2026-10-09: Session 1 (automation + monitoring)
 - Auto commit/push after every task; auto Pull Request when a feature passes verification (D026). Monitoring from day one in F00 (D027). Postgres MCP read-only (D028). New `/diagnose`, protected-files hook, status bar, compaction guidance. F00 ACs 41–45.
