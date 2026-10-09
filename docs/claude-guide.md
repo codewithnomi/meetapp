@@ -68,10 +68,30 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 - **Planned:** **Context7** (latest documentation of the libraries we use, so Claude doesn't guess) and **Playwright** (Claude opens the app and clicks through it to test). Later: database viewer and GitHub.
 - **Where:** `.mcp.json`. Type `/mcp` to see what's connected.
 
+### 7b. GitHub MCP: setup (one time, done by the owner)
+Lets Claude open Pull Requests, read the automatic check results, and manage issues on https://github.com/codewithnomi/meetapp.
+
+1. **Create a key (token) on GitHub:** open https://github.com/settings/personal-access-tokens/new
+   - Name: `claude-meetapp` · Expiration: 90 days
+   - Repository access: **Only select repositories → `codewithnomi/meetapp`**
+   - Permissions (Repository): **Contents** read & write, **Pull requests** read & write, **Issues** read & write, **Actions** read-only, **Commit statuses** read-only
+   - Click **Generate token** and copy it (it starts with `github_pat_`)
+2. **Connect it:** open a terminal in VS Code (menu Terminal → New Terminal) in the project folder, and run (paste your token in place of `YOUR_TOKEN`):
+   ```
+   claude mcp add --transport http github https://api.githubcopilot.com/mcp -H "Authorization: Bearer YOUR_TOKEN"
+   ```
+   This stores the key **only on your computer** for this project. It is never uploaded to GitHub.
+3. **Restart Claude** (close and reopen the Claude panel), then type `/mcp`. You should see `github ✔ connected`.
+
+Safety rules:
+- **Never paste the token into the chat** or into any file in the project.
+- The token only works for this one repository and expires in 90 days. When it expires, create a new one and run step 2 again (first remove the old one with `claude mcp remove github`).
+- Claude still asks before merging, deleting, or pushing (CLAUDE.md).
+
 ### 8. Coming when coding starts (in F00)
 - **More hooks:** block edits to secret files.
 - **Git hooks:** checks before every commit (format, lint, secrets).
-- **MCP:** Context7 (library docs), Playwright (test the app by clicking), GitHub (PRs and CI results), later Sentry (read real errors).
+- **MCP:** Context7 (library docs), Playwright (test the app by clicking), later Sentry (read real errors). GitHub MCP: see 7b.
 
 ### 9. Plan mode
 - Press **Shift+Tab** until you see "plan mode". Claude then only researches and proposes, and changes nothing until you approve.
