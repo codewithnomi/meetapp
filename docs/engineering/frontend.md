@@ -32,7 +32,7 @@ We build the UI like LEGO: small pieces combine into bigger pieces.
 ## 2. Folder structure
 ```
 packages/ui/src/            ← shared design system (desktop + web)
-  tokens/                   generated from packages/design-tokens/tokens.json (shared with Flutter)
+  (tokens come from packages/design-tokens: tokens.json → tokens.css + Tailwind theme; shared with Flutter later)
   atoms/Button/
     Button.tsx              the component
     Button.stories.tsx      visual documentation (Storybook)

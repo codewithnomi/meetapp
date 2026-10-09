@@ -15,7 +15,7 @@ jobs/          background work (minutes, AI indexing) via BullMQ
 Routes never talk to the database directly. Services never know about HTTP.
 
 ## 2. Rules
-- **Validation:** every input is validated with a Zod schema. Schemas live in `packages/core` and are shared with the frontend.
+- **Validation:** every input is validated with a Zod schema. Schemas live in `packages/contracts` and are shared with the frontend.
 - **Permissions:** every service function receives the current user and checks access. Every database query that reads workspace data filters by `workspace_id` (security rule S2).
 - **Errors:** one error format for every endpoint: `{ error: { code, message, requestId, details? } }`, with clear HTTP status codes (400 bad input, 401 not logged in, 403 not allowed, 404 not found, 409 conflict, 429 too many requests).
 - **API docs:** generated automatically as OpenAPI from the Zod schemas, published at `/docs` in development. The Flutter mobile app's API client is generated from this file (D019).
