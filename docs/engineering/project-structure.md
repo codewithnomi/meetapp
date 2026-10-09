@@ -21,7 +21,7 @@ meetapp/
 ├── .github/                       PR template, CI workflows, Dependabot
 ├── docs/                          ALL documentation (see docs/README.md); docs/runbooks/ = fixes for known problems (/diagnose)
 ├── infra/
-│   ├── docker-compose.yml         Local services: LiveKit, Postgres, Redis, MinIO, Mailpit
+│   ├── docker-compose.yml         Local services: LiveKit, Postgres, Redis, RustFS storage, Mailpit
 │   ├── livekit.yaml               Local call-server settings
 │   └── monitoring/                Gatus, Prometheus, Alloy, Loki, Tempo, Grafana dashboards + alerts
 │

@@ -19,7 +19,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T3: Commit safety.** husky + lint-staged; pre-commit runs `gitleaks git --staged` from the Docker image (fails closed without Docker); exclusion limited to `tests/fixtures`.
   Covers: AC-F00-18. Tests: TC-F00-42, 43, 44. Check: a staged fake key is blocked, naming file and line.
 
-- [ ] **T4: Local services.** `infra/docker-compose.yml` (LiveKit, Postgres+pgvector, Redis with AOF, MinIO pinned + bucket init, Mailpit), all ports on 127.0.0.1, named volumes, health checks; `infra/livekit.yaml`; `.env.example` with every setting documented.
+- [x] **T4: Local services.** `infra/docker-compose.yml` (LiveKit, Postgres+pgvector, Redis with AOF, RustFS file storage (replaces MinIO, D035) with automatic bucket creation, Mailpit), all ports on 127.0.0.1, named volumes, health checks; `infra/livekit.yaml`; `.env.example` with every setting documented.
   Covers: AC-F00-06, 23, 35, 40. Tests: TC-F00-12, 13, 55, 56, 82. Check: `docker compose up --wait` is healthy; a LAN-address connection is refused; data survives `down`/`up`.
 
 - [ ] **T5: The start command. (milestone)** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
@@ -31,7 +31,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [ ] **T7: API core.** `apps/api` server on 127.0.0.1:3000; Zod config validation; requestId; standard error handler; pino with redaction and email masking; strict CORS; `/docs` and `/docs/json` in development only (from `packages/contracts`); a test-only error route (registered only in test mode).
   Covers: AC-F00-05, 20, 21. Tests: TC-F00-11, 49, 50, 51, 52, 57. Check: a missing setting exits naming it; the 500 body and logs carry no secrets or personal data.
 
-- [ ] **T8: Health and providers.** Providers for Postgres (pool error handling), Redis (fast-fail), LiveKit, storage (S3 → MinIO), email (Mailpit); `GET /api/v1/health` with 1.5 s timeouts; `pnpm storage:test`, `pnpm email:test`.
+- [ ] **T8: Health and providers.** Providers for Postgres (pool error handling), Redis (fast-fail), LiveKit, storage (S3 → RustFS), email (Mailpit); `GET /api/v1/health` with 1.5 s timeouts; `pnpm storage:test`, `pnpm email:test`.
   Covers: AC-F00-02, 07, 35, 38. Tests: TC-F00-07, 08, 14, 15, 76, 80. Check: stop/start Postgres and Redis → `down` within 5 s, `ok` within 10 s, same process ID.
 
 - [ ] **T9: Flags API and observability.** `GET /api/v1/flags` (10 s cache), `GET /metrics`, OpenTelemetry traces + logs over OTLP (optional), `@sentry/node` only with `SENTRY_DSN` and a stripping `beforeSend`.
@@ -59,6 +59,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 
 - [ ] **T16: The test command.** `pnpm test`: starts the test services (clear message without Docker), one root Vitest run with merged coverage and 80% thresholds on the business-logic folders, then the Electron e2e.
   Covers: AC-F00-17. Tests: TC-F00-39, 40, 41. Check: a fixture project under 80% fails.
+  Also (carried over from T4): fold `pnpm test:integration` (infra/*.integration.test.ts: LAN refusal, data survives restart) into `pnpm test`.
 
 - [ ] **T17: Licenses and dependency updates.** `tools/check-licenses.ts` (SPDX parsing, allowlist with reasons) and `.github/dependabot.yml` (grouped, weekly).
   Covers: AC-F00-31, 32. Tests: TC-F00-67, 68, 69, 70 (TC-70 confirmed one week after the first push). Check: fake GPL fails; `MIT OR GPL-3.0` passes.

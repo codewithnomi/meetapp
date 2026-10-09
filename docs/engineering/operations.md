@@ -14,7 +14,7 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 |---|---|---|
 | **What is down right now?** | **Gatus** (status page, configured from a file, D030) | A green/red list: Backend, Database, Cache, Call server, File storage, Email, AI worker. Checked every 30 seconds, with history. |
 | **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests, errors, response times, CPU/memory, database connections, queue length, calls and participants |
-| Numbers over time (metrics) | **Prometheus** | Collected from the backend (`/metrics`), PostgreSQL and Redis exporters, LiveKit (built-in), MinIO |
+| Numbers over time (metrics) | **Prometheus** | Collected from the backend (`/metrics`), PostgreSQL and Redis exporters, LiveKit (built-in), file storage (RustFS) |
 | What happened (logs) | **Loki** | All services' logs in one place, searchable by request ID |
 | Where a request failed (traces) | **Tempo** + **OpenTelemetry** | Each request's path through backend → database → AI worker, with timings and the failing step |
 | Crashes with code location | **Sentry** (free, optional) | Error + stack trace + which release |

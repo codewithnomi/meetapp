@@ -26,7 +26,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** manual (performance)
 - **Given** the owner's Mac with Docker running, images already downloaded, nothing of MeetApp running
 - **When** the owner runs `pnpm dev` and starts a stopwatch
-- **Then** within 2 minutes LiveKit, Postgres, Redis, MinIO, Mailpit and the API are healthy, the MeetApp window is open, and the terminal prints an address table with one line per service (API, renderer, LiveKit, Postgres, Redis, MinIO, Mailpit). The time is recorded in `verification.md`.
+- **Then** within 2 minutes LiveKit, Postgres, Redis, storage (RustFS), Mailpit and the API are healthy, the MeetApp window is open, and the terminal prints an address table with one line per service (API, renderer, LiveKit, Postgres, Redis, MinIO, Mailpit). The time is recorded in `verification.md`.
 
 ### TC-F00-02: Docker not installed
 - **Covers:** AC-F00-01
@@ -66,7 +66,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 ### TC-F00-07: Health returns 200 when everything is up
 - **Covers:** AC-F00-02
 - **Level:** integration
-- **Given** the API running against real Postgres, Redis, LiveKit and MinIO
+- **Given** the API running against real Postgres, Redis, LiveKit and storage (RustFS)
 - **When** `GET /api/v1/health` is called
 - **Then** within 2 s it returns 200 with `status: "ok"` and `ok` for database, cache and call server (and storage)
 
@@ -594,7 +594,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 ### TC-F00-80: Backend stores and reads back a file
 - **Covers:** AC-F00-38
 - **Level:** integration
-- **Given** MinIO running with bucket `meetapp-dev`
+- **Given** storage (RustFS) running with bucket `meetapp-dev`
 - **When** the storage provider writes a test object with random content, then reads it
 - **Then** the bytes match; reading a missing key returns a not-found error, not a crash
 
@@ -608,7 +608,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 ### TC-F00-82: Local data survives a restart
 - **Covers:** AC-F00-40
 - **Level:** integration
-- **Given** a flag row in Postgres, an object in MinIO and a key in Redis
+- **Given** a flag row in Postgres, an object in storage (RustFS) and a key in Redis
 - **When** `docker compose down` (without `-v`) and `up --wait` run
 - **Then** all three still exist
 
@@ -632,7 +632,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Covers:** AC-F00-41
 - **Level:** integration
 - **Given** monitoring running and all green
-- **When** each service in turn (Redis, Postgres, LiveKit, MinIO, Mailpit, API) is stopped, then restarted
+- **When** each service in turn (Redis, Postgres, LiveKit, storage, Mailpit, API) is stopped, then restarted
 - **Then** the status page shows that service red within 60 s and only that one (plus backend, if its health depends on it); green again after restart
 
 ### TC-F00-86: Grafana overview dashboard has live data

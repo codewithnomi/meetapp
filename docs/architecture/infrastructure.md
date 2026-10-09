@@ -15,7 +15,7 @@ Owner's machine: Apple M4, 16 GB RAM, macOS 26. Good for development and for loc
 | Call server (LiveKit) | Docker container | Dev keys, only reachable from this Mac |
 | Database (PostgreSQL + pgvector) | Docker container | Data kept in a Docker volume |
 | Cache / job queue (Redis) | Docker container | Persistence on, so queued jobs survive restarts |
-| File storage (**MinIO**) | Docker container | Works exactly like Cloudflare R2 (same "S3" API), so switching later needs no code change |
+| File storage (**RustFS**, replaces MinIO, D035) | Docker container | Works exactly like Cloudflare R2 (same "S3" API), so switching later needs no code change |
 | Fake email inbox (**Mailpit**) | Docker container | View every email the app sends |
 | Backend API, AI worker | Run directly with hot reload while developing; also built as **container images** (Dockerfiles) so they run the same way online later |
 | Desktop app | Electron in development mode | |

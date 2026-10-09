@@ -91,7 +91,7 @@ The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkN
 ### Project structure & tooling (D024, D025)
 - **AC-F00-36:** WHEN F00 is done, THEN the folders and file names match `docs/engineering/project-structure.md`, and each app and package has its own short CLAUDE.md with the rules for that area.
 - **AC-F00-37:** WHEN someone runs the setup step, THEN the exact versions of Node.js (24 LTS), pnpm and Python (3.12) from `mise.toml` are used, and the start command refuses to run with a different major version, naming the expected one.
-- **AC-F00-38:** WHEN the project runs locally, THEN local file storage (MinIO, same API as Cloudflare R2) is available, and the backend can store and read back a test file.
+- **AC-F00-38:** WHEN the project runs locally, THEN local file storage (RustFS, same S3 API as Cloudflare R2; replaces MinIO, D035) is available, and the backend can store and read back a test file.
 - **AC-F00-39:** WHEN CI runs, THEN the backend is built into a container image that starts and answers the health check; the image runs as a non-root user and contains no secrets.
 - **AC-F00-40:** WHEN the Mac restarts, THEN local data (database, files, queued jobs) is still there.
 

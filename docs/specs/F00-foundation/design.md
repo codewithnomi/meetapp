@@ -46,22 +46,22 @@ docs/getting-started.md  docs/runbooks/local-services.md  + README.md and CLAUDE
 - Library versions are the latest stable at build time, locked in `pnpm-lock.yaml`.
 
 ## 3. Local services (`infra/docker-compose.yml`)
-**Every published port is bound to `127.0.0.1`** (e.g. `"127.0.0.1:5432:5432"`), including the monitoring ports, so other devices on the Wi-Fi can't connect (AC-F00-23). Named volumes keep data across restarts (AC-F00-40). Each service has a Docker health check, and `up --wait` waits for them.
+Every image is pinned by version **and digest**, and every setting comes from `.env` (the compose file fails with "set in .env" if one is missing). **Every published port is bound to `127.0.0.1`** (e.g. `"127.0.0.1:5432:5432"`), including the monitoring ports, so other devices on the Wi-Fi can't connect (AC-F00-23). Named volumes keep data across restarts (AC-F00-40). Each service has a Docker health check, and `up --wait` waits for them.
 
 | Service | Image (exact tag pinned) | Port(s) | Notes |
 |---|---|---|---|
 | LiveKit | livekit/livekit-server | 7880, 7881, 7882/udp | dev keys from `.env`; `--node-ip 127.0.0.1`; `prometheus_port` enabled |
 | PostgreSQL + pgvector | pgvector/pgvector (pg17) | 5432 | volume `pgdata` |
 | Redis | redis 7 | 6379 | `appendonly yes`; volume `redisdata` |
-| MinIO | minio/minio at a pinned `RELEASE.` tag | 9000, 9001 | volume; one-shot `minio/mc` container creates bucket `meetapp-dev`; `MINIO_PROMETHEUS_AUTH_TYPE=public` |
+| File storage (**RustFS**, replaces MinIO, D035) | rustfs/rustfs, exact version + digest | 9000, 9001 | service name `storage`; volume `storagedata`; its health check also creates bucket `meetapp-dev` if missing, so "healthy" means the bucket is ready; web file browser on 9001 |
 | Mailpit | axllent/mailpit | 1025 (SMTP), 8025 (inbox) | AC-F00-35 |
 
 **Monitoring profile** (`pnpm monitoring` → `docker compose --profile monitoring up -d --wait`):
 
 | Service | Port | Purpose |
 |---|---|---|
-| **Gatus** | 8080 | Status page (D030). Checks every 30 s, `failure-threshold: 2`, `send-on-resolved: true`: backend `/api/v1/health`, Postgres TCP, Redis TCP, LiveKit HTTP 7880, MinIO `/minio/health/live`, Mailpit `/livez` |
-| Prometheus | 9090 | Scrapes the API `/metrics`, postgres-exporter, redis-exporter, LiveKit, MinIO, Alloy's cAdvisor (CPU/memory per container) |
+| **Gatus** | 8080 | Status page (D030). Checks every 30 s, `failure-threshold: 2`, `send-on-resolved: true`: backend `/api/v1/health`, Postgres TCP, Redis TCP, LiveKit HTTP 7880, storage `/health`, Mailpit `/livez` |
+| Prometheus | 9090 | Scrapes the API `/metrics`, postgres-exporter, redis-exporter, LiveKit, storage (RustFS), Alloy's cAdvisor (CPU/memory per container) |
 | **Grafana Alloy** | 4318 (OTLP), 12345 | Receives the API's **traces and logs** over OTLP and forwards logs to Loki and traces to Tempo. Also collects container logs from the Docker socket, and runs `prometheus.exporter.cadvisor` |
 | Loki | internal | Log storage |
 | Tempo | internal | Trace storage |
@@ -158,7 +158,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 
 | Endpoint | What it does |
 |---|---|
-| `GET /api/v1/health` | Checks database (`select 1`), Redis (`PING`), LiveKit (`listRooms`) and MinIO (`HeadBucket`) in parallel, 1.5 s timeout each. Returns 200 `{status:"ok", checks:{…}}` or 503 with `down` for each failing part (AC-F00-02). |
+| `GET /api/v1/health` | Checks database (`select 1`), Redis (`PING`), LiveKit (`listRooms`) and storage (`HeadBucket`) in parallel, 1.5 s timeout each. Returns 200 `{status:"ok", checks:{…}}` or 503 with `down` for each failing part (AC-F00-02). |
 | `GET /api/v1/flags` | `[{key, enabled}]` from `feature_flags`, server cache **10 s** (AC-F00-34). |
 | `GET /metrics` | Prometheus metrics: requests, durations, errors, process CPU/memory, DB pool, Redis status. |
 | `GET /docs`, `/docs/json` | Swagger UI + OpenAPI from `packages/contracts`. Registered **only when `NODE_ENV=development`**; returns 404 otherwise (AC-F00-21). |
@@ -179,7 +179,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - ioredis with `maxRetriesPerRequest: 1` and `enableOfflineQueue: false`, so PING fails fast
   - both reconnect automatically
 - **Providers:**
-  - **storage:** an S3 client on MinIO (R2 later, same code); `pnpm storage:test` and an integration test write and read an object (AC-F00-38)
+  - **storage:** an S3 client on RustFS (R2 later, same code); `pnpm storage:test` and an integration test write and read an object (AC-F00-38)
   - **email:** nodemailer on Mailpit SMTP
   - **livekit:** server SDK
 - **Container (AC-F00-39):**
@@ -213,7 +213,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 ## 12. CI (`.github/workflows`)
 **`ci.yml`** runs on `pull_request` and on `push` to `main` only, with `concurrency: cancel-in-progress`. It runs on `ubuntu-latest`, installs tools with mise-action, and runs these jobs in parallel:
 1. **check:** `pnpm install` (cached), `pnpm build`, lint, typecheck, dependency-cruiser, knip, jscpd, licenses, structure
-2. **test:** `docker compose -f infra/docker-compose.yml up -d --wait postgres redis minio livekit`, the same file as on the Mac. Then Vitest from the root (`test.projects`, one merged report). Coverage thresholds of 80% on `apps/api/src/modules/**`, `apps/api/src/providers/**`, `packages/core/**`, `packages/design-tokens/src/**` and `apps/web/src/features/**`.
+2. **test:** `docker compose -f infra/docker-compose.yml up -d --wait postgres redis storage livekit`, the same file as on the Mac. Then Vitest from the root (`test.projects`, one merged report). Coverage thresholds of 80% on `apps/api/src/modules/**`, `apps/api/src/providers/**`, `packages/core/**`, `packages/design-tokens/src/**` and `apps/web/src/features/**`.
 3. **e2e:** `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` (Ubuntu 24.04 needs this for Electron's sandbox, which stays **on**). Then the desktop build, and the Playwright Electron test under `xvfb`.
 4. **ui:** Storybook build, then visual + axe run in the pinned Playwright image. Diff report uploaded on failure.
 5. **security:** `pnpm audit --prod --audit-level high`, the gitleaks CLI image (not the action, which needs a license for organizations), Semgrep community rules.
@@ -289,9 +289,9 @@ That totals about **1,350 min/month**, under the 1,500-minute target. If it gets
 | 34 | Integration + e2e: `pnpm flag x off` → the guarded element disappears within 30 s; unknown flag = off | integration + e2e |
 | 35 | Integration: `pnpm email:test` → the message appears in the Mailpit API | integration |
 | 37 | Unit: preflight with a fake Node 20 version prints the expected message | unit |
-| 38 | Integration: write and read an object in MinIO | integration |
+| 38 | Integration: write and read an object in storage (RustFS) | integration |
 | 39 | CI container job: health OK, `id -u` ≠ 0, no `.env` | CI |
-| 40 | Integration: `docker compose down` (no `-v`) then `up` → the flag row and the MinIO object still exist | integration |
+| 40 | Integration: `docker compose down` (no `-v`) then `up` → the flag row and the storage object still exist | integration |
 | 41, 44 | Scripted monitoring check: stop Redis → Gatus API shows it down within 60 s, the "down" email arrives in Mailpit 60–120 s after the stop; restart → "recovered" email | integration |
 | 42 | Scripted: Grafana API returns the "MeetApp overview" dashboard; its panels return data | integration |
 | 43 | Scripted: a failing request's requestId finds Loki lines and a Tempo trace | integration |
@@ -301,3 +301,4 @@ Detailed test cases go in `tests.md`.
 
 ## Decisions made here
 - **D030** (accepted by the owner): Gatus instead of Uptime Kuma (configured from a file); Grafana Alloy as the collector; electron-vite; React 19; Tailwind v4 with a token-only theme; Lucide icons; fontsource fonts; gitleaks via Docker; Semgrep in CI; MinIO pinned to an exact release (its community images are no longer updated).
+- **D035** (made in T4, owner informed): RustFS replaces MinIO for local file storage, because MinIO's free images were withdrawn. Same S3 API and ports.

@@ -1,0 +1,109 @@
+# Local services for MeetApp (docs/specs/F00-foundation/design.md section 3, decision D035).
+# Start with `pnpm dev`, or: docker compose -f infra/docker-compose.yml --env-file .env up -d --wait
+# Rules: every published port is bound to 127.0.0.1 so other devices on the Wi-Fi cannot connect
+# (AC-F00-23); data lives in named volumes so it survives restarts (AC-F00-40); every image is
+# pinned by version and digest; every setting comes from .env (documented in .env.example).
+name: meetapp
+
+services:
+  livekit:
+    image: livekit/livekit-server:v1.13.9@sha256:d0c04791bf63ca8dcea123571827d56ba9504bd57c8d5de60ee03b5408cc3154
+    command: ["--config", "/etc/livekit.yaml", "--node-ip", "127.0.0.1"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set in .env}: ${LIVEKIT_API_SECRET:?set in .env}"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "127.0.0.1:${LIVEKIT_PORT:?set in .env}:7880"
+      - "127.0.0.1:7881:7881"
+      - "127.0.0.1:7882:7882/udp"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:7880"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER:?set in .env}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set in .env}"
+      POSTGRES_DB: "${POSTGRES_DB:?set in .env}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:?set in .env}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    # appendonly: every change is written to disk, so queued jobs survive a restart.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "127.0.0.1:${REDIS_PORT:?set in .env}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  # S3-compatible file storage. RustFS replaces MinIO, whose free images were withdrawn (D035).
+  storage:
+    image: rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+    environment:
+      RUSTFS_VOLUMES: /data
+      RUSTFS_ADDRESS: "0.0.0.0:9000"
+      RUSTFS_CONSOLE_ADDRESS: "0.0.0.0:9001"
+      RUSTFS_CONSOLE_ENABLE: "true"
+      RUSTFS_ACCESS_KEY: "${STORAGE_ACCESS_KEY:?set in .env}"
+      RUSTFS_SECRET_KEY: "${STORAGE_SECRET_KEY:?set in .env}"
+      STORAGE_BUCKET: "${STORAGE_BUCKET:?set in .env}"
+      STORAGE_REGION: "${STORAGE_REGION:?set in .env}"
+    volumes:
+      - storagedata:/data
+    ports:
+      - "127.0.0.1:${STORAGE_PORT:?set in .env}:9000"
+      - "127.0.0.1:${STORAGE_CONSOLE_PORT:?set in .env}:9001"
+    # Healthy = the service answers AND the app's bucket exists. The check creates the bucket if
+    # it is missing (HTTP 200) and accepts "already exists" (409), so no extra setup step is needed.
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          curl -fsS -o /dev/null http://127.0.0.1:9000/health &&
+          login="$$RUSTFS_ACCESS_KEY:$$RUSTFS_SECRET_KEY" &&
+          code=$$(curl -s -o /dev/null -w '%{http_code}' -X PUT --aws-sigv4 "aws:amz:$$STORAGE_REGION:s3"
+          --user "$$login" "http://127.0.0.1:9000/$$STORAGE_BUCKET") &&
+          { [ "$$code" = 200 ] || [ "$$code" = 409 ]; }
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4@sha256:b68349e3a014b90c5610bfb26b2ae36f3892d7b8cf25ee140c6c71c98d2fcf48
+    environment:
+      MP_MAX_MESSAGES: "500"
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:?set in .env}:1025"
+      - "127.0.0.1:${MAILPIT_WEB_PORT:?set in .env}:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  storagedata:

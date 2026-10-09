@@ -3,7 +3,7 @@
   "workspaces": {
     ".": {
       "entry": ["tools/*.{ts,mjs}"],
-      "project": ["tools/**/*.{ts,mjs}"]
+      "project": ["tools/**/*.{ts,mjs}", "infra/**/*.ts"]
     },
     "packages/config": {
       "ignoreDependencies": ["eslint-import-resolver-typescript"]
