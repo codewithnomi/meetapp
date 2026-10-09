@@ -9,6 +9,9 @@
   "scripts": {
     "prepare": "husky",
     "preflight": "node tools/preflight.mjs",
+    "dev": "node tools/preflight.mjs && node tools/dev.ts",
+    "dev:apps": "turbo run dev",
+    "dev:stop": "docker compose -f infra/docker-compose.yml --env-file .env stop",
     "test": "vitest run",
     "test:integration": "VITEST_INTEGRATION=1 vitest run infra",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -33,6 +36,7 @@
     "knip": "^6.41.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.9",
+    "turbo": "^2.11.7",
     "typescript": "6.0.2",
     "vitest": "^5.0.3"
   },

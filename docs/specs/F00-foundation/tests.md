@@ -48,6 +48,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** port 5432 is held by a process that is not one of this project's containers (also run for 7882/udp)
 - **When** preflight runs
 - **Then** it exits non-zero within 10 s with a message naming the port, the likely cause and the fix ("Stop it or change POSTGRES_PORT in .env")
+- **Note:** the automated test holds random free ports set through the same settings, so it passes on any computer (including one with a real PostgreSQL on 5432). The address table is checked in the same test file.
 
 ### TC-F00-05: Second `pnpm dev` while already running
 - **Covers:** AC-F00-01

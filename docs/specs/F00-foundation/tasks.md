@@ -22,7 +22,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T4: Local services.** `infra/docker-compose.yml` (LiveKit, Postgres+pgvector, Redis with AOF, RustFS file storage (replaces MinIO, D035) with automatic bucket creation, Mailpit), all ports on 127.0.0.1, named volumes, health checks; `infra/livekit.yaml`; `.env.example` with every setting documented.
   Covers: AC-F00-06, 23, 35, 40. Tests: TC-F00-12, 13, 55, 56, 82. Check: `docker compose up --wait` is healthy; a LAN-address connection is refused; data survives `down`/`up`.
 
-- [ ] **T5: The start command. (milestone)** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
+- [x] **T5: The start command. (milestone)** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
   Covers: AC-F00-01. Tests: TC-F00-02, 03, 04, 05, 06. Check: every failure message appears within 10 s; a second run works.
 
 - [ ] **T6: Database package.** `packages/db` with Drizzle, the `feature_flags` table, migrations, `pnpm seed` / `seed:clear`, `pnpm flag <key> on|off` with input validation.

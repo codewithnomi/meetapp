@@ -5,11 +5,12 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T4 done; next is T5 (the start command `pnpm dev`, a milestone).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T5 done. **Paused at the T5 milestone** for the owner to try `pnpm dev`. Next is T6 (database package).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Next step:** `/next` builds T5. The next pause for the owner is T5 (the start command, a milestone).
 
 ## Open questions (need the owner's answer)
+0. **Port clashes on this Mac (T5):** your own PostgreSQL (5432), Redis (6379) and Open WebUI (3000) use MeetApp's default ports. Either stop them while working on MeetApp, or let Claude set POSTGRES_PORT=5433, REDIS_PORT=6380 and API_PORT=3010 in your `.env` (recommended: nothing of yours has to change).
 1. **App name:** is "MeetApp" final, or a working name?
 2. **Pricing:** free plan limits (e.g. 40-minute meetings? number of participants?) and paid plan price?
 3. **Recording:** should meetings be recorded (video files)? It costs storage. Or only transcripts?
@@ -35,13 +36,14 @@
 
 ## Session log
 
-### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services)
+### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command)
 - **T2 done:** the automatic code checker is set up and `pnpm check` runs it all: lint rules (size limits, no `any`, no `console.log`, accessibility, translations, our own "no raw colors" rule, a reason required to switch any rule off), formatting, type checks, architecture rules (Atomic levels, backend layers), unused code and copy-paste detection. The after-edit hook is now active. 76 tests pass.
 - **Decision D034:** TypeScript 7 does the type checks; lint tools use the official TypeScript 6 compatibility package (typescript-eslint doesn't support 7 yet). ESLint 9, because the accessibility plugin doesn't support ESLint 10 yet.
 - **T3 done:** every commit now runs a secrets check first (gitleaks from Docker, pinned version). A password or key in a commit is blocked, naming the file and line. Without Docker running, commits stop with "Start Docker to run the secrets check". Then changed files are formatted and linted. 87 tests pass.
 - **T4 done:** the local services run in Docker: LiveKit (calls), PostgreSQL with pgvector (database), Redis (cache and job queue), file storage and Mailpit (fake inbox). Only this computer can connect, and data survives restarts. Every setting is explained in `.env.example`.
 - **Decision D035:** MinIO's free images were withdrawn, so file storage uses **RustFS** instead (free, same S3 language and ports, web file browser at http://127.0.0.1:9001).
 - **Found on the owner's Mac:** a separate PostgreSQL (port 5432), Redis (port 6379) and an Open WebUI container (port 3000) are already running. They clash with MeetApp's default ports. The T5 start command will detect this and explain the choices.
+- **T5 done (milestone):** `pnpm dev` checks Docker, creates `.env` if missing, checks every port (naming the clash and the fix within a second), starts the services and prints their addresses. A second `pnpm dev` while running works. `pnpm dev:stop` stops the services and keeps the data. 115 tests pass.
 - A code-quality review found no must-fix items. The useful suggestions were applied; ones that need apps that don't exist yet are noted under T10 and T14 in tasks.md.
 
 ### 2026-10-09: Session 1 (architecture review)

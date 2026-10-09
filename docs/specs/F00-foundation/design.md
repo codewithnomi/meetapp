@@ -77,11 +77,13 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 2. Check Docker:
    - if the `docker` command is missing: "Docker isn't installed. See docs/getting-started.md."
    - if `docker info` fails within 3 s: "Docker isn't running. Open Docker Desktop and try again."
-3. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** are free. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
-4. If `.env` is missing, copy it from `.env.example` and say so.
+3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`).
+4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.
-6. Turborepo runs `api` and `desktop` in parallel with hot reload. electron-vite serves the renderer, and the API runs migrations on startup.
-7. Print a table of addresses (AC-F00-01).
+6. Turborepo (`pnpm dev:apps`) runs `api` and `desktop` in parallel with hot reload. electron-vite serves the renderer, and the API runs migrations on startup.
+7. Print a table of addresses (AC-F00-01). Until the apps exist (T7, T14, T15) it says so and exits after starting the services.
+
+**`pnpm dev:stop`** stops the services and keeps all data.
 
 Steps 1–4 fail within 10 s.
 
