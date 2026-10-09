@@ -1,0 +1,10 @@
+# Generated, vendored or deliberately broken files
+pnpm-lock.yaml
+tests/fixtures/
+docs/
+# Markdown is prose written for people; keep its hand-made layout
+*.md
+coverage/
+dist/
+out/
+storybook-static/

@@ -178,3 +178,8 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D033: Build pace: pause at milestones
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** During building, Claude continues from task to task on its own (each tested, committed, pushed, with a one-line update) and pauses only at milestones the owner can see or try, on failures it can't fix, or when a decision, cost or install is needed. Milestone tasks are marked "(milestone)" in tasks.md.
+
+### D034: TypeScript 7 for type checks, TypeScript 6 for lint tools; ESLint 9
+- **Status:** accepted (2026-10-10, made during F00 T2; owner informed)
+- **Decision:** Type checking uses **TypeScript 7** (the new, much faster compiler), installed under the name `@typescript/native`, so `tsc` is TypeScript 7. Lint and analysis tools (typescript-eslint, knip, dependency-cruiser) need the older TypeScript programming interface, so the `typescript` package name points to Microsoft's official compatibility package **`@typescript/typescript6`** (set in `pnpm-workspace.yaml`). This is the setup typescript-eslint itself recommends. **ESLint 9** (still maintained) is used instead of ESLint 10, because the accessibility plugin `eslint-plugin-jsx-a11y` does not support ESLint 10 yet.
+- **Why:** typescript-eslint refuses to run on TypeScript 7. This keeps fast type checks and working lint rules. Revisit when typescript-eslint supports TypeScript 7 (their issue #10940) and jsx-a11y supports ESLint 10; `/deps-update` checks this.

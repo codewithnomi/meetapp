@@ -199,12 +199,12 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 ## 11. Code-quality and safety tooling
 | Check | Tool | ACs |
 |---|---|---|
-| Lint (limits, no `any`, no `console`, no `.only`/`.skip`, a11y) | ESLint flat config in `packages/config`, re-exported by root `eslint.config.js`: typescript-eslint strict, sonarjs, jsx-a11y, vitest plugin. ESLint and Prettier are **root** devDependencies, so the Claude hook finds them | 27, 30 |
-| Atomic levels + backend layers | `eslint-plugin-boundaries` + **dependency-cruiser** | 15, 28 |
+| Lint (limits, no `any`, no `console`, no `.only`/`.skip`, a11y) | ESLint flat config in `packages/config`, re-exported by root `eslint.config.js`: typescript-eslint strict, sonarjs, jsx-a11y, vitest plugin. ESLint and Prettier are **root** devDependencies, so the Claude hook finds them. **ESLint 9**, and lint tools use the TypeScript 6 compatibility package while `tsc` is TypeScript 7 (D034) | 27, 30 |
+| Atomic levels + backend layers | `eslint-plugin-boundaries` (no importing a higher level) + **dependency-cruiser** (`.dependency-cruiser.cjs`: no higher level, no reaching into a sibling component's internal files, only through its `index.ts`; routes → service → repository; no circular imports) | 15, 28 |
 | No raw colors | custom rule `meetapp/no-raw-color` (hex, rgb/hsl, palette classes) + the Tailwind palette reset | 15 |
 | No hard-coded text | `eslint-plugin-i18next` (`no-literal-string` in JSX) | 16 |
 | Unused code / duplication | **knip**, **jscpd** (3%) | 29 |
-| Formatting | Prettier | 30 |
+| Formatting | Prettier (code, JSON, YAML). Markdown is excluded so hand-made document layouts stay as written | 30 |
 | Folder structure | `tools/check-structure.ts`: top folders match project-structure.md; every app/package has README.md + CLAUDE.md | 26, 36 |
 | Licenses | `tools/check-licenses.ts` over `pnpm licenses list --json`. Parses SPDX expressions (`MIT OR GPL-3.0` passes) and blocks GPL, AGPL, LGPL, SSPL and unknown, except entries in `tools/license-allowlist.json`, each with a reason | 31 |
 | Secrets before commit | husky pre-commit → lint-staged + `gitleaks git --staged` from the gitleaks Docker image. If Docker is off, the commit fails: "Start Docker to run the secrets check" | 18 |

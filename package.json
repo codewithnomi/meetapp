@@ -10,12 +10,26 @@
     "preflight": "node tools/preflight.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "check:structure": "node tools/check-structure.ts"
+    "lint": "eslint --max-warnings=0 --cache --cache-location node_modules/.cache/eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:architecture": "depcruise --config .dependency-cruiser.cjs .",
+    "check:unused": "knip --no-progress",
+    "check:duplication": "jscpd .",
+    "check:structure": "node tools/check-structure.ts",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "acorn": "^8.19.0",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "dependency-cruiser": "^18.5.0",
+    "eslint": "^9.39.5",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
+    "prettier": "^3.9.9",
+    "typescript": "6.0.2",
+    "vitest": "^5.0.3",
+    "@meetapp/config": "workspace:*"
   }
 }

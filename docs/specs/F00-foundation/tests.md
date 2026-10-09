@@ -2,7 +2,7 @@
 feature: F00
 title: Foundation
 status: approved
-updated: 2026-10-09
+updated: 2026-10-10
 ---
 
 # F00 Foundation: Test Cases
@@ -276,6 +276,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** fixture files: an atom importing a molecule, an atom importing an organism, a molecule importing an organism
 - **When** the lint and dependency-cruiser checks run on them
 - **Then** each exits non-zero and names the boundaries rule and the file; an organism importing an atom passes
+- **Added in T2:** importing another component's internal file instead of its `index.ts` fails `atomic-no-sibling-internals` (same level and other levels); importing through `index.ts` passes.
 
 ### TC-F00-37: Raw colors fail the check
 - **Covers:** AC-F00-15
@@ -283,6 +284,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** fixture components using `#0ea5e9`, `#fff`, `rgb(0,0,0)`, `hsl(200 50% 50%)`, `className="bg-blue-500"` and `text-[#123456]`
 - **When** the lint check runs
 - **Then** each fails naming `meetapp/no-raw-color` and the file; a token class such as `bg-accent` passes; a build using `bg-blue-500` produces no blue CSS rule (palette reset)
+- **Added in T2:** `text-shadow-blue-500` also fails; a link anchor `href="#abc"` and a room number `#101` pass. The palette-reset part is tested in T10.
 
 ### TC-F00-38: Hard-coded visible text fails the check
 - **Covers:** AC-F00-16
@@ -290,6 +292,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** a fixture component with `<button>Save</button>` and one with `aria-label="Close"`, plus a correct component using `t("common.save")`
 - **When** the lint check runs
 - **Then** the two fixtures fail naming the file; the correct one passes; every `t()` key used in `apps/web` exists in `locales/en.json`
+- **Note:** the `en.json` key check is tested in T14, when `apps/web` exists.
 
 ### Automatic checks and safety
 
@@ -462,6 +465,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** one fixture per rule: function of 51 lines, file of 301 lines, complexity 16, 5 parameters, nesting depth 4, an `any` type, a `console.log`
 - **When** the lint check runs on each
 - **Then** each exits non-zero and the output names the file, line and rule
+- **Added in T2:** an `eslint-disable` comment without a reason fails (code-quality.md: a limit may be broken only with a comment explaining why); one with `-- reason` passes.
 
 ### TC-F00-63: Code exactly at the limits passes
 - **Covers:** AC-F00-27
@@ -476,6 +480,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** fixtures where a route imports a repository, and a route imports `packages/db` directly
 - **When** the architecture check runs
 - **Then** it exits non-zero naming the rule; a route → service → repository fixture passes
+- **Added in T2:** a route importing `drizzle-orm` fails `no-route-to-db`; a service importing `@meetapp/db` fails `no-service-to-db`.
 
 ### TC-F00-65: Unused code and duplication fail
 - **Covers:** AC-F00-29

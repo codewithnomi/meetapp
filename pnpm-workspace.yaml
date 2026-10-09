@@ -1,3 +1,9 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# TypeScript 7 (native compiler) does the type checking under the name "@typescript/native".
+# Lint and analysis tools still need the TypeScript 6 programming API, so every "typescript"
+# dependency resolves to the official TS 6 compatibility package (decision D034).
+overrides:
+  typescript: "npm:@typescript/typescript6@6.0.2"

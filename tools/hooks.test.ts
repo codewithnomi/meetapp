@@ -1,12 +1,13 @@
 // Tests for the Claude Code hooks in .claude/hooks. A broken hook silently blocks (or stops guarding)
 // all work, so each one is exercised here with the same JSON input Claude Code sends it.
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 const HOOKS = new URL("../.claude/hooks/", import.meta.url).pathname;
+const ROOT = new URL("..", import.meta.url).pathname;
 
 function runHook(hook: string, input: unknown, projectDir: string, extraEnv: Record<string, string> = {}) {
   const result = spawnSync(join(HOOKS, hook), {
@@ -26,7 +27,8 @@ function write(relative: string, text: string) {
   return full;
 }
 
-const INDEX_HEADER = "| ID | Feature | Phase | Requirements | Design | Tests | Tasks | Code | Verified |\n|---|---|---|---|---|---|---|---|---|\n";
+const INDEX_HEADER =
+  "| ID | Feature | Phase | Requirements | Design | Tests | Tasks | Code | Verified |\n|---|---|---|---|---|---|---|---|---|\n";
 
 beforeEach(() => {
   project = mkdtempSync(join(tmpdir(), "meetapp-hooks-"));
@@ -74,7 +76,10 @@ describe("guard-coding: code only after go-ahead and with an approved feature", 
 
   it("blocks code when no feature has approved tasks in progress", () => {
     write("docs/progress.md", "- **Coding go-ahead:** yes\n");
-    write("docs/specs/INDEX.md", `${INDEX_HEADER}| F01 | Accounts | 1 | approved | draft | draft | draft | not started | - |\n`);
+    write(
+      "docs/specs/INDEX.md",
+      `${INDEX_HEADER}| F01 | Accounts | 1 | approved | draft | draft | draft | not started | - |\n`,
+    );
     const result = runHook("guard-coding.sh", edit("apps/api/src/server.ts"), project);
     expect(result.code).toBe(2);
     expect(result.stderr).toContain("approved tasks");
@@ -82,7 +87,10 @@ describe("guard-coding: code only after go-ahead and with an approved feature", 
 
   it("allows code when a feature with approved tasks is in progress", () => {
     write("docs/progress.md", "- **Coding go-ahead:** yes\n");
-    write("docs/specs/INDEX.md", `${INDEX_HEADER}| F00 | Foundation | 0 | approved | approved | approved | approved | in progress | - |\n`);
+    write(
+      "docs/specs/INDEX.md",
+      `${INDEX_HEADER}| F00 | Foundation | 0 | approved | approved | approved | approved | in progress | - |\n`,
+    );
     expect(runHook("guard-coding.sh", edit("apps/api/src/server.ts"), project).code).toBe(0);
   });
 
@@ -100,7 +108,9 @@ describe("guard-protected-files", () => {
   });
 
   it("blocks lockfiles and generated files", () => {
-    expect(runHook("guard-protected-files.sh", { tool_input: { file_path: join(project, "pnpm-lock.yaml") } }, project).code).toBe(2);
+    expect(
+      runHook("guard-protected-files.sh", { tool_input: { file_path: join(project, "pnpm-lock.yaml") } }, project).code,
+    ).toBe(2);
     const generated = write("packages/design-tokens/dist/tokens.css", "/* AUTO-GENERATED: do not edit */\n");
     expect(runHook("guard-protected-files.sh", { tool_input: { file_path: generated } }, project).code).toBe(2);
   });
@@ -111,7 +121,9 @@ describe("check-feature-complete", () => {
     const tasks = write("docs/specs/F02-meetings/tasks.md", "- [x] T1\n- [ ] T2\n");
     expect(runHook("check-feature-complete.sh", { tool_input: { file_path: tasks } }, project).stdout).toBe("");
     writeFileSync(tasks, "- [x] T1\n- [x] T2\n");
-    expect(runHook("check-feature-complete.sh", { tool_input: { file_path: tasks } }, project).stdout).toContain("spec-verify skill for F02");
+    expect(runHook("check-feature-complete.sh", { tool_input: { file_path: tasks } }, project).stdout).toContain(
+      "spec-verify skill for F02",
+    );
   });
 });
 
@@ -135,10 +147,56 @@ describe("session-start", () => {
 describe("statusline", () => {
   it("shows the branch and coding state", () => {
     write("docs/progress.md", "- **Coding go-ahead:** yes\n");
-    write("docs/specs/INDEX.md", `${INDEX_HEADER}| F00 | Foundation | 0 | approved | approved | approved | approved | in progress | - |\n`);
+    write(
+      "docs/specs/INDEX.md",
+      `${INDEX_HEADER}| F00 | Foundation | 0 | approved | approved | approved | approved | in progress | - |\n`,
+    );
     const line = runHook("statusline.sh", "{}", project).stdout;
     expect(line).toContain("main");
     expect(line).toContain("coding unlocked");
     expect(line).toContain("F00 Foundation");
+  });
+});
+
+// Uses the real repo (CLAUDE_PROJECT_DIR = ROOT): ESLint only lints files inside the project,
+// so the edited files go in a throwaway folder under tests/ that is removed afterwards.
+describe("TC-F00-66 [AC-F00-30] check-code-quality: lints and formats the edited file", { timeout: 30_000 }, () => {
+  // Inside the repo because ESLint only lints project files. Not git-ignored on purpose:
+  // Prettier skips git-ignored files, which would hide case (a). Removed after the block.
+  let scratch = "";
+  beforeAll(() => {
+    scratch = mkdtempSync(join(ROOT, "tests", ".hook-tmp-"));
+  });
+  afterAll(() => rmSync(scratch, { recursive: true, force: true }));
+
+  const edited = (name: string, text: string) => {
+    const file = join(scratch, name);
+    writeFileSync(file, text);
+    return runHook("check-code-quality.sh", { tool_input: { file_path: file } }, ROOT);
+  };
+
+  it("TC-F00-66 [AC-F00-30] (a) a badly formatted .ts file exits 2 naming the file", () => {
+    const result = edited("badly-formatted.ts", "export function double( value:number ):number{return value*2}\n");
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(join(scratch, "badly-formatted.ts"));
+    expect(result.stderr).toContain("Code style issues");
+  });
+
+  it("TC-F00-66 [AC-F00-30] (b) a .ts file with console.log exits 2 naming the file and no-console", () => {
+    const text = "export function report(total: number): number {\n  console.log(total);\n  return total;\n}\n";
+    const result = edited("logs.ts", text);
+    expect(result.code).toBe(2);
+    expect(result.stderr).toContain(join(scratch, "logs.ts"));
+    expect(result.stderr).toContain("no-console");
+  });
+
+  it("TC-F00-66 [AC-F00-30] (c) a clean, formatted .ts file exits 0", () => {
+    const result = edited("clean.ts", "export function double(value: number): number {\n  return value * 2;\n}\n");
+    expect(result.stderr).toBe("");
+    expect(result.code).toBe(0);
+  });
+
+  it("TC-F00-66 [AC-F00-30] (d) a .md file exits 0", () => {
+    expect(edited("notes.md", "# Notes\n\nSome   *unformatted*   text\n").code).toBe(0);
   });
 });

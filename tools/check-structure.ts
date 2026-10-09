@@ -21,13 +21,15 @@ export function findStructureProblems(root: string): string[] {
     }
   }
   for (const group of ["apps", "packages"]) {
-    for (const name of folders(join(root, group))) {
-      for (const doc of REQUIRED_DOCS) {
-        if (!existsSync(join(root, group, name, doc))) problems.push(`${group}/${name} is missing ${doc}.`);
-      }
-    }
+    for (const name of folders(join(root, group))) problems.push(...missingDocs(root, `${group}/${name}`));
   }
   return problems;
+}
+
+function missingDocs(root: string, folder: string): string[] {
+  return REQUIRED_DOCS.filter((doc) => !existsSync(join(root, folder, doc))).map(
+    (doc) => `${folder} is missing ${doc}.`,
+  );
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

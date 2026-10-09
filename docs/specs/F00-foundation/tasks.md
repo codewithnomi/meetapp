@@ -13,7 +13,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T1: Repository skeleton and tool versions.** `mise.toml` (Node 24, pnpm 10, Python 3.12), root `package.json` with `packageManager`, `pnpm-workspace.yaml`, `turbo.json`, `.gitignore`, `.dockerignore`, `packages/config` (shared tsconfig, Prettier), `tools/preflight.mjs`, `tools/check-structure.ts` (first version). Verify that containers can reach the Mac via `host.docker.internal`.
   Covers: AC-F00-36, 37. Tests: TC-F00-78, 79. Check: `mise install && pnpm install` works; a fake Node 20 is refused with the expected message.
 
-- [ ] **T2: Code-quality tooling.** ESLint flat config (typescript-eslint strict, sonarjs, jsx-a11y, vitest, boundaries, i18next), custom rule `meetapp/no-raw-color`, hard limits from code-quality.md, Prettier, dependency-cruiser (backend layers), knip, jscpd, `pnpm check`. Rule fixtures go in `tests/fixtures/`. The Claude after-edit hook becomes active.
+- [x] **T2: Code-quality tooling.** ESLint flat config (typescript-eslint strict, sonarjs, jsx-a11y, vitest, boundaries, i18next), custom rule `meetapp/no-raw-color`, hard limits from code-quality.md, Prettier, dependency-cruiser (backend layers), knip, jscpd, `pnpm check`. Rule fixtures go in `tests/fixtures/`. The Claude after-edit hook becomes active.
   Covers: AC-F00-15, 16, 27, 28, 29, 30. Tests: TC-F00-36, 37, 38, 62, 63, 64, 65, 66. Check: each fixture fails with the rule, file and line; clean code passes.
 
 - [ ] **T3: Commit safety.** husky + lint-staged; pre-commit runs `gitleaks git --staged` from the Docker image (fails closed without Docker); exclusion limited to `tests/fixtures`.
@@ -39,6 +39,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 
 - [ ] **T10: Design tokens.** `packages/design-tokens`: `tokens.json` copied from the approved design system (SHA-256 recorded in its README), build to `tokens.css`, `tokens.ts` and the Tailwind v4 token-only theme; contrast test matrix.
   Covers: AC-F00-10 (token side), 11, 12. Tests: TC-F00-22, 23, 24, 25, 26. Check: generated CSS equals tokens.json; a deliberately bad color fails, naming the pair, theme and accent.
+  Also (carried over from T2): the "palette reset" part of TC-F00-37 (a build using `bg-blue-500` produces no blue CSS); extend `meetapp/no-raw-color` to CSS named colors (`"red"`, `fill="white"`) in style objects and color attributes, keeping `currentColor`, `transparent` and `inherit`.
 
 - [ ] **T11: UI package and the first atoms.** `packages/ui` + Storybook (theme/accent toolbar, pseudo-states, a11y addon, Tailwind); atoms Icon (Lucide, mapped names), Button, IconButton, Spinner, Tooltip, each with stories, tests and an index (via `/new-component`).
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 33, 34 (these atoms). Check: keyboard tests pass; stories cover every state.
@@ -51,6 +52,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 
 - [ ] **T14: Renderer app.** `apps/web`: React 19 + Tailwind + i18next (`en.json`); bundled fonts; starter home screen (wordmark, welcome, Settings button); Appearance panel; appearance store applied before first render; `useFlag` (15 s, unknown or failed = off).
   Covers: AC-F00-08, 10, 13b, 34. Tests: TC-F00-16, 17, 18, 20, 21, 72, 74. Check: theme and accent switch instantly and survive reload; corrupted saved values fall back to defaults.
+  Also (carried over from the T2 review): the "every `t()` key exists in `en.json`" part of TC-F00-38; point the ESLint TypeScript resolver and dependency-cruiser at the apps' `tsconfig.json` (path aliases) and add an alias-import fixture; a dependency-cruiser rule that only pages and page hooks may use `features/` and the API client (frontend.md rule 2).
 
 - [ ] **T15: Desktop app. (milestone)** `apps/desktop` with electron-vite: sandbox, context isolation, CSP, permission denial, navigation/new-window blocking, `app://meetapp` scheme, CJS preload, Sentry for Electron (optional). Playwright Electron e2e suite.
   Covers: AC-F00-03, 08, 09, 13b, 22, 24. Tests: TC-F00-09, 19, 30, 31, 58, 59, 60, 61. Check: the window opens within 5 s; security assertions pass; fonts work offline with no Google requests.

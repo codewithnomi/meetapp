@@ -1,7 +1,7 @@
 #!/bin/bash
 # Runs after every file edit. Lints + format-checks the edited code file and, if
 # there are problems, reports them back to Claude so they're fixed immediately.
-# Does nothing until the project has its tooling installed (set up in F00 T2).
+# Active since F00 T2 (ESLint + Prettier at the root). Ignored files (fixtures, Markdown) pass.
 python3 -I -c '
 import json, os, subprocess, sys
 data = json.load(sys.stdin)
@@ -17,7 +17,7 @@ checks = []
 if path.endswith((".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".mts", ".cts")):
     if os.path.exists(tool("node_modules", ".bin", "eslint")):
         # --cache keeps repeat runs fast; the cache lives in node_modules/.cache (git-ignored).
-        checks.append([tool("node_modules", ".bin", "eslint"), "--max-warnings=0", "--cache", "--cache-location", tool("node_modules", ".cache", "eslint"), path])
+        checks.append([tool("node_modules", ".bin", "eslint"), "--max-warnings=0", "--no-warn-ignored", "--cache", "--cache-location", tool("node_modules", ".cache", "eslint"), path])
     if os.path.exists(tool("node_modules", ".bin", "prettier")):
         checks.append([tool("node_modules", ".bin", "prettier"), "--check", path])
 elif path.endswith((".json", ".css", ".md", ".yml", ".yaml")) and "/docs/" not in path:

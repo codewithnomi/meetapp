@@ -9,7 +9,11 @@ const pinned = { node: "24", pnpm: "10" };
 
 function runPreflight(env: Record<string, string>) {
   try {
-    execFileSync(process.execPath, [PREFLIGHT.pathname], { env: { ...process.env, ...env }, encoding: "utf8", stdio: "pipe" });
+    execFileSync(process.execPath, [PREFLIGHT.pathname], {
+      env: { ...process.env, ...env },
+      encoding: "utf8",
+      stdio: "pipe",
+    });
     return { code: 0, stderr: "" };
   } catch (error) {
     const failure = error as { status: number; stderr: string };
@@ -36,7 +40,9 @@ describe("TC-F00-78 [AC-F00-37] wrong tool version is refused", () => {
   });
 
   it("reports a missing pnpm", () => {
-    expect(findVersionProblems({ node: "24.21.0", pnpm: undefined }, pinned)).toEqual(["pnpm was not found. Run `mise install`"]);
+    expect(findVersionProblems({ node: "24.21.0", pnpm: undefined }, pinned)).toEqual([
+      "pnpm was not found. Run `mise install`",
+    ]);
   });
 
   it("parses as JavaScript that Node 18 understands (ES2022 module)", () => {
@@ -47,7 +53,9 @@ describe("TC-F00-78 [AC-F00-37] wrong tool version is refused", () => {
 
 describe("TC-F00-79 [AC-F00-37] versions are pinned in one place", () => {
   const mise = readFileSync(new URL("../mise.toml", import.meta.url), "utf8");
-  const rootPackage = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { packageManager: string };
+  const rootPackage = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
+    packageManager: string;
+  };
 
   it("mise.toml pins Node 24, pnpm 10 and Python 3.12", () => {
     expect(readPinnedMajors(mise)).toEqual({ node: "24", pnpm: "10" });
