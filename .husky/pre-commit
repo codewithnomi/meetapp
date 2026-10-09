@@ -1,0 +1,5 @@
+# Runs before every commit (docs/engineering/git-ci-release.md).
+# 1. Secrets check: blocks the commit if a password or key is about to be saved (needs Docker).
+node tools/check-secrets.mjs
+# 2. Format and lint only the changed files.
+pnpm exec lint-staged

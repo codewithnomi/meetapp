@@ -31,7 +31,7 @@ mise.toml  package.json ("packageManager": "pnpm@10.x")  pnpm-workspace.yaml  tu
 eslint.config.js (re-exports packages/config)  .prettierrc  .env.example  .gitignore  .dockerignore
 .github/workflows/ci.yml, nightly-windows.yml   .github/dependabot.yml
 infra/docker-compose.yml   infra/livekit.yaml   infra/monitoring/{gatus,prometheus,alloy,loki,tempo,grafana}/…
-tools/preflight.mjs  tools/dev.ts  tools/check-licenses.ts  tools/notifier.ts  tools/flag.ts  tools/check-structure.ts
+tools/preflight.mjs  tools/check-secrets.mjs  tools/dev.ts  tools/check-licenses.ts  tools/notifier.ts  tools/flag.ts  tools/check-structure.ts
 apps/desktop   (Electron main + preload)
 apps/web       (React renderer: starter home screen + Settings panel)
 apps/api       (Fastify backend: health, flags, docs, metrics, errors)
@@ -207,7 +207,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 | Formatting | Prettier (code, JSON, YAML). Markdown is excluded so hand-made document layouts stay as written | 30 |
 | Folder structure | `tools/check-structure.ts`: top folders match project-structure.md; every app/package has README.md + CLAUDE.md | 26, 36 |
 | Licenses | `tools/check-licenses.ts` over `pnpm licenses list --json`. Parses SPDX expressions (`MIT OR GPL-3.0` passes) and blocks GPL, AGPL, LGPL, SSPL and unknown, except entries in `tools/license-allowlist.json`, each with a reason | 31 |
-| Secrets before commit | husky pre-commit → lint-staged + `gitleaks git --staged` from the gitleaks Docker image. If Docker is off, the commit fails: "Start Docker to run the secrets check" | 18 |
+| Secrets before commit | husky pre-commit → `tools/check-secrets.mjs` (plain JavaScript so it runs on any Node) runs `gitleaks git --staged` from the gitleaks Docker image, pinned by version and digest, with the network off and the repo mounted read-only; then lint-staged. Settings in `.gitleaks.toml` (standard rules; only `tests/fixtures/` is excluded). If Docker is off, the commit fails: "Start Docker to run the secrets check" | 18 |
 | Dependency updates | `.github/dependabot.yml`: npm, Docker, Actions; weekly; grouped into one PR per ecosystem | 32 |
 
 ## 12. CI (`.github/workflows`)

@@ -16,7 +16,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T2: Code-quality tooling.** ESLint flat config (typescript-eslint strict, sonarjs, jsx-a11y, vitest, boundaries, i18next), custom rule `meetapp/no-raw-color`, hard limits from code-quality.md, Prettier, dependency-cruiser (backend layers), knip, jscpd, `pnpm check`. Rule fixtures go in `tests/fixtures/`. The Claude after-edit hook becomes active.
   Covers: AC-F00-15, 16, 27, 28, 29, 30. Tests: TC-F00-36, 37, 38, 62, 63, 64, 65, 66. Check: each fixture fails with the rule, file and line; clean code passes.
 
-- [ ] **T3: Commit safety.** husky + lint-staged; pre-commit runs `gitleaks git --staged` from the Docker image (fails closed without Docker); exclusion limited to `tests/fixtures`.
+- [x] **T3: Commit safety.** husky + lint-staged; pre-commit runs `gitleaks git --staged` from the Docker image (fails closed without Docker); exclusion limited to `tests/fixtures`.
   Covers: AC-F00-18. Tests: TC-F00-42, 43, 44. Check: a staged fake key is blocked, naming file and line.
 
 - [ ] **T4: Local services.** `infra/docker-compose.yml` (LiveKit, Postgres+pgvector, Redis with AOF, MinIO pinned + bucket init, Mailpit), all ports on 127.0.0.1, named volumes, health checks; `infra/livekit.yaml`; `.env.example` with every setting documented.

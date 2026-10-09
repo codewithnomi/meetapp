@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1 and T2 done; next is T3 (commit safety: secrets check before every commit).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T3 done; next is T4 (local services in Docker).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T3. The next pause for the owner is T5 (the start command, a milestone).
+- **Next step:** `/next` builds T4. The next pause for the owner is T5 (the start command, a milestone).
 
 ## Open questions (need the owner's answer)
 1. **App name:** is "MeetApp" final, or a working name?
@@ -35,9 +35,10 @@
 
 ## Session log
 
-### 2026-10-10: Session 2 (F00 T2 code-quality tooling)
+### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety)
 - **T2 done:** the automatic code checker is set up and `pnpm check` runs it all: lint rules (size limits, no `any`, no `console.log`, accessibility, translations, our own "no raw colors" rule, a reason required to switch any rule off), formatting, type checks, architecture rules (Atomic levels, backend layers), unused code and copy-paste detection. The after-edit hook is now active. 76 tests pass.
 - **Decision D034:** TypeScript 7 does the type checks; lint tools use the official TypeScript 6 compatibility package (typescript-eslint doesn't support 7 yet). ESLint 9, because the accessibility plugin doesn't support ESLint 10 yet.
+- **T3 done:** every commit now runs a secrets check first (gitleaks from Docker, pinned version). A password or key in a commit is blocked, naming the file and line. Without Docker running, commits stop with "Start Docker to run the secrets check". Then changed files are formatted and linted. 87 tests pass.
 - A code-quality review found no must-fix items. The useful suggestions were applied; ones that need apps that don't exist yet are noted under T10 and T14 in tasks.md.
 
 ### 2026-10-09: Session 1 (architecture review)
