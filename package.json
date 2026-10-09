@@ -1,0 +1,21 @@
+{
+  "name": "meetapp",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "preflight": "node tools/preflight.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check:structure": "node tools/check-structure.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "acorn": "^8.19.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

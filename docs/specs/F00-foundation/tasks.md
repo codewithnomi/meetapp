@@ -1,7 +1,7 @@
 ---
 feature: F00
 title: Foundation
-status: approved
+status: in-progress
 updated: 2026-10-09
 ---
 
@@ -10,7 +10,7 @@ updated: 2026-10-09
 Small steps, done in order, on branch `feat/F00-foundation`. Each step is committed and pushed when its tests pass (D026). Tick `[x]` when done and verified.
 The code-quality and secret checks come early (T2, T3), so every later step is checked as it is written.
 
-- [ ] **T1: Repository skeleton and tool versions.** `mise.toml` (Node 24, pnpm 10, Python 3.12), root `package.json` with `packageManager`, `pnpm-workspace.yaml`, `turbo.json`, `.gitignore`, `.dockerignore`, `packages/config` (shared tsconfig, Prettier), `tools/preflight.mjs`, `tools/check-structure.ts` (first version). Verify that containers can reach the Mac via `host.docker.internal`.
+- [x] **T1: Repository skeleton and tool versions.** `mise.toml` (Node 24, pnpm 10, Python 3.12), root `package.json` with `packageManager`, `pnpm-workspace.yaml`, `turbo.json`, `.gitignore`, `.dockerignore`, `packages/config` (shared tsconfig, Prettier), `tools/preflight.mjs`, `tools/check-structure.ts` (first version). Verify that containers can reach the Mac via `host.docker.internal`.
   Covers: AC-F00-36, 37. Tests: TC-F00-78, 79. Check: `mise install && pnpm install` works; a fake Node 20 is refused with the expected message.
 
 - [ ] **T2: Code-quality tooling.** ESLint flat config (typescript-eslint strict, sonarjs, jsx-a11y, vitest, boundaries, i18next), custom rule `meetapp/no-raw-color`, hard limits from code-quality.md, Prettier, dependency-cruiser (backend layers), knip, jscpd, `pnpm check`. Rule fixtures go in `tests/fixtures/`. The Claude after-edit hook becomes active.
