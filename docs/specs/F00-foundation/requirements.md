@@ -16,7 +16,7 @@ Build the invisible base of MeetApp: the project setup, the look-and-feel system
 - **End users** see only the result: the app window, themes and colors.
 
 ## Depends on decisions
-D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019. All must be **accepted** before this spec is approved.
+D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D021, D023, D024, D025. All must be **accepted** before this spec is approved.
 
 ## User stories
 - As the owner, I want **one command** to start everything on my Mac, so I can try the app without technical steps.
@@ -83,6 +83,13 @@ D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019. Al
 - **AC-F00-33:** WHEN a component's look changes unexpectedly, THEN the visual screenshot test fails and shows the before/after difference until the change is approved.
 - **AC-F00-34:** WHEN a feature flag is switched off in the settings/database, THEN the feature it guards is hidden or disabled without restarting the backend (within 30 seconds); flags default to off.
 - **AC-F00-35:** WHEN the project runs locally, THEN a local fake inbox (Mailpit) is available, so every email the app sends can be viewed without sending real emails.
+
+### Project structure & tooling (D024, D025)
+- **AC-F00-36:** WHEN F00 is done, THEN the folders and file names match `docs/engineering/project-structure.md`, and each app and package has its own short CLAUDE.md with the rules for that area.
+- **AC-F00-37:** WHEN someone runs the setup step, THEN the exact versions of Node.js (24 LTS), pnpm and Python (3.12) from `mise.toml` are used, and the start command refuses to run with a different major version, naming the expected one.
+- **AC-F00-38:** WHEN the project runs locally, THEN local file storage (MinIO, same API as Cloudflare R2) is available, and the backend can store and read back a test file.
+- **AC-F00-39:** WHEN CI runs, THEN the backend is built into a container image that starts and answers the health check; the image runs as a non-root user and contains no secrets.
+- **AC-F00-40:** WHEN the Mac restarts, THEN local data (database, files, queued jobs) is still there.
 
 ### Documentation
 - **AC-F00-25:** WHEN someone follows the "Getting started" guide on a Mac with macOS 12+ that has only the prerequisites listed in the guide (Docker, Node LTS, pnpm), THEN they can run the project using only the steps written there.

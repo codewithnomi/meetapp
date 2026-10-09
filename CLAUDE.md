@@ -6,7 +6,7 @@ transcripts with speaker names, minutes of meeting, "Ask AI" about past meetings
 The owner is not a programmer. **Explain things in simple, plain words. Avoid jargon; if a technical term is needed, explain it in one short sentence.**
 
 ## The golden rule: documents first, code second
-0. **No coding at all until the owner explicitly says "go ahead".** Writing and discussing documents is fine.
+0. **No coding at all until the owner explicitly says "go ahead".** Writing and discussing documents is fine. A hook enforces this. When the owner says "go ahead", set `**Coding go-ahead:** yes` in docs/progress.md.
 1. No code is written for a feature until its spec in `docs/specs/` has `status: approved`.
 2. If the code needs to differ from the spec, update the spec first and tell the owner.
 3. Every important decision goes into `docs/architecture/decisions.md`.
@@ -22,6 +22,8 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - `docs/architecture/security.md`: security rules every feature must follow.
 - `docs/product/quality-targets.md`: measurable targets (speed, scale, quality, platforms).
 - `docs/product/privacy-legal.md`: consent, user data rights, legal documents.
+- `docs/engineering/project-structure.md`: **where every file goes**, naming rules. Follow strictly.
+- `docs/architecture/infrastructure.md`: where things run (local now, online later).
 - `docs/engineering/code-quality.md`: clean code, design patterns, hard limits. Follow strictly.
 - `docs/engineering/frontend.md`: React + **Atomic Design** rules. Follow strictly.
 - `docs/engineering/backend.md`: API, database, AI worker rules.
@@ -39,6 +41,7 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - `/spec-implement <feature>`: build the next unchecked task with its tests (only after tasks are approved)
 - `/spec-verify <feature>`: run ALL tests + acceptance check + security audit; the only way a feature becomes `done`. Runs automatically when the last task is ticked (hook).
 - `/new-component <level> <Name>`: create an Atomic Design component with story + test
+- `/pr`: branch + commit + push + open a Pull Request; the owner merges
 - `/spec-status`: show where every feature stands
 - `/save-progress`: update `docs/progress.md` with what happened this session
 

@@ -127,3 +127,12 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-09)
 - **Decision:** Local fake inbox (Mailpit) for emails, feature flags, visual screenshot tests, license checks, Dependabot updates, and a TURN relay for calls behind firewalls (when online). Privacy-friendly analytics with F10.
 - **Why:** standard practice for production apps; all free.
+
+### D024: Claude enforces the rules with hooks, not just instructions
+- **Status:** accepted (2026-10-09)
+- **Decision:** Hooks block code edits before the owner's go-ahead, block commits/pushes to `main` and force pushes (instead of GitHub branch protection, which free private repos lack), and notify the owner on the Mac when input is needed. Code map in `docs/engineering/project-structure.md`; each app gets its own small CLAUDE.md in F00.
+- **Why:** written rules can be forgotten in long sessions; hooks can't be.
+
+### D025: Infrastructure stages and tool versions
+- **Status:** Stage 1 accepted, rest proposed (2026-10-09)
+- **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage; LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.

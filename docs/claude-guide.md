@@ -33,6 +33,7 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 | `/spec-implement F01` | Claude writes the tests for the next step, builds it, runs **all** tests, ticks it off, then stops for you |
 | `/spec-verify F01` | Final check: all tests, every promise in the spec, and a security audit. **Runs automatically** when the last step is done |
 | `/new-component molecule MicToggleButton` | Creates a UI component the Atomic Design way, with its visual docs (Storybook) and tests |
+| `/pr` | Saves the work to GitHub as a Pull Request. You review and click **Merge** |
 | `/save-progress` | Claude writes today's work into `progress.md` |
 
 ### 4. Subagents: specialist helpers
@@ -55,6 +56,9 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 - **Ours:**
   - **When a conversation starts** (or resumes after being summarized), Claude is automatically shown `progress.md` and the spec status. **This is what stops us losing context.**
   - **Before a long conversation is summarized**, a reminder to run `/save-progress`.
+  - **Before any file edit:** code can't be written until you've said "go ahead". Only documents can change until then.
+  - **Before any Git command:** saving to or uploading to `main` directly is blocked; work always goes through a Pull Request. This replaces GitHub's branch protection, which the free plan doesn't offer for private repos.
+  - **When Claude needs you:** a Mac notification pops up.
   - **After every code edit**, the edited file is checked automatically for code-quality and formatting problems. Claude must fix them right away. (Active once F00 installs the tools.)
   - **When the last step of a feature is ticked**, Claude is automatically told to run `/spec-verify` (all tests + security check). A feature can't be marked finished without it.
   - Later, when coding starts: automatically check code for errors after every edit.
@@ -91,7 +95,7 @@ Safety rules:
 ### 8. Coming when coding starts (in F00)
 - **More hooks:** block edits to secret files.
 - **Git hooks:** checks before every commit (format, lint, secrets).
-- **MCP:** Context7 (library docs), Playwright (test the app by clicking), later Sentry (read real errors). GitHub MCP: see 7b.
+- **MCP:** Context7 (library docs) and Playwright (test the app by clicking) are already listed in `.mcp.json`; Claude asks you once to allow them. Later: Sentry (read real errors). GitHub MCP: see 7b.
 
 ### 9. Plan mode
 - Press **Shift+Tab** until you see "plan mode". Claude then only researches and proposes, and changes nothing until you approve.

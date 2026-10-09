@@ -4,6 +4,7 @@
 > Keep the "Current state" section short and up to date. Add new sessions at the top of the log.
 
 ## Current state
+- **Coding go-ahead:** no
 - **Stage:** Planning / documentation. No code exists yet (on purpose).
 - **Next step:** F00 Foundation requirements are drafted and reviewed (`docs/specs/F00-foundation/requirements.md`). Owner answered all questions. **Waiting for the owner to read it and say "approved".** Then `/next` writes the F00 design. **Coding waits for the owner's "go ahead".**
 
@@ -19,6 +20,7 @@
 9. **Quality targets:** are the numbers in `docs/product/quality-targets.md` OK?
 
 ## Answered
+- **GitHub MCP:** connected (token stored on the owner's computer only).
 - **Code repository:** https://github.com/codewithnomi/meetapp (private). The first upload went straight to `main`; every change after that goes through a branch + Pull Request.
 - **Budget:** free way for now; no paid accounts, nothing deployed online yet (D017).
 - **Domain:** none yet. Everything runs locally for now.
@@ -31,6 +33,9 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-09: Session 1 (Claude setup for coding)
+- Added `docs/engineering/project-structure.md` (code map + naming), hooks that enforce rules (no code before go-ahead; no commits/pushes to main; Mac notification), `/pr` command, Context7 + Playwright MCP (`.mcp.json`), development permissions. Server infrastructure plan drafted in `docs/architecture/infrastructure.md` (for later).
 
 ### 2026-10-09: Session 1 (GitHub)
 - Created the Git repository and uploaded all documents and Claude setup to GitHub (`main`). From now on: branch + Pull Request per change (docs/engineering/git-ci-release.md).
