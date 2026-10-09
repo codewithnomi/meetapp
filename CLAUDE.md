@@ -24,6 +24,7 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - `docs/product/privacy-legal.md`: consent, user data rights, legal documents.
 - `docs/engineering/project-structure.md`: **where every file goes**, naming rules. Follow strictly.
 - `docs/architecture/infrastructure.md`: where things run (local now, online later).
+- **Design system (approved look, D029):** https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Read its README before any UI work. **Screen designs:** https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - `docs/engineering/code-quality.md`: clean code, design patterns, hard limits. Follow strictly.
 - `docs/engineering/frontend.md`: React + **Atomic Design** rules. Follow strictly.
 - `docs/engineering/backend.md`: API, database, AI worker rules.

@@ -16,7 +16,10 @@ Build the invisible base of MeetApp: the project setup, the look-and-feel system
 - **End users** see only the result: the app window, themes and colors.
 
 ## Depends on decisions
-D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D021, D023, D024, D025, D026, D027, D028. All must be **accepted** before this spec is approved.
+D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D021, D023, D024, D025, D026, D027, D028, D029.
+
+## Design source (D029)
+The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ) is the source of truth for every color, font, spacing step, radius and atom in F00. The approved screens (https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ) are built in later features. All must be **accepted** before this spec is approved.
 
 ## User stories
 - As the owner, I want **one command** to start everything on my Mac, so I can try the app without technical steps.
@@ -41,10 +44,11 @@ D003, D004, D005, D006, D010, D011, D012, D013, D015, D016, D017, D018, D019, D0
 - **AC-F00-09:** WHEN "system" is selected and the computer switches between light and dark, THEN the app follows within 1 second.
 - **AC-F00-10:** WHEN the user picks one of the 8 accent colors (**sky blue, blue, purple, pink, red, orange, green, teal**), THEN buttons, links, focus outlines and highlights change to that color within 1 second and stay after restart. The default for new users is **sky blue**. Where white text isn't readable on a light accent (e.g. sky blue), buttons use dark text instead.
 - **AC-F00-11:** WHEN the automatic checks run, THEN every accent color is checked in light and dark mode: text on accent backgrounds and accent-colored text need at least 4.5:1 contrast, and focus outlines and other UI parts need at least 3:1. The check fails and names the color and mode if any is below.
-- **AC-F00-12:** WHEN the design tokens are built, THEN the CSS variables are generated from the single file `packages/design-tokens/tokens.json`, and no color is defined anywhere else.
+- **AC-F00-12:** WHEN the design tokens are built, THEN the CSS variables are generated from the single file `packages/design-tokens/tokens.json`, which holds exactly the approved design system's tokens (same names and values), and no color is defined anywhere else.
 
 ### UI building blocks (Atomic Design, D011)
-- **AC-F00-13:** WHEN the owner opens the component gallery (Storybook), THEN they see these atoms, each in all its states (normal, hover, focused, disabled, loading where relevant) and in both themes: Button, IconButton, Icon, Input, Avatar, Badge, Spinner, Tooltip, Toggle.
+- **AC-F00-13:** WHEN the owner opens the component gallery (Storybook), THEN they see these atoms, each in all its states (normal, hover, focused, disabled, loading where relevant) and in both themes: Button, IconButton, Icon, Input, Avatar, Badge, Spinner, Tooltip, Toggle. They look and behave like the approved design system: same sizes, pill-shaped buttons and inputs, same colors and icons names, Figtree text.
+- **AC-F00-13b:** WHEN the desktop app runs without internet, THEN the fonts (Figtree, JetBrains Mono) still display correctly, because they are bundled with the app and not loaded from Google at runtime (privacy and offline use).
 - **AC-F00-14:** WHEN the interactive atoms (Button, IconButton, Input, Toggle) are used with only the keyboard, THEN each can be reached with Tab, activated with Enter/Space (Input accepts typing), and shows a visible focus outline. A Tooltip appears when its trigger gets keyboard focus and closes with Escape. Non-interactive atoms (Icon, Avatar, Badge, Spinner) are not in the Tab order. Every atom's story passes the automated accessibility check with 0 violations.
 - **AC-F00-15:** WHEN code in a lower Atomic level imports a higher level (e.g. an atom uses an organism), or a component uses a raw color (hex, rgb/hsl, or a fixed palette class such as `bg-blue-500`) instead of a token, THEN the automatic code check fails and names the rule and file.
 - **AC-F00-16:** WHEN visible text is written directly in a component instead of the translation file, THEN the automatic code check fails and names the file.

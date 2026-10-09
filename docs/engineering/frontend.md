@@ -7,6 +7,9 @@ updated: 2026-10-09
 
 Applies to desktop (Electron) and web. The mobile app (Flutter, D019) follows the same Atomic Design levels and uses the same design tokens, built as Flutter widgets.
 
+## 0. Source of truth for the look
+The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ) defines every color, font, spacing step and component. Code copies it exactly (D029). If the code needs something the design system doesn't have, add it to the design system first.
+
 ## 1. Atomic Design: what each level means
 We build the UI like LEGO: small pieces combine into bigger pieces.
 
