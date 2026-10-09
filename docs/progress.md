@@ -19,6 +19,7 @@
 9. **Quality targets:** are the numbers in `docs/product/quality-targets.md` OK?
 
 ## Answered
+- **Code repository:** https://github.com/codewithnomi/meetapp (private). The first upload went straight to `main`; every change after that goes through a branch + Pull Request.
 - **Budget:** free way for now; no paid accounts, nothing deployed online yet (D017).
 - **Domain:** none yet. Everything runs locally for now.
 - **Logo:** not decided yet (placeholder for now).
@@ -30,6 +31,9 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-09: Session 1 (GitHub)
+- Created the Git repository and uploaded all documents and Claude setup to GitHub (`main`). From now on: branch + Pull Request per change (docs/engineering/git-ci-release.md).
 
 ### 2026-10-09: Session 1 (production-readiness review)
 - Full review of the setup. Added F13 Scheduling, host controls, meetings library, personal workspace, desktop links (D022); Mailpit, feature flags, visual tests, license check, Dependabot, TURN (D023); glossary; F00 ACs 31–35. Rewrote `docs/product/features.md` as the complete feature plan for the owner.

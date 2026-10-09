@@ -60,4 +60,5 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - Production grade from day one: follow `docs/engineering/*` and `docs/architecture/security.md`. If a rule is in the way, propose changing the doc. Don't silently ignore it.
 - Documentation is part of "done": code without updated docs is not finished.
 - **Free first (D017):** use free tools and free tiers only; nothing deployed online until the owner decides. Ask before anything that costs money.
+- **Git:** repo https://github.com/codewithnomi/meetapp. Never commit to `main` directly. Use a branch per task (`feat/F02-T3-…`, `docs/…`), Conventional Commits, and a Pull Request using `.github/pull_request_template.md`.
 - Ask before: deleting files, `git push`, installing global tools, spending money (paid APIs).

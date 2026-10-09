@@ -6,7 +6,7 @@ updated: 2026-10-09
 # Git, Automatic Checks (CI) and Releases
 
 ## 1. Git & GitHub
-- Code lives in a **private GitHub repository**.
+- Code lives in a **private GitHub repository**: https://github.com/codewithnomi/meetapp
 - `main` is always working and releasable. Nobody pushes directly to `main`.
 - Each task is built on a short-lived branch: `feat/F02-T3-screen-share`, `fix/F02-mute-bug`, `docs/…`.
 - Commit messages follow **Conventional Commits**: `feat(F02): add screen share`, `fix(F05): …`, `docs: …`. These generate the changelog automatically.
