@@ -19,11 +19,11 @@ meetapp/
 ├── .mcp.json                      Claude's shared tools (Context7, Playwright)
 ├── .claude/                       Claude setup: skills, agents, hooks, settings
 ├── .github/                       PR template, CI workflows, Dependabot
-├── docs/                          ALL documentation (see docs/README.md)
+├── docs/                          ALL documentation (see docs/README.md); docs/runbooks/ = fixes for known problems (/diagnose)
 ├── infra/
 │   ├── docker-compose.yml         Local services: LiveKit, Postgres, Redis, MinIO, Mailpit
 │   ├── livekit.yaml               Local call-server settings
-│   └── monitoring/                Prometheus, Grafana dashboards + alerts, Loki, Tempo, Uptime Kuma config
+│   └── monitoring/                Gatus, Prometheus, Alloy, Loki, Tempo, Grafana dashboards + alerts
 │
 ├── apps/
 │   ├── desktop/                   Electron shell (F04)
@@ -66,8 +66,7 @@ meetapp/
 │   │   │   ├── pipelines/         transcription, minutes, indexing
 │   │   │   └── prompts/           Versioned prompt files: minutes.v1.md …
 │   │   ├── evals/                 AI quality test set (sample meetings + expected results)
-│   │   ├── docs/runbooks/                 Step-by-step fixes for known problems (written by /diagnose)
-└── tests/
+│   │   └── tests/
 │   │
 │   └── mobile/                    Flutter app (F11), added later
 │
@@ -81,8 +80,10 @@ meetapp/
 │   ├── core/                      Shared non-UI logic: API client, utilities, constants
 │   └── config/                    Shared ESLint, TypeScript, Prettier, Vitest settings
 │
+├── tools/                       Dev scripts: preflight, dev runner, license check, structure check, alert notifier, flags
 └── tests/
     ├── e2e/                       Playwright end-to-end tests (real app flows)
+    ├── fixtures/                  Files that deliberately break rules, used to test the checks
     └── load/                      Load tests (100-person meetings)
 ```
 

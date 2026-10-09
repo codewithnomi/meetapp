@@ -142,7 +142,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** Claude commits and pushes after every finished task (feature branch `feat/FXX-name`). When `/spec-verify` passes, Claude opens the Pull Request automatically and waits for CI; the owner clicks **Merge**. A failed verification never opens a PR. Document-only changes are pushed/PR'd by `/save-progress`. Pushes to `main` and force pushes stay blocked by a hook.
 - **Why:** nothing is lost, no extra commands for the owner; the merge click is the last human check (free private repos have no branch protection).
 
-### D027: Monitoring from day one: Uptime Kuma, Prometheus, Grafana, Loki, Tempo (OpenTelemetry), optional Sentry
+### D027: Monitoring from day one: Gatus (status page, see D030), Prometheus, Grafana, Loki, Tempo (OpenTelemetry), optional Sentry
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** Built in F00 as a local Docker "monitoring" profile, then reused unchanged on servers. Status page = what's down; dashboards, logs and traces = why. Alerts via notification/email. Claude reads them through `/diagnose`.
 - **Why:** the owner wants to see in real time what is down and why, and problems are cheaper to fix when caught early.
@@ -160,3 +160,12 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   F00 then builds `packages/design-tokens` and the atoms **exactly** from the approved design system; each feature's design.md links its screens. `ui-reviewer` checks built screens against them.
 - **Fonts:** Figtree (interface) + JetBrains Mono (codes, timestamps), both free (Google Fonts).
 - **Why:** changing a design takes minutes; changing built code takes hours.
+
+### D030: F00 tooling choices
+- **Status:** accepted (2026-10-09, owner approved the Gatus change)
+- **Decision:** **Gatus** instead of Uptime Kuma for the status page (configured from a file kept in Git, alerts by email/webhook); **Grafana Alloy** to collect logs/traces/container metrics; **MinIO** pinned to an exact release (its community Docker images are no longer updated); **electron-vite** to build the desktop app; **React 19**; **Tailwind v4** with a theme generated from the design tokens; **Lucide** icons (mapped to the design system's icon names); fonts bundled via **fontsource**; **gitleaks** run from its Docker image (nothing installed on the Mac); **husky + lint-staged** for commit checks; **Semgrep** community rules in CI.
+- **Why:** all free, widely used, configured as code, and they keep the owner's Mac clean.
+
+### D031: Merge guard on GitHub's free plan
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** Stay on the free plan. Claude never opens or recommends merging a Pull Request with a failing check, and failing runs post a "Do not merge" comment. GitHub Pro (~$4/month, hard block) can be added later.

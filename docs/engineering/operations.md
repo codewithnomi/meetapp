@@ -12,7 +12,7 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 
 | Question | Tool | What you see |
 |---|---|---|
-| **What is down right now?** | **Uptime Kuma** (status page) | A green/red list: Backend, Database, Cache, Call server, File storage, Email, AI worker. Checked every 30 seconds, with history. |
+| **What is down right now?** | **Gatus** (status page, configured from a file, D030) | A green/red list: Backend, Database, Cache, Call server, File storage, Email, AI worker. Checked every 30 seconds, with history. |
 | **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests, errors, response times, CPU/memory, database connections, queue length, calls and participants |
 | Numbers over time (metrics) | **Prometheus** | Collected from the backend (`/metrics`), PostgreSQL and Redis exporters, LiveKit (built-in), MinIO |
 | What happened (logs) | **Loki** | All services' logs in one place, searchable by request ID |
@@ -20,7 +20,7 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 | Crashes with code location | **Sentry** (free, optional) | Error + stack trace + which release |
 | Being told | **Alerts** in Grafana | Mac notification / email (Mailpit locally) when a service is down > 1 min, errors spike, or the disk is nearly full |
 
-Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, and the addresses are printed. Claude uses the same tools through `/diagnose`.
+Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, and the addresses are printed. Logs and traces from the API go to Grafana Alloy, which forwards them to Loki and Tempo. Claude uses the same tools through `/diagnose`.
 
 ## 1. Monitoring later in production (same tools, plus)
 | What | Tool | Example |
