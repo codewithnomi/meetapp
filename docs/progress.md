@@ -6,7 +6,7 @@
 ## Current state
 - **Coding go-ahead:** no
 - **Stage:** Planning / documentation. No code exists yet (on purpose).
-- **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) published, waiting for owner review: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
+- **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Next step (after design):** F00 Foundation requirements are drafted and reviewed (`docs/specs/F00-foundation/requirements.md`). Owner answered all questions. **Waiting for the owner to read it and say "approved".** Then `/next` writes the F00 design. **Coding waits for the owner's "go ahead".**
 
 ## Open questions (need the owner's answer)
@@ -34,6 +34,9 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-09: Session 1 (design approved)
+- Owner approved the 8 screen designs. F00 requirements updated to follow the approved design system (D029): exact tokens, atoms as designed, fonts bundled offline. Waiting for owner approval of F00 requirements.
 
 ### 2026-10-09: Session 1 (screen designs)
 - Owner approved the design system after one change (rounded buttons/inputs). Published 8 screen designs: sign in, home, pre-join, meeting room, screen share + host controls, minutes + library, Ask AI, settings (theme, accent, persona, integrations). Each has light/dark and accent switches.
