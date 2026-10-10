@@ -5,12 +5,12 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T19 done. **T20 (monitoring) built and its checks pass, not yet ticked:** the desktop app tests fail in full `pnpm test` runs (also on the code before T20) because a test window closes mid-test; waiting for the owner's answer (open question 0e). Committed locally, not pushed yet. Draft PR #3 (F00) has all GitHub checks green.
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T20 done. Next is T21 (documentation and final checks; a milestone, the last F00 task). Draft PR #3 (F00) has all GitHub checks green.
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** owner answers question 0e and tries the monitoring (`pnpm monitoring`); then rerun `pnpm test`, tick T20, push. After that `/next` builds T21. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
+- **Next step:** `/next` builds T21. `pnpm monitoring` shows the status page (http://127.0.0.1:8080) and dashboards (http://127.0.0.1:3001). `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
 
 ## Open questions (need the owner's answer)
-0e. **Desktop test windows (T20):** during `pnpm test`, MeetApp windows pop up for about 2 minutes. In three full runs a window closed in the middle of a test (no crash, normal exit). Did you close any of them? If not, Claude will dig deeper.
+0e. **Desktop test windows (optional):** during `pnpm test`, MeetApp windows pop up for about a minute. Please don't close them: in three runs a window closed mid-test and the test failed. Every run with the windows left alone passed (exit details: always a clean close, never a crash). Tell Claude if you did NOT close any, so it can dig further.
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
 0d. **Theme switch: chosen option is faint (optional, design system):** in the Light / Dark / Same-as-computer switch, the chosen option differs only by a slightly lighter background and a soft shadow. It may be hard to see for people with low vision. Keep it as designed, or make the chosen option stronger in the design system (recommended: stronger)?
 1. **App name:** is "MeetApp" final, or a working name?
@@ -43,7 +43,8 @@
 - **T20 built (milestone):** `pnpm monitoring` starts a status page (Gatus, http://127.0.0.1:8080), dashboards (Grafana "MeetApp overview", http://127.0.0.1:3001), logs (Loki), traces (Tempo) and metrics (Prometheus), all collected by Grafana Alloy, and runs a Mac notification helper. A service down for more than a minute sends a "down" email (Mailpit) and a Mac notification; "recovered" when back. `pnpm test:monitoring` (about 12 minutes) checks it all end to end: 15/15 passed.
 - **Found and fixed:** the backend dropped its last traces/logs when stopping; monitoring was reading the owner's own Open WebUI container (now only MeetApp's, old logs deleted); older `.env` files are now filled in with new settings automatically; `pnpm monitoring` failed after a `docker compose down`; Tempo 3 setting renamed; alert after 3 failed checks (60–90 s), not 2. Decision D041.
 - **Mac sleep:** the first monitoring run failed because the Mac slept (battery 1%); the command now keeps the Mac awake.
-- **Desktop tests:** fail in full `pnpm test` runs, before and after T20 (a test window closes mid-test). See open question 0e.
+- **Desktop tests:** three full runs failed because a test window closed mid-test (also on the code before T20); a fourth run, with app exits recorded, passed fully (69 files + 16 desktop tests). See open question 0e.
+- **T20 ticked** after that full green run; pushed to `feat/F00-foundation`.
 
 ### 2026-10-10: Session 3 (F00 T19 GitHub checks)
 - **T19 done (milestone):** every Pull Request now runs six checks on GitHub (code checks; unit + integration tests with coverage; desktop window tests; component screenshots + accessibility; security: vulnerable libraries, secrets in the whole history, Semgrep code scan; backend container). A failing check posts a "Do not merge" comment showing the lines before each error. A Windows check runs nightly when `main` changed. Every GitHub action is pinned to an exact version.
