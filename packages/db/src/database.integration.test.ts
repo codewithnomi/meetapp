@@ -6,13 +6,19 @@ import { randomBytes } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, type SQL } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDatabase, databaseUrl, type Database, type DatabaseSettings } from "./connection.ts";
 import { setFlag } from "./flags.ts";
 import { runMigrations } from "./migrate.ts";
 import { featureFlags } from "./schema.ts";
 import { SEED_FLAGS, clearSeed, seedDatabase } from "./seed.ts";
+
+/** Runs a raw query and returns its rows (node-postgres puts them under `.rows`). */
+async function rowsOf<T extends Record<string, unknown>>(db: Database, query: SQL): Promise<T[]> {
+  const result = await db.execute(query);
+  return result.rows as T[];
+}
 
 const ROOT = fileURLToPath(new URL("../../..", import.meta.url));
 const ENV_FILE = existsSync(join(ROOT, ".env")) ? join(ROOT, ".env") : join(ROOT, ".env.example");
@@ -54,7 +60,8 @@ async function asAdmin(statement: string) {
 }
 
 async function journalRows(): Promise<number> {
-  const rows = await db.execute<{ count: number }>(
+  const rows = await rowsOf<{ count: number }>(
+    db,
     sql`select count(*)::int as count from drizzle.__drizzle_migrations`,
   );
   return Number(rows[0]?.count);
@@ -79,7 +86,8 @@ afterAll(async () => {
 
 describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
   it("TC-F00-10 [AC-F00-04] the new database starts empty", SLOW, async () => {
-    const tables = await db.execute<{ name: string }>(
+    const tables = await rowsOf<{ name: string }>(
+      db,
       sql`select table_name as name from information_schema.tables where table_schema = 'public'`,
     );
     expect(tables).toHaveLength(0);
@@ -88,11 +96,14 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
   it("TC-F00-10 [AC-F00-04] creates feature_flags with the designed columns and fills the journal", SLOW, async () => {
     await runMigrations(testUrl);
 
-    const columns = await db.execute<{ name: string; type: string; nullable: string }>(sql`
+    const columns = await rowsOf<{ name: string; type: string; nullable: string }>(
+      db,
+      sql`
       select column_name as name, data_type as type, is_nullable as nullable
       from information_schema.columns
       where table_schema = 'public' and table_name = 'feature_flags'
-      order by column_name`);
+      order by column_name`,
+    );
     expect(columns.map((column) => [column.name, column.type, column.nullable])).toEqual([
       ["created_at", "timestamp with time zone", "NO"],
       ["description", "text", "NO"],
@@ -102,14 +113,17 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
       ["updated_at", "timestamp with time zone", "NO"],
     ]);
 
-    const constraints = await db.execute<{ type: string; column: string }>(sql`
+    const constraints = await rowsOf<{ type: string; column: string }>(
+      db,
+      sql`
       select tc.constraint_type as type, kcu.column_name as column
       from information_schema.table_constraints tc
       join information_schema.key_column_usage kcu
         on tc.constraint_name = kcu.constraint_name and tc.table_schema = kcu.table_schema
       where tc.table_schema = 'public' and tc.table_name = 'feature_flags'
         and tc.constraint_type in ('PRIMARY KEY', 'UNIQUE')
-      order by tc.constraint_type`);
+      order by tc.constraint_type`,
+    );
     expect(constraints.map((row) => [row.type, row.column])).toEqual([
       ["PRIMARY KEY", "id"],
       ["UNIQUE", "key"],
@@ -129,7 +143,7 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
     expect(await journalRows()).toBe(1);
   });
 
-  it.todo("TC-F00-10 [AC-F00-04] starting the API migrates the empty database (T7)");
+  // TC-F00-10 starting the API migrates the empty database: tested in apps/api/src/server.integration.test.ts.
 });
 
 describe("TC-F00-91 [AC-F00-45] seed and clear", () => {
@@ -171,7 +185,8 @@ describe("TC-F00-75 [AC-F00-34] switching flags is safe against injection", () =
 
     expect(await setFlag(db, INJECTION_KEY, true)).toBe(false);
 
-    const tables = await db.execute<{ name: string }>(
+    const tables = await rowsOf<{ name: string }>(
+      db,
       sql`select table_name as name from information_schema.tables where table_schema = 'public' and table_name = 'feature_flags'`,
     );
     expect(tables).toHaveLength(1);

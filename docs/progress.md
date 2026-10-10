@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T6 done. Next is T7 (backend core).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T7 done. Next is T8 (health checks and service connections).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T7. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** `/next` builds T8. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
 
 ## Open questions (need the owner's answer)
 0. **Port clashes on this Mac (T5):** your own PostgreSQL (5432), Redis (6379) and Open WebUI (3000) use MeetApp's default ports. Either stop them while working on MeetApp, or let Claude set POSTGRES_PORT=5433, REDIS_PORT=6380 and API_PORT=3010 in your `.env` (recommended: nothing of yours has to change).
@@ -36,7 +36,7 @@
 
 ## Session log
 
-### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command, T6 database)
+### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command, T6 database, T7 backend core)
 - **T2 done:** the automatic code checker is set up and `pnpm check` runs it all: lint rules (size limits, no `any`, no `console.log`, accessibility, translations, our own "no raw colors" rule, a reason required to switch any rule off), formatting, type checks, architecture rules (Atomic levels, backend layers), unused code and copy-paste detection. The after-edit hook is now active. 76 tests pass.
 - **Decision D034:** TypeScript 7 does the type checks; lint tools use the official TypeScript 6 compatibility package (typescript-eslint doesn't support 7 yet). ESLint 9, because the accessibility plugin doesn't support ESLint 10 yet.
 - **T3 done:** every commit now runs a secrets check first (gitleaks from Docker, pinned version). A password or key in a commit is blocked, naming the file and line. Without Docker running, commits stop with "Start Docker to run the secrets check". Then changed files are formatted and linted. 87 tests pass.
@@ -46,6 +46,7 @@
 - **T5 done (milestone):** `pnpm dev` checks Docker, creates `.env` if missing, checks every port (naming the clash and the fix within a second), starts the services and prints their addresses. A second `pnpm dev` while running works. `pnpm dev:stop` stops the services and keeps the data. 115 tests pass.
 - **Owner's first `pnpm dev`:** preflight stopped it (Node 20 from nvm instead of Node 24). Fixed by turning mise on in the owner's terminal: one line added at the end of `~/.zshrc` (backup in `~/.zshrc.backup-before-mise`). nvm and pyenv still work outside MeetApp. Added to the T21 getting-started notes.
 - **T6 done:** database package with the `feature_flags` table and automatic migrations. `pnpm seed` / `pnpm seed:clear` load and remove sample flags; `pnpm flag <key> on|off` and `pnpm flag list` switch features, refusing bad input before touching the database. 147 unit + 46 integration tests pass.
+- **T7 done:** the backend (`apps/api`) starts on 127.0.0.1, refuses to start if a setting is missing (naming it, never showing values), updates the database automatically, gives every request an id, answers errors in one safe format (no stack traces or input), keeps passwords/emails/tokens out of the logs, allows only the app's own origins, and shows API docs at `/docs` in development only. The database package now uses the `pg` driver the design names. 229 unit + 134 integration tests pass.
 - A code-quality review found no must-fix items. The useful suggestions were applied; ones that need apps that don't exist yet are noted under T10 and T14 in tasks.md.
 
 ### 2026-10-09: Session 1 (architecture review)

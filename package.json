@@ -16,7 +16,7 @@
     "seed:clear": "node tools/seed.ts clear",
     "flag": "node tools/flag.ts",
     "test": "vitest run",
-    "test:integration": "VITEST_INTEGRATION=1 vitest run infra packages",
+    "test:integration": "VITEST_INTEGRATION=1 vitest run infra packages apps",
     "typecheck": "tsc --noEmit -p tsconfig.json && turbo run typecheck",
     "lint": "eslint --max-warnings=0 --cache --cache-location node_modules/.cache/eslint .",
     "format": "prettier --write .",

@@ -69,7 +69,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** integration
 - **Given** the API running against real Postgres, Redis, LiveKit and storage (RustFS)
 - **When** `GET /api/v1/health` is called
-- **Then** within 2 s it returns 200 with `status: "ok"` and `ok` for database, cache and call server (and storage)
+- **Then** within 2 s it returns 200 with `status: "ok"` and `up` for database, cache and call server (and storage); a failing part shows `down`
 
 ### TC-F00-08: Health returns 503 naming each part that is down
 - **Covers:** AC-F00-02

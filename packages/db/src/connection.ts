@@ -1,6 +1,6 @@
-// Opens a database connection. Settings come from .env (POSTGRES_*), validated by the caller.
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+// Opens a database connection pool. Settings come from .env (POSTGRES_*), validated by the caller.
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema.ts";
 
 export interface DatabaseSettings {
@@ -19,10 +19,18 @@ export function databaseUrl(settings: DatabaseSettings): string {
   return `postgres://${user}:${password}@${host}:${settings.POSTGRES_PORT}/${encodeURIComponent(settings.POSTGRES_DB)}`;
 }
 
-export function createDatabase(url: string, options: { max?: number } = {}) {
-  const client = postgres(url, { max: options.max ?? 10, onnotice: () => undefined });
-  const db = drizzle({ client, schema });
-  return { db, close: () => client.end({ timeout: 5 }) };
+export interface DatabaseOptions {
+  max?: number;
+  /** Called when an idle connection breaks (e.g. Postgres restarts). Without it such errors are ignored. */
+  onPoolError?: (error: Error) => void;
+}
+
+/** A pool that survives the database going away: idle-connection errors are reported, never thrown. */
+export function createDatabase(url: string, options: DatabaseOptions = {}) {
+  const pool = new Pool({ connectionString: url, max: options.max ?? 10, connectionTimeoutMillis: 5000 });
+  pool.on("error", (error) => options.onPoolError?.(error));
+  const db = drizzle({ client: pool, schema });
+  return { db, pool, close: () => pool.end() };
 }
 
 export type Database = ReturnType<typeof createDatabase>["db"];

@@ -6,7 +6,7 @@ const INTEGRATION_TESTS = ["**/*.integration.test.ts"];
 
 export default defineConfig({
   test: {
-    include: ["tools/**/*.test.ts", "infra/**/*.test.ts", "packages/*/src/**/*.test.ts"],
+    include: ["tools/**/*.test.ts", "infra/**/*.test.ts", "packages/*/src/**/*.test.ts", "apps/*/src/**/*.test.ts"],
     exclude: [...configDefaults.exclude, ...(process.env["VITEST_INTEGRATION"] === "1" ? [] : INTEGRATION_TESTS)],
   },
 });

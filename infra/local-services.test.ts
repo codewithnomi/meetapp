@@ -111,7 +111,7 @@ describe("TC-F00-55 [AC-F00-23] all compose ports bind to localhost", DOCKER, ()
     }
   });
 
-  it.todo("TC-F00-55 [AC-F00-23] the API default host is 127.0.0.1 (needs apps/api config, T7)");
+  // TC-F00-55 API default host (API_HOST=127.0.0.1): tested in apps/api/src/app.test.ts.
   it.todo("TC-F00-55 [AC-F00-23] Storybook uses --host 127.0.0.1 (needs Storybook, T11)");
   it.todo("TC-F00-55 [AC-F00-23] Vite uses --host 127.0.0.1 (needs the web/desktop app, T14)");
 });
@@ -151,7 +151,7 @@ describe("TC-F00-12 [AC-F00-05] [AC-F00-06] every setting is documented in .env.
     expect(result.status, `${result.stdout}\n${result.stderr}`).toBe(0);
   });
 
-  it.todo("TC-F00-12 [AC-F00-05] every key of the Zod config schema appears in .env.example (needs the schema, T7)");
+  // TC-F00-12 Zod config schema vs .env.example: tested in apps/api/src/config/config.test.ts.
 });
 
 describe("TC-F00-13 [AC-F00-06] only free accounts are needed", () => {

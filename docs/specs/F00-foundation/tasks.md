@@ -28,7 +28,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T6: Database package.** `packages/db` with Drizzle, the `feature_flags` table, migrations, `pnpm seed` / `seed:clear`, `pnpm flag <key> on|off` with input validation.
   Covers: AC-F00-04, 34 (owner control), 45. Tests: TC-F00-10, 75, 91. Check: empty DB → migrated; seeding twice makes no duplicates; bad flag input is rejected.
 
-- [ ] **T7: API core.** `apps/api` server on 127.0.0.1:3000; Zod config validation; requestId; standard error handler; pino with redaction and email masking; strict CORS; `/docs` and `/docs/json` in development only (from `packages/contracts`); a test-only error route (registered only in test mode).
+- [x] **T7: API core.** `apps/api` server on 127.0.0.1:3000; Zod config validation; requestId; standard error handler; pino with redaction and email masking; strict CORS; `/docs` and `/docs/json` in development only (from `packages/contracts`); a test-only error route (registered only in test mode).
   Covers: AC-F00-05, 20, 21. Tests: TC-F00-11, 49, 50, 51, 52, 57. Check: a missing setting exits naming it; the 500 body and logs carry no secrets or personal data.
 
 - [ ] **T8: Health and providers.** Providers for Postgres (pool error handling), Redis (fast-fail), LiveKit, storage (S3 → RustFS), email (Mailpit); `GET /api/v1/health` with 1.5 s timeouts; `pnpm storage:test`, `pnpm email:test`.

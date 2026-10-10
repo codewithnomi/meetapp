@@ -111,7 +111,7 @@ describe("TC-F00-56 [AC-F00-23] other devices cannot connect", () => {
     SLOW.timeout,
   );
 
-  it.todo("TC-F00-56 [AC-F00-23] the API port refuses the LAN address (needs the API, T7)");
+  // TC-F00-56 API port on the LAN address: tested in apps/api/src/server.integration.test.ts.
   it.todo("TC-F00-56 [AC-F00-23] monitoring-profile ports refuse the LAN address (needs monitoring, T20)");
 });
 
