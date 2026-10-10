@@ -25,7 +25,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T5: The start command. (milestone)** `tools/dev.ts`: Docker missing/off checks, port checks that ignore our own containers, `.env` copy, `compose up --wait`, Turborepo dev, address table.
   Covers: AC-F00-01. Tests: TC-F00-02, 03, 04, 05, 06. Check: every failure message appears within 10 s; a second run works.
 
-- [ ] **T6: Database package.** `packages/db` with Drizzle, the `feature_flags` table, migrations, `pnpm seed` / `seed:clear`, `pnpm flag <key> on|off` with input validation.
+- [x] **T6: Database package.** `packages/db` with Drizzle, the `feature_flags` table, migrations, `pnpm seed` / `seed:clear`, `pnpm flag <key> on|off` with input validation.
   Covers: AC-F00-04, 34 (owner control), 45. Tests: TC-F00-10, 75, 91. Check: empty DB → migrated; seeding twice makes no duplicates; bad flag input is rejected.
 
 - [ ] **T7: API core.** `apps/api` server on 127.0.0.1:3000; Zod config validation; requestId; standard error handler; pino with redaction and email masking; strict CORS; `/docs` and `/docs/json` in development only (from `packages/contracts`); a test-only error route (registered only in test mode).
