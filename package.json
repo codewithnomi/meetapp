@@ -33,6 +33,7 @@
     "check:duplication": "jscpd .",
     "check:structure": "node tools/check-structure.ts",
     "check:licenses": "node tools/check-licenses.ts",
+    "check:container": "node tools/check-container.ts",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure && pnpm check:licenses"
   },
   "devDependencies": {

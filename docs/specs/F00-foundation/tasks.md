@@ -66,7 +66,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T17: Licenses and dependency updates.** `tools/check-licenses.ts` (SPDX parsing, allowlist with reasons) and `.github/dependabot.yml` (grouped, weekly).
   Covers: AC-F00-31, 32. Tests: TC-F00-67, 68, 69, 70 (TC-70 confirmed one week after the first push). Check: fake GPL fails; `MIT OR GPL-3.0` passes.
 
-- [ ] **T18: API container.** Multi-stage `apps/api/Dockerfile` (`node:24-slim`, `pnpm deploy`, non-root, Node-based HEALTHCHECK, no `.env`).
+- [x] **T18: API container.** Multi-stage `apps/api/Dockerfile` (`node:24-slim`, `pnpm deploy`, non-root, Node-based HEALTHCHECK, no `.env`).
   Covers: AC-F00-39. Tests: TC-F00-81. Check: the image is healthy, `id -u` ≠ 0, gitleaks finds nothing in the exported image.
 
 - [ ] **T19: CI on GitHub. (milestone)** `ci.yml` (check, test, e2e with the AppArmor fix, ui, security incl. Semgrep and the gitleaks CLI, container; on PR and on push to main; cancel-in-progress; "Do not merge" comment on failure) and `nightly-windows.yml` (skips when main hasn't changed).

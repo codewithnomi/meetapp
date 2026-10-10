@@ -218,10 +218,11 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - **email:** nodemailer on Mailpit SMTP
   - **livekit:** server SDK
 - **Container (AC-F00-39):**
-  - `apps/api/Dockerfile`, multi-stage, on `node:24-slim`, using `pnpm deploy` with `inject-workspace-packages=true`
+  - `apps/api/Dockerfile`, multi-stage, on `node:24-slim` (pinned by version and digest): `pnpm install --prod --filter @meetapp/api... --ignore-scripts`, then only `apps/api`, `packages/db`, `packages/contracts` and the installed libraries are copied into the final stage (changed in T18 from `pnpm deploy`: Node runs our TypeScript directly but refuses TypeScript inside `node_modules`, where `pnpm deploy` would put our packages; linked from their folders, as in development, they work)
   - runs as the non-root `node` user
   - `.dockerignore` excludes `.env*`
   - `HEALTHCHECK CMD node -e "fetch('http://127.0.0.1:'+process.env.API_PORT+'/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`
+  - **Details settled in T18:** `pnpm check:container` (`tools/check-container.ts`, used by CI in T19) builds the image, starts it against the running local services (settings from `.env` at run time, services through `host.docker.internal`, port published on 127.0.0.1 only), waits until Docker reports it healthy and `/api/v1/health` answers 200, checks `id -u` ≠ 0 and no `.env*` under `/app`, then exports the files and scans them with the pinned gitleaks image (read-only, no network). Test files are removed from the image; the app's files stay owned by root, so the app can't change itself.
 
 ## 10. Data stored (`packages/db`, Drizzle)
 | Table | Columns | Why |
