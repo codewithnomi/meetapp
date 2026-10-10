@@ -204,3 +204,20 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** each helper names its model. **Haiku** (fast, cheapest): `docs-keeper`, `/spec-status`, `/save-progress`. **Sonnet** (middle): `test-writer`, `ui-reviewer`, `code-quality-reviewer`, `ac-verifier`. **Opus** (most capable): `security-auditor`, `spec-reviewer`, and the main conversation (design, building, hard bugs).
 - **Why:** saves usage on routine checks and status updates; security and spec gaps are where a miss costs most, so they keep the strongest model.
 - **Risk:** a cheaper reviewer may miss something. spec-verify still runs the Opus security audit before any feature is `done`; if a cheaper helper misses things, move it back up.
+
+### D039: Desktop app built with plain Vite instead of electron-vite
+- **Status:** accepted (2026-10-10, owner chose it during F00 T15). Changes part of D030.
+- **Decision:** `apps/desktop` builds its main process (ES module) and preload (CommonJS) with Vite 8's own build API in a small script. The screens are built and served by `apps/web` as they already are: in development Electron loads the Vite dev server (127.0.0.1:5173); otherwise it serves `apps/web/dist` from the `app://meetapp` scheme.
+- **Why:** electron-vite's stable release (5.0) supports Vite only up to 7, and our screens use Vite 8. Its Vite 8 version is still a beta that changed six times in two weeks. The replacement is about 50 lines we own, using only stable tools.
+- **Cost:** none. Packaging (F04) uses electron-builder on the built output either way.
+
+### D040: Desktop privacy and security hardening from the T15 audit
+- **Status:** accepted (2026-10-10, F00 T15; owner informed).
+- **Decision:**
+  - **Crash reports (Sentry, only with `SENTRY_DSN`):** no Sentry bridge in the pages (no injected preload, no `sentry-ipc://` scheme); native crash dumps off (they hold raw memory that can't be cleaned); console messages never collected; addresses in reports cut to their origin; every data category off (D036).
+  - **Development settings** (`MEETAPP_RENDERER_URL`, `MEETAPP_USER_DATA_DIR`, `VITE_API_URL`) are ignored by the packaged app; a dev server must be on this computer, and the backend must be on this computer or use https.
+  - **Extra guards:** redirects and frame navigation checked like navigation; device, screen-share and download requests refused; `form-action 'none'` added to the CSP; app:// answers only for host `meetapp` and never follows a shortcut out of the screens' folder; `app.enableSandbox()`.
+  - **Lint tools are devDependencies** of `@meetapp/config`, so `pnpm audit --prod` reports only what ships. `handlebars` is forced to ≥ 4.7.10 (2 critical fixes).
+  - **Accepted for now (development tools only, never shipped):** `braces` ≤ 3.0.3 inside the lint plugin (slowdown risk, no fixed version exists yet); an old `esbuild` inside drizzle-kit (the issue only affects esbuild's own dev server, which we don't run). Re-checked by `/deps-update`.
+- **Why:** the security audit of T15 found these; none were critical in our code, all were small to fix now.
+- **For F04 (packaging):** Electron fuses `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `EnableEmbeddedAsarIntegrityValidation` on, `OnlyLoadAppFromAsar` on, `EnableCookieEncryption` on, `GrantFileProtocolExtraPrivileges` off; hardened runtime with only camera and microphone entitlements; DevTools off when packaged; signed updates (S18). For F02/F03: camera and microphone through an allow-list by permission and origin; outside links from chat through a confirmation.

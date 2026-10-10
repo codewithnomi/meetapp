@@ -21,6 +21,9 @@
     },
     "apps/web": {
       "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/desktop": {
+      "entry": ["src/main/main.ts", "src/preload/preload.ts", "scripts/*.ts"]
     }
   }
 }

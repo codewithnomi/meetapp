@@ -7,3 +7,9 @@ packages:
 # dependency resolves to the official TS 6 compatibility package (decision D034).
 overrides:
   typescript: "npm:@typescript/typescript6@6.0.2"
+  # Security fix (2 critical advisories) for a library inside eslint-plugin-boundaries (D040).
+  handlebars: ">=4.7.10"
+
+# Packages allowed to run install scripts. Electron's downloads its app binary (F00 T15).
+onlyBuiltDependencies:
+  - electron

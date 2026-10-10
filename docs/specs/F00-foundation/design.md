@@ -80,7 +80,7 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`).
 4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.
-6. Turborepo (`pnpm dev:apps`, with the shell's settings passed through so `.env` values can be overridden) runs `api` and `desktop` in parallel with hot reload. electron-vite serves the renderer, and the API runs migrations on startup.
+6. Turborepo (`pnpm dev:apps`, with the shell's settings passed through so `.env` values can be overridden) runs `api` and `desktop` in parallel with hot reload. `apps/web` serves the renderer, the desktop app waits for it and opens the window, and the API runs migrations on startup.
 7. Print a table of addresses (AC-F00-01). Until the apps exist (T7, T14, T15) it says so and exits after starting the services.
 
 **`pnpm dev:stop`** stops the services and keeps all data.
@@ -98,16 +98,24 @@ Steps 1–4 fail within 10 s.
 - `pnpm build`
 
 ## 5. Desktop app (`apps/desktop`)
-- Built with **electron-vite**: main (ESM), **preload built as CommonJS** (required for sandboxed preloads), and the renderer (`apps/web`).
+- Built with **plain Vite 8** (D039, replaces electron-vite): a small build script makes the main process (ESM) and the **preload as CommonJS** (required for sandboxed preloads). The renderer is `apps/web`: in development Electron loads its Vite dev server; otherwise it serves `apps/web/dist`.
 - **Security (AC-F00-24):**
   - `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, `webSecurity: true`, `webviewTag: false`
   - `session.setPermissionRequestHandler` denies every permission (camera/mic come in F02)
   - `will-navigate` and `setWindowOpenHandler` block any address outside the app; `shell.openExternal` only for `https:` URLs
-  - **CSP (production):** `default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`. In dev, the Vite HMR websocket and `'unsafe-inline'` styles are added.
+  - **CSP (production):** `default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'` (`form-action` added in T15 after the security audit). In dev, the Vite HMR websocket and `'unsafe-inline'` styles are added, plus `'nonce-meetapp-dev'` in `script-src` so Vite's own live-reload scripts can run (Vite's `html.cspNonce`, set only on its dev server; found in T15). Never `'unsafe-inline'` for scripts.
   - the preload exposes only `window.meetapp.platform`
 - The built app serves the renderer from a custom **`app://meetapp`** scheme, so its origin is stable and the saved theme isn't lost (AC-F00-08). In dev, Vite runs at `127.0.0.1:5173` with `strictPort`.
 - The window shows within 5 s in dev (AC-F00-03, measured in e2e).
 - **Sentry for Electron** starts only if `SENTRY_DSN` is set, with `sendDefaultPii: false` (AC-F00-22).
+- **Details settled in T15:**
+  - Files: `src/main/` (`main.ts` wiring; `security.ts` page settings, "inside the app" check, https-only external links, CSP builder; `guards.ts` applies them; `app-protocol.ts` + `serve-files.ts` serve `apps/web/dist` from `app://meetapp`, refusing any path outside it), `src/preload/preload.ts`, `scripts/build.ts` (D039), `scripts/dev.ts`. Pure logic has no `electron` import and is unit-tested; the Electron wiring is covered by `tests/e2e/desktop` (`pnpm test:e2e`, 12 tests).
+  - Every permission request and permission check is refused. Navigation outside the app is cancelled; `window.open` is always denied, and only an `https:` address is handed to the user's browser. `<webview>` is refused. The CSP is set as a header on app:// responses and on every http response (dev server) through the session.
+  - Sentry for Electron (`@sentry/electron` 8, built on Sentry 11) switches off every `dataCollection` category like the API (D036) and strips request data and user in `beforeSend`; it starts before the app is ready, only with `SENTRY_DSN`.
+  - The main process must not wait for "ready" at the top level: Electron only becomes ready after `main.ts` has finished running (found in T15).
+  - VS Code terminals set `ELECTRON_RUN_AS_NODE=1`, which makes Electron start as plain Node.js; the dev script and the tests remove it.
+  - Settings: `MEETAPP_RENDERER_URL` (dev server, set by `scripts/dev.ts`), `VITE_API_URL` (also used in the CSP), `MEETAPP_USER_DATA_DIR` (tests only; ignored when packaged), `SENTRY_DSN`. Closing the window quits the app on every system for now; macOS dock behaviour comes with packaging (F04).
+  - The flag e2e (TC-F00-72) needs the test services and a test backend whose address the screens are built with; it moves to T16, which sets those up.
 
 ## 6. Renderer (`apps/web`) for F00
 - React 19 + Vite + TypeScript + Tailwind v4 (`@tailwindcss/vite`); i18next with `locales/en.json`.
@@ -328,5 +336,5 @@ That totals about **1,350 min/month**, under the 1,500-minute target. If it gets
 Detailed test cases go in `tests.md`.
 
 ## Decisions made here
-- **D030** (accepted by the owner): Gatus instead of Uptime Kuma (configured from a file); Grafana Alloy as the collector; electron-vite; React 19; Tailwind v4 with a token-only theme; Lucide icons; fontsource fonts; gitleaks via Docker; Semgrep in CI; MinIO pinned to an exact release (its community images are no longer updated).
+- **D030** (accepted by the owner; electron-vite later replaced by D039): Gatus instead of Uptime Kuma (configured from a file); Grafana Alloy as the collector; electron-vite; React 19; Tailwind v4 with a token-only theme; Lucide icons; fontsource fonts; gitleaks via Docker; Semgrep in CI; MinIO pinned to an exact release (its community images are no longer updated).
 - **D035** (made in T4, owner informed): RustFS replaces MinIO for local file storage, because MinIO's free images were withdrawn. Same S3 API and ports.

@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T14 done. Next is T15 (the desktop app window; a milestone).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T15 done. Next is T16 (`pnpm test` runs everything, including the real-window tests and the flag test).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** owner looks at the first screens (`pnpm --filter @meetapp/web dev` → http://127.0.0.1:5173), then `/next` builds T15. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** owner opens the desktop app with `pnpm desktop` (T15 milestone), then `/next` builds T16. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,13 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T15 desktop app)
+- **Decision D039 (owner chose):** the desktop app is built with plain Vite instead of electron-vite (its Vite 8 version is still a beta).
+- **T15 done (milestone):** `apps/desktop`, the Electron window around the screens. `pnpm desktop` opens it; `pnpm dev` starts it with the services. Locked down: sandbox and isolation on, no Node.js in pages, every permission/device/download refused, no navigation or new windows outside the app (https links go to the browser), strict Content Security Policy, built screens served from app://meetapp only. Sentry only with `SENTRY_DSN` and without personal data. 15 real-window tests (`pnpm test:e2e`) and 33 unit tests; 736 unit tests in total pass.
+- Found and fixed along the way: the window never opened (waiting for "ready" at the top level deadlocks Electron); in development the security policy blocked the dev server's live-reload script (now allowed by a development-only nonce); VS Code's terminal setting ELECTRON_RUN_AS_NODE starts Electron without a window (all start scripts remove it).
+- **Security audit:** no critical issues in the new code; 3 medium and several small findings, all fixed (D040). It also found 2 critical flaws in a library inside the lint tools: fixed by forcing the patched version; lint tools are now marked as development tools. Two development-only advisories remain, accepted in D040. Packaging hardening (Electron fuses) is listed in D040 for F04.
+- The flag test in the real window (TC-F00-72) moves to T16, which sets up the test backend it needs.
 
 ### 2026-10-10: Session 3 (F00 T14 first app screens)
 - **Decision D038 (owner approved):** cheaper models for simple helper jobs (Haiku for docs-keeper, `/spec-status`, `/save-progress`; Sonnet for test-writer and the UI, code-quality and acceptance reviewers; Opus for security, spec review and the main work).
