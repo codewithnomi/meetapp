@@ -58,7 +58,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T15: Desktop app. (milestone)** `apps/desktop` built with plain Vite (D039): sandbox, context isolation, CSP, permission denial, navigation/new-window blocking, `app://meetapp` scheme, CJS preload, Sentry for Electron (optional). Playwright Electron e2e suite.
   Covers: AC-F00-03, 08, 09, 13b, 22, 24. Tests: TC-F00-09, 19, 30, 31, 58, 59, 60, 61. Check: the window opens within 5 s; security assertions pass; fonts work offline with no Google requests.
 
-- [ ] **T16: The test command.** `pnpm test`: starts the test services (clear message without Docker), one root Vitest run with merged coverage and 80% thresholds on the business-logic folders, then the Electron e2e.
+- [x] **T16: The test command.** `pnpm test`: starts the test services (clear message without Docker), one root Vitest run with merged coverage and 80% thresholds on the business-logic folders, then the Electron e2e.
   Covers: AC-F00-17. Tests: TC-F00-39, 40, 41. Check: a fixture project under 80% fails.
   Also (carried over from T15): the Electron e2e for TC-F00-72 (switching the `demo` flag with `pnpm flag` hides the line within 30 s): start a test backend, build the screens with its address in `VITE_API_URL`, then run `tests/e2e/desktop`.
   Also (carried over from T4): fold `pnpm test:integration` (infra/*.integration.test.ts: LAN refusal, data survives restart) into `pnpm test`.
@@ -100,4 +100,4 @@ All 93 test cases are assigned:
 - T18: 81
 - T19: 45–48
 - T20: 84–90
-- T21: 01, 29, 77, 83, 92, 93
+- T21: 01, 29, 77, 83, 92, 93 (TC-77: generated, git-ignored top folders `node_modules` and `coverage` are allowed since T16)

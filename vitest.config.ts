@@ -1,3 +1,4 @@
+import { coverageSettings } from "@meetapp/config/vitest/coverage";
 import { configDefaults, defineConfig } from "vitest/config";
 
 // Root test runner: one run over every project. Grows with the apps (T14, T15) and folds integration
@@ -7,6 +8,8 @@ const integration = process.env["VITEST_INTEGRATION"] === "1";
 
 export default defineConfig({
   test: {
+    // Used with --coverage (pnpm test): one merged report; business logic must be at least 80% covered.
+    coverage: coverageSettings(),
     // Integration tests stop and restart the shared local services, so their files run one at a time.
     fileParallelism: !integration,
     projects: [

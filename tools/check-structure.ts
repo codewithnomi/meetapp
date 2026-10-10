@@ -5,6 +5,8 @@ import { fileURLToPath } from "node:url";
 
 /** Top-level folders the code map allows (dot-folders such as .github are not checked). */
 export const ALLOWED_TOP_LEVEL = ["apps", "packages", "infra", "tools", "tests", "docs"];
+/** Generated, git-ignored folders that tools create at the top level (installed packages, test coverage). */
+const GENERATED_TOP_LEVEL = ["node_modules", "coverage"];
 const REQUIRED_DOCS = ["README.md", "CLAUDE.md"];
 
 function folders(path: string): string[] {
@@ -16,7 +18,7 @@ function folders(path: string): string[] {
 export function findStructureProblems(root: string): string[] {
   const problems: string[] = [];
   for (const name of folders(root)) {
-    if (name !== "node_modules" && !ALLOWED_TOP_LEVEL.includes(name)) {
+    if (!GENERATED_TOP_LEVEL.includes(name) && !ALLOWED_TOP_LEVEL.includes(name)) {
       problems.push(`Unexpected top-level folder "${name}". Add it to docs/engineering/project-structure.md first.`);
     }
   }

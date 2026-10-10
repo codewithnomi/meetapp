@@ -89,6 +89,7 @@ Steps 1–4 fail within 10 s.
 
 **Other commands:**
 - `pnpm test`: starts the test services, or fails with the Docker message, then runs all Vitest projects (unit + integration, one merged coverage report) and the Playwright Electron e2e
+  - **Details settled in T16:** `tools/test.ts`: Docker check (the same messages as `pnpm dev`), `.env` created if missing, `docker compose up -d --wait`, then `vitest run --coverage` with integration tests on (one merged report; thresholds from `@meetapp/config/vitest/coverage`, 80% for lines, functions, branches and statements in each business-logic folder group, and a failure names the group). Then the desktop tests: sample flags seeded (including the new test flag `demo`), the real backend started from `.env` on `API_PORT`, the screens built with that address, `pnpm test:e2e` run with `MEETAPP_E2E_API_URL`/`MEETAPP_E2E_API_PID` (the flag test TC-F00-72 needs them and is skipped without them), the backend stopped, and a ✓/✗ summary printed. Command-line launchers (`cli.ts`) are left out of coverage (they only call tested functions); the HTML report is `coverage/index.html`, a generated top-level folder the structure check allows. Quick runs without Docker: `pnpm test:unit`; `pnpm test:integration` and `pnpm test:e2e` still work on their own.
 - `pnpm check`: build, lint, typecheck, dependency-cruiser, knip, jscpd, licenses, structure
 - `pnpm storybook`: `--host 127.0.0.1`
 - `pnpm monitoring`

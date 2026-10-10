@@ -33,15 +33,15 @@ function channel(value: number): number {
 }
 
 function luminance(hex: string): number {
-  const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
-  if (!match) throw new Error(`Contrast needs a #rrggbb color, got "${hex}"`);
-  const [red, green, blue] = [match[1], match[2], match[3]].map((part) => channel(parseInt(part ?? "0", 16)));
-  return 0.2126 * (red ?? 0) + 0.7152 * (green ?? 0) + 0.0722 * (blue ?? 0);
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) throw new Error(`Contrast needs a #rrggbb color, got "${hex}"`);
+  const value = parseInt(hex.slice(1), 16);
+  const [red, green, blue] = [(value >> 16) & 255, (value >> 8) & 255, value & 255];
+  return 0.2126 * channel(red) + 0.7152 * channel(green) + 0.0722 * channel(blue);
 }
 
 export function contrastRatio(first: string, second: string): number {
-  const [light, dark] = [luminance(first), luminance(second)].sort((a, b) => b - a);
-  return ((light ?? 0) + 0.05) / ((dark ?? 0) + 0.05);
+  const [a, b] = [luminance(first), luminance(second)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
 export interface ContrastFailure extends ContrastPair {

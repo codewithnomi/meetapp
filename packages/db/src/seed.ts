@@ -7,6 +7,11 @@ import { featureFlags } from "./schema.ts";
 export const SEED_FLAGS = [
   { key: "home.welcome_banner", enabled: true, description: "Sample flag: shows the welcome text on the home screen." },
   { key: "labs.preview_features", enabled: false, description: "Sample flag: unfinished features, off by default." },
+  {
+    key: "demo",
+    enabled: false,
+    description: "Test flag: shows 'Demo feature is on' on the home screen (flag test TC-F00-72).",
+  },
 ] as const;
 
 const SEED_KEYS = SEED_FLAGS.map((flag) => flag.key);

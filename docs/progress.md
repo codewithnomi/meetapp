@@ -5,14 +5,13 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T15 done. Next is T16 (`pnpm test` runs everything, including the real-window tests and the flag test).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T16 done. Next is T17 (license check and automatic library-update requests).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** owner opens the desktop app with `pnpm desktop` (T15 milestone), then `/next` builds T16. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** `/next` builds T17. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
 0d. **Theme switch: chosen option is faint (optional, design system):** in the Light / Dark / Same-as-computer switch, the chosen option differs only by a slightly lighter background and a soft shadow. It may be hard to see for people with low vision. Keep it as designed, or make the chosen option stronger in the design system (recommended: stronger)?
-0. **Port clashes on this Mac (T5):** your own PostgreSQL (5432), Redis (6379) and Open WebUI (3000) use MeetApp's default ports. Either stop them while working on MeetApp, or let Claude set POSTGRES_PORT=5433, REDIS_PORT=6380 and API_PORT=3010 in your `.env` (recommended: nothing of yours has to change).
 1. **App name:** is "MeetApp" final, or a working name?
 2. **Pricing:** free plan limits (e.g. 40-minute meetings? number of participants?) and paid plan price?
 3. **Recording:** should meetings be recorded (video files)? It costs storage. Or only transcripts?
@@ -24,6 +23,7 @@
 9. **Quality targets:** are the numbers in `docs/product/quality-targets.md` OK?
 
 ## Answered
+- **Ports on this Mac (2026-10-10):** MeetApp moved to spare ports in the local `.env`: database 5433, cache 6380, backend 3010 (`VITE_API_URL` http://127.0.0.1:3010). The owner's own PostgreSQL, Redis and Open WebUI keep running.
 - **GitHub MCP:** connected (token stored on the owner's computer only).
 - **Code repository:** https://github.com/codewithnomi/meetapp (private). The first upload went straight to `main`; every change after that goes through a branch + Pull Request.
 - **Budget:** free way for now; no paid accounts, nothing deployed online yet (D017).
@@ -37,6 +37,11 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T16 the test command)
+- **Owner answered the port question:** MeetApp moved to spare ports in the local `.env` (database 5433, cache 6380, backend 3010); the owner's own PostgreSQL, Redis and Open WebUI keep running.
+- **T16 done:** `pnpm test` runs everything in one go: starts the services (or stops at once if Docker is off), all unit and integration tests with one coverage report, then the real-window tests against a running backend, including the flag test (switching `demo` off hides it within 30 s, no restart). Prints a ✓/✗ summary. Result on the owner's Mac: 781 tests + 16 window tests pass; business-logic coverage 92–99% (rule: at least 80%, checked per folder group; a test proves 70% fails and 80% passes). `pnpm test:unit` is the quick run without Docker.
+- To reach the coverage rule honestly: new direct tests for the backend's connections (database, cache, call server, storage, flags), edge-case tests for the design-token tools, and the contrast math simplified (same results).
 
 ### 2026-10-10: Session 3 (F00 T15 desktop app)
 - **Decision D039 (owner chose):** the desktop app is built with plain Vite instead of electron-vite (its Vite 8 version is still a beta).
