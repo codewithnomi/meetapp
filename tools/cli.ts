@@ -14,3 +14,6 @@ export function fail(message: string): never {
 export function requireEnvFile(): void {
   if (!existsSync(join(ROOT, ".env"))) fail("No .env yet. Run `pnpm dev` once first.");
 }
+
+// CI test (TC-F00-47b): a forbidden console.log must turn the check job red. Never merge.
+console.log("ci test");
