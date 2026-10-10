@@ -34,7 +34,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T8: Health and providers.** Providers for Postgres (pool error handling), Redis (fast-fail), LiveKit, storage (S3 → RustFS), email (Mailpit); `GET /api/v1/health` with 1.5 s timeouts; `pnpm storage:test`, `pnpm email:test`.
   Covers: AC-F00-02, 07, 35, 38. Tests: TC-F00-07, 08, 14, 15, 76, 80. Check: stop/start Postgres and Redis → `down` within 5 s, `ok` within 10 s, same process ID.
 
-- [ ] **T9: Flags API and observability.** `GET /api/v1/flags` (10 s cache), `GET /metrics`, OpenTelemetry traces + logs over OTLP (optional), `@sentry/node` only with `SENTRY_DSN` and a stripping `beforeSend`.
+- [x] **T9: Flags API and observability.** `GET /api/v1/flags` (10 s cache), `GET /metrics`, OpenTelemetry traces + logs over OTLP (optional), `@sentry/node` only with `SENTRY_DSN` and a stripping `beforeSend`.
   Covers: AC-F00-22, 34, 43 (backend side). Tests: TC-F00-53, 54, 73. Check: the API runs with no Sentry or OTel; flag changes appear within the cache window.
 
 - [ ] **T10: Design tokens.** `packages/design-tokens`: `tokens.json` copied from the approved design system (SHA-256 recorded in its README), build to `tokens.css`, `tokens.ts` and the Tailwind v4 token-only theme; contrast test matrix.

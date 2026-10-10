@@ -25,6 +25,7 @@ export function createCacheProvider(config: Config, log: FastifyBaseLogger) {
   });
   return {
     redis,
+    isReady: () => redis.status === "ready",
     ping: async () => {
       await redis.ping();
     },

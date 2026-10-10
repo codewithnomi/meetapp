@@ -64,12 +64,19 @@ describe("TC-F00-51 [AC-F00-21] docs are available in development", () => {
     expect(document.paths["/api/v1/health"]?.["get"]).toBeDefined();
   });
 
+  // Routes hidden from the docs on purpose: /metrics is for Prometheus, not for app developers.
+  const HIDDEN = new Set(["/metrics"]);
+
   it("TC-F00-51 [AC-F00-21] every registered route appears in /docs/json", async () => {
     const instance = await appFor("development");
     const document = (await instance.inject({ method: "GET", url: "/docs/json" })).json<OpenApiDocument>();
     const routes = registeredRoutes(instance).filter(
       ({ method, path }) =>
-        !path.startsWith("/docs") && !path.includes("*") && method !== "HEAD" && method !== "OPTIONS",
+        !path.startsWith("/docs") &&
+        !HIDDEN.has(path) &&
+        !path.includes("*") &&
+        method !== "HEAD" &&
+        method !== "OPTIONS",
     );
     expect(routes.length).toBeGreaterThan(0);
     for (const { method, path } of routes) {

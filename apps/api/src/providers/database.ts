@@ -11,6 +11,7 @@ export function createDatabaseProvider(config: Config, log: FastifyBaseLogger) {
   });
   return {
     db,
+    poolStats: () => ({ total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }),
     ping: async () => {
       await pool.query("select 1");
     },

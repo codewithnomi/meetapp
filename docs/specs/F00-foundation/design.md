@@ -178,7 +178,9 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - `redact` removes authorization, cookie, password, token, secret, email, name, firstName, lastName and displayName fields, plus request bodies
   - an error serializer masks email-like strings inside messages, such as database errors (S10)
 - **Traces and logs** go over OTLP to Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`) when it is set (AC-F00-43). Without it the API runs normally.
-- **Sentry (AC-F00-22):** `@sentry/node` starts only if `SENTRY_DSN` is set, with `sendDefaultPii: false` and `skipOpenTelemetrySetup: true` (we run our own OTel). Its `beforeSend` removes `request.data`, cookies, headers and `user`.
+- **Sentry (AC-F00-22, D036):** `@sentry/node` 11 starts only if `SENTRY_DSN` is set, from `src/instrumentation.ts` (loaded with `--import`). `dataCollection` has every category off (Sentry 11 replaced `sendDefaultPii`); it no longer sets up OpenTelemetry itself, so our own OTel runs alone. Its `beforeSend` also removes `request.data`, cookies, headers, query string and `user`. Only unexpected 500 errors are reported, tagged with the requestId.
+- **Flags cache:** 10 s; requests arriving together after expiry share one database read.
+- **Metrics labels:** the route pattern (e.g. `/api/v1/flags`), never the raw URL.
 - **Reconnect (AC-F00-07):**
   - `pg` Pool with `pool.on('error', log)`, so stopping Postgres can't crash the API
   - ioredis with `maxRetriesPerRequest: 1` and `enableOfflineQueue: false`, so PING fails fast

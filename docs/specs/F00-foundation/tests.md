@@ -407,7 +407,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** security
 - **Given** a Sentry event with `request.data`, cookies, headers and `user` set
 - **When** the API `beforeSend` processes it
-- **Then** all four are removed; both API and desktop init options have `sendDefaultPii: false`
+- **Then** all four are removed; both API and desktop init options switch off every category of `dataCollection` (Sentry 11's replacement for `sendDefaultPii: false`, D036)
 
 ### TC-F00-55: All compose ports bind to localhost
 - **Covers:** AC-F00-23
@@ -636,6 +636,13 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **When** each service in turn (Redis, Postgres, LiveKit, storage, Mailpit, API) is stopped, then restarted
 - **Then** the status page shows that service red within 60 s and only that one (plus backend, if its health depends on it); green again after restart
 
+### TC-F00-94: The backend exposes its numbers for monitoring
+- **Covers:** AC-F00-42
+- **Level:** unit
+- **Given** the API with fake database-pool and cache sources
+- **When** a few requests are made and `GET /metrics` is read
+- **Then** request counts and response times appear per route pattern (never the raw URL), the pool and cache gauges show the source values, process CPU/memory are present, and `/metrics` is not in the API docs
+
 ### TC-F00-86: Grafana overview dashboard has live data
 - **Covers:** AC-F00-42
 - **Level:** integration
@@ -739,7 +746,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 | AC-F00-39 | TC-F00-81 |
 | AC-F00-40 | TC-F00-82, 83 |
 | AC-F00-41 | TC-F00-84, 85 |
-| AC-F00-42 | TC-F00-86 |
+| AC-F00-42 | TC-F00-86, 94 |
 | AC-F00-43 | TC-F00-87 |
 | AC-F00-44 | TC-F00-88, 89, 90 |
 | AC-F00-45 | TC-F00-91 |

@@ -2,6 +2,7 @@
 // unknown route → 404, anything unexpected → 500 with only a reference id. Never a stack trace.
 import type { ErrorResponse } from "@meetapp/contracts";
 import { hasZodFastifySchemaValidationErrors } from "@fastify/type-provider-zod";
+import * as Sentry from "@sentry/node";
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 function send(reply: FastifyReply, status: number, error: ErrorResponse["error"]): FastifyReply {
@@ -22,6 +23,8 @@ function handleError(error: FastifyError, request: FastifyRequest, reply: Fastif
     return send(reply, error.statusCode, { code: "BAD_REQUEST", message: "The request is not valid.", requestId });
   }
   request.log.error({ err: error }, "unexpected error");
+  // Reported only when SENTRY_DSN is set; personal data is stripped first (observability/sentry.ts).
+  if (Sentry.isInitialized()) Sentry.captureException(error, { tags: { requestId } });
   const message = `Something went wrong. Reference: ${requestId}`;
   return send(reply, 500, { code: "INTERNAL_ERROR", message, requestId });
 }

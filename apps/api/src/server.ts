@@ -3,6 +3,7 @@
 import { databaseUrl, runMigrations } from "@meetapp/db";
 import { pino } from "pino";
 import { buildApp } from "./app.ts";
+import { createFlagsRepository } from "./modules/flags/flags.repository.ts";
 import { ConfigError, loadConfig, type Config } from "./config/config.ts";
 import { loggerOptions } from "./plugins/logging.ts";
 import { createCacheProvider } from "./providers/cache.ts";
@@ -31,6 +32,8 @@ const storage = createStorageProvider(config);
 
 const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
+  flags: createFlagsRepository(database.db),
+  metrics: { databasePool: database.poolStats, cacheReady: cache.isReady },
 });
 
 async function shutDown(): Promise<void> {
