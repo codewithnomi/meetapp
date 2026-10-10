@@ -75,6 +75,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 
 - [ ] **T21: Documentation and final checks. (milestone)** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
   Covers: AC-F00-01, 25, 26, 36, 40, plus the owner's look check for 13. Tests: TC-F00-77, 93 (automated); TC-F00-01, 29, 83, 92 (manual, recorded in verification.md). Check: the owner runs `pnpm dev` from the guide and reviews the gallery.
+  Also (found at the T5 milestone): getting-started must include turning mise on in the terminal (`eval "$(mise activate zsh)"` as the last line of `~/.zshrc`), otherwise `pnpm dev` runs on the Mac's default Node and preflight stops it.
 
 ## Coverage check
 All 93 test cases are assigned:

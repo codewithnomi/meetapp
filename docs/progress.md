@@ -44,6 +44,7 @@
 - **Decision D035:** MinIO's free images were withdrawn, so file storage uses **RustFS** instead (free, same S3 language and ports, web file browser at http://127.0.0.1:9001).
 - **Found on the owner's Mac:** a separate PostgreSQL (port 5432), Redis (port 6379) and an Open WebUI container (port 3000) are already running. They clash with MeetApp's default ports. The T5 start command will detect this and explain the choices.
 - **T5 done (milestone):** `pnpm dev` checks Docker, creates `.env` if missing, checks every port (naming the clash and the fix within a second), starts the services and prints their addresses. A second `pnpm dev` while running works. `pnpm dev:stop` stops the services and keeps the data. 115 tests pass.
+- **Owner's first `pnpm dev`:** preflight stopped it (Node 20 from nvm instead of Node 24). Fixed by turning mise on in the owner's terminal: one line added at the end of `~/.zshrc` (backup in `~/.zshrc.backup-before-mise`). nvm and pyenv still work outside MeetApp. Added to the T21 getting-started notes.
 - A code-quality review found no must-fix items. The useful suggestions were applied; ones that need apps that don't exist yet are noted under T10 and T14 in tasks.md.
 
 ### 2026-10-09: Session 1 (architecture review)
