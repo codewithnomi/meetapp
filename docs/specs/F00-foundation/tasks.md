@@ -37,7 +37,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T9: Flags API and observability.** `GET /api/v1/flags` (10 s cache), `GET /metrics`, OpenTelemetry traces + logs over OTLP (optional), `@sentry/node` only with `SENTRY_DSN` and a stripping `beforeSend`.
   Covers: AC-F00-22, 34, 43 (backend side). Tests: TC-F00-53, 54, 73. Check: the API runs with no Sentry or OTel; flag changes appear within the cache window.
 
-- [ ] **T10: Design tokens.** `packages/design-tokens`: `tokens.json` copied from the approved design system (SHA-256 recorded in its README), build to `tokens.css`, `tokens.ts` and the Tailwind v4 token-only theme; contrast test matrix.
+- [x] **T10: Design tokens.** `packages/design-tokens`: `tokens.json` copied from the approved design system (SHA-256 recorded in its README), build to `tokens.css`, `tokens.ts` and the Tailwind v4 token-only theme; contrast test matrix.
   Covers: AC-F00-10 (token side), 11, 12. Tests: TC-F00-22, 23, 24, 25, 26. Check: generated CSS equals tokens.json; a deliberately bad color fails, naming the pair, theme and accent.
   Also (carried over from T2): the "palette reset" part of TC-F00-37 (a build using `bg-blue-500` produces no blue CSS); extend `meetapp/no-raw-color` to CSS named colors (`"red"`, `fill="white"`) in style objects and color attributes, keeping `currentColor`, `transparent` and `inherit`.
 

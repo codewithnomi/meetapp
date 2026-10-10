@@ -2,8 +2,8 @@
 
 The single source of every color, font, spacing step, corner radius and shadow in MeetApp (D029, AC-F00-12).
 
-- **`tokens.json`** is copied **unchanged** from the approved design system: https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ (file `project/tokens.json`, version 1791569887-cd84).
-  - **Approved SHA-256:** `aaa0658842e95106b4becb5474f1c175db5ff2a3e822bb62c515409d48a39b90`
+- **`tokens.json`** is copied **unchanged** from the approved design system: https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ (file `project/tokens.json`, version 8, id 1791609817-aa91; dark `line-strong` fixed to #637282 with the owner's approval on 2026-10-10).
+  - **Approved SHA-256:** `6d1678799962f66f400b02c14121f84b88e38a89433a20f82a3bece823d876c8`
   - A test hashes the file and compares it with this value. To change a token: change the design system first, get it approved, copy the new file here and update this hash.
 - **`pnpm --filter @meetapp/design-tokens build`** writes (into `dist/`, not committed):
   - `tokens.css`: light values on `:root`, dark on `[data-theme="dark"]`, accents on `[data-accent="…"]` (no attribute = sky), spacing, radii, fonts and the text-style classes (`.display`, `.body`, …).

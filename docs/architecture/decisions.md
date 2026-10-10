@@ -193,3 +193,8 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-10, made during F00 T9; owner informed)
 - **Decision:** Sentry 11 removed `sendDefaultPii` and now collects user info, cookies, headers, request bodies and more **by default**. MeetApp sets Sentry's `dataCollection` with **every category off**, and still strips request data, cookies, headers and user in `beforeSend` as a second safety net. Sentry 11 also no longer sets up its own tracing, so the design's "skip OpenTelemetry setup" option is unnecessary. Tracing and Sentry start from `apps/api/src/instrumentation.ts`, loaded before the backend, and only when their setting is filled in.
 - **Why:** error reports must never contain personal data (security rule S10, AC-F00-22). Relying on a changed default would have silently sent it.
+
+### D037: Design system fix: dark control borders reach 3:1
+- **Status:** accepted (2026-10-10, owner approved)
+- **Decision:** In the approved design system, dark-mode `line-strong` changes from #5d6b7b to **#637282**. Published as design system version 8; `packages/design-tokens/tokens.json` copied from it (new SHA-256 in the package README).
+- **Why:** the contrast check in F00 T10 found dark `line-strong` on `surface-raised` at 2.88:1, below the 3:1 that both WCAG and the design system's own text require for control borders. #637282 gives 3.18:1 and looks almost identical.
