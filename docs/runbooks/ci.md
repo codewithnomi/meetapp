@@ -15,3 +15,6 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 ## Rules
 - Never skip, delete or loosen a test, rule, threshold or scan to make CI pass.
 - A check that is only red on GitHub is still a real failure: reproduce it (same command, same versions; Linux-only problems in a matching Docker image).
+
+## "Docker isn't running" on GitHub (T20)
+Right after a runner starts, `docker info` sometimes took longer than 3 s, so `pnpm test` gave up although Docker was there. The check now asks a second time after a timeout (at most 6 s in all); a clear "not running" still fails at once.

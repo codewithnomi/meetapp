@@ -81,7 +81,7 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 1. Check versions (above).
 2. Check Docker:
    - if the `docker` command is missing: "Docker isn't installed. See docs/getting-started.md."
-   - if `docker info` fails within 3 s: "Docker isn't running. Open Docker Desktop and try again."
+   - if `docker info` fails, or doesn't answer within 3 s twice in a row: "Docker isn't running. Open Docker Desktop and try again." (A timeout gets one more try because a busy Docker can be slow to answer once, as seen on GitHub in T20; a clear failure is not retried. At most 6 s.)
 3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`). If `.env` exists but lacks settings that `.env.example` has (added by later work), append them with their comments and say so; existing values are never changed (D041).
 4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.

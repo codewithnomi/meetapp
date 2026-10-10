@@ -10,8 +10,9 @@ export const DOCKER_TIMEOUT_MS = 3000;
 
 export type DockerState = "ok" | "missing" | "not-running";
 
-/** Is Docker installed, and does it answer within 3 s? A hanging `docker info` counts as not running. */
-export function checkDocker(docker = "docker"): DockerState {
+type DockerAnswer = DockerState | "timeout";
+
+function askDocker(docker: string): DockerAnswer {
   const result = spawnSync(docker, ["info", "--format", "{{.ServerVersion}}"], {
     stdio: "ignore",
     timeout: DOCKER_TIMEOUT_MS,
@@ -19,7 +20,19 @@ export function checkDocker(docker = "docker"): DockerState {
   });
   const error = result.error as NodeJS.ErrnoException | undefined;
   if (error?.code === "ENOENT") return "missing";
+  if (error?.code === "ETIMEDOUT") return "timeout";
   return result.status === 0 ? "ok" : "not-running";
+}
+
+/**
+ * Is Docker installed, and does it answer within 3 s? A busy Docker can be slow to answer once (seen on
+ * GitHub in T20), so a timeout gets one more try; a clear "not running" does not. At most 6 s in all.
+ */
+export function checkDocker(docker = "docker"): DockerState {
+  const first = askDocker(docker);
+  if (first !== "timeout") return first;
+  const second = askDocker(docker);
+  return second === "timeout" ? "not-running" : second;
 }
 
 export const DOCKER_MESSAGES: Record<Exclude<DockerState, "ok">, string> = {

@@ -32,6 +32,8 @@ const MISSING = "Docker isn't installed. See docs/getting-started.md.";
 const NOT_RUNNING = "Docker isn't running. Open Docker Desktop and try again.";
 /** A unique sleep length so a leftover hanging fake docker can be found with pgrep. */
 const HANG_MARK = "61.4321";
+/** A hanging docker is asked twice, 3 s each. */
+const HANG = { timeout: 15_000 };
 
 const tempDirs: string[] = [];
 afterAll(() => {
@@ -95,7 +97,7 @@ describe("Docker check", () => {
     expectNoEnvCreated(run);
   });
 
-  it("TC-F00-03 [AC-F00-01] cuts a hanging docker info at 3 s and says 'Docker isn't running'", () => {
+  it("TC-F00-03 [AC-F00-01] cuts a hanging docker info (3 s per try) and says 'Docker isn't running'", HANG, () => {
     const run = runDev(fakeDocker(`exec /bin/sleep ${HANG_MARK}`).dir);
     expect(run.status).toBe(1);
     expect(run.elapsed).toBeGreaterThanOrEqual(DOCKER_TIMEOUT_MS - 200);
@@ -107,13 +109,35 @@ describe("Docker check", () => {
     expect(leftover.stdout.trim()).toBe("");
   });
 
-  it("TC-F00-03 [AC-F00-01] checkDocker reports 'not-running' for a failing and a hanging docker", () => {
+  it("TC-F00-03 [AC-F00-01] checkDocker reports 'not-running' for a failing and a hanging docker", HANG, () => {
     expect(checkDocker(fakeDocker("exit 1").path)).toBe("not-running");
     const started = Date.now();
     expect(checkDocker(fakeDocker(`exec /bin/sleep ${HANG_MARK}`).path)).toBe("not-running");
-    expect(Date.now() - started).toBeLessThan(DOCKER_TIMEOUT_MS + 2000);
+    // Two tries of 3 s each (a busy Docker can be slow to answer once), still well inside 10 s.
+    expect(Date.now() - started).toBeLessThan(2 * DOCKER_TIMEOUT_MS + 2000);
     expect(checkDocker(fakeDocker("exit 0").path)).toBe("ok");
     expect(DOCKER_MESSAGES["not-running"]).toBe(NOT_RUNNING);
+  });
+});
+
+describe("Docker check: a slow first answer", () => {
+  it(
+    "TC-F00-03 [AC-F00-01] a docker that doesn't answer the first time but does the second counts as running",
+    HANG,
+    () => {
+      // Found on GitHub (T20): right after start-up, `docker info` sometimes took longer than 3 s.
+      const dir = tempDir("meetapp-slow-docker-");
+      const marker = join(dir, "asked-once");
+      const docker = fakeDocker(`[ -f "${marker}" ] && exit 0\ntouch "${marker}"\nexec /bin/sleep ${HANG_MARK}`);
+      expect(checkDocker(docker.path)).toBe("ok");
+    },
+  );
+
+  it("TC-F00-03 [AC-F00-01] a docker that answers 'not running' is asked only once", () => {
+    const dir = tempDir("meetapp-count-docker-");
+    const calls = join(dir, "calls");
+    expect(checkDocker(fakeDocker(`echo x >> "${calls}"\nexit 1`).path)).toBe("not-running");
+    expect(readFileSync(calls, "utf8").trim().split("\n")).toHaveLength(1);
   });
 });
 
