@@ -15,6 +15,8 @@ async function waitForScreens(): Promise<void> {
   const deadline = Date.now() + WAIT_MS;
   while (Date.now() < deadline) {
     try {
+      // Plain http is right here: the dev server listens on 127.0.0.1 only (this computer).
+      // nosemgrep: typescript.react.security.react-insecure-request.react-insecure-request
       if ((await fetch(RENDERER_URL)).ok) return;
     } catch {
       // Not up yet.

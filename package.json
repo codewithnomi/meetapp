@@ -24,6 +24,7 @@
     "test:e2e": "pnpm --filter @meetapp/web build && pnpm --filter @meetapp/desktop build && playwright test -c tests/e2e/desktop/playwright.config.ts",
     "test:visual": "node tools/visual.ts",
     "test:visual:update": "node tools/visual.ts --update",
+    "build": "turbo run build",
     "typecheck": "tsc --noEmit -p tsconfig.json && turbo run typecheck",
     "lint": "eslint --max-warnings=0 --cache --cache-location node_modules/.cache/eslint .",
     "format": "prettier --write .",

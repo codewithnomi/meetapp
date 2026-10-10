@@ -1,0 +1,132 @@
+# Every Pull Request and every change on main runs all checks (AC-F00-19, design.md section 12,
+# docs/engineering/git-ci-release.md). A red check means: do not merge. Actions are pinned by commit.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch cancels the older run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SEMGREP_IMAGE: semgrep/semgrep:1.177.0@sha256:acaac22ffc7b7cc5926de0751b223bce0b2491c33d18422fa72f632c78d81198
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+
+jobs:
+  check:
+    name: Code checks (build, lint, types, architecture, unused, duplication, structure, licenses)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: pnpm build
+      - run: pnpm check
+
+  test:
+    name: Unit + integration tests (real database and cache), coverage ≥ 80%
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: pnpm build
+      - run: node tools/test.ts --only vitest
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+
+  e2e:
+    name: Desktop app tests (real Electron windows)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+        with:
+          electron: "true"
+      # Ubuntu 24.04 blocks the user namespaces Electron's sandbox needs; the sandbox itself stays on.
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: sudo apt-get update && sudo apt-get install -y xvfb libnss3 libgbm1 libasound2t64
+      - run: pnpm build
+      - run: xvfb-run --auto-servernum node tools/test.ts --only desktop
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: desktop-test-report
+          path: tests/e2e/desktop/playwright-report/
+
+  ui:
+    name: Component screenshots + accessibility (pinned Playwright image)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: pnpm build
+      - run: pnpm test:visual
+      - if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: screenshot-differences
+          path: tests/e2e/gallery/playwright-report/
+
+  security:
+    name: Security (known-vulnerable libraries, secrets, code scan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      - name: Libraries with known High or Critical problems
+        run: pnpm audit --prod --audit-level high
+      - name: Secrets in the whole history (gitleaks)
+        run: >
+          docker run --rm --network none -v "$PWD:/repo:ro" "$GITLEAKS_IMAGE"
+          git /repo --config /repo/.gitleaks.toml --no-banner --redact
+      - name: Code scan (Semgrep community rules)
+        run: >
+          docker run --rm -v "$PWD:/src:ro" -w /src "$SEMGREP_IMAGE"
+          semgrep scan --config p/javascript --config p/typescript --config p/nodejs --config p/secrets
+          --metrics=off --error --exclude tests/fixtures --exclude coverage
+
+  container:
+    name: Backend container (healthy, non-root, no .env, no secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - run: cp .env.example .env
+      - run: docker compose -f infra/docker-compose.yml --env-file .env up -d --wait
+      - run: pnpm check:container
+
+  report:
+    name: Do-not-merge warning
+    needs: [check, test, e2e, ui, security, container]
+    if: failure() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "⛔ **Do not merge**: at least one check failed. Open the red check for details, or ask Claude to run `/fix-ci`.",
+            });

@@ -261,6 +261,8 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 
 **`nightly-windows.yml`** runs daily, but exits immediately if `main` had no new commits in 24 h. Otherwise it runs install, typecheck, unit tests and the desktop build on `windows-latest`.
 
+**Details settled in T19:** a shared setup step (`.github/actions/setup`) installs the pinned tools with mise-action, restores the pnpm store cache and runs `pnpm install --frozen-lockfile` (the Electron binary only in the desktop jobs). Every outside action is pinned to a full commit (a test checks it). Jobs: **check** (`pnpm build` + `pnpm check`), **test** (`tools/test.ts --only vitest`, coverage report uploaded), **e2e** (AppArmor setting, `xvfb-run tools/test.ts --only desktop`, report uploaded on failure), **ui** (`pnpm test:visual` through Docker, as on the Mac), **security** (`pnpm audit --prod --audit-level high`, gitleaks over the whole history, Semgrep 1.177.0 with the javascript, typescript, nodejs and secrets community rules, `--metrics=off`), **container** (`pnpm check:container`), and **report**, which posts the "Do not merge" comment when any job failed on a Pull Request. One Semgrep finding (plain http to the local dev server) is marked as reviewed in the code with its reason. The Windows nightly runs the app's tests (`web`, `ui`, `desktop` projects), the type check and the desktop build; the tools in `tools/` are for macOS and Linux (they use POSIX shell scripts).
+
 **Blocking merges on red (owner decision: stay free).** Claude never opens or recommends merging a PR with a red check. A failing run adds a "Do not merge" PR comment. Upgrading to GitHub Pro later adds a hard block.
 
 ## 13. Documentation

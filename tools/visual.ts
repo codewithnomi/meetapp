@@ -1,7 +1,7 @@
 // `pnpm test:visual` and `pnpm test:visual:update` (AC-F00-13, 14, 33; design.md section 8).
 // Builds Storybook, then runs the gallery screenshots + accessibility checks inside the pinned Playwright
 // image on linux/amd64, the same machine type as CI, so baselines made here match CI pixel for pixel.
-// In CI the job already runs inside that image, so the tests run directly.
+// Inside that image already (MEETAPP_IN_PLAYWRIGHT_IMAGE=1) the tests run directly; CI uses Docker like the Mac.
 import { spawnSync } from "node:child_process";
 import { fail, ROOT } from "./cli.ts";
 import { DOCKER_MESSAGES, checkDocker } from "./dev-checks.ts";
@@ -21,7 +21,7 @@ function runInImage(): number {
 
 if (run("pnpm", ["--filter", "@meetapp/ui", "build-storybook", "--quiet"]) !== 0) fail("Storybook did not build.");
 
-const status = process.env["CI"] ? run("node", playwrightArgs(update)) : runInImage();
+const status = process.env["MEETAPP_IN_PLAYWRIGHT_IMAGE"] === "1" ? run("node", playwrightArgs(update)) : runInImage();
 if (status !== 0) {
   fail(
     "Visual or accessibility check failed. See the report: pnpm exec playwright show-report tests/e2e/gallery/playwright-report",

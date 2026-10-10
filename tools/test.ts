@@ -1,7 +1,8 @@
 // `pnpm test` (AC-F00-17, design.md section 4): every test in one command. Starts the test services
 // (or stops at once with the Docker message), runs all unit and integration tests with one merged
 // coverage report (business logic at least 80%), then the real desktop-window tests against a running
-// backend. Prints a short summary and fails if any part failed.
+// backend. Prints a short summary and fails if any part failed. CI runs the two parts as separate jobs:
+// `--only vitest` and `--only desktop`.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import { ROOT, fail } from "./cli.ts";
@@ -69,14 +70,17 @@ if (!run("docker", [...COMPOSE, "up", "-d", "--wait"])) {
   fail("The test services did not start. Run `docker compose -f infra/docker-compose.yml logs`.");
 }
 
+const only = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : undefined;
 const results: [string, boolean][] = [];
-say("\nUnit and integration tests, with coverage:");
-results.push([
-  "Unit + integration tests, coverage ≥ 80%",
-  run("pnpm", ["exec", "vitest", "run", "--coverage"], { VITEST_INTEGRATION: "1" }),
-]);
-say("\nDesktop app tests (real windows):");
-results.push(["Desktop app tests", await desktopTests(env)]);
+if (only !== "desktop") {
+  say("\nUnit and integration tests, with coverage:");
+  const vitest = run("pnpm", ["exec", "vitest", "run", "--coverage"], { VITEST_INTEGRATION: "1" });
+  results.push(["Unit + integration tests, coverage ≥ 80%", vitest]);
+}
+if (only !== "vitest") {
+  say("\nDesktop app tests (real windows):");
+  results.push(["Desktop app tests", await desktopTests(env)]);
+}
 
 say("\nSummary:");
 for (const [name, passed] of results) say(`  ${passed ? "✓" : "✗"} ${name}`);

@@ -67,13 +67,15 @@ describe("TC-F00-79 [AC-F00-37] versions are pinned in one place", () => {
     expect(rootPackage.packageManager).toBe(`pnpm@${misePnpm}`);
   });
 
-  it("every CI workflow installs tools with mise-action", () => {
+  it("every CI workflow installs tools with mise-action (directly or through the shared setup step)", () => {
     const folder = new URL("../.github/workflows/", import.meta.url);
-    // Workflows arrive in T19; until then there is nothing to check.
+    const setup = readFileSync(new URL("../.github/actions/setup/action.yml", import.meta.url), "utf8");
+    expect(setup).toContain("jdx/mise-action");
     const workflows = existsSync(folder) ? readdirSync(folder).filter((name) => name.endsWith(".yml")) : [];
+    expect(workflows.length).toBeGreaterThan(0);
     for (const name of workflows) {
       const text = readFileSync(new URL(`../.github/workflows/${name}`, import.meta.url), "utf8");
-      expect(text, name).toContain("jdx/mise-action");
+      expect(text.includes("jdx/mise-action") || text.includes("./.github/actions/setup"), name).toBe(true);
     }
   });
 });
