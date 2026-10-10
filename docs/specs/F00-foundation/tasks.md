@@ -75,7 +75,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T20: Monitoring. (milestone)** `--profile monitoring`: Gatus (all services, 30 s, threshold 2, resolved alerts), Prometheus + exporters + cAdvisor via Alloy, Loki, Tempo, Grafana (provisioned "MeetApp overview" dashboard and alert rules), `tools/notifier.ts` (macOS notification), `pnpm monitoring`.
   Covers: AC-F00-41, 42, 43, 44. Tests: TC-F00-84, 85, 86, 87, 88, 89, 90, 95, 96. Check: stopping Redis → red within 60 s, "down" email in 60–120 s, "recovered" after restart; a 20 s blip sends nothing.
 
-- [ ] **T21: Documentation and final checks. (milestone)** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
+- [x] **T21: Documentation and final checks. (milestone)** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
   Covers: AC-F00-01, 25, 26, 36, 40, plus the owner's look check for 13. Tests: TC-F00-77, 93 (automated); TC-F00-01, 29, 83, 92 (manual, recorded in verification.md). Check: the owner runs `pnpm dev` from the guide and reviews the gallery.
   Also (found at the T5 milestone): getting-started must include turning mise on in the terminal (`eval "$(mise activate zsh)"` as the last line of `~/.zshrc`), otherwise `pnpm dev` runs on the Mac's default Node and preflight stops it.
 

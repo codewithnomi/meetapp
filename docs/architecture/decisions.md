@@ -232,3 +232,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   - **Slow checks run separately:** the monitoring checks (TC-F00-84 to 89) stop services and wait for alerts, about 20 minutes, so they run with `pnpm test:monitoring`, not in `pnpm test` or CI. Fast unit tests check the settings files on every run.
 - **Why:** fewer images to pin and update; the owner's other programs stay private; the alert matches the requirement (AC-F00-44); an updated project keeps working on an older `.env`.
 - **Cost:** none (all free, local only).
+
+### D042: Getting-started walk-through by the owner skipped for F00
+- **Status:** accepted (2026-10-10, owner: "it doesn't matter now, let's move forward").
+- **Decision:** the manual check TC-F00-92 (someone follows `docs/getting-started.md` on a clean Mac) is not done for F00. Instead: Claude made a fresh copy of the project, installed it and started the screens following the guide's commands; that run found and fixed a real problem (the screens didn't load until the design tokens were built). The automated test TC-F00-93 checks that every command the guide mentions exists.
+- **Why:** the owner's time; the main risk (a fresh copy not starting) was checked and fixed.
+- **Follow-up:** repeat the walk-through when a second person or a new Mac joins. TC-F00-83 (data after a real Mac restart) stays open until the owner's next restart.
