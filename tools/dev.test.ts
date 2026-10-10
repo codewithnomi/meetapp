@@ -345,3 +345,14 @@ describe("Address table", () => {
     expect(addressTable(env, true, true)).toMatch(/App screens \(in a browser\)\s+http:\/\/127\.0\.0\.1:5173/);
   });
 });
+
+describe("A fresh copy of the project", () => {
+  it("TC-F00-92 [AC-F00-25] `pnpm dev` builds what the apps depend on (design tokens) before starting them", () => {
+    // Found in T21 on a fresh clone: the screens failed with "no valid target file" for tokens.css,
+    // because dist/ is not committed and nothing built it before the dev servers started.
+    const turbo = JSON.parse(readFileSync(join(ROOT, "turbo.json"), "utf8")) as {
+      tasks: Record<string, { dependsOn?: string[] }>;
+    };
+    expect(turbo.tasks["dev"]?.dependsOn ?? []).toContain("^build");
+  });
+});

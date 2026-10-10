@@ -10,8 +10,11 @@ A meeting app like Microsoft Teams or Zoom (audio, video and screen sharing for 
 **Platforms:** desktop (Mac, Windows) first, then web, then mobile (Flutter).
 
 ## Status
-📝 **Planning / specification stage.** No application code yet; every feature is specified and approved before it's built.
+🏗️ **Foundation (F00) built:** local services, backend, desktop app shell with the design system, tests and GitHub checks, monitoring. Meetings and the AI features come next, each specified and approved before it's built.
 See [docs/progress.md](docs/progress.md) for the current state.
+
+## Run it
+See **[docs/getting-started.md](docs/getting-started.md)**. In short, with Docker Desktop running: `mise install`, `pnpm install`, `pnpm dev`.
 
 ## Documentation
 Start at **[docs/README.md](docs/README.md)**.

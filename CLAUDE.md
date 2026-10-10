@@ -34,6 +34,15 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 - `docs/specs/_templates/`: templates for new specs.
 - `docs/claude-guide.md`: plain-English guide to the Claude features used here.
 
+## Commands
+Setup on a new Mac: `docs/getting-started.md`. Run from the project root:
+- **Start:** `pnpm dev` (services + backend + desktop app), `pnpm dev:stop` (stop services, data kept), `pnpm desktop` (only the window).
+- **Test:** `pnpm test` (everything, needs Docker), `pnpm test:unit` (quick, no Docker), `pnpm test:integration`, `pnpm test:e2e` (desktop windows), `pnpm test:visual` (component screenshots, needs Docker), `pnpm test:monitoring` (about 12 minutes; close `pnpm dev` first).
+- **Check:** `pnpm check` (lint, formatting, types, architecture, unused code, duplication, structure, licenses), `pnpm check:container` (backend container).
+- **Data:** `pnpm seed`, `pnpm seed:clear`, `pnpm flag list`, `pnpm flag <key> on|off`, `pnpm email:test`, `pnpm storage:test`.
+- **Monitoring:** `pnpm monitoring` (status page, dashboards, alerts), `pnpm monitoring:stop`.
+- **Gallery:** `pnpm --filter @meetapp/ui storybook`.
+
 ## Workflow commands (skills in `.claude/skills/`)
 - **`/next`: the owner's main command. Claude figures out the next step and does it. Claude leads; the owner approves.**
 - `/spec-new <feature>`: draft `requirements.md` from the docs, ask the owner only real product choices

@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T20 done. Next is T21 (documentation and final checks; a milestone, the last F00 task). Draft PR #3 (F00) has all GitHub checks green.
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T20 done. **T21 (documentation and final checks):** automated part done and pushed (setup guide, runbooks, READMEs, structure and docs tests, fresh-copy fix); waiting for the owner's 4 hands-on checks (TC-F00-01, 29, 83, 92), then T21 is ticked and `/spec-verify F00` runs. Draft PR #3 (F00) has all GitHub checks green.
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T21. `pnpm monitoring` shows the status page (http://127.0.0.1:8080) and dashboards (http://127.0.0.1:3001). `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
+- **Next step:** the owner does the 4 hands-on checks listed in the last T21 message (start with `docs/getting-started.md`). `pnpm monitoring` shows the status page (http://127.0.0.1:8080) and dashboards (http://127.0.0.1:3001). `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
 
 ## Open questions (need the owner's answer)
 0e. **Desktop test windows (optional):** during `pnpm test`, MeetApp windows pop up for about a minute. Please don't close them: in three runs a window closed mid-test and the test failed. Every run with the windows left alone passed (exit details: always a clean close, never a crash). Tell Claude if you did NOT close any, so it can dig further.
@@ -38,6 +38,12 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T21 documentation, part 1)
+- **Written:** `docs/getting-started.md` (setup on a Mac, step by step), `docs/runbooks/local-services.md`, a "What / Run / Test" README for every app and package, a "Commands" section in the root CLAUDE.md, updated root README.
+- **Tests:** TC-F00-77 (structure check, including "don't create a later feature's app folder early") and TC-F00-93 (every `pnpm` command the docs mention really exists).
+- **Found on a fresh copy of the project:** the app's screens failed to load because the design tokens were never built (they are generated, not saved in Git). `pnpm dev` now builds what the apps need first; confirmed on a fresh clone.
+- **CI fix:** GitHub's desktop check failed with "Docker isn't running" because Docker answered slowly; the check now asks once more after a timeout (at most 6 s). All 6 checks green afterwards.
 
 ### 2026-10-10: Session 3 (F00 T20 monitoring)
 - **T20 built (milestone):** `pnpm monitoring` starts a status page (Gatus, http://127.0.0.1:8080), dashboards (Grafana "MeetApp overview", http://127.0.0.1:3001), logs (Loki), traces (Tempo) and metrics (Prometheus), all collected by Grafana Alloy, and runs a Mac notification helper. A service down for more than a minute sends a "down" email (Mailpit) and a Mac notification; "recovered" when back. `pnpm test:monitoring` (about 12 minutes) checks it all end to end: 15/15 passed.
