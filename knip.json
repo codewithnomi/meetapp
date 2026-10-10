@@ -7,6 +7,9 @@
     },
     "packages/config": {
       "ignoreDependencies": ["eslint-import-resolver-typescript"]
+    },
+    "packages/design-tokens": {
+      "ignoreDependencies": ["tailwindcss"]
     }
   }
 }

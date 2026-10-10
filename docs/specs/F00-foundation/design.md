@@ -124,7 +124,7 @@ Steps 1–4 fail within 10 s.
 - The `build` script generates:
   - `tokens.css`: light on `:root`, dark on `[data-theme="dark"]`, accent overrides on `[data-accent]`
   - `tokens.ts`: typed names
-  - the **Tailwind v4 theme**: `@theme inline { --color-*: initial; --color-surface: var(--surface); …; --radius-full: var(--radius-full) … }`. The `initial` reset **removes Tailwind's built-in palette**, so a class like `bg-blue-500` can't work at all (AC-F00-15), while themes still switch at runtime.
+  - the **Tailwind v4 theme** (`theme.css`): `@theme inline reference { --color-*: initial; --color-surface: var(--surface); …; --radius-full: var(--radius-full) … }`. `reference` stops Tailwind writing its own copies of our variables (with the same names, e.g. `--shadow-1`, they would overwrite ours). The `accent-<name>` tokens are left out: components use only the accent aliases. `--spacing` is `space-1` (4px), so `p-4` equals `space-4`. Output goes to `dist/` (not committed); the build refuses to run when the contrast check fails. The `initial` reset **removes Tailwind's built-in palette**, so a class like `bg-blue-500` can't work at all (AC-F00-15), while themes still switch at runtime.
 - **Contrast test (AC-F00-11),** for 8 accents × 2 themes:
   - `on-accent` on `accent`: 4.5:1
   - `accent-text` on `bg`, `surface`, `surface-sunken` and `accent-soft`: 4.5:1
@@ -132,7 +132,8 @@ Steps 1–4 fail within 10 s.
   - `focus-ring` and `line-strong` on every surface: 3:1
   - status colors on surfaces and their `-soft` backgrounds: 4.5:1
   - it fails naming the token pair, theme and accent
-- Fonts come from `@fontsource/figtree` and `@fontsource/jetbrains-mono`, bundled (AC-F00-13b).
+- Fonts come from `@fontsource/figtree` and `@fontsource/jetbrains-mono`, bundled (AC-F00-13b); added with the app in T14.
+- `meetapp/no-raw-color` also catches CSS named colors (`"red"`, `fill="white"`) in style objects and color attributes; `currentColor`, `transparent` and `inherit` stay allowed.
 
 ## 8. UI components (`packages/ui`)
 - **Atoms:** Button, IconButton, Icon, Input, Avatar, Badge, Spinner, Tooltip, Toggle.

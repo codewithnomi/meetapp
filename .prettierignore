@@ -8,3 +8,5 @@ coverage/
 dist/
 out/
 storybook-static/
+# Must stay byte-identical to the approved design system (hash checked by a test)
+packages/design-tokens/tokens.json

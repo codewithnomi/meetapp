@@ -140,8 +140,20 @@ describe("TC-F00-37 [AC-F00-15] raw colors fail the check", SLOW, () => {
     expect(await summarize("colors/NotColors.tsx")).toMatchObject(CLEAN);
   });
 
-  // Needs the Tailwind theme from packages/design-tokens, which does not exist yet. Written in T10.
-  it.todo("TC-F00-37 [AC-F00-15] a build using bg-blue-500 produces no blue CSS rule (palette reset) - tested in T10");
+  // Palette reset (bg-blue-500 builds no CSS) is tested in packages/design-tokens/src/tailwind.test.ts.
+
+  it.each([
+    ["a named color in a style object", "colors/NamedColorStyle.tsx", 4, "red"],
+    ["a named color in an SVG fill attribute", "colors/NamedColorAttribute.tsx", 6, "white"],
+  ])("TC-F00-37 [AC-F00-15] %s fails meetapp/no-raw-color naming the value", async (_label, relative, line, value) => {
+    expect(await summarize(relative, "meetapp/no-raw-color")).toEqual(failure(relative, "meetapp/no-raw-color", line));
+    const [message] = (await lint(relative)).messages;
+    expect(message?.message).toContain(`Raw color "${value}"`);
+  });
+
+  it("TC-F00-37 [AC-F00-15] currentColor, transparent, inherit and a non-color attribute pass", async () => {
+    expect(await summarize("colors/NamedColorAllowed.tsx")).toMatchObject(CLEAN);
+  });
 });
 
 describe("TC-F00-38 [AC-F00-16] hard-coded visible text fails the check", SLOW, () => {

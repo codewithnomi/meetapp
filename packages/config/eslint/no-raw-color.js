@@ -1,5 +1,8 @@
 // Custom rule meetapp/no-raw-color (AC-F00-15): components must use design tokens, never a fixed color.
-// Flags hex colors, CSS color functions and fixed Tailwind palette classes inside strings and templates.
+// Flags hex colors, CSS color functions and fixed Tailwind palette classes inside strings and templates,
+// and CSS named colors ("red", fill="white") where a color is expected. currentColor, transparent and
+// inherit stay allowed: they are not fixed colors.
+import { COLOR_PROPERTIES, CSS_NAMED_COLORS } from "./css-named-colors.js";
 
 const PALETTE =
   "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white";
@@ -26,6 +29,20 @@ function isNonColorAttribute(node) {
   return parent?.type === "JSXAttribute" && NON_COLOR_ATTRIBUTES.has(parent.name.name);
 }
 
+/** The property or attribute name a string literal is the value of, if any. */
+function colorSlotName(node) {
+  let parent = node.parent;
+  if (parent?.type === "JSXExpressionContainer") parent = parent.parent;
+  if (parent?.type === "JSXAttribute") return parent.name.name;
+  if (parent?.type === "Property" && parent.value === node) return parent.key.name ?? parent.key.value;
+  return undefined;
+}
+
+function isNamedColorInColorSlot(node) {
+  const slot = colorSlotName(node);
+  return slot !== undefined && COLOR_PROPERTIES.has(slot) && CSS_NAMED_COLORS.has(node.value.trim().toLowerCase());
+}
+
 /** @type {import("eslint").Rule.RuleModule} */
 export const noRawColor = {
   meta: {
@@ -45,7 +62,9 @@ export const noRawColor = {
     }
     return {
       Literal(node) {
-        if (typeof node.value === "string" && !isNonColorAttribute(node)) check(node, node.value);
+        if (typeof node.value !== "string" || isNonColorAttribute(node)) return;
+        if (isNamedColorInColorSlot(node)) context.report({ node, messageId: "rawColor", data: { value: node.value } });
+        else check(node, node.value);
       },
       TemplateElement(node) {
         check(node, node.value.raw);
