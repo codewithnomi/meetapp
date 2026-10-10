@@ -171,8 +171,10 @@ describe("TC-F00-82 [AC-F00-40] local data survives a restart", () => {
       expect(put.code, put.output).toBe(0);
       expect(readBack()).toEqual({ postgres: MARKER, redis: MARKER, storage: MARKER });
 
+      // The normal services (no profile); optional monitoring containers may keep running (T20).
+      const services = composeOk(["config", "--services"]).split("\n");
       composeOk(["down"]);
-      expect(compose(["ps", "-q"]).stdout.trim(), "services still running after down").toBe("");
+      expect(compose(["ps", "-q", ...services]).stdout.trim(), "services still running after down").toBe("");
       composeOk(["up", "-d", "--wait"]);
 
       expect(readBack()).toEqual({ postgres: MARKER, redis: MARKER, storage: MARKER });

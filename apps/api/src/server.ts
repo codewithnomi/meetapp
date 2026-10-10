@@ -5,6 +5,7 @@ import { pino } from "pino";
 import { buildApp } from "./app.ts";
 import { createFlagsRepository } from "./modules/flags/flags.repository.ts";
 import { ConfigError, loadConfig, type Config } from "./config/config.ts";
+import { runShutdownHooks } from "./observability/shutdown.ts";
 import { loggerOptions } from "./plugins/logging.ts";
 import { createCacheProvider } from "./providers/cache.ts";
 import { createDatabaseProvider } from "./providers/database.ts";
@@ -39,6 +40,8 @@ const app = await buildApp(config, {
 async function shutDown(): Promise<void> {
   await app.close();
   await Promise.allSettled([database.close(), cache.close(), storage.close()]);
+  // Send the last traces, logs and error reports first: process.exit() would drop them.
+  await runShutdownHooks();
   process.exit(0);
 }
 

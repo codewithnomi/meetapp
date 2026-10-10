@@ -6,7 +6,7 @@
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import { ROOT, fail } from "./cli.ts";
-import { DOCKER_MESSAGES, checkDocker, ensureEnvFile, readEnv } from "./dev-checks.ts";
+import { DOCKER_MESSAGES, addMissingSettings, checkDocker, ensureEnvFile, readEnv } from "./dev-checks.ts";
 
 const COMPOSE = ["compose", "-f", join(ROOT, "infra/docker-compose.yml"), "--env-file", join(ROOT, ".env")];
 const API_WAIT_MS = 60_000;
@@ -63,6 +63,8 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
 const docker = checkDocker();
 if (docker !== "ok") fail(DOCKER_MESSAGES[docker]);
 if (ensureEnvFile(ROOT)) say("Created .env from .env.example (local development settings).");
+const added = addMissingSettings(ROOT);
+if (added.length > 0) say(`Added new settings to .env from .env.example: ${added.join(", ")}.`);
 const env = readEnv(ROOT);
 
 say("Starting the test services (database, cache, call server, file storage, fake inbox)…");

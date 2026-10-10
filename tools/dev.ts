@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   DOCKER_MESSAGES,
+  addMissingSettings,
   addressTable,
   checkDocker,
   ensureEnvFile,
@@ -49,6 +50,8 @@ async function main(): Promise<void> {
   if (docker !== "ok") stop(DOCKER_MESSAGES[docker]);
 
   if (ensureEnvFile(ROOT)) say("Created .env from .env.example (local development settings).");
+  const added = addMissingSettings(ROOT);
+  if (added.length > 0) say(`Added new settings to .env from .env.example: ${added.join(", ")}.`);
   const env = readEnv(ROOT);
 
   const problems = await findPortProblems(neededPorts(env), ownPorts());

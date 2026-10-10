@@ -73,14 +73,14 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
   Covers: AC-F00-19, plus CI coverage of 17, 31, 33, 39. Tests: TC-F00-45, 46, 47, 48. Check: a test PR shows every check; a deliberately failing check marks the PR failing and posts the warning.
 
 - [ ] **T20: Monitoring. (milestone)** `--profile monitoring`: Gatus (all services, 30 s, threshold 2, resolved alerts), Prometheus + exporters + cAdvisor via Alloy, Loki, Tempo, Grafana (provisioned "MeetApp overview" dashboard and alert rules), `tools/notifier.ts` (macOS notification), `pnpm monitoring`.
-  Covers: AC-F00-41, 42, 43, 44. Tests: TC-F00-84, 85, 86, 87, 88, 89, 90. Check: stopping Redis → red within 60 s, "down" email in 60–120 s, "recovered" after restart; a 20 s blip sends nothing.
+  Covers: AC-F00-41, 42, 43, 44. Tests: TC-F00-84, 85, 86, 87, 88, 89, 90, 95, 96. Check: stopping Redis → red within 60 s, "down" email in 60–120 s, "recovered" after restart; a 20 s blip sends nothing.
 
 - [ ] **T21: Documentation and final checks. (milestone)** `docs/getting-started.md`, `docs/runbooks/local-services.md`, a README and a CLAUDE.md for every app and package, real commands in the root CLAUDE.md, final structure check. Then the manual checks with the owner.
   Covers: AC-F00-01, 25, 26, 36, 40, plus the owner's look check for 13. Tests: TC-F00-77, 93 (automated); TC-F00-01, 29, 83, 92 (manual, recorded in verification.md). Check: the owner runs `pnpm dev` from the guide and reviews the gallery.
   Also (found at the T5 milestone): getting-started must include turning mise on in the terminal (`eval "$(mise activate zsh)"` as the last line of `~/.zshrc`), otherwise `pnpm dev` runs on the Mac's default Node and preflight stops it.
 
 ## Coverage check
-All 93 test cases are assigned:
+All 96 test cases are assigned:
 - T1: 78–79
 - T2: 36–38, 62–66
 - T3: 42–44
@@ -89,7 +89,7 @@ All 93 test cases are assigned:
 - T6: 10, 75, 91
 - T7: 11, 49–52, 57
 - T8: 07–08, 14–15, 76, 80
-- T9: 53–54, 73
+- T9: 53–54, 73, 94
 - T10: 22–26
 - T11/T12: 27, 32–34
 - T13: 28, 35, 71
@@ -99,5 +99,5 @@ All 93 test cases are assigned:
 - T17: 67–70
 - T18: 81
 - T19: 45–48
-- T20: 84–90
+- T20: 84–90, 95–96
 - T21: 01, 29, 77, 83, 92, 93 (TC-77: generated, git-ignored top folders `node_modules` and `coverage` are allowed since T16)

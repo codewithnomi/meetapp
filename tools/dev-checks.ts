@@ -2,7 +2,7 @@
 // Kept apart from tools/dev.ts so each check can be tested with fake inputs.
 import { spawnSync } from "node:child_process";
 import { createSocket } from "node:dgram";
-import { copyFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, readFileSync } from "node:fs";
 import { connect, createServer } from "node:net";
 import { join } from "node:path";
 
@@ -33,6 +33,37 @@ export function ensureEnvFile(root: string): boolean {
   if (existsSync(target)) return false;
   copyFileSync(join(root, ".env.example"), target);
   return true;
+}
+
+const SETTING_LINE = /^\s*([A-Z][A-Z0-9_]*)\s*=/;
+
+/**
+ * Adds to .env every setting that .env.example has and .env doesn't (settings added by later work,
+ * e.g. the monitoring ports), with the comment lines above it. Existing values are never changed.
+ * Docker refuses to start anything while a setting the compose file needs is missing.
+ * Returns the names it added.
+ */
+export function addMissingSettings(root: string): string[] {
+  const target = join(root, ".env");
+  const current = parseEnvFile(readFileSync(target, "utf8"));
+  const added: string[] = [];
+  const blocks: string[] = [];
+  let comments: string[] = [];
+  for (const line of readFileSync(join(root, ".env.example"), "utf8").split("\n")) {
+    const key = SETTING_LINE.exec(line)?.[1];
+    if (key === undefined) {
+      comments = line.trim().startsWith("#") ? [...comments, line] : [];
+      continue;
+    }
+    if (!(key in current)) {
+      added.push(key);
+      blocks.push([...comments, line].join("\n"));
+    }
+    comments = [];
+  }
+  if (added.length > 0)
+    appendFileSync(target, `\n# ---------- Added from .env.example ----------\n${blocks.join("\n")}\n`);
+  return added;
 }
 
 /** Reads KEY=value lines (no interpolation). Later lines win; comments and blanks are skipped. */
@@ -100,12 +131,48 @@ const PORTS: PortSpec[] = [
   { fallback: 8025, protocol: "tcp", service: "fake inbox", likely: "Mailpit or MailHog", setting: "MAILPIT_WEB_PORT" },
 ];
 
-/** The needed ports with the values from .env, so a changed .env is respected. */
-export function neededPorts(env: Record<string, string>): NeededPort[] {
-  return PORTS.map(({ fallback, ...spec }) => {
+/** Extra ports `pnpm monitoring` needs (design.md section 3); all can be moved in .env. */
+const MONITORING_PORTS: PortSpec[] = [
+  { fallback: 8080, protocol: "tcp", service: "status page", likely: "another web server", setting: "GATUS_PORT" },
+  { fallback: 3001, protocol: "tcp", service: "dashboards", likely: "another web app", setting: "GRAFANA_PORT" },
+  {
+    fallback: 9090,
+    protocol: "tcp",
+    service: "metrics store",
+    likely: "another Prometheus",
+    setting: "PROMETHEUS_PORT",
+  },
+  {
+    fallback: 4318,
+    protocol: "tcp",
+    service: "traces and logs",
+    likely: "another OpenTelemetry collector",
+    setting: "ALLOY_OTLP_PORT",
+  },
+  { fallback: 12345, protocol: "tcp", service: "collector", likely: "another Grafana Alloy", setting: "ALLOY_UI_PORT" },
+  {
+    fallback: 8090,
+    protocol: "tcp",
+    service: "alert notifier",
+    likely: "`pnpm monitoring` already open in another window",
+    setting: "NOTIFIER_PORT",
+  },
+];
+
+function withEnv(specs: PortSpec[], env: Record<string, string>): NeededPort[] {
+  return specs.map(({ fallback, ...spec }) => {
     const configured = spec.setting ? Number(env[spec.setting]) : Number.NaN;
     return { ...spec, port: Number.isInteger(configured) && configured > 0 ? configured : fallback };
   });
+}
+
+/** The needed ports with the values from .env, so a changed .env is respected. */
+export function neededPorts(env: Record<string, string>): NeededPort[] {
+  return withEnv(PORTS, env);
+}
+
+export function monitoringPorts(env: Record<string, string>): NeededPort[] {
+  return withEnv(MONITORING_PORTS, env);
 }
 
 export function portKey(port: number, protocol: "tcp" | "udp"): string {

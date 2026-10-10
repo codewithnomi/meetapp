@@ -12,6 +12,8 @@ Levels: unit · integration · e2e (real app flow, Playwright Electron or Playwr
 
 Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health returns 200 when all services are up`.
 
+**Monitoring checks:** TC-F00-84 to 89 stop and start services and wait for alerts (about 20 minutes), so they run with `pnpm test:monitoring`, not in `pnpm test` or CI (design.md section 3).
+
 **Neutral wording for pending owner decisions:**
 - AC-F00-41/44: "the status page" means the chosen tool (Gatus proposed in D030, Uptime Kuma in the AC). Tests read its status through its HTTP API.
 - AC-F00-45: "seed data" means whatever F00's seed covers (feature flags proposed; users and a workspace possibly in F01). Tests assert "every seeded record", not a fixed list.
@@ -672,6 +674,20 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **When** Redis is stopped for 20 s, then started
 - **Then** no "down" alert email is sent
 
+### TC-F00-95: Monitoring settings say what the design says
+- **Covers:** AC-F00-41, AC-F00-44
+- **Level:** unit
+- **Given** the files in `infra/monitoring/` and `infra/docker-compose.yml`
+- **When** the test reads them
+- **Then** Gatus watches backend, database, cache, call server, file storage and email every 30 s with `failure-threshold: 3`, `success-threshold: 2` and `send-on-resolved: true`, alerting by email and the notifier; every monitoring service is in the `monitoring` profile; Grafana has the "MeetApp overview" dashboard with panels for request count, error rate, response time, database connections, cache status and CPU/memory per container, plus the "error spike" and "disk nearly full" alert rules sent to email and the notifier; every new `.env` setting is documented in `.env.example`
+
+### TC-F00-96: The notifier shows only well-formed alerts, safely
+- **Covers:** AC-F00-44
+- **Level:** unit
+- **Given** the notifier with a fake "show notification" step
+- **When** it receives a Gatus "TRIGGERED"/"RESOLVED" call, a Grafana "firing"/"resolved" call, a wrong path, a wrong method, a body that is not JSON, a body over 16 KB, and a service name containing quotes and `do shell script`
+- **Then** valid calls show "<service> is down" / "<service> recovered" (204); the others answer 404/405/400/413 and show nothing; the macOS command receives the text as separate arguments, never inside the script text
+
 ### TC-F00-90: macOS notification appears
 - **Covers:** AC-F00-44
 - **Level:** manual
@@ -746,10 +762,10 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 | AC-F00-38 | TC-F00-80 |
 | AC-F00-39 | TC-F00-81 |
 | AC-F00-40 | TC-F00-82, 83 |
-| AC-F00-41 | TC-F00-84, 85 |
+| AC-F00-41 | TC-F00-84, 85, 95 |
 | AC-F00-42 | TC-F00-86, 94 |
 | AC-F00-43 | TC-F00-87 |
-| AC-F00-44 | TC-F00-88, 89, 90 |
+| AC-F00-44 | TC-F00-88, 89, 90, 95, 96 |
 | AC-F00-45 | TC-F00-91 |
 
 **Security rules covered:** S7 (TC-F00-12, 42, 43, 44, 81), S10 (TC-F00-50, 54, 87), S17 (TC-F00-58 to 61), S19/S20 (TC-F00-45, 47, 48), local-only access (TC-F00-55, 56, 57), docs only in development (TC-F00-52), no runtime Google fetch (TC-F00-31). S6 does not apply locally (see requirements).

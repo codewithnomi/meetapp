@@ -1,0 +1,73 @@
+# Grafana alert rules (design.md section 3). Both go to the "MeetApp alerts" contact point.
+# - Error spike: more than 5% of the backend's answers were errors (5xx) over the last 5 minutes.
+# - Disk nearly full: the Docker disk is more than 85% full.
+# No data (e.g. no traffic yet) counts as OK, so a quiet backend never alerts.
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: MeetApp
+    folder: MeetApp
+    interval: 1m
+    rules:
+      - uid: meetapp-error-spike
+        title: Error spike
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: More than 5% of the backend's answers were errors over the last 5 minutes.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              expr: >-
+                sum(rate(meetapp_http_requests_total{status=~"5.."}[5m]))
+                / sum(rate(meetapp_http_requests_total[5m]))
+              instant: true
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions: [{ evaluator: { type: gt, params: [0.05] } }]
+
+      - uid: meetapp-disk-nearly-full
+        title: Disk nearly full
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The Docker disk is more than 85% full. Remove unused images with `docker system prune`.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              refId: A
+              expr: >-
+                max(1 - node_filesystem_avail_bytes{mountpoint="/var/lib/docker"}
+                / node_filesystem_size_bytes{mountpoint="/var/lib/docker"})
+              instant: true
+          - refId: B
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, expression: A, reducer: last }
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions: [{ evaluator: { type: gt, params: [0.85] } }]

@@ -15,8 +15,10 @@ import {
   type NeededPort,
   addressTable,
   checkDocker,
+  addMissingSettings,
   ensureEnvFile,
   findPortProblems,
+  monitoringPorts,
   neededPorts,
   parseEnvFile,
   parseOwnPorts,
@@ -203,6 +205,22 @@ describe("Port checks", () => {
     expect(problems[0]).toContain(`Port ${String(taken)} `);
   });
 
+  it("TC-F00-95 [AC-F00-41] the monitoring ports come from .env and can be moved", () => {
+    const env = parseEnvFile(ENV_EXAMPLE);
+    const ports = monitoringPorts(env).map(({ port, setting }) => [setting, port]);
+    expect(ports).toEqual([
+      ["GATUS_PORT", 8080],
+      ["GRAFANA_PORT", 3001],
+      ["PROMETHEUS_PORT", 9090],
+      ["ALLOY_OTLP_PORT", 4318],
+      ["ALLOY_UI_PORT", 12345],
+      ["NOTIFIER_PORT", 8090],
+    ]);
+    expect(monitoringPorts({ ...env, GRAFANA_PORT: "3301" }).find((p) => p.setting === "GRAFANA_PORT")?.port).toBe(
+      3301,
+    );
+  });
+
   it("TC-F00-05 [AC-F00-01] ports held by this project's own containers are not reported", async () => {
     const tcp = await holdTcp("127.0.0.1");
     const udp = await holdUdp();
@@ -248,6 +266,27 @@ describe(".env file", () => {
     // Static check: running tools/dev.ts end to end would start the Docker services.
     const source = readFileSync(DEV, "utf8");
     expect(source).toMatch(/if \(ensureEnvFile\(ROOT\)\) say\("Created \.env from \.env\.example/);
+  });
+
+  it("TC-F00-06 [AC-F00-05] an older .env gets the settings added since, with their comments; values are kept", () => {
+    const dir = tempDir("meetapp-env-");
+    writeFileSync(
+      join(dir, ".env.example"),
+      "# The port\nA_PORT=1\n\n# New thing\n# (second line)\nNEW_ONE=x\nNEW_TWO=\n",
+    );
+    writeFileSync(join(dir, ".env"), "A_PORT=55\n");
+    expect(addMissingSettings(dir)).toEqual(["NEW_ONE", "NEW_TWO"]);
+    const env = readFileSync(join(dir, ".env"), "utf8");
+    expect(parseEnvFile(env)).toEqual({ A_PORT: "55", NEW_ONE: "x", NEW_TWO: "" });
+    expect(env).toContain("# New thing\n# (second line)\nNEW_ONE=x\n");
+    expect(addMissingSettings(dir)).toEqual([]);
+    expect(readFileSync(join(dir, ".env"), "utf8")).toBe(env);
+  });
+
+  it("TC-F00-06 [AC-F00-05] the start, test and monitoring commands add missing settings and say so", () => {
+    for (const file of ["tools/dev.ts", "tools/test.ts", "tools/monitoring.ts"]) {
+      expect(readFileSync(join(ROOT, file), "utf8"), file).toMatch(/addMissingSettings\(ROOT\)/);
+    }
   });
 
   it("TC-F00-06 [AC-F00-01] parseEnvFile skips comments and blanks, keeps empty values, later lines win", () => {

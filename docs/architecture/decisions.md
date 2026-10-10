@@ -221,3 +221,14 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   - **Accepted for now (development tools only, never shipped):** `braces` ≤ 3.0.3 inside the lint plugin (slowdown risk, no fixed version exists yet); an old `esbuild` inside drizzle-kit (the issue only affects esbuild's own dev server, which we don't run). Re-checked by `/deps-update`.
 - **Why:** the security audit of T15 found these; none were critical in our code, all were small to fix now.
 - **For F04 (packaging):** Electron fuses `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `EnableEmbeddedAsarIntegrityValidation` on, `OnlyLoadAppFromAsar` on, `EnableCookieEncryption` on, `GrantFileProtocolExtraPrivileges` off; hardened runtime with only camera and microphone entitlements; DevTools off when packaged; signed updates (S18). For F02/F03: camera and microphone through an allow-list by permission and origin; outside links from chat through a confirmation.
+
+### D041: How local monitoring collects, alerts and is tested
+- **Status:** accepted (2026-10-10, F00 T20; owner informed). Refines D030.
+- **Decision:**
+  - **One collector:** Grafana Alloy gathers every number (the backend, LiveKit, and its built-in exporters for PostgreSQL, Redis, containers and the Docker disk) and pushes it to Prometheus, which only stores. No separate postgres-exporter or redis-exporter images. File storage (RustFS) has no metrics endpoint, so only the status page watches it.
+  - **Only MeetApp's containers:** logs and CPU/memory are collected only from containers of the `meetapp` Docker project. Other programs the owner runs in Docker (e.g. Open WebUI) are never read.
+  - **Alert timing:** checks every 30 s, alert after **3** failed checks in a row (60–90 s after a stop = "down for more than a minute"), "recovered" after 2 good checks. The design's earlier `2` would have alerted after only 30–60 s.
+  - **Older `.env` files are filled in:** `pnpm dev`, `pnpm test` and `pnpm monitoring` add any setting that `.env.example` has and `.env` lacks (with its comment), and say so. Existing values are never changed. Without this, Docker refuses to start anything once a new setting is added.
+  - **Slow checks run separately:** the monitoring checks (TC-F00-84 to 89) stop services and wait for alerts, about 20 minutes, so they run with `pnpm test:monitoring`, not in `pnpm test` or CI. Fast unit tests check the settings files on every run.
+- **Why:** fewer images to pin and update; the owner's other programs stay private; the alert matches the requirement (AC-F00-44); an updated project keeps working on an older `.env`.
+- **Cost:** none (all free, local only).

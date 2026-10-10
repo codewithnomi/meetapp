@@ -58,18 +58,23 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 
 **Monitoring profile** (`pnpm monitoring` → `docker compose --profile monitoring up -d --wait`):
 
-| Service | Port | Purpose |
+| Service | Port (`.env` setting) | Purpose |
 |---|---|---|
-| **Gatus** | 8080 | Status page (D030). Checks every 30 s, `failure-threshold: 2`, `send-on-resolved: true`: backend `/api/v1/health`, Postgres TCP, Redis TCP, LiveKit HTTP 7880, storage `/health`, Mailpit `/livez` |
-| Prometheus | 9090 | Scrapes the API `/metrics`, postgres-exporter, redis-exporter, LiveKit, storage (RustFS), Alloy's cAdvisor (CPU/memory per container) |
-| **Grafana Alloy** | 4318 (OTLP), 12345 | Receives the API's **traces and logs** over OTLP and forwards logs to Loki and traces to Tempo. Also collects container logs from the Docker socket, and runs `prometheus.exporter.cadvisor` |
-| Loki | internal | Log storage |
-| Tempo | internal | Trace storage |
-| Grafana | 3001 | "MeetApp overview" dashboard + alert rules, provisioned from `infra/monitoring/grafana/` |
+| **Gatus** | 8080 (`GATUS_PORT`) | Status page (D030). Checks every 30 s: backend `/api/v1/health`, database TCP, cache TCP, call server HTTP, file storage `/health`, email (Mailpit) `/readyz`. Alerts: `failure-threshold: 3`, `success-threshold: 2`, `send-on-resolved: true` |
+| Prometheus | 9090 (`PROMETHEUS_PORT`) | Stores metrics. It doesn't scrape anything itself: Alloy collects and pushes (`--web.enable-remote-write-receiver`). Keeps 7 days |
+| **Grafana Alloy** | 4318 OTLP (`ALLOY_OTLP_PORT`), 12345 UI (`ALLOY_UI_PORT`) | The one collector (D030). **Metrics:** scrapes the API `/metrics`, LiveKit, and its built-in exporters for PostgreSQL, Redis, containers (cAdvisor: CPU/memory per container) and the Docker disk (unix exporter), then pushes to Prometheus. **Logs and traces:** receives the API's over OTLP and forwards logs to Loki (Loki's own OTLP endpoint, so `requestId` and `trace_id` stay searchable fields) and traces to Tempo. Also collects every container's logs from the Docker socket |
+| Loki | internal | Log storage (7 days) |
+| Tempo | internal | Trace storage (7 days) |
+| Grafana | 3001 (`GRAFANA_PORT`) | "MeetApp overview" dashboard + alert rules, provisioned from `infra/monitoring/grafana/`. Opens without a login as a viewer (only this computer can reach it); the admin password is `GRAFANA_ADMIN_PASSWORD` in `.env` |
 
+- **Changed in T20:** Alloy's built-in exporters replace separate postgres-exporter/redis-exporter images (fewer images to pin and update), and Alloy pushes to Prometheus instead of Prometheus scraping. File storage (RustFS) has no Prometheus endpoint, so it is watched by Gatus only.
+- **Only MeetApp's containers (D041):** Alloy keeps logs and CPU/memory only for containers of the `meetapp` Docker project, so other programs the owner runs in Docker are never read. To read container numbers it runs privileged with read-only host folders (the Docker socket, `/sys`, `/var/lib/docker`, `/run/containerd`); this is acceptable only because it is local and optional, and must be revisited before anything runs online.
 - Containers reach the API and notifier on the Mac via `host.docker.internal` (works on Docker Desktop and OrbStack; task T1 verifies it).
-- **Alerts (AC-F00-44):** Gatus sends "down" (after 2 failed checks ≈ 60–90 s) and "recovered" alerts to email (Mailpit SMTP) and to the local webhook `tools/notifier.ts`. The notifier runs during `pnpm dev`/`pnpm monitoring` and shows a macOS notification via `osascript`; macOS asks once to allow notifications.
-- **Grafana alerts:** "error spike" fires when 5xx > 5% of requests over 5 min; "disk nearly full" fires when Docker disk > 85%. Both go to the same email and webhook.
+- **Alerts (AC-F00-44):** Gatus sends "down" and "recovered" alerts to email (Mailpit SMTP, to `ALERT_EMAIL_TO`) and to the local webhook `tools/notifier.ts`. **Timing (fixed in T20):** a check runs every 30 s, so with `failure-threshold: 3` the alert goes out 60–90 s after a service stops, matching "down for more than 1 minute". (The earlier `2` would alert after only 30–60 s.) A blip shorter than 30 s fails at most one check and never alerts. The status page itself turns red at the first failed check (within 30 s). If Mailpit itself is down, its alert arrives only through the notifier.
+- **Notifier (`tools/notifier.ts`):** a tiny web server on `127.0.0.1:NOTIFIER_PORT` (8090) with `POST /gatus` and `POST /grafana`. It accepts only small JSON bodies (≤ 16 KB) in the expected shape and shows a macOS notification with `osascript`, passing the text as arguments (never pasted into the script), so a service name can't run commands. Runs in the foreground of `pnpm monitoring` (closing it only stops the Mac notifications; email alerts keep working). macOS asks once to allow notifications.
+- **Grafana alerts:** "error spike" fires when 5xx > 5% of requests over 5 min; "disk nearly full" fires when the Docker disk is > 85% full. Both go to the same email and the notifier.
+- **`pnpm monitoring`** (`tools/monitoring.ts`): the same Docker and port checks as `pnpm dev` for the monitoring ports, `docker compose --profile monitoring up -d --wait` (the normal services too), prints the addresses, then runs the notifier. **`pnpm monitoring:stop`** stops only the monitoring containers (data kept). The backend sends traces and logs only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env` (`http://127.0.0.1:4318`).
+- **Monitoring checks (`pnpm test:monitoring`, about 20 minutes):** TC-F00-84 to 89 stop and start services and wait for alerts, so they are too slow for `pnpm test` and CI. They live in `infra/monitoring/*.monitoring.test.ts` and run only with this command. It keeps the Mac awake while it runs (`caffeinate -i`, built into macOS): in T20 the Mac's idle sleep froze Docker mid-run and made the timed checks fail. It needs Docker and a free `API_PORT` (it starts its own backend with `NODE_ENV=test` and tracing on, so the failing test route exists). The settings files themselves are checked by fast unit tests in `pnpm test`.
 
 ## 4. Commands
 **`pnpm dev`** (`preflight.mjs` → `dev.ts`):
@@ -77,7 +82,7 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 2. Check Docker:
    - if the `docker` command is missing: "Docker isn't installed. See docs/getting-started.md."
    - if `docker info` fails within 3 s: "Docker isn't running. Open Docker Desktop and try again."
-3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`).
+3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`). If `.env` exists but lacks settings that `.env.example` has (added by later work), append them with their comments and say so; existing values are never changed (D041).
 4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.
 6. Turborepo (`pnpm dev:apps`, with the shell's settings passed through so `.env` values can be overridden) runs `api` and `desktop` in parallel with hot reload. `apps/web` serves the renderer, the desktop app waits for it and opens the window, and the API runs migrations on startup.
@@ -92,7 +97,7 @@ Steps 1–4 fail within 10 s.
   - **Details settled in T16:** `tools/test.ts`: Docker check (the same messages as `pnpm dev`), `.env` created if missing, `docker compose up -d --wait`, then `vitest run --coverage` with integration tests on (one merged report; thresholds from `@meetapp/config/vitest/coverage`, 80% for lines, functions, branches and statements in each business-logic folder group, and a failure names the group). Then the desktop tests: sample flags seeded (including the new test flag `demo`), the real backend started from `.env` on `API_PORT`, the screens built with that address, `pnpm test:e2e` run with `MEETAPP_E2E_API_URL`/`MEETAPP_E2E_API_PID` (the flag test TC-F00-72 needs them and is skipped without them), the backend stopped, and a ✓/✗ summary printed. Command-line launchers (`cli.ts`) are left out of coverage (they only call tested functions); the HTML report is `coverage/index.html`, a generated top-level folder the structure check allows. Quick runs without Docker: `pnpm test:unit`; `pnpm test:integration` and `pnpm test:e2e` still work on their own.
 - `pnpm check`: build, lint, typecheck, dependency-cruiser, knip, jscpd, licenses, structure
 - `pnpm storybook`: `--host 127.0.0.1`
-- `pnpm monitoring`
+- `pnpm monitoring`, `pnpm monitoring:stop`, `pnpm test:monitoring` (section 3)
 - `pnpm seed`, `pnpm seed:clear`
 - `pnpm flag <key> on|off`: how the owner turns a feature on or off
 - `pnpm email:test`
@@ -203,7 +208,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - pino JSON with `requestId` and `traceId`
   - `redact` removes authorization, cookie, password, token, secret, email, name, firstName, lastName and displayName fields, plus request bodies
   - an error serializer masks email-like strings inside messages, such as database errors (S10)
-- **Traces and logs** go over OTLP to Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`) when it is set (AC-F00-43). Without it the API runs normally.
+- **Traces and logs** go over OTLP to Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`) when it is set (AC-F00-43). Without it the API runs normally. **On stop** (found in T20) the backend first sends whatever it still holds (traces and logs are sent in batches every few seconds; Sentry reports too), at most 5 s, then exits (`observability/shutdown.ts`). Before, `process.exit()` dropped the last batch, so the request that came just before a stop was missing from the monitoring.
 - **Sentry (AC-F00-22, D036):** `@sentry/node` 11 starts only if `SENTRY_DSN` is set, from `src/instrumentation.ts` (loaded with `--import`). `dataCollection` has every category off (Sentry 11 replaced `sendDefaultPii`); it no longer sets up OpenTelemetry itself, so our own OTel runs alone. Its `beforeSend` also removes `request.data`, cookies, headers, query string and `user`. Only unexpected 500 errors are reported, tagged with the requestId.
 - **Flags cache:** 10 s; requests arriving together after expiry share one database read.
 - **Metrics labels:** the route pattern (e.g. `/api/v1/flags`), never the raw URL.
@@ -334,9 +339,9 @@ That totals about **1,350 min/month**, under the 1,500-minute target. If it gets
 | 38 | Integration: write and read an object in storage (RustFS) | integration |
 | 39 | CI container job: health OK, `id -u` ≠ 0, no `.env` | CI |
 | 40 | Integration: `docker compose down` (no `-v`) then `up` → the flag row and the storage object still exist | integration |
-| 41, 44 | Scripted monitoring check: stop Redis → Gatus API shows it down within 60 s, the "down" email arrives in Mailpit 60–120 s after the stop; restart → "recovered" email | integration |
-| 42 | Scripted: Grafana API returns the "MeetApp overview" dashboard; its panels return data | integration |
-| 43 | Scripted: a failing request's requestId finds Loki lines and a Tempo trace | integration |
+| 41, 44 | `pnpm test:monitoring`: stop Redis → Gatus API shows it down within 60 s, the "down" email arrives in Mailpit 60–120 s after the stop; restart → "recovered" email. Unit: the Gatus, Alloy, Grafana and compose settings files say what this design says; the notifier's payload checks and `osascript` call | integration (monitoring) + unit |
+| 42 | `pnpm test:monitoring`: Grafana API returns the "MeetApp overview" dashboard; its panels return data | integration (monitoring) |
+| 43 | `pnpm test:monitoring`: a failing request's requestId finds Loki lines and a Tempo trace | integration (monitoring) |
 | 45 | Integration: `pnpm seed` adds flags, `pnpm seed:clear` removes them | integration |
 
 Detailed test cases go in `tests.md`.

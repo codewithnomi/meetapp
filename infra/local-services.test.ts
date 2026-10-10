@@ -86,9 +86,10 @@ describe("TC-F00-55 [AC-F00-23] all compose ports bind to localhost", DOCKER, ()
     const { services } = composeConfig();
     const names = Object.keys(services);
     expect(names.length).toBeGreaterThan(0);
+    const internalOnly = new Set(["loki", "tempo"]); // monitoring back ends, reached only through Grafana/Alloy
     for (const name of names) {
       const ports = services[name]?.ports ?? [];
-      expect(ports.length, `service ${name} publishes no port`).toBeGreaterThan(0);
+      expect(ports.length > 0 || internalOnly.has(name), `service ${name} publishes no port`).toBe(true);
       for (const port of ports) {
         expect(port.host_ip, `${name} port ${port.target}/${port.protocol ?? "tcp"}`).toBe("127.0.0.1");
       }
