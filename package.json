@@ -32,7 +32,8 @@
     "check:unused": "knip --no-progress",
     "check:duplication": "jscpd .",
     "check:structure": "node tools/check-structure.ts",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure"
+    "check:licenses": "node tools/check-licenses.ts",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure && pnpm check:licenses"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -52,7 +53,8 @@
     "prettier": "^3.9.9",
     "turbo": "^2.11.7",
     "typescript": "6.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "yaml": "^2.9.1"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,mts,cts,tsx,jsx}": [

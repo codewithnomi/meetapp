@@ -63,7 +63,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
   Also (carried over from T15): the Electron e2e for TC-F00-72 (switching the `demo` flag with `pnpm flag` hides the line within 30 s): start a test backend, build the screens with its address in `VITE_API_URL`, then run `tests/e2e/desktop`.
   Also (carried over from T4): fold `pnpm test:integration` (infra/*.integration.test.ts: LAN refusal, data survives restart) into `pnpm test`.
 
-- [ ] **T17: Licenses and dependency updates.** `tools/check-licenses.ts` (SPDX parsing, allowlist with reasons) and `.github/dependabot.yml` (grouped, weekly).
+- [x] **T17: Licenses and dependency updates.** `tools/check-licenses.ts` (SPDX parsing, allowlist with reasons) and `.github/dependabot.yml` (grouped, weekly).
   Covers: AC-F00-31, 32. Tests: TC-F00-67, 68, 69, 70 (TC-70 confirmed one week after the first push). Check: fake GPL fails; `MIT OR GPL-3.0` passes.
 
 - [ ] **T18: API container.** Multi-stage `apps/api/Dockerfile` (`node:24-slim`, `pnpm deploy`, non-root, Node-based HEALTHCHECK, no `.env`).

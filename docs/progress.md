@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T16 done. Next is T17 (license check and automatic library-update requests).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T17 done. Next is T18 (the backend's container image).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T17. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
+- **Next step:** `/next` builds T18. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,9 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T17 licenses and library updates)
+- **T17 done:** `pnpm check` now also checks every library's license (800 packages: all fine). Copyleft licenses (GPL, AGPL, LGPL, SSPL) and unknown ones fail, naming the library. Three exceptions are written down with reasons: two development-only code-checking parts (LGPL) and Sentry's command-line helper (FSL: only forbids competing with Sentry). Dependabot will open one update Pull Request per area each week (libraries, service images, the backend image, GitHub Actions). TC-F00-70 (a real Dependabot PR) can only be confirmed on GitHub a week after these settings reach `main`.
 
 ### 2026-10-10: Session 3 (F00 T16 the test command)
 - **Owner answered the port question:** MeetApp moved to spare ports in the local `.env` (database 5433, cache 6380, backend 3010); the owner's own PostgreSQL, Redis and Open WebUI keep running.
