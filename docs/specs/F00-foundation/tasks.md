@@ -69,7 +69,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T18: API container.** Multi-stage `apps/api/Dockerfile` (`node:24-slim`, `pnpm deploy`, non-root, Node-based HEALTHCHECK, no `.env`).
   Covers: AC-F00-39. Tests: TC-F00-81. Check: the image is healthy, `id -u` ≠ 0, gitleaks finds nothing in the exported image.
 
-- [ ] **T19: CI on GitHub. (milestone)** `ci.yml` (check, test, e2e with the AppArmor fix, ui, security incl. Semgrep and the gitleaks CLI, container; on PR and on push to main; cancel-in-progress; "Do not merge" comment on failure) and `nightly-windows.yml` (skips when main hasn't changed).
+- [x] **T19: CI on GitHub. (milestone)** `ci.yml` (check, test, e2e with the AppArmor fix, ui, security incl. Semgrep and the gitleaks CLI, container; on PR and on push to main; cancel-in-progress; "Do not merge" comment on failure) and `nightly-windows.yml` (skips when main hasn't changed).
   Covers: AC-F00-19, plus CI coverage of 17, 31, 33, 39. Tests: TC-F00-45, 46, 47, 48. Check: a test PR shows every check; a deliberately failing check marks the PR failing and posts the warning.
 
 - [ ] **T20: Monitoring. (milestone)** `--profile monitoring`: Gatus (all services, 30 s, threshold 2, resolved alerts), Prometheus + exporters + cAdvisor via Alloy, Loki, Tempo, Grafana (provisioned "MeetApp overview" dashboard and alert rules), `tools/notifier.ts` (macOS notification), `pnpm monitoring`.

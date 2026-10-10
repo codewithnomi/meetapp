@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T18 done. Next is T19 (the checks on GitHub for every Pull Request; a milestone).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T19 done. Next is T20 (monitoring: status page, dashboards, alerts; a milestone). Draft PR #3 (F00) has all GitHub checks green.
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T19. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
+- **Next step:** `/next` builds T20. `pnpm test` runs every test (Docker must be running); `pnpm desktop` opens the app. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,11 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T19 GitHub checks)
+- **T19 done (milestone):** every Pull Request now runs six checks on GitHub (code checks; unit + integration tests with coverage; desktop window tests; component screenshots + accessibility; security: vulnerable libraries, secrets in the whole history, Semgrep code scan; backend container). A failing check posts a "Do not merge" comment showing the lines before each error. A Windows check runs nightly when `main` changed. Every GitHub action is pinned to an exact version.
+- **Proven on GitHub (owner approved three PRs):** draft PR #3 (the real F00) is all green; throwaway #4 (forbidden `console.log`) went red with the comment; throwaway #5 (`lodash@4.17.20` + `eval`) failed the security check. #4 and #5 are closed and their branches deleted.
+- **Found by the first GitHub runs and fixed:** coverage-rule sample projects weren't in Git (a folder named `coverage` is ignored), the backend container couldn't reach the services on Linux (now joins their network), a real start-up bug (a light/dark switch during start-up was missed), and one desktop test really opened the browser (now recorded instead). Notes in `docs/runbooks/ci.md`.
 
 ### 2026-10-10: Session 3 (F00 T18 backend container)
 - **T18 done:** the backend can now be packed into a container image (the format used to run it online later). `pnpm check:container` builds it, starts it against the local services and confirms: healthy, runs as a normal (non-root) user, no `.env` inside, and a secret scan of its files finds nothing. Passed on the owner's Mac. The image installs our packages the same way as on the Mac (the design's `pnpm deploy` would have broken Node's built-in TypeScript support); design updated.
