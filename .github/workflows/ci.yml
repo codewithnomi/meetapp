@@ -119,14 +119,36 @@ jobs:
     if: failure() && github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       pull-requests: write
     steps:
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
+            // The comment names each failed check and shows the end of its log, so the reason is
+            // visible right on the Pull Request (GitHub hides secrets in logs; CI uses none).
+            const { owner, repo } = context.repo;
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, {
+              owner, repo, run_id: context.runId, per_page: 100,
+            });
+            const failed = jobs.filter((job) => job.conclusion === "failure");
+            const sections = [];
+            for (const job of failed) {
+              let tail = "(log not available)";
+              try {
+                const log = await github.rest.actions.downloadJobLogsForWorkflowRun({ owner, repo, job_id: job.id });
+                const lines = String(log.data).split("\n").map((line) => line.replace(/^\S+Z /, ""));
+                tail = lines.filter((line) => line.trim() !== "").slice(-60).join("\n");
+              } catch (error) {
+                tail = `(could not read the log: ${error.message})`;
+              }
+              sections.push(`<details><summary>❌ ${job.name}</summary>\n\n\`\`\`\n${tail}\n\`\`\`\n</details>`);
+            }
             await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: "⛔ **Do not merge**: at least one check failed. Open the red check for details, or ask Claude to run `/fix-ci`.",
+              owner, repo, issue_number: context.issue.number,
+              body: [
+                "⛔ **Do not merge**: at least one check failed. Ask Claude to run `/fix-ci`.",
+                "",
+                ...sections,
+              ].join("\n"),
             });
