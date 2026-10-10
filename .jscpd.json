@@ -1,0 +1,21 @@
+{
+  "threshold": 3,
+  "minLines": 5,
+  "minTokens": 50,
+  "reporters": ["console"],
+  "format": ["typescript", "javascript", "tsx", "jsx"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/out/**",
+    "**/coverage/**",
+    "tests/fixtures/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "pnpm-lock.yaml"
+  ],
+  "absolute": false,
+  "gitignore": true
+}

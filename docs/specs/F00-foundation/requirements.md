@@ -1,7 +1,7 @@
 ---
 feature: F00
 title: Foundation
-status: draft
+status: approved
 updated: 2026-10-09
 ---
 
@@ -68,7 +68,7 @@ The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkN
   - Storybook build + visual screenshot tests
   - license check
 
-  The Pull Request is marked failing if any check fails, and it can't be merged into `main` while a check is failing. The checks run on macOS/Linux; a **Windows** build and test run once a day on `main` (the owner has no Windows PC, and this keeps us within GitHub's free limits).
+  The Pull Request is marked failing if any check fails. Claude never opens or recommends merging a Pull Request with a failing check, and a failing PR shows a clear "Do not merge" warning (free plan, owner decision 2026-10-09; GitHub Pro would make GitHub block it). The checks run on macOS/Linux; a **Windows** build and test run once a day on `main` (the owner has no Windows PC, and this keeps us within GitHub's free limits).
 - **AC-F00-20:** WHEN the backend hits an unexpected error, THEN the caller gets HTTP 500 with `{ error: { code: "INTERNAL_ERROR", message: "Something went wrong. Reference: <requestId>", requestId } }` and no stack trace or internal details. The log entry has the same requestId and contains no passwords, tokens, email addresses, names or request bodies. This is verified by a test that triggers an error with a fake password and email in the request.
 - **AC-F00-21:** WHEN the backend runs in development, THEN an API documentation page lists every endpoint (just health for now) and an OpenAPI file is available at `/docs/json`. The docs page is not served in production mode.
 - **AC-F00-22:** WHEN the error-tracking key (Sentry) is not set (the default), THEN everything works normally without it. When it is set, crashes from the backend and desktop app are reported, with no personal data or request bodies.
@@ -91,19 +91,19 @@ The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkN
 ### Project structure & tooling (D024, D025)
 - **AC-F00-36:** WHEN F00 is done, THEN the folders and file names match `docs/engineering/project-structure.md`, and each app and package has its own short CLAUDE.md with the rules for that area.
 - **AC-F00-37:** WHEN someone runs the setup step, THEN the exact versions of Node.js (24 LTS), pnpm and Python (3.12) from `mise.toml` are used, and the start command refuses to run with a different major version, naming the expected one.
-- **AC-F00-38:** WHEN the project runs locally, THEN local file storage (MinIO, same API as Cloudflare R2) is available, and the backend can store and read back a test file.
+- **AC-F00-38:** WHEN the project runs locally, THEN local file storage (RustFS, same S3 API as Cloudflare R2; replaces MinIO, D035) is available, and the backend can store and read back a test file.
 - **AC-F00-39:** WHEN CI runs, THEN the backend is built into a container image that starts and answers the health check; the image runs as a non-root user and contains no secrets.
 - **AC-F00-40:** WHEN the Mac restarts, THEN local data (database, files, queued jobs) is still there.
 
 ### Monitoring (D027)
-- **AC-F00-41:** WHEN the owner runs the monitoring command, THEN a status page (Uptime Kuma) shows green/red for backend, database, cache, call server, file storage and email, checked every 30 seconds; stopping any one turns it red within 1 minute.
+- **AC-F00-41:** WHEN the owner runs the monitoring command, THEN a status page (Gatus, D030) shows green/red for backend, database, cache, call server, file storage and email, checked every 30 seconds; stopping any one turns it red within 1 minute.
 - **AC-F00-42:** WHEN the monitoring is running, THEN a Grafana "MeetApp overview" dashboard shows live request count, error rate, response times, database connections, cache status and CPU/memory for each service.
 - **AC-F00-43:** WHEN a request fails, THEN its request ID can be used to find the matching log lines (Loki) and the request's trace (Tempo) showing which step failed.
 - **AC-F00-44:** WHEN a service is down for more than 1 minute, THEN an alert is sent (Mac notification and an email visible in Mailpit), and another when it recovers.
-- **AC-F00-45:** WHEN the project is set up, THEN local seed data (sample users, a workspace) can be loaded with one command for testing, and removed with one command.
+- **AC-F00-45:** WHEN the project is set up, THEN local seed data for the tables that exist (feature flags in F00; sample users and a workspace are added to the seed in F01) can be loaded with one command and removed with one command.
 
 ### Documentation
-- **AC-F00-25:** WHEN someone follows the "Getting started" guide on a Mac with macOS 12+ that has only the prerequisites listed in the guide (Docker, Node LTS, pnpm), THEN they can run the project using only the steps written there.
+- **AC-F00-25:** WHEN someone follows the "Getting started" guide on a Mac with a macOS version supported by current Docker Desktop (today 14+) that has only the prerequisites listed in the guide (Docker, Node LTS, pnpm), THEN they can run the project using only the steps written there.
 - **AC-F00-26:** WHEN F00 is done, THEN every app and package has a short README (what it is, how to run it, how to test it), and the CLAUDE.md "commands" section lists the real start, test and check commands.
 
 ## Security & privacy
@@ -123,4 +123,4 @@ The approved **MeetApp design system** (https://claude.ai/artifact/K9GV7yg9Y4QkN
 - Real logo (placeholder until chosen).
 
 ## Open questions
-None. Answered by the owner on 2026-10-09: palette as in AC-F00-10; the owner has a GitHub account; Mac only, with Windows checked daily by GitHub; all listed decisions accepted.
+None. Design-review changes approved by the owner on 2026-10-09: Gatus status page (AC-41), seed limited to existing tables (AC-45), macOS per Docker Desktop support (AC-25), merge guard on the free plan (AC-19). Earlier answers, 2026-10-09: palette as in AC-F00-10; the owner has a GitHub account; Mac only, with Windows checked daily by GitHub; all listed decisions accepted.

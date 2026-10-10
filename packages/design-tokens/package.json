@@ -1,0 +1,23 @@
+{
+  "name": "@meetapp/design-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tokens.css": "./dist/tokens.css",
+    "./theme.css": "./dist/theme.css",
+    "./tokens.json": "./tokens.json",
+    ".": "./dist/tokens.ts"
+  },
+  "scripts": {
+    "build": "node src/cli.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@meetapp/config": "workspace:*",
+    "@tailwindcss/node": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "tailwindcss": "^4.3.3"
+  }
+}

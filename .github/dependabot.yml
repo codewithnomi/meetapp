@@ -1,0 +1,40 @@
+# Dependabot (free on GitHub, AC-F00-32): once a week it opens one Pull Request per area with all the
+# library updates, which then goes through every check. Security fixes come as soon as they are known.
+# Review them with /deps-update. Docs: https://docs.github.com/code-security/dependabot
+version: 2
+updates:
+  # JavaScript libraries of every app and package (one pnpm workspace).
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      npm:
+        patterns: ["*"]
+
+  # The local services' images (PostgreSQL, Redis, LiveKit, RustFS, Mailpit …).
+  - package-ecosystem: docker-compose
+    directory: "/infra"
+    schedule:
+      interval: weekly
+    groups:
+      local-services:
+        patterns: ["*"]
+
+  # The backend's container image (apps/api/Dockerfile, F00 T18).
+  - package-ecosystem: docker
+    directory: "/apps/api"
+    schedule:
+      interval: weekly
+    groups:
+      api-image:
+        patterns: ["*"]
+
+  # The GitHub Actions used by the checks (F00 T19).
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]

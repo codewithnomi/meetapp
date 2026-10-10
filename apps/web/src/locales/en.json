@@ -1,0 +1,37 @@
+{
+  "home": {
+    "wordmark": "MeetApp",
+    "welcome": "Welcome. Meetings, transcripts and minutes will live here.",
+    "openSettings": "Settings",
+    "demoFlag": "Demo feature is on"
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "appearance": {
+      "title": "Appearance",
+      "savedOnDevice": "Saved on this computer.",
+      "theme": "Theme",
+      "themes": {
+        "light": "Light",
+        "dark": "Dark",
+        "system": "Same as my computer"
+      },
+      "accent": "Accent color",
+      "accents": {
+        "sky": "Sky blue",
+        "blue": "Blue",
+        "purple": "Purple",
+        "pink": "Pink",
+        "red": "Red",
+        "orange": "Orange",
+        "green": "Green",
+        "teal": "Teal"
+      },
+      "preview": "Preview",
+      "previewPrimary": "Start meeting",
+      "previewGhost": "Copy invite link",
+      "previewBadge": "Host"
+    }
+  }
+}

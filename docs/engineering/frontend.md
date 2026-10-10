@@ -27,12 +27,12 @@ We build the UI like LEGO: small pieces combine into bigger pieces.
 2. **Atoms, molecules, organisms and templates contain no data fetching** and no backend calls. They receive data through props and report actions through callbacks (`onMute`, `onSend`).
 3. **Pages** (and page-level hooks) fetch data and hold state.
 4. LiveKit-specific code stays inside organisms such as `VideoTile` and page hooks, never in atoms.
-5. Every visible text goes through translation (`t("meeting.mute")`); no hard-coded strings.
+5. Every visible text goes through translation (`t("meeting.mute")`); no hard-coded strings. Component font sizes that are not text-style tokens (e.g. 13/14px on buttons) are copied exactly from the design system's component styles. Components never contain text of their own: labels arrive as props, already translated. Stories and tests may use sample text (the lint rule is off only for `*.stories.tsx` and `*.test.tsx`).
 
 ## 2. Folder structure
 ```
 packages/ui/src/            ← shared design system (desktop + web)
-  tokens/                   generated from packages/design-tokens/tokens.json (shared with Flutter)
+  (tokens come from packages/design-tokens: tokens.json → tokens.css + Tailwind theme; shared with Flutter later)
   atoms/Button/
     Button.tsx              the component
     Button.stories.tsx      visual documentation (Storybook)

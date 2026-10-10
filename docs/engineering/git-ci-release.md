@@ -19,7 +19,7 @@ A PR can only be merged when all of these pass:
 1. Install + build every app
 2. Lint + typecheck + Atomic Design and layer rules + code-quality limits (complexity, duplication, unused code; see code-quality.md)
 3. Unit tests and integration tests (with a real Postgres/Redis in Docker), with minimum test coverage of 80% on business logic
-4. End-to-end tests (Playwright) on the web build
+4. End-to-end tests (Playwright) on the Electron desktop build
 5. Dependency vulnerability scan + secrets scan (gitleaks) + code security scan (Semgrep; free for private repos)
 6. Storybook builds (UI docs never break)
 7. **Visual screenshot tests** of every component story: an unexpected visual change fails until approved

@@ -33,6 +33,10 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 | `/spec-implement F01` | Claude writes the tests for the next step, builds it, runs **all** tests, ticks it off, then stops for you |
 | `/spec-verify F01` | Final check: all tests, every promise in the spec, and a security audit. **Runs automatically** when the last step is done |
 | `/new-component molecule MicToggleButton` | Creates a UI component the Atomic Design way, with its visual docs (Storybook) and tests |
+| `/fix-ci` | A GitHub check failed: Claude reads why, reproduces it, fixes it, and confirms it's green |
+| `/deps-update` | Library updates arrived (Dependabot): Claude checks what changed, fixes breakages, tells you which are safe to merge |
+| `/add-dependency` | Claude checks a new library (license, upkeep, size) before adding it |
+| `/db-migration` | A safe database change, with no lost data |
 | `/diagnose` | Something's down or broken: Claude finds out **why** (status page, logs, dashboards, database) and explains or fixes it |
 | `/pr` | Saves work to GitHub as a Pull Request. **Happens automatically** when a feature passes all checks; you just click **Merge** |
 | `/save-progress` | Claude writes today's work into `progress.md` |
@@ -40,6 +44,7 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 ### 4. Subagents: specialist helpers
 - **What:** separate Claude helpers with one job each. They work in their own space, so they don't fill up the main conversation.
 - **Where:** `.claude/agents/*.md`
+- **Which model (D038):** simple jobs use cheaper models: Haiku for docs-keeper, `/spec-status` and `/save-progress`; Sonnet for test-writer, ui-reviewer, code-quality-reviewer and ac-verifier; Opus for security-auditor, spec-reviewer and the main work.
 - **Ours:**
   - `spec-reviewer`: reads a spec like a strict reviewer and lists missing or unclear points.
   - `ac-verifier`: checks the finished code really does everything the spec promised.
@@ -59,6 +64,7 @@ Claude doesn't remember past conversations, and in a very long conversation olde
   - **Before a long conversation is summarized**, a reminder to run `/save-progress`.
   - **Before any file edit:** code can't be written until you've said "go ahead". Only documents can change until then.
   - **Before any Git command:** saving to or uploading to `main` directly is blocked; work always goes through a Pull Request. This replaces GitHub's branch protection, which the free plan doesn't offer for private repos.
+  - **When a conversation starts:** Claude's commands switch to the project's locked tool versions, and a short summary of where we are is shown.
   - **When Claude needs you:** a Mac notification pops up.
   - **Protected files:** old database changes (migrations), lock files and generated files can't be edited by hand.
   - **Status bar** at the bottom of Claude shows the branch, whether coding is unlocked, and the next feature.

@@ -1,0 +1,154 @@
+// Grafana Alloy: the one collector for local monitoring (decision D030, design.md section 3).
+// Metrics: scrapes the backend and LiveKit, runs built-in exporters (PostgreSQL, Redis, containers,
+// Docker disk) and pushes everything to Prometheus. Logs and traces: receives the backend's over OTLP
+// and forwards logs to Loki and traces to Tempo. Also ships every container's logs to Loki.
+// Its own status page: http://127.0.0.1:12345 (ALLOY_UI_PORT).
+
+// ---------- Metrics ----------
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// The backend runs on the Mac (pnpm dev); containers reach it through host.docker.internal.
+prometheus.scrape "backend" {
+  targets         = [{ __address__ = "host.docker.internal:" + sys.env("API_PORT"), job = "meetapp-api" }]
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.local.receiver]
+}
+
+// LiveKit's metrics port (prometheus_port in infra/livekit.yaml), reachable only inside Docker.
+prometheus.scrape "livekit" {
+  targets         = [{ __address__ = "livekit:6789", job = "livekit" }]
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.exporter.postgres "database" {
+  data_source_names = [string.format(
+    "postgresql://%s:%s@postgres:5432/%s?sslmode=disable",
+    sys.env("POSTGRES_USER"),
+    sys.env("POSTGRES_PASSWORD"),
+    sys.env("POSTGRES_DB"),
+  )]
+}
+
+prometheus.exporter.redis "cache" {
+  redis_addr = "redis:6379"
+}
+
+// CPU and memory per container. Only MeetApp's own containers are kept (see "containers_meetapp_only").
+prometheus.exporter.cadvisor "containers" {
+  docker_host      = "unix:///var/run/docker.sock"
+  storage_duration = "5m"
+  docker_only      = true
+}
+
+// How full the Docker disk is (for the "disk nearly full" alert).
+prometheus.exporter.unix "docker_disk" {
+  rootfs_path    = "/rootfs"
+  set_collectors = ["filesystem"]
+}
+
+prometheus.scrape "exporters" {
+  targets = array.concat(
+    prometheus.exporter.postgres.database.targets,
+    prometheus.exporter.redis.cache.targets,
+    prometheus.exporter.unix.docker_disk.targets,
+  )
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.scrape "containers" {
+  targets         = prometheus.exporter.cadvisor.containers.targets
+  scrape_interval = "15s"
+  forward_to      = [prometheus.relabel.containers_meetapp_only.receiver]
+}
+
+// The Mac may run other containers (the owner's own programs): their numbers are not collected.
+prometheus.relabel "containers_meetapp_only" {
+  rule {
+    action        = "keep"
+    source_labels = ["name"]
+    regex         = "meetapp-.+"
+  }
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+// ---------- The backend's traces and logs (OTLP) ----------
+
+otelcol.receiver.otlp "backend" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    logs   = [otelcol.processor.batch.backend.input]
+    traces = [otelcol.processor.batch.backend.input]
+  }
+}
+
+otelcol.processor.batch "backend" {
+  timeout = "2s"
+
+  output {
+    logs   = [otelcol.exporter.otlphttp.loki.input]
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Loki's own OTLP endpoint keeps requestId and trace_id as searchable fields.
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// ---------- Container logs ----------
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  // Only MeetApp's own containers: the Mac may run other programs in Docker, and their logs are not ours.
+  rule {
+    action        = "keep"
+    source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+    regex         = "meetapp"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  labels     = { source = "docker" }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

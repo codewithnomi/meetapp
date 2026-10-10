@@ -15,6 +15,7 @@ More reference documents:
 - Product: [glossary.md](product/glossary.md) · [quality-targets.md](product/quality-targets.md) · [privacy-legal.md](product/privacy-legal.md)
 - Engineering: [project-structure.md](engineering/project-structure.md) (code map) · [code-quality.md](engineering/code-quality.md) · [frontend.md](engineering/frontend.md) (Atomic Design) · [backend.md](engineering/backend.md) · [git-ci-release.md](engineering/git-ci-release.md) · [operations.md](engineering/operations.md)
 - Security: [architecture/security.md](architecture/security.md)
+- Running it: [getting-started.md](getting-started.md) (setup on a Mac) · runbooks: [local-services.md](runbooks/local-services.md) · [monitoring.md](runbooks/monitoring.md) · [ci.md](runbooks/ci.md)
 
 ## How a feature goes from idea to code
 ```
