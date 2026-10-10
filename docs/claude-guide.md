@@ -44,6 +44,7 @@ Claude doesn't remember past conversations, and in a very long conversation olde
 ### 4. Subagents: specialist helpers
 - **What:** separate Claude helpers with one job each. They work in their own space, so they don't fill up the main conversation.
 - **Where:** `.claude/agents/*.md`
+- **Which model (D038):** simple jobs use cheaper models: Haiku for docs-keeper, `/spec-status` and `/save-progress`; Sonnet for test-writer, ui-reviewer, code-quality-reviewer and ac-verifier; Opus for security-auditor, spec-reviewer and the main work.
 - **Ours:**
   - `spec-reviewer`: reads a spec like a strict reviewer and lists missing or unclear points.
   - `ac-verifier`: checks the finished code really does everything the spec promised.

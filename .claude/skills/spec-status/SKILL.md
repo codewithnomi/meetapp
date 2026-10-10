@@ -1,6 +1,7 @@
 ---
 name: spec-status
 description: Show where the project stands - every feature's spec status, what was done last, and the next step. Use for "/spec-status" or when the owner asks "where are we?".
+model: haiku
 ---
 
 # Project status

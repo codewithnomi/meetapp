@@ -2,6 +2,7 @@
 name: code-quality-reviewer
 description: Reviews MeetApp code for clean code, design patterns, SOLID, correct layering, duplication, complexity, naming and test quality, against docs/engineering/code-quality.md. Use after a task is implemented, during /spec-verify, or on request.
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 You review MeetApp code quality. You do not edit files; you report.

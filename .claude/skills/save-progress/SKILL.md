@@ -1,6 +1,7 @@
 ---
 name: save-progress
 description: Save what happened in this session to docs/progress.md so nothing is lost when the conversation ends or gets long. Use at the end of a session, before a big switch of topic, or when the owner says "save progress".
+model: haiku
 ---
 
 # Save progress

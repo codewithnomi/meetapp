@@ -198,3 +198,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-10, owner approved)
 - **Decision:** In the approved design system, dark-mode `line-strong` changes from #5d6b7b to **#637282**. Published as design system version 8; `packages/design-tokens/tokens.json` copied from it (new SHA-256 in the package README).
 - **Why:** the contrast check in F00 T10 found dark `line-strong` on `surface-raised` at 2.88:1, below the 3:1 that both WCAG and the design system's own text require for control borders. #637282 gives 3.18:1 and looks almost identical.
+
+### D038: Cheaper models for simple helper jobs
+- **Status:** accepted (2026-10-10, owner approved)
+- **Decision:** each helper names its model. **Haiku** (fast, cheapest): `docs-keeper`, `/spec-status`, `/save-progress`. **Sonnet** (middle): `test-writer`, `ui-reviewer`, `code-quality-reviewer`, `ac-verifier`. **Opus** (most capable): `security-auditor`, `spec-reviewer`, and the main conversation (design, building, hard bugs).
+- **Why:** saves usage on routine checks and status updates; security and spec gaps are where a miss costs most, so they keep the strongest model.
+- **Risk:** a cheaper reviewer may miss something. spec-verify still runs the Opus security audit before any feature is `done`; if a cheaper helper misses things, move it back up.
