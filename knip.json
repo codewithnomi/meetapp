@@ -2,8 +2,13 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["tools/*.{ts,mjs}"],
-      "project": ["tools/**/*.{ts,mjs}", "infra/**/*.ts"]
+      "entry": [
+        "tools/*.{ts,mjs}",
+        "tests/e2e/*/playwright.config.ts",
+        "tests/e2e/*/*.spec.ts",
+        "tests/e2e/*/serve-*.ts"
+      ],
+      "project": ["tools/**/*.{ts,mjs}", "infra/**/*.ts", "tests/e2e/**/*.ts"]
     },
     "packages/config": {
       "ignoreDependencies": ["eslint-import-resolver-typescript"]

@@ -72,7 +72,9 @@ module.exports = {
   options: {
     doNotFollow: { path: "node_modules" },
     // Fixtures break the rules on purpose; tests feed them to the tool directly.
-    exclude: { path: "(^|/)(node_modules|dist|out|coverage|storybook-static)/|^tests/fixtures/|^docs/" },
+    exclude: {
+      path: "(^|/)(node_modules|dist|out|coverage|storybook-static|playwright-report|test-results)/|^tests/fixtures/|^docs/",
+    },
     tsPreCompilationDeps: true,
     combinedDependencies: true,
     enhancedResolveOptions: { extensions: [".ts", ".tsx", ".js", ".mjs", ".json"] },

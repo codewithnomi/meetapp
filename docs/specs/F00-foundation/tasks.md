@@ -47,7 +47,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T12: Remaining atoms and Settings molecules.** Input, Toggle, Avatar, Badge; molecules SegmentedControl and AccentPicker.
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 34 (these components). Check: same as T11.
 
-- [ ] **T13: Visual and accessibility pipeline. (milestone)** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
+- [x] **T13: Visual and accessibility pipeline. (milestone)** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
   Covers: AC-F00-13, 14, 33. Tests: TC-F00-28, 35, 71. Check: a changed padding fails with a before/after diff; zero a11y violations.
 
 - [ ] **T14: Renderer app.** `apps/web`: React 19 + Tailwind + i18next (`en.json`); bundled fonts; starter home screen (wordmark, welcome, Settings button); Appearance panel; appearance store applied before first render; `useFlag` (15 s, unknown or failed = off).

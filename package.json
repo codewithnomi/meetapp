@@ -19,6 +19,8 @@
     "email:test": "node tools/email-test.ts",
     "test": "vitest run",
     "test:integration": "VITEST_INTEGRATION=1 vitest run infra packages apps",
+    "test:visual": "node tools/visual.ts",
+    "test:visual:update": "node tools/visual.ts --update",
     "typecheck": "tsc --noEmit -p tsconfig.json && turbo run typecheck",
     "lint": "eslint --max-warnings=0 --cache --cache-location node_modules/.cache/eslint .",
     "format": "prettier --write .",
@@ -30,8 +32,10 @@
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@meetapp/config": "workspace:*",
     "@meetapp/db": "workspace:*",
+    "@playwright/test": "1.63.0",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@^7.0.2",
     "acorn": "^8.19.0",

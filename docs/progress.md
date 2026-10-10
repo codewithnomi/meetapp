@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T12 done. Next is T13 (screenshot and accessibility checks of every story; a milestone).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T13 done. Next is T14 (the renderer app: starter home screen and Appearance panel).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T13. Storybook (`pnpm --filter @meetapp/ui storybook`) now shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** owner tries `pnpm test:visual` (T13 milestone), then `/next` builds T14. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,10 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T13 screenshot and accessibility check)
+- **T13 done (milestone):** `pnpm test:visual` builds the gallery and checks all 70 stories in light and dark (140 pictures) against approved pictures, plus an accessibility scan of each: 0 problems found. It runs inside the official Playwright 1.63.0 Linux image (the same as CI will use, so pictures match exactly). `pnpm test:visual:update` makes new pictures after an intended change. Proven: a 4-pixel padding change on the Button fails with before, after and difference pictures; a button without a name fails the accessibility scan. 600 unit tests pass.
+- Details are in design.md section 8 ("Details settled in T13"). TC-F00-35 wording updated: the unnamed-button proof removes the name inside the test instead of adding a broken story to the gallery.
 
 ### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command, T6 database, T7 backend core, T8 health and services, T9 flags and observability, T10 design tokens, T11 UI atoms, T12 Settings components)
 - **T2 done:** the automatic code checker is set up and `pnpm check` runs it all: lint rules (size limits, no `any`, no `console.log`, accessibility, translations, our own "no raw colors" rule, a reason required to switch any rule off), formatting, type checks, architecture rules (Atomic levels, backend layers), unused code and copy-paste detection. The after-edit hook is now active. 76 tests pass.

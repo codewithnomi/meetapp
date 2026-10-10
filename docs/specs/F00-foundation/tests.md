@@ -270,7 +270,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** e2e
 - **Given** the built Storybook
 - **When** axe runs on every atom and molecule story in light and dark
-- **Then** there are 0 violations; a fixture story with an unlabeled IconButton makes the run fail
+- **Then** there are 0 violations; an IconButton story with its name removed (done by the test itself, so the gallery stays clean) produces a `button-name` violation
 
 ### TC-F00-36: Lower Atomic level importing a higher level fails
 - **Covers:** AC-F00-15

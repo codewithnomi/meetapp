@@ -83,6 +83,7 @@ meetapp/
 ├── tools/                       Dev scripts: preflight, dev runner, license check, structure check, alert notifier, flags
 └── tests/
     ├── e2e/                       Playwright end-to-end tests (real app flows)
+    │   └── gallery/               Screenshot + accessibility check of every Storybook story (pnpm test:visual)
     ├── fixtures/                  Files that deliberately break rules, used to test the checks
     └── load/                      Load tests (100-person meetings)
 ```

@@ -88,6 +88,8 @@ export default tseslint.config(
       "**/dist/",
       "**/out/",
       "**/storybook-static/",
+      "**/playwright-report/",
+      "**/test-results/",
       "**/coverage/",
       "tests/fixtures/",
       "**/.turbo/",

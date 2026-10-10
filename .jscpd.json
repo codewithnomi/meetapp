@@ -12,6 +12,8 @@
     "tests/fixtures/**",
     "**/*.test.ts",
     "**/*.test.tsx",
+    "**/playwright-report/**",
+    "**/test-results/**",
     "pnpm-lock.yaml"
   ],
   "absolute": false,
