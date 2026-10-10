@@ -1,7 +1,7 @@
 // GET /api/v1/health: is the backend and each service it needs working (AC-F00-02; checks arrive in T8).
 import { z } from "zod";
 
-export const healthCheckStateSchema = z.enum(["up", "down"]);
+export const healthCheckStateSchema = z.enum(["ok", "down"]);
 
 export const healthResponseSchema = z
   .object({

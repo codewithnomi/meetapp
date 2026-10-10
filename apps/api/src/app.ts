@@ -6,6 +6,7 @@ import Fastify, { LogController, type FastifyInstance } from "fastify";
 import type { DestinationStream } from "pino";
 import type { Config } from "./config/config.ts";
 import { healthRoutes } from "./modules/health/health.routes.ts";
+import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
 import { registerDocs } from "./plugins/docs.ts";
 import { registerErrorHandling } from "./plugins/errors.ts";
@@ -18,6 +19,8 @@ export interface BuildOptions {
   /** Where log lines go (tests capture them); defaults to standard output. */
   logDestination?: DestinationStream;
   logLevel?: string;
+  /** One check per service the backend needs (database, cache, …); see server.ts. */
+  healthChecks?: Record<string, HealthCheck>;
 }
 
 export async function buildApp(config: Config, options: BuildOptions = {}): Promise<FastifyInstance> {
@@ -37,7 +40,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(cors, { origin: ALLOWED_ORIGINS });
   if (config.NODE_ENV === "development") await registerDocs(app);
 
-  await app.register(healthRoutes);
+  await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }

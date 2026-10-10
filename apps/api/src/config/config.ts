@@ -5,6 +5,14 @@ import { z } from "zod";
 
 const port = z.coerce.number().int().min(1).max(65_535);
 const text = z.string().min(1);
+/** A setting with a default: missing or empty means the default. */
+function withDefault(fallback: string) {
+  return z
+    .string()
+    .optional()
+    .transform((value) => (value === undefined || value === "" ? fallback : value));
+}
+const host = withDefault("127.0.0.1");
 /** Optional settings: an empty value means "off". */
 const optional = z
   .string()
@@ -19,17 +27,22 @@ export const configSchema = z.object({
   POSTGRES_PASSWORD: text,
   POSTGRES_DB: text,
   POSTGRES_PORT: port,
-  POSTGRES_HOST: z.string().default("127.0.0.1"),
+  POSTGRES_HOST: host,
   REDIS_PORT: port,
+  REDIS_HOST: host,
   LIVEKIT_PORT: port,
+  LIVEKIT_HOST: host,
   LIVEKIT_API_KEY: text,
   LIVEKIT_API_SECRET: text,
   STORAGE_PORT: port,
+  STORAGE_HOST: host,
   STORAGE_ACCESS_KEY: text,
   STORAGE_SECRET_KEY: text,
   STORAGE_BUCKET: text,
   STORAGE_REGION: text,
   MAILPIT_SMTP_PORT: port,
+  MAILPIT_HOST: host,
+  EMAIL_FROM: withDefault("MeetApp <no-reply@meetapp.local>"),
   SENTRY_DSN: optional,
   OTEL_EXPORTER_OTLP_ENDPOINT: optional,
 });

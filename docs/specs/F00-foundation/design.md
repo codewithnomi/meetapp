@@ -80,7 +80,7 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`).
 4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.
-6. Turborepo (`pnpm dev:apps`) runs `api` and `desktop` in parallel with hot reload. electron-vite serves the renderer, and the API runs migrations on startup.
+6. Turborepo (`pnpm dev:apps`, with the shell's settings passed through so `.env` values can be overridden) runs `api` and `desktop` in parallel with hot reload. electron-vite serves the renderer, and the API runs migrations on startup.
 7. Print a table of addresses (AC-F00-01). Until the apps exist (T7, T14, T15) it says so and exits after starting the services.
 
 **`pnpm dev:stop`** stops the services and keeps all data.
@@ -162,7 +162,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 
 | Endpoint | What it does |
 |---|---|
-| `GET /api/v1/health` | Checks database (`select 1`), Redis (`PING`), LiveKit (`listRooms`) and storage (`HeadBucket`) in parallel, 1.5 s timeout each. Returns 200 `{status:"ok", checks:{database:"up", …}}` or 503 `{status:"degraded", …}` with `down` for each failing part (AC-F00-02). Schema in `packages/contracts`. |
+| `GET /api/v1/health` | Checks database (`select 1`), Redis (`PING`), LiveKit (`listRooms`) and storage (`HeadBucket`) in parallel, 1.5 s timeout each. Returns 200 `{status:"ok", checks:{database:"ok", …}}` or 503 `{status:"degraded", …}` with `down` for each failing part (AC-F00-02). Schema in `packages/contracts`. |
 | `GET /api/v1/flags` | `[{key, enabled}]` from `feature_flags`, server cache **10 s** (AC-F00-34). |
 | `GET /metrics` | Prometheus metrics: requests, durations, errors, process CPU/memory, DB pool, Redis status. |
 | `GET /docs`, `/docs/json` | Swagger UI + OpenAPI from `packages/contracts`. Registered **only when `NODE_ENV=development`**; returns 404 otherwise (AC-F00-21). |
@@ -183,6 +183,8 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - `pg` Pool with `pool.on('error', log)`, so stopping Postgres can't crash the API
   - ioredis with `maxRetriesPerRequest: 1` and `enableOfflineQueue: false`, so PING fails fast
   - both reconnect automatically
+- **Service addresses:** `POSTGRES_HOST`, `REDIS_HOST`, `LIVEKIT_HOST`, `STORAGE_HOST`, `MAILPIT_HOST` (missing or empty = `127.0.0.1`), so the container in T18 can point at service names. `EMAIL_FROM` sets the sender.
+- **Health check names:** `database`, `cache`, `callServer`, `storage`; each runs in parallel with its own 1.5 s limit (`modules/health/health.service.ts`). Providers are created in `server.ts` and passed to `buildApp`, so tests can use fakes.
 - **Providers:**
   - **storage:** an S3 client on RustFS (R2 later, same code); `pnpm storage:test` and an integration test write and read an object (AC-F00-38)
   - **email:** nodemailer on Mailpit SMTP

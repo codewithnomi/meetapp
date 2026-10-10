@@ -18,7 +18,16 @@ const PORT_KEYS = new Set([
 export const CONFIG_KEYS = Object.keys(configSchema.shape) as (keyof Config)[];
 
 /** Settings that may be left out (they have a default or mean "off" when empty). */
-export const OPTIONAL_KEYS: readonly string[] = ["POSTGRES_HOST", "SENTRY_DSN", "OTEL_EXPORTER_OTLP_ENDPOINT"];
+export const OPTIONAL_KEYS: readonly string[] = [
+  "POSTGRES_HOST",
+  "REDIS_HOST",
+  "LIVEKIT_HOST",
+  "STORAGE_HOST",
+  "MAILPIT_HOST",
+  "EMAIL_FROM",
+  "SENTRY_DSN",
+  "OTEL_EXPORTER_OTLP_ENDPOINT",
+];
 
 /**
  * A full environment with distinctive fake values: text settings are `val-<KEY>-123`, ports are

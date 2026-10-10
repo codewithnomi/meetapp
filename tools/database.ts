@@ -1,20 +1,13 @@
 // Shared by the database commands (pnpm seed, pnpm flag): connect using the settings in .env.
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createDatabase, databaseUrl, runMigrations } from "@meetapp/db";
+import { ROOT, fail, requireEnvFile } from "./cli.ts";
 import { readEnv } from "./dev-checks.ts";
 
-const ROOT = fileURLToPath(new URL("..", import.meta.url));
-
-export function fail(message: string): never {
-  process.stderr.write(`✗ ${message}\n`);
-  process.exit(1);
-}
+export { fail };
 
 /** Migrates (a no-op when up to date), then runs `work` with an open connection and always closes it. */
 export async function withDatabase<T>(work: (db: ReturnType<typeof createDatabase>["db"]) => Promise<T>): Promise<T> {
-  if (!existsSync(join(ROOT, ".env"))) fail("No .env yet. Run `pnpm dev` once first.");
+  requireEnvFile();
   const env = readEnv(ROOT);
   const url = databaseUrl({
     POSTGRES_USER: env["POSTGRES_USER"] ?? "",

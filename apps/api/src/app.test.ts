@@ -77,10 +77,10 @@ describe("TC-F00-49 [AC-F00-20] every answer carries a request id", () => {
 });
 
 describe("TC-F00-07 [AC-F00-02] health answers when the backend is up (T7 part: api only; T8 adds the services)", () => {
-  it("TC-F00-07 [AC-F00-02] GET /api/v1/health returns 200 with status ok and api up", async () => {
+  it("TC-F00-07 [AC-F00-02] GET /api/v1/health with no services configured returns 200 and no checks", async () => {
     const response = await app.inject({ method: "GET", url: HEALTH });
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toStrictEqual({ status: "ok", checks: { api: "up" } });
+    expect(response.json()).toStrictEqual({ status: "ok", checks: {} });
   });
 });
 

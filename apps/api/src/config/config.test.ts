@@ -112,3 +112,28 @@ describe("TC-F00-12 [AC-F00-05] [AC-F00-06] every setting is documented in .env.
     }
   });
 });
+
+describe("TC-F00-11 [AC-F00-05] service addresses and the email sender have safe defaults", () => {
+  const HOST_KEYS = ["POSTGRES_HOST", "REDIS_HOST", "LIVEKIT_HOST", "STORAGE_HOST", "MAILPIT_HOST"] as const;
+  const DEFAULT_SENDER = "MeetApp <no-reply@meetapp.local>";
+
+  it.each(HOST_KEYS)("TC-F00-11 [AC-F00-05] an empty %s means 127.0.0.1 (this computer)", (key) => {
+    expect(loadConfig({ ...fakeEnv(), [key]: "" })[key]).toBe("127.0.0.1");
+  });
+
+  it.each(HOST_KEYS)("TC-F00-11 [AC-F00-05] a missing %s means 127.0.0.1 (this computer)", (key) => {
+    expect(loadConfig(without(fakeEnv(), key))[key]).toBe("127.0.0.1");
+  });
+
+  it("TC-F00-11 [AC-F00-05] a host that is set is kept as it is", () => {
+    expect(loadConfig({ ...fakeEnv(), REDIS_HOST: "redis.internal" }).REDIS_HOST).toBe("redis.internal");
+  });
+
+  it("TC-F00-11 [AC-F00-05] an empty or missing EMAIL_FROM uses the MeetApp no-reply sender", () => {
+    expect(loadConfig({ ...fakeEnv(), EMAIL_FROM: "" }).EMAIL_FROM).toBe(DEFAULT_SENDER);
+    expect(loadConfig(without(fakeEnv(), "EMAIL_FROM")).EMAIL_FROM).toBe(DEFAULT_SENDER);
+    expect(loadConfig({ ...fakeEnv(), EMAIL_FROM: "Team <team@example.test>" }).EMAIL_FROM).toBe(
+      "Team <team@example.test>",
+    );
+  });
+});

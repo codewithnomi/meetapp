@@ -3,32 +3,22 @@
 // empty database `meetapp_test_<random>` and drops it afterwards. Needs the local Postgres running;
 // run with `pnpm test:integration`. Settings come from .env (or .env.example); the shell wins,
 // e.g. POSTGRES_PORT=5433. Values are never printed.
-import { spawn, type ChildProcess } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { createConnection, createServer } from "node:net";
+import { createConnection } from "node:net";
 import { networkInterfaces } from "node:os";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 import { createDatabase, databaseUrl, type DatabaseSettings } from "@meetapp/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { fakeEnv } from "./test-support/fake-env.ts";
+import {
+  freePort,
+  localSettings,
+  setting,
+  startApi as spawnApi,
+  stopApi,
+  waitForHealth,
+  type RunningApi,
+} from "./test-support/integration.ts";
 
-const ROOT = fileURLToPath(new URL("../../..", import.meta.url));
-const SERVER = join(ROOT, "apps/api/src/server.ts");
-const ENV_FILE = existsSync(join(ROOT, ".env")) ? join(ROOT, ".env") : join(ROOT, ".env.example");
 const SLOW = { timeout: 60_000 };
-
-/** A setting: the shell environment wins over the env file. Values are never printed. */
-function setting(name: keyof DatabaseSettings): string {
-  const fromShell = process.env[name];
-  if (fromShell !== undefined && fromShell !== "") return fromShell;
-  for (const line of readFileSync(ENV_FILE, "utf8").split("\n")) {
-    const match = /^([A-Z][A-Z0-9_]*)=(.*)$/.exec(line.trim());
-    if (match?.[1] === name) return match[2] ?? "";
-  }
-  throw new Error(`${name} is not set in ${ENV_FILE}`);
-}
 
 const settings: DatabaseSettings = {
   POSTGRES_USER: setting("POSTGRES_USER"),
@@ -49,18 +39,6 @@ async function sqlRows<T>(url: string, statement: string): Promise<T[]> {
 
 const asAdmin = (statement: string) => sqlRows(databaseUrl(settings), statement);
 const inTestDb = <T>(statement: string) => sqlRows<T>(databaseUrl({ ...settings, POSTGRES_DB: TEST_DB }), statement);
-
-/** A port nobody is using right now. */
-function freePort(): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      server.close(() => resolve(typeof address === "object" && address !== null ? address.port : 0));
-    });
-  });
-}
 
 /** True when a TCP connection to host:port is accepted within 2 seconds. */
 function canConnect(host: string, port: number): Promise<boolean> {
@@ -86,61 +64,17 @@ function lanAddress() {
   return undefined;
 }
 
-interface RunningApi {
-  child: ChildProcess;
-  output: () => string;
-}
-
 let apiPort = 0;
 let api: RunningApi | undefined;
 
+/** The real backend against the fresh test database; other services use the local settings. */
 function startApi(): RunningApi {
-  const env = {
-    ...fakeEnv("test"),
-    ...settings,
-    POSTGRES_DB: TEST_DB,
-    POSTGRES_HOST: "127.0.0.1",
-    API_HOST: "127.0.0.1",
-    API_PORT: String(apiPort),
-    PATH: process.env["PATH"] ?? "",
-  };
-  const child = spawn(process.execPath, [SERVER], { cwd: ROOT, env, stdio: ["ignore", "pipe", "pipe"] });
-  const chunks: string[] = [];
-  child.stdout.on("data", (chunk: Buffer) => chunks.push(chunk.toString()));
-  child.stderr.on("data", (chunk: Buffer) => chunks.push(chunk.toString()));
-  return { child, output: () => chunks.join("") };
+  return spawnApi(apiPort, { ...localSettings(), ...settings, POSTGRES_DB: TEST_DB, POSTGRES_HOST: "127.0.0.1" });
 }
 
 /** Waits until GET /api/v1/health answers 200 (max 20 s). */
 async function waitUntilHealthy(running: RunningApi): Promise<void> {
-  const deadline = Date.now() + 20_000;
-  while (Date.now() < deadline) {
-    if (running.child.exitCode !== null) throw new Error(`the API exited early:\n${running.output()}`);
-    try {
-      const response = await fetch(`http://127.0.0.1:${apiPort}/api/v1/health`);
-      if (response.status === 200) return;
-    } catch {
-      // Not listening yet.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error(`the API was not healthy within 20 s:\n${running.output()}`);
-}
-
-/** Sends SIGTERM and resolves with the exit code (max 10 s). */
-function stopApi(running: RunningApi): Promise<number | null> {
-  return new Promise((resolve, reject) => {
-    if (running.child.exitCode !== null) {
-      resolve(running.child.exitCode);
-      return;
-    }
-    const timer = setTimeout(() => reject(new Error("the API did not stop within 10 s")), 10_000);
-    running.child.once("exit", (code) => {
-      clearTimeout(timer);
-      resolve(code);
-    });
-    running.child.kill("SIGTERM");
-  });
+  await waitForHealth(running);
 }
 
 async function journalRows(): Promise<number> {
