@@ -34,10 +34,15 @@ export const useAppearance = create<AppearanceState>()((set, get) => {
   };
 });
 
-/** While "Same as my computer" is chosen, follow the computer's light/dark switch. Returns a stop function. */
+/**
+ * While "Same as my computer" is chosen, follow the computer's light/dark switch. Applies once right away
+ * too, so a switch made while the app was starting up isn't missed. Returns a stop function.
+ */
 export function followSystemTheme(): () => void {
-  return watchSystemTheme(() => {
+  const follow = () => {
     const state = useAppearance.getState();
     if (state.theme === "system") applyAppearance(current(state));
-  });
+  };
+  follow();
+  return watchSystemTheme(follow);
 }

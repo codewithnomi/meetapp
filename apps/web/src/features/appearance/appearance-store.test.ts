@@ -101,6 +101,18 @@ describe("followSystemTheme", () => {
     stop();
   });
 
+  it("TC-F00-19 [AC-F00-09] a switch on the computer while the app starts up is not missed", async () => {
+    const computer = fakeColorScheme(false);
+    const { useAppearance, followSystemTheme } = await freshStore();
+    useAppearance.getState().setTheme("system");
+    expect(html.dataset.theme).toBe("light");
+    // The computer turns dark before the app starts listening (nobody hears this change).
+    computer.setDark(true);
+    const stop = followSystemTheme();
+    expect(html.dataset.theme).toBe("dark");
+    stop();
+  });
+
   it("TC-F00-19 [AC-F00-09] with Light chosen, the computer going dark changes nothing", async () => {
     const computer = fakeColorScheme(false);
     const { useAppearance, followSystemTheme } = await freshStore();

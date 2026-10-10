@@ -70,6 +70,7 @@ test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn
 
 test("TC-F00-19 [AC-F00-09] 'Same as my computer' follows the computer; 'Light' does not", async () => {
   const { app, page } = await launch();
+  await expect(page.getByRole("heading", { level: 1, name: "MeetApp" })).toBeVisible();
   await page.emulateMedia({ colorScheme: "dark" });
   await expect.poll(() => htmlData(page), { timeout: SWITCH_MS }).toMatchObject({ theme: "dark" });
   await page.emulateMedia({ colorScheme: "light" });

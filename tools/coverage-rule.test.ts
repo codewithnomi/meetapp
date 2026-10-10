@@ -8,12 +8,16 @@ import { ROOT } from "./cli.ts";
 const VITEST = join(ROOT, "node_modules/.bin/vitest");
 
 function coverageRun(fixture: string) {
-  const result = spawnSync(VITEST, ["run", "--coverage", "--root", join(ROOT, "tests/fixtures/coverage", fixture)], {
-    cwd: ROOT,
-    encoding: "utf8",
-    env: { ...process.env, CI: "1" },
-    timeout: 60_000,
-  });
+  const result = spawnSync(
+    VITEST,
+    ["run", "--coverage", "--root", join(ROOT, "tests/fixtures/coverage-threshold", fixture)],
+    {
+      cwd: ROOT,
+      encoding: "utf8",
+      env: { ...process.env, CI: "1" },
+      timeout: 60_000,
+    },
+  );
   return { code: result.status, output: `${result.stdout}\n${result.stderr}` };
 }
 

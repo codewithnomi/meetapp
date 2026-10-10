@@ -9,6 +9,12 @@ const DESIGN_CSP =
 let running: RunningApp;
 test.beforeEach(async () => {
   running = await launch();
+  // No test may open the real browser: "open in browser" is recorded instead.
+  await running.app.evaluate(({ shell }) => {
+    const opened: string[] = [];
+    (globalThis as { opened?: string[] }).opened = opened;
+    shell.openExternal = async (url: string) => void opened.push(url);
+  });
 });
 test.afterEach(async () => running.app.close());
 
@@ -38,11 +44,6 @@ test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the pag
 
 test("TC-F00-59 [AC-F00-24] outside addresses and new windows are blocked; only https goes to the browser", async () => {
   const { app, page } = running;
-  await app.evaluate(({ shell }) => {
-    const opened: string[] = [];
-    (globalThis as { opened?: string[] }).opened = opened;
-    shell.openExternal = async (url: string) => void opened.push(url);
-  });
   const start = page.url();
   await page.evaluate(() => {
     window.open("https://example.com");
