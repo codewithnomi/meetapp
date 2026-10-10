@@ -6,6 +6,7 @@ import vitest from "@vitest/eslint-plugin";
 import boundaries from "eslint-plugin-boundaries";
 import i18next from "eslint-plugin-i18next";
 import jsxA11y from "eslint-plugin-jsx-a11y";
+import reactHooks from "eslint-plugin-react-hooks";
 import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
 import tseslint from "typescript-eslint";
@@ -119,8 +120,15 @@ export default tseslint.config(
     ...jsxA11y.flatConfigs.recommended,
     languageOptions: { ...jsxA11y.flatConfigs.recommended.languageOptions, globals: { ...globals.browser } },
   },
+  // React: hooks only at the top level, complete effect dependencies.
+  { files: ["**/*.{tsx,jsx}"], ...reactHooks.configs.flat["recommended-latest"] },
   atomicLevels,
   translations,
+  {
+    // Stories and tests show sample content (gallery, test data); it never ships in the app.
+    files: ["**/*.stories.tsx", "**/*.test.tsx"],
+    rules: { "i18next/no-literal-string": "off" },
+  },
   {
     files: TESTS,
     plugins: { vitest },

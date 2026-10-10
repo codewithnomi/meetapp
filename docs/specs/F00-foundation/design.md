@@ -141,6 +141,7 @@ Steps 1–4 fail within 10 s.
 - Same props and behavior as the design system's components; Tailwind token classes only.
 - Tooltip and Toggle use Radix primitives. Icons are **Lucide**, mapped to the design system's icon names.
 - Each component has `X.tsx`, `X.stories.tsx`, `X.test.tsx` and `index.ts`, created with `/new-component`.
+- **Details settled in T11:** sizes follow the design system's component styles exactly; spacing uses the 4px scale (`size-8.5` = 34px), and the few component font sizes that are not text-style tokens (11–15px) are copied from the design system's component CSS. The Tooltip shows at once on hover or focus with a 120 ms fade (as in the design system) and each Tooltip carries its own Radix provider. A loading Button must have a `loadingLabel`. The Spinner's label is real, visually hidden text inside a `role="status"` live region, so it is announced. Fonts are bundled from `@fontsource-variable` (every weight the design uses) under the exact names in tokens.json. `eslint-plugin-react-hooks` checks React code; the translation rule is off only for stories and tests (sample content).
 - **Storybook (AC-F00-13, 14):**
   - stories for every state; a toolbar switch for theme and accent
   - `storybook-addon-pseudo-states` for hover and focus

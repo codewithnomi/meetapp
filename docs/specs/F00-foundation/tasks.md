@@ -41,7 +41,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
   Covers: AC-F00-10 (token side), 11, 12. Tests: TC-F00-22, 23, 24, 25, 26. Check: generated CSS equals tokens.json; a deliberately bad color fails, naming the pair, theme and accent.
   Also (carried over from T2): the "palette reset" part of TC-F00-37 (a build using `bg-blue-500` produces no blue CSS); extend `meetapp/no-raw-color` to CSS named colors (`"red"`, `fill="white"`) in style objects and color attributes, keeping `currentColor`, `transparent` and `inherit`.
 
-- [ ] **T11: UI package and the first atoms.** `packages/ui` + Storybook (theme/accent toolbar, pseudo-states, a11y addon, Tailwind); atoms Icon (Lucide, mapped names), Button, IconButton, Spinner, Tooltip, each with stories, tests and an index (via `/new-component`).
+- [x] **T11: UI package and the first atoms.** `packages/ui` + Storybook (theme/accent toolbar, pseudo-states, a11y addon, Tailwind); atoms Icon (Lucide, mapped names), Button, IconButton, Spinner, Tooltip, each with stories, tests and an index (via `/new-component`).
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 33, 34 (these atoms). Check: keyboard tests pass; stories cover every state.
 
 - [ ] **T12: Remaining atoms and Settings molecules.** Input, Toggle, Avatar, Badge; molecules SegmentedControl and AccentPicker.

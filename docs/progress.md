@@ -5,11 +5,12 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T10 done. Next is T11 (UI package, Storybook and the first atoms).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T11 done. **Paused after T11** so the owner can see the first atoms in Storybook. Next is T12 (remaining atoms and the Settings molecules).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T11. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** owner looks at Storybook (`pnpm --filter @meetapp/ui storybook`), then `/next` builds T12. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
 
 ## Open questions (need the owner's answer)
+0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
 0. **Port clashes on this Mac (T5):** your own PostgreSQL (5432), Redis (6379) and Open WebUI (3000) use MeetApp's default ports. Either stop them while working on MeetApp, or let Claude set POSTGRES_PORT=5433, REDIS_PORT=6380 and API_PORT=3010 in your `.env` (recommended: nothing of yours has to change).
 1. **App name:** is "MeetApp" final, or a working name?
 2. **Pricing:** free plan limits (e.g. 40-minute meetings? number of participants?) and paid plan price?
@@ -36,7 +37,7 @@
 
 ## Session log
 
-### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command, T6 database, T7 backend core, T8 health and services, T9 flags and observability)
+### 2026-10-10: Session 2 (F00 T2 code-quality tooling, T3 commit safety, T4 local services, T5 start command, T6 database, T7 backend core, T8 health and services, T9 flags and observability, T10 design tokens, T11 UI atoms)
 - **T2 done:** the automatic code checker is set up and `pnpm check` runs it all: lint rules (size limits, no `any`, no `console.log`, accessibility, translations, our own "no raw colors" rule, a reason required to switch any rule off), formatting, type checks, architecture rules (Atomic levels, backend layers), unused code and copy-paste detection. The after-edit hook is now active. 76 tests pass.
 - **Decision D034:** TypeScript 7 does the type checks; lint tools use the official TypeScript 6 compatibility package (typescript-eslint doesn't support 7 yet). ESLint 9, because the accessibility plugin doesn't support ESLint 10 yet.
 - **T3 done:** every commit now runs a secrets check first (gitleaks from Docker, pinned version). A password or key in a commit is blocked, naming the file and line. Without Docker running, commits stop with "Start Docker to run the secrets check". Then changed files are formatted and linted. 87 tests pass.
@@ -50,6 +51,8 @@
 - **T8 done:** the backend connects to the database, cache, call server, file storage and email. `GET /api/v1/health` answers within 2 s with `ok`/`down` per service (200 or 503). Stopping and restarting the database or cache is detected within 5 s and recovered within about 2 s, without restarting the backend. `pnpm storage:test` and `pnpm email:test` check storage and email. `pnpm dev` now also starts the backend. 257 unit + 174 integration tests pass.
 - **T9 done:** `GET /api/v1/flags` lists the feature switches (changes visible within 10 s), `GET /metrics` gives Prometheus numbers (requests, response times, database connections, cache status, CPU/memory), tracing to the monitoring tools and Sentry crash reports start only when their setting is filled in. **Decision D036:** Sentry 11 collects personal data by default, so every collection category is switched off explicitly. 287 unit + 205 integration tests pass.
 - **T10 done:** owner approved the color fix (D037): design system version 8 has dark `line-strong` #637282, copied into MeetApp; contrast check passes for all 208 pairs. Also fixed: mise's `activate_shims` made `python3` loop outside MeetApp; turned off in `~/.config/mise/config.toml`. Details: `packages/design-tokens` with the approved `tokens.json` (hash-checked), generated `tokens.css` (identical to the design system's 134 variables), the Tailwind theme with only token classes (`bg-blue-500` produces nothing) and a contrast check over 8 accents × 2 themes. It found one failing pair in the approved design, fixed by D037. The no-raw-color rule now also catches named colors like `"red"`.
+- **T11 done:** `packages/ui` with Storybook (light/dark and 8-accent toolbar, accessibility check, hover/focus states) and the atoms Button, IconButton, Icon (Lucide icons under the design system's names), Spinner and Tooltip, with bundled Figtree and JetBrains Mono fonts. A UI review found 2 must-fix items (spinner speed, spinner announcement) and several smaller ones; all fixed. 478 tests pass.
+- **Follow-ups for a dependency update:** ESLint 9 is no longer supported (move to ESLint 10 with `eslint-plugin-jsx-a11y-x`, which supports it); `prom-client` is replaced by `@prometheus-io/client`.
 - A code-quality review found no must-fix items. The useful suggestions were applied; ones that need apps that don't exist yet are noted under T10 and T14 in tasks.md.
 
 ### 2026-10-09: Session 1 (architecture review)

@@ -213,7 +213,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** unit
 - **Given** the Storybook story index (`index.json` from the build)
 - **When** the test lists stories per component
-- **Then** Button, IconButton, Icon, Input, Avatar, Badge, Spinner, Tooltip and Toggle each exist; interactive ones have normal, hover, focused and disabled stories, and Button/IconButton have loading
+- **Then** Button, IconButton, Icon, Input, Avatar, Badge, Spinner, Tooltip and Toggle each exist; interactive ones have normal, hover, focused and disabled stories, and Button has loading
+- **Note:** IconButton has no loading state in the approved design system (D029), so only Button is checked for it (corrected in T11).
 
 ### TC-F00-28: Visual screenshots of every story in light and dark
 - **Covers:** AC-F00-13, AC-F00-33
