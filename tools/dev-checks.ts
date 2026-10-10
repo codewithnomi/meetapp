@@ -177,9 +177,10 @@ export async function findPortProblems(ports: NeededPort[], own: Set<string>): P
 }
 
 /** The address table printed when everything is up (AC-F00-01). */
-export function addressTable(env: Record<string, string>, apiRunning: boolean): string {
+export function addressTable(env: Record<string, string>, apiRunning: boolean, webRunning = false): string {
   const rows: [string, string][] = [
     ["Backend", apiRunning ? `http://127.0.0.1:${env["API_PORT"] ?? "3000"}` : "not built yet (F00 step T7)"],
+    ["App screens (in a browser)", webRunning ? "http://127.0.0.1:5173" : "not built yet (F00 step T14)"],
     ["Call server (LiveKit)", `ws://127.0.0.1:${env["LIVEKIT_PORT"] ?? "7880"}`],
     ["Database (PostgreSQL)", `127.0.0.1:${env["POSTGRES_PORT"] ?? "5432"}`],
     ["Cache (Redis)", `127.0.0.1:${env["REDIS_PORT"] ?? "6379"}`],

@@ -27,6 +27,14 @@ module.exports = {
       },
     },
     {
+      name: "only-pages-use-features",
+      comment:
+        "Only pages, page hooks and the app shell may use features/ (data, app state and the calls to the backend, which live in features/); components get data as props (frontend.md rule 2).",
+      severity: "error",
+      from: { pathNot: "(^|/)src/(pages|app|features)/|\\.test\\.tsx?$" },
+      to: { path: "(^|/)src/features/" },
+    },
+    {
       name: "no-route-to-repository",
       comment: "Routes call services; only services use repositories (backend.md).",
       severity: "error",

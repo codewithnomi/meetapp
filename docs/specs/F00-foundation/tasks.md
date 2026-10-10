@@ -50,9 +50,10 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T13: Visual and accessibility pipeline. (milestone)** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
   Covers: AC-F00-13, 14, 33. Tests: TC-F00-28, 35, 71. Check: a changed padding fails with a before/after diff; zero a11y violations.
 
-- [ ] **T14: Renderer app.** `apps/web`: React 19 + Tailwind + i18next (`en.json`); bundled fonts; starter home screen (wordmark, welcome, Settings button); Appearance panel; appearance store applied before first render; `useFlag` (15 s, unknown or failed = off).
+- [x] **T14: Renderer app.** `apps/web`: React 19 + Tailwind + i18next (`en.json`); bundled fonts; starter home screen (wordmark, welcome, Settings button); Appearance panel; appearance store applied before first render; `useFlag` (15 s, unknown or failed = off).
   Covers: AC-F00-08, 10, 13b, 34. Tests: TC-F00-16, 17, 18, 20, 21, 72, 74. Check: theme and accent switch instantly and survive reload; corrupted saved values fall back to defaults.
   Also (carried over from the T2 review): the "every `t()` key exists in `en.json`" part of TC-F00-38; point the ESLint TypeScript resolver and dependency-cruiser at the apps' `tsconfig.json` (path aliases) and add an alias-import fixture; a dependency-cruiser rule that only pages and page hooks may use `features/` and the API client (frontend.md rule 2).
+  Done in T14: the `en.json` key test; `apps/web` uses relative imports with no path aliases, so no resolver change is needed; rule `only-pages-use-features` with a fixture (the API calls live in `features/`).
 
 - [ ] **T15: Desktop app. (milestone)** `apps/desktop` with electron-vite: sandbox, context isolation, CSP, permission denial, navigation/new-window blocking, `app://meetapp` scheme, CJS preload, Sentry for Electron (optional). Playwright Electron e2e suite.
   Covers: AC-F00-03, 08, 09, 13b, 22, 24. Tests: TC-F00-09, 19, 30, 31, 58, 59, 60, 61. Check: the window opens within 5 s; security assertions pass; fonts work offline with no Google requests.

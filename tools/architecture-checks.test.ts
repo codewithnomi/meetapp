@@ -102,6 +102,28 @@ describe("TC-F00-36 [AC-F00-15] a component uses a same-level sibling only throu
   });
 });
 
+describe("frontend.md rule 2: only pages, page hooks and the app shell use features/", SLOW, () => {
+  const fixture = "tests/fixtures/architecture/features-outside-pages/src";
+
+  it("a molecule importing features/ fails only-pages-use-features", () => {
+    const result = cruise(`${fixture}/molecules/MeetingList`);
+    expect(result.code).not.toBe(0);
+    expect(result.violations).toEqual([
+      {
+        rule: "only-pages-use-features",
+        from: `${fixture}/molecules/MeetingList/MeetingList.tsx`,
+        to: `${fixture}/features/meetings/useMeetings.ts`,
+      },
+    ]);
+  });
+
+  it("a page importing features/ passes", () => {
+    const result = cruise(`${fixture}/pages/MeetingPage`);
+    expect(result.code).toBe(0);
+    expect(result.cruised).toBe(2);
+  });
+});
+
 describe("TC-F00-64 [AC-F00-28] skipping a backend layer fails", SLOW, () => {
   const fixture = (name: string) => `tests/fixtures/architecture/${name}`;
   const routes = (name: string) => `${fixture(name)}/src/modules/meetings/meetings.routes.ts`;

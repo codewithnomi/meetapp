@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T13 done. Next is T14 (the renderer app: starter home screen and Appearance panel).
+- **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T14 done. Next is T15 (the desktop app window; a milestone).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** owner tries `pnpm test:visual` (T13 milestone), then `/next` builds T14. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
+- **Next step:** owner looks at the first screens (`pnpm --filter @meetapp/web dev` → http://127.0.0.1:5173), then `/next` builds T15. Storybook (`pnpm --filter @meetapp/ui storybook`) shows all 9 atoms and the 2 Settings molecules. The owner's port question (Open question 0) is still open; Claude uses spare ports through temporary settings meanwhile.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,11 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-10: Session 3 (F00 T14 first app screens)
+- **Decision D038 (owner approved):** cheaper models for simple helper jobs (Haiku for docs-keeper, `/spec-status`, `/save-progress`; Sonnet for test-writer and the UI, code-quality and acceptance reviewers; Opus for security, spec review and the main work).
+- **T14 done:** `apps/web`, the app's screens. A starter home screen (MeetApp name, welcome line, Settings button) and the Settings screen's Appearance section (Light / Dark / Same as my computer, 8 accent colors, a preview). Choices apply at once, are remembered on this computer, and are in place before the first paint (no wrong-theme flash). Broken saved values fall back to the defaults. Feature switches are checked every 15 s; anything unknown or failing means off. All text comes from the translation file (a test checks every key). Fonts are bundled. `pnpm dev` now also starts the screens and lists their address. New rule: only screens may use the app's data and state code. UI and code-quality reviews: no must-fix items; useful suggestions applied (focus moves to the new screen's title, clearer screen-reader labels). 703 unit tests pass.
+- The gallery's own test files are now type-checked too; this found and fixed a wrong import in the T13 code.
 
 ### 2026-10-10: Session 3 (F00 T13 screenshot and accessibility check)
 - **T13 done (milestone):** `pnpm test:visual` builds the gallery and checks all 70 stories in light and dark (140 pictures) against approved pictures, plus an accessibility scan of each: 0 problems found. It runs inside the official Playwright 1.63.0 Linux image (the same as CI will use, so pictures match exactly). `pnpm test:visual:update` makes new pictures after an intended change. Proven: a 4-pixel padding change on the Button fails with before, after and difference pictures; a button without a name fails the accessibility scan. 600 unit tests pass.

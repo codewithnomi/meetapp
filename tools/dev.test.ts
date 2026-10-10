@@ -276,4 +276,9 @@ describe("Address table", () => {
   it("TC-F00-06 [AC-F00-01] shows the backend address from API_PORT once the API exists", () => {
     expect(addressTable({ ...env, API_PORT: "3456" }, true)).toMatch(/Backend\s+http:\/\/127\.0\.0\.1:3456/);
   });
+
+  it("TC-F00-06 [AC-F00-01] shows the app screens' address once apps/web exists", () => {
+    expect(addressTable(env, true, false)).toMatch(/App screens \(in a browser\)\s+not built yet/);
+    expect(addressTable(env, true, true)).toMatch(/App screens \(in a browser\)\s+http:\/\/127\.0\.0\.1:5173/);
+  });
 });

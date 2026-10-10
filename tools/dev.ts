@@ -59,7 +59,7 @@ async function main(): Promise<void> {
   if (up.status !== 0) stop("The local services did not start. Run `docker compose -f infra/docker-compose.yml logs`.");
 
   const apps = appsWithDevScript();
-  say(`\nMeetApp is running on this computer:\n${addressTable(env, apps.includes("api"))}\n`);
+  say(`\nMeetApp is running on this computer:\n${addressTable(env, apps.includes("api"), apps.includes("web"))}\n`);
   say("Stop the services with `pnpm dev:stop` (your data is kept).");
   if (apps.length === 0) {
     say("No apps to start yet: the backend and desktop app arrive in F00 steps T7, T14 and T15.");

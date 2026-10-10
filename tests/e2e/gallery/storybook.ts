@@ -1,7 +1,7 @@
 // Helpers for the gallery run: which stories exist, how to open one in a theme, and the axe scan.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import AxeBuilder from "@axe-core/playwright";
+import { AxeBuilder } from "@axe-core/playwright";
 import { expect, type Page } from "@playwright/test";
 
 type Theme = "light" | "dark";

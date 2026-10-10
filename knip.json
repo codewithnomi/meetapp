@@ -18,6 +18,9 @@
     },
     "packages/ui": {
       "ignoreDependencies": ["@fontsource-variable/figtree", "@fontsource-variable/jetbrains-mono"]
+    },
+    "apps/web": {
+      "ignoreDependencies": ["tailwindcss"]
     }
   }
 }

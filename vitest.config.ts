@@ -19,10 +19,12 @@ export default defineConfig({
             "packages/*/src/**/*.test.ts",
             "apps/*/src/**/*.test.ts",
           ],
-          exclude: [...configDefaults.exclude, ...(integration ? [] : INTEGRATION_TESTS)],
+          // apps/web tests need a simulated browser; they run in their own project below.
+          exclude: [...configDefaults.exclude, "apps/web/**", ...(integration ? [] : INTEGRATION_TESTS)],
         },
       },
       "./packages/ui/vitest.config.ts",
+      "./apps/web/vitest.config.ts",
     ],
   },
 });

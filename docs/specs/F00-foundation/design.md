@@ -118,6 +118,13 @@ Steps 1–4 fail within 10 s.
   - applied as `data-theme` / `data-accent` on `<html>` **in the first import of the renderer entry, before React renders**, so the wrong theme never flashes (the CSP blocks inline scripts)
   - "System" follows `prefers-color-scheme`, which Electron keeps in sync with macOS (AC-F00-09)
 - **Feature flags:** `useFlag("key")` re-fetches `GET /api/v1/flags` every **15 s**. An unknown key or a failed fetch means **off** (AC-F00-34).
+- **Details settled in T14:**
+  - Folders: `app/` (entry, shell, i18n, stylesheet), `pages/` (`HomePage`, `SettingsPage`), `features/appearance/`, `features/flags/`, `locales/en.json`. Relative imports with extensions and no path aliases, so the lint and dependency-cruiser resolvers need no alias setup (the T2 carry-over is settled this way). A new dependency-cruiser rule `only-pages-use-features` lets only `pages/`, `app/` and `features/` itself use `features/` (frontend.md rule 2), with a fixture.
+  - Saved under the `localStorage` key `meetapp.appearance` as `{theme, accent}`; each field is checked on its own and anything unknown falls back to its default (theme `system`, accent `sky`). Blocked storage is ignored. `<html>` always gets `data-theme` (`light`/`dark`, "system" resolved through `prefers-color-scheme`) and `data-accent` (including `sky`). `features/appearance/apply-saved.ts` does this as the first import of `app/main.tsx`; the app shell then follows the computer's light/dark switch while "Same as my computer" is chosen.
+  - Screen switching is plain state (home ↔ settings) until F01 brings more screens and a router. The Settings screen has the Appearance section of the approved design (title, "Saved on this computer.", Theme, Accent color, Preview with primary Button, ghost Button and accent Badge); the side menu, Persona and Integrations come with their features. The home screen shows a "Demo feature is on" status line only when the `demo` flag is on, for the flag e2e test (TC-F00-72).
+  - The backend address is `VITE_API_URL` in the root `.env` (default `http://127.0.0.1:3000`; Vite reads the root `.env`, and only `VITE_*` values reach the app). The flags answer is checked with the shared `flagsResponseSchema`.
+  - Libraries: i18next 26 + react-i18next 17 (typed keys from `en.json`; a test also checks every `t()` key exists), Zustand 5.
+  - The unit tests cover TC-F00-16, 17, 18, 20, 21, 72 and 74 in a simulated browser; the real-window versions of 16, 17, 20, 21 and 72 run in Electron with T15.
 
 ## 7. Design tokens (`packages/design-tokens`)
 - `tokens.json` is **copied unchanged** from the approved design system (AC-F00-12). This package is where the generated tokens live (`frontend.md` updated to match).
