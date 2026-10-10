@@ -7,7 +7,7 @@
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
 - **Stage:** Building F00 Foundation on branch `feat/F00-foundation`. T1–T5 done. **Paused at the T5 milestone** for the owner to try `pnpm dev`. Next is T6 (database package).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** `/next` builds T5. The next pause for the owner is T5 (the start command, a milestone).
+- **Next step:** owner tries `pnpm dev` and answers the port question (Open question 0), then `/next` builds T6.
 
 ## Open questions (need the owner's answer)
 0. **Port clashes on this Mac (T5):** your own PostgreSQL (5432), Redis (6379) and Open WebUI (3000) use MeetApp's default ports. Either stop them while working on MeetApp, or let Claude set POSTGRES_PORT=5433, REDIS_PORT=6380 and API_PORT=3010 in your `.env` (recommended: nothing of yours has to change).
