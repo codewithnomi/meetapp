@@ -44,7 +44,7 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
 - [x] **T11: UI package and the first atoms.** `packages/ui` + Storybook (theme/accent toolbar, pseudo-states, a11y addon, Tailwind); atoms Icon (Lucide, mapped names), Button, IconButton, Spinner, Tooltip, each with stories, tests and an index (via `/new-component`).
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 33, 34 (these atoms). Check: keyboard tests pass; stories cover every state.
 
-- [ ] **T12: Remaining atoms and Settings molecules.** Input, Toggle, Avatar, Badge; molecules SegmentedControl and AccentPicker.
+- [x] **T12: Remaining atoms and Settings molecules.** Input, Toggle, Avatar, Badge; molecules SegmentedControl and AccentPicker.
   Covers: AC-F00-13, 14. Tests: TC-F00-27, 32, 34 (these components). Check: same as T11.
 
 - [ ] **T13: Visual and accessibility pipeline. (milestone)** Playwright over the built Storybook in light and dark: screenshots (`toHaveScreenshot`) plus axe; baselines made in the pinned Playwright image (`linux/amd64`); `pnpm test:visual:update`; diff report.
