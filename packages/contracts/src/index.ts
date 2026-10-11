@@ -16,3 +16,12 @@ export {
   signUpVerifyBodySchema,
   type MeResponse,
 } from "./accounts.ts";
+export {
+  SIGN_IN_PROVIDERS,
+  desktopExchangeBodySchema,
+  desktopInitBodySchema,
+  desktopInitResponseSchema,
+  desktopPendingSchema,
+  providersResponseSchema,
+  type SignInProvider,
+} from "./desktop-sign-in.ts";

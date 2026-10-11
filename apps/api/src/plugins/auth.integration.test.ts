@@ -157,6 +157,8 @@ describe("TC-F01-80 [AC-F01-33] [AC-F01-34] only the allowed Better Auth routes 
     "/api/auth/email-otp/reset-password",
     // Deprecated by Better Auth; /api/auth/email-otp/request-password-reset replaces it.
     "/api/auth/forget-password/email-otp",
+    // Google/Microsoft sign-in starts only through /api/v1/auth/desktop/start (T7).
+    "/api/auth/sign-in/social",
     "/api/auth/callback/../sign-up/email",
   ];
 

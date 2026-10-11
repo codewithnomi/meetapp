@@ -59,15 +59,15 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-26, 27, 31.
   - Check: after a reset or a change, every other session gets 401.
 
-- [ ] **T7: Google, Microsoft and the browser hand-off.**
+- [x] **T7: Google, Microsoft and the browser hand-off.**
   - Providers switched on by settings, plus `GET /auth/providers`.
   - Verified-email checks (Google `email_verified`, Microsoft `xms_edov` / consumer tenant); linking without trusted providers.
   - `/auth/desktop/init`, `start`, `done`, `exchange`: verifier, match code, browser cookie, 60 s start.
-  - Provider photo download with limits.
+  - Provider photo download with limits, and the shared photo step (content check, sharp re-encode, private storage) that T16's upload reuses.
   - Runbook `docs/runbooks/sign-in-providers.md` (how the owner creates free keys).
   - Tested with oauth2-mock-server.
   - Covers: AC-F01-07, 08.
-  - Tests: TC-F01-15, 17, 18, 19, 20, 21, 22, 25; plus the provider part of TC-F01-33 (provider attempts count toward the wrong-password limit).
+  - Tests: TC-F01-15, 17, 18, 19, 20, 21, 22, 25; plus the provider part of TC-F01-33 (a locked email can't sign in with Google/Microsoft either).
   - Check: every hand-off attack in TC-19 fails; the normal path gives the desktop a new session and revokes the browser one.
 
 ## Desktop and screens: sign-in
@@ -148,7 +148,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Check: **the owner can create a workspace, invite a second (seeded) user by email and approve a join request, all in the app.**
 
 - [ ] **T16: Profile, photo and appearance.**
-  - Name; photo upload (content check, sharp re-encode, pixel limit, location data removed, private storage, visibility, caching).
+  - Name; photo upload (reuses T7's photo step: content check, sharp re-encode, pixel limit, location data removed, private storage), visibility, caching.
   - Theme and accent saved to the account.
   - Profile and account screen with the support email.
   - UI part: AvatarUpload.

@@ -18,6 +18,16 @@ export function createAccountsRepository(db: Database) {
     findUser: async (id: string) => (await db.select().from(user).where(eq(user.id, id)).limit(1))[0],
     emailTaken: async (email: string): Promise<boolean> =>
       (await db.select({ id: user.id }).from(user).where(eq(user.email, email)).limit(1)).length > 0,
+    /** The photo address Better Auth kept from Google/Microsoft (never shown to the app). */
+    providerImage: async (id: string) =>
+      (await db.select({ image: user.image }).from(user).where(eq(user.id, id)).limit(1))[0]?.image ?? null,
+    /** Forgets the provider's photo address; stores our own copy's key when there is one (AC-F01-07). */
+    finishProviderPhoto: async (id: string, avatarKey: string | undefined) => {
+      await db
+        .update(user)
+        .set({ image: null, ...(avatarKey === undefined ? {} : { avatarKey }) })
+        .where(eq(user.id, id));
+    },
     acceptTerms: async (id: string, termsVersion: string, at: Date) => {
       await db.update(user).set({ termsVersion, termsAcceptedAt: at, ageConfirmedAt: at }).where(eq(user.id, id));
     },

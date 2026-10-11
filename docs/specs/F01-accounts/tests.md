@@ -262,7 +262,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F01-08 [AC-F01-04] wrong cod
 - **Level:** integration
 - **Given** a seeded user and an unknown email
 - **When** 5 wrong passwords are sent for each within 15 minutes, then a 6th, then the right password for the seeded user, then time moves 15 minutes
-- **Then** the 6th is refused `429 TOO_MANY_ATTEMPTS` with "Too many attempts, try again in N minutes" and `retryAfterSeconds`; the right password is also refused during the lockout; afterwards it works. Provider sign-in attempts count toward the same counter
+- **Then** the 6th is refused `429 TOO_MANY_ATTEMPTS` with "Too many attempts, try again in N minutes" and `retryAfterSeconds`; the right password is also refused during the lockout; afterwards it works. While the email is locked, Google/Microsoft sign-in for it is refused too (`TOO_MANY_ATTEMPTS`)
 
 ### TC-F01-34: Code emails per address and sign-ups per network address
 - **Covers:** AC-F01-13

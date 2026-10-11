@@ -11,25 +11,40 @@ import { createEmailOutbox } from "../emails/outbox.ts";
 import type { Auth } from "../plugins/auth.ts";
 import { createCacheProvider } from "../providers/cache.ts";
 import { createEmailProvider } from "../providers/email.ts";
+import { createStorageProvider } from "../providers/storage.ts";
 import { localConfig } from "./integration.ts";
 
 export interface AuthTestApp {
   app: FastifyInstance;
+  storage: ReturnType<typeof createStorageProvider>;
   auth: Auth;
   database: TestDatabase;
   close: () => Promise<void>;
 }
 
-export async function startAuthTestApp(): Promise<AuthTestApp> {
+/** Fake Google/Microsoft keys; with them the providers are switched on (see fake-providers.ts). */
+const PROVIDER_KEYS = {
+  google: { GOOGLE_CLIENT_ID: "test-google-client", GOOGLE_CLIENT_SECRET: "test-google-secret" },
+  microsoft: { MICROSOFT_CLIENT_ID: "test-microsoft-client", MICROSOFT_CLIENT_SECRET: "test-microsoft-secret" },
+};
+
+export async function startAuthTestApp(
+  options: { providers?: (keyof typeof PROVIDER_KEYS)[] } = {},
+): Promise<AuthTestApp> {
   // Its own key for the attempt counters, so counts left in Redis by earlier runs (all from
   // 127.0.0.1, within the same hour) can't use up this run's limits.
-  const config = { ...localConfig(), DATA_ENCRYPTION_KEY: `test-${randomUUID()}` };
+  const config = {
+    ...localConfig(),
+    DATA_ENCRYPTION_KEY: `test-${randomUUID()}`,
+    ...Object.assign({}, ...(options.providers ?? []).map((provider) => PROVIDER_KEYS[provider])),
+  } as ReturnType<typeof localConfig>;
   const database = await createTestDatabase();
   await runMigrations(database.url);
   const log = pino({ level: "silent" });
   const email = createEmailProvider(config);
   const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
   const cache = createCacheProvider(config, log);
+  const storage = createStorageProvider(config);
   // Wait for Redis, or the first limit checks would be let through as "Redis unavailable".
   if (!cache.isReady()) await new Promise((ready) => cache.redis.once("ready", ready));
   const accounts = createAccounts({
@@ -39,11 +54,13 @@ export async function startAuthTestApp(): Promise<AuthTestApp> {
     outbox: emails.outbox,
     log,
     trustedOrigins: ALLOWED_ORIGINS,
+    storage,
   });
   const { auth } = accounts;
   const app = await buildApp(config, { logLevel: "silent", accounts });
   return {
     app,
+    storage,
     auth,
     database,
     close: async () => {
@@ -51,6 +68,7 @@ export async function startAuthTestApp(): Promise<AuthTestApp> {
       await emails.close();
       await email.close();
       await cache.close();
+      await storage.close();
       await database.drop();
     },
   };
@@ -70,24 +88,18 @@ export async function createUser(
   auth: Auth,
   options: { email: string; password?: string; termsAccepted?: boolean },
 ): Promise<string> {
-  const context = await auth.$context;
+  const { adapter, password } = await auth.$context;
   const accepted = options.termsAccepted === false ? {} : { termsVersion: "draft-1", termsAcceptedAt: new Date() };
-  const created = await context.internalAdapter.createUser(
-    { name: "Test Person", email: options.email, emailVerified: true, ...accepted },
+  // Straight into the tables (Better Auth's sign-up rules run only inside its web routes).
+  const created = await adapter.create<{ id: string }>({
+    model: "user",
+    data: { name: "Test Person", email: options.email.toLowerCase(), emailVerified: true, ...accepted },
+  });
+  const login =
     options.password === undefined
-      ? { method: "oauth", oauth: { providerId: "google" } }
-      : { method: "email-password" },
-  );
-  await context.internalAdapter.linkAccount(
-    options.password === undefined
-      ? { userId: created.id, providerId: "google", accountId: randomUUID() }
-      : {
-          userId: created.id,
-          providerId: "credential",
-          accountId: created.id,
-          password: await context.password.hash(options.password),
-        },
-  );
+      ? { providerId: "google", accountId: randomUUID() }
+      : { providerId: "credential", accountId: created.id, password: await password.hash(options.password) };
+  await adapter.create({ model: "account", data: { userId: created.id, ...login } });
   return created.id;
 }
 

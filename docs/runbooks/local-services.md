@@ -21,7 +21,7 @@ The services `pnpm dev` starts in Docker (`infra/docker-compose.yml`, design.md 
 | What you see | Why | Fix |
 |---|---|---|
 | "Docker isn't running" | Docker Desktop is closed, or still starting | Open Docker Desktop, wait for "Engine running", try again |
-| "Port 5432 is in use by another program" | Another program (often your own PostgreSQL, Redis or a web app) uses it | Stop it, or move MeetApp's port in `.env` (e.g. `POSTGRES_PORT=5433`). For `API_PORT` also change `VITE_API_URL` |
+| "Port 5432 is in use by another program" | Another program (often your own PostgreSQL, Redis or a web app) uses it | Stop it, or move MeetApp's port in `.env` (e.g. `POSTGRES_PORT=5433`). For `API_PORT` also change `VITE_API_URL` and `APP_PUBLIC_URL` |
 | Health shows a service `down` | That container stopped | `docker compose -f infra/docker-compose.yml --env-file .env up -d --wait`; the backend reconnects by itself |
 | "set in .env" when starting | A setting is missing from `.env` | `pnpm dev` adds missing settings automatically; or copy the line from `.env.example` |
 | "Expected Node 24, found 20" | The terminal uses another Node.js | See [getting-started.md](../getting-started.md) step 2 |

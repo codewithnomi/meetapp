@@ -95,7 +95,7 @@ Better Auth (1.7 at T1; this design was written against the 1.6 docs and is re-c
 **Only these Better Auth routes are reachable;** every other one answers 404 (`disabledPaths` or an allow-list in front of the mount *(verify)*):
 - `sign-in/email`, `sign-in/email-otp`, `email-otp/send-verification-otp`;
 - `email-otp/request-password-reset` (the reset code; Better Auth deprecated `forget-password/email-otp`, T6);
-- `sign-in/social`, `callback/*`;
+- `callback/*` (Google/Microsoft send the browser back here). `sign-in/social` is not reachable: our `desktop/start` calls it on the server, so a provider sign-in can only begin through the hand-off (T7);
 - `sign-out`, `revoke-sessions`.
 
 So Better Auth's own sign-up, update-user, change-email, delete-user, link/unlink and organization routes can't be used to get around our rules. The app's pages never call these routes directly (section 4).
@@ -107,7 +107,8 @@ Plugins and settings:
 - **Verified provider email only (AC-08):**
   - Google: `email_verified` must be true.
   - Microsoft: the `xms_edov` optional claim must be true (set up in the app registration), or the account must be in Microsoft's consumer tenant. This avoids the known "nOAuth" problem.
-  - Otherwise the sign-in is refused with `PROVIDER_EMAIL_UNVERIFIED` (checked in the provider's profile mapping).
+  - Otherwise the sign-in is refused with `PROVIDER_EMAIL_UNVERIFIED`. The rule sets `emailVerified` in each provider's profile mapping, and Better Auth's `user.validateUserInfo` gate refuses any Google/Microsoft user whose email isn't verified before it creates, links or signs in (T7). A provider that gives no email is refused the same way.
+  - A locked email (5 wrong passwords, AC-13) can't sign in through Google/Microsoft either until the lock ends (`TOO_MANY_ATTEMPTS`, T7).
   - Account linking is on, but Google and Microsoft are **not** "trusted providers", because trusted providers link even unverified emails *(verify)*.
 - **Sessions:**
   - 30 days, extended by every day of use (`expiresIn` 30 d, `updateAge` 1 d: AC-11).
@@ -164,12 +165,13 @@ Better Auth's own email sign-up would create the account before the email is pro
   - A `401` from `GET /api/v1/me` also deletes it; a 401 from any other route triggers a `/me` check first.
   - A wrong current password answers `400 PASSWORD_WRONG`, never 401.
 - **Google and Microsoft (browser hand-off):**
-  1. Main makes a secret `verifier` and calls `POST /api/v1/auth/desktop/init { provider, challenge: SHA-256(verifier) }`. The API answers `{ requestId, matchCode }` (a 4-digit code). The request must be started within 60 s.
-  2. Main opens the system browser at `/api/v1/auth/desktop/start?request=<requestId>`.
+  1. Main makes a secret `verifier` and calls `POST /api/v1/auth/desktop/init { provider, challenge: SHA-256(verifier) }`. The API answers `{ requestId, matchCode, startUrl }` (a 4-digit code, and the start link on `APP_PUBLIC_URL`, so the whole browser trip stays on the one address Google/Microsoft return to; T7). The request must be started within 60 s.
+  2. Main opens the system browser at `startUrl` (`/api/v1/auth/desktop/start?request=<requestId>`), after checking it is exactly that path on this computer in development.
      - In development the API is `http://127.0.0.1`, so F00's "open only https links" rule (D040) is extended: it also allows exactly the configured API's `/api/v1/auth/desktop/start` when that API is on this computer. Never in the packaged app.
      - `start` sets a short-lived, signed, http-only cookie that binds this browser to the request, then redirects to the provider.
   3. After the provider, `done` checks the cookie and shows "Sign in to the MeetApp app on this computer? Code **4821**" with **Continue** and **Cancel**. The app shows the same code.
-     - On **Continue** the request is marked ready, the browser's own session is revoked (the browser keeps nothing), and the page says "You can close this tab".
+     - The browser's own session is revoked as soon as it lands on `done`, so the browser keeps nothing; the signed cookie is what ties the following click to this request (T7).
+     - On **Continue** the request is marked ready and the page says "You can close this tab".
      - On **Cancel**, or if the provider refused, the request is marked cancelled.
   4. Meanwhile main polls `POST /api/v1/auth/desktop/exchange { requestId, verifier }` every second. Answers:
      - `202 pending`;
@@ -234,7 +236,7 @@ Better Auth's own email sign-up would create the account before the email is pro
   - **sharp** re-encodes it to a 512×512 WebP, with a pixel limit (`limitInputPixels`) against "decompression bomb" files. This also drops location and camera details.
   - Stored privately as `avatars/<userId>/<avatarKey>.webp` in the storage bucket.
   - Served by `GET /api/v1/users/:id/avatar?v=<avatarKey>` only to people who share a workspace with that user (or the user); everyone else gets 404. `Cache-Control: private, max-age=60`.
-- **Google/Microsoft photo:** fetched once at the first sign-in, only from Google's or Microsoft's own addresses, with 5 MB and 5 s limits, through the same steps. Better Auth's `user.image` is never shown directly.
+- **Google/Microsoft photo:** copied once after the first sign-in, in the background (it never delays or fails the sign-in), through the same steps (`modules/accounts/avatar-image.ts`, built in T7). Google: only `https://*.googleusercontent.com`, no redirects, 5 MB and 5 s limits. Microsoft: Better Auth itself fetches the photo from `graph.microsoft.com` during sign-in and keeps it as data in `user.image`; we take those bytes (5 MB limit) rather than fetching again. Afterwards `user.image` is emptied, so the provider's address is never kept or shown.
 - **Theme and accent:** saved with `PATCH /api/v1/me/preferences`.
   - At sign-in the app takes the account's values; the appearance store from F00 is replaced.
   - At sign-up the computer's current values are sent along.
@@ -269,7 +271,7 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `POST /api/v1/auth/sign-up` | public | start sign-up (section 3) |
 | `POST /api/v1/auth/sign-up/verify` | public | finish sign-up with the code |
 | `POST /api/v1/auth/sign-up/resend` | public | "Send a new code": the old code stops working (T5) |
-| `POST /api/v1/auth/desktop/init` · `GET /start` · `GET`/`POST /done` · `POST /exchange` | public (main process or browser) | browser hand-off (section 4) |
+| `POST /api/v1/auth/desktop/init` · `GET /start` · `GET`/`POST /done` · `POST /exchange` · `POST /cancel` | public (main process or browser) | browser hand-off (section 4); `exchange` answers `202` pending, `200` once, `410` (`SIGN_IN_CANCELLED`, `PROVIDER_EMAIL_UNVERIFIED`, `TOO_MANY_ATTEMPTS`), `404` for an unknown request or a wrong verifier; `cancel` (with the verifier) removes the request |
 | `POST /api/v1/auth/reset-password` | public | `{ email, code, newPassword }`: new password with the reset code; signs out every device and signs in here (AC-09, T6) |
 | `POST /api/v1/auth/sign-out-everywhere` | signed in | revoke every session, this one included; `204` (AC-12) |
 | `GET /api/v1/me` | signed in | profile, preferences, workspaces with role, counts of pending requests (the 30-second check) |
@@ -429,6 +431,12 @@ Each item is checked against the current docs and source before the task that us
 - Item 5: `revokeSessionsOnPasswordReset` and `account.encryptOAuthTokens` exist.
 - Item 7: password sign-in hashes the given password even for an unknown email, so timing matches.
 - Items 3, 6 and 8 are checked in T5 and T7.
+
+**Checked in T7:**
+- Item 6: with no trusted providers, Better Auth links a Google/Microsoft sign-in to an existing account only when the provider says the email is verified; our profile mapping decides "verified" (Google `email_verified`; Microsoft `xms_edov` or the consumer tenant), and `user.validateUserInfo` refuses the rest before anything is created or linked.
+- Item 8: Better Auth's Microsoft provider stores the Graph photo as data in `user.image`; we use those bytes (section 6).
+- Better Auth's provider sign-in creates the user (and a browser session) before our confirm page. So Cancel in the browser, Cancel in the app, and the 5-minute limit delete a user that this sign-in created; an existing user is never deleted.
+- Google's token address is fixed in Better Auth. Tests therefore send the providers' fixed addresses to a local fake (`test-support/fake-providers.ts`, oauth2-mock-server) inside the test process; the app code is unchanged.
 
 **Checked in T6:** Better Auth's emailOTP reset revokes every session but does not sign in, and creates a password login for a Google/Microsoft-only account. `forget-password/email-otp` is deprecated in 1.7; `email-otp/request-password-reset` behaves the same (no email for unknown addresses, same answer).
 

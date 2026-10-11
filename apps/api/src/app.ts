@@ -7,6 +7,7 @@ import type { DestinationStream } from "pino";
 import type { Config } from "./config/config.ts";
 import type { Accounts } from "./accounts.ts";
 import { accountsRoutes } from "./modules/accounts/accounts.routes.ts";
+import { desktopSignInRoutes } from "./modules/accounts/desktop-sign-in.routes.ts";
 import { passwordsRoutes } from "./modules/accounts/passwords.routes.ts";
 import { signUpRoutes } from "./modules/accounts/sign-up.routes.ts";
 import { flagsRoutes } from "./modules/flags/flags.routes.ts";
@@ -14,7 +15,8 @@ import { createFlagsService, type FlagsSource } from "./modules/flags/flags.serv
 import { healthRoutes } from "./modules/health/health.routes.ts";
 import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
-import { authRoutes, authSessionReader } from "./plugins/auth.ts";
+import { authSessionReader } from "./plugins/auth.ts";
+import { authRoutes } from "./plugins/auth-routes.ts";
 import { registerDocs } from "./plugins/docs.ts";
 import { registerErrorHandling } from "./plugins/errors.ts";
 import { loggerOptions } from "./plugins/logging.ts";
@@ -61,11 +63,17 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) {
-    const { auth, limiter, service, signUp, passwords } = options.accounts;
+    const { auth, limiter, service, signUp, passwords, desktopSignIn, providers } = options.accounts;
     await app.register(authRoutes, { auth, limiter });
     await app.register(accountsRoutes, { accounts: service });
     await app.register(signUpRoutes, { signUp, accounts: service });
     await app.register(passwordsRoutes, { passwords, accounts: service });
+    await app.register(desktopSignInRoutes, {
+      desktopSignIn,
+      accounts: service,
+      enabled: providers,
+      secureCookies: config.APP_PUBLIC_URL.startsWith("https:"),
+    });
   }
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;

@@ -1,7 +1,7 @@
 // Sign-in with Better Auth (F01 design.md section 3, D048): identity only. It handles password
 // sign-in (scrypt), email codes, sessions (30 days, extended by use) and signing out everywhere.
-// Only the routes in AUTH_ROUTE_ALLOW_LIST are reachable; everything else Better Auth offers answers
-// 404, so its own sign-up, profile and organization routes can't be used to get around our rules.
+// Its web routes and their allow-list are in auth-routes.ts; the bridges our services use are in
+// auth-bridges.ts.
 import { account, session, user, verification, type Database } from "@meetapp/db";
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -9,14 +9,11 @@ import { APIError, createAuthEndpoint, createAuthMiddleware } from "better-auth/
 import { setSessionCookie } from "better-auth/cookies";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer, emailOTP } from "better-auth/plugins";
-import type { FastifyBaseLogger, FastifyInstance } from "fastify";
+import type { FastifyBaseLogger } from "fastify";
 import { z } from "zod";
 import type { Config } from "../config/config.ts";
 import type { Outbox } from "../emails/outbox.ts";
-import { AppError, tooManyAttempts } from "./errors.ts";
-import { RATE_RULES, type RateLimiter } from "./rate-limit.ts";
 import type { SessionReader } from "./session.ts";
-import type { PasswordAuth } from "../modules/accounts/passwords.service.ts";
 import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
@@ -24,36 +21,19 @@ import {
   checkPassword,
 } from "../modules/accounts/password-rule.ts";
 import { hashSessionTokens } from "./auth-adapter.ts";
+import { socialProviders, validateUserInfo } from "./auth-providers.ts";
 
 const DAY_SECONDS = 24 * 60 * 60;
 const CODE_MINUTES = 15;
 
-/** The Better Auth routes the app may use (design.md section 3); all others answer 404. */
-const AUTH_ROUTE_ALLOW_LIST = [
-  "/sign-in/email",
-  "/sign-in/email-otp",
-  "/email-otp/send-verification-otp",
-  "/email-otp/request-password-reset",
-  "/sign-in/social",
-  "/sign-out",
-  "/revoke-sessions",
-] as const;
-/** Google/Microsoft send people back here (/callback/google, /callback/microsoft). */
-const CALLBACK_PREFIX = "/callback/";
-const AUTH_BASE_PATH = "/api/auth";
+/** Where Better Auth answers (design.md section 3). */
+export const AUTH_BASE_PATH = "/api/auth";
 
 /**
  * Routes whose body carries a new password: checked against our password rule first. The reset itself
  * is reached only through our `/api/v1/auth/reset-password`, which signs in on this computer after it.
  */
 const NEW_PASSWORD_ROUTES = new Set(["/email-otp/reset-password"]);
-
-function isAllowedAuthPath(path: string): boolean {
-  return (
-    (AUTH_ROUTE_ALLOW_LIST as readonly string[]).includes(path) ||
-    (path.startsWith(CALLBACK_PREFIX) && /^[a-z]+$/.test(path.slice(CALLBACK_PREFIX.length)))
-  );
-}
 
 export interface AuthDependencies {
   config: Config;
@@ -156,7 +136,8 @@ export function createAuth({ config, db, outbox, log, trustedOrigins }: AuthDepe
       revokeSessionsOnPasswordReset: true,
     },
     session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS },
-    user: { additionalFields: USER_FIELDS },
+    socialProviders: socialProviders(config),
+    user: { additionalFields: USER_FIELDS, validateUserInfo },
     account: { encryptOAuthTokens: true, accountLinking: { enabled: true, trustedProviders: [] } },
     databaseHooks: {
       session: { create: { before: async (data) => ({ data: { ...data, ipAddress: null, userAgent: null } }) } },
@@ -182,45 +163,6 @@ export async function hashPassword(auth: Auth, password: string): Promise<string
   return (await auth.$context).password.hash(password);
 }
 
-/** Better Auth's answers to a wrong reset code, as our error codes (the same as sign-up's codes). */
-const CODE_ERRORS: Record<string, () => AppError> = {
-  INVALID_OTP: () => new AppError(400, "CODE_INVALID", "That code isn't right."),
-  TOO_MANY_ATTEMPTS: () => new AppError(400, "CODE_INVALID", "That code isn't right."),
-  OTP_EXPIRED: () => new AppError(400, "CODE_EXPIRED", "That code has expired. Ask for a new one."),
-};
-
-async function resetWithCode(auth: Auth, email: string, code: string, newPassword: string): Promise<string> {
-  try {
-    await auth.api.resetPasswordEmailOTP({ body: { email, otp: code, password: newPassword } });
-  } catch (error) {
-    const known = error instanceof APIError ? CODE_ERRORS[String(error.body?.code)] : undefined;
-    throw known ? known() : error;
-  }
-  const found = await (await auth.$context).internalAdapter.findUserByEmail(email.toLowerCase());
-  if (!found) throw new Error("The account disappeared during a password reset");
-  return found.user.id;
-}
-
-/** Password reset and change for our passwords service, done with Better Auth's own hasher. */
-export function passwordAuth(auth: Auth): PasswordAuth {
-  const endAllSessions = async (userId: string) => (await auth.$context).internalAdapter.deleteUserSessions(userId);
-  return {
-    resetWithCode: (email, code, newPassword) => resetWithCode(auth, email, code, newPassword),
-    changeWithCurrent: async (userId, currentPassword, newPassword) => {
-      const { internalAdapter, password } = await auth.$context;
-      const login = await internalAdapter.findCredentialAccount(userId);
-      if (!login?.password || !(await password.verify({ hash: login.password, password: currentPassword }))) {
-        return false;
-      }
-      await internalAdapter.updatePassword(userId, await password.hash(newPassword));
-      await endAllSessions(userId);
-      return true;
-    },
-    endAllSessions,
-    issueSession: (userId) => issueSession(auth, userId),
-  };
-}
-
 /** Reads the signed-in person from the request's bearer token (or cookie) through Better Auth. */
 export function authSessionReader(auth: Auth): SessionReader {
   return {
@@ -231,59 +173,4 @@ export function authSessionReader(auth: Auth): SessionReader {
       return { id, email, name, termsAccepted: termsAcceptedAt !== null && termsAcceptedAt !== undefined };
     },
   };
-}
-
-const PASSWORD_SIGN_IN = "/sign-in/email";
-/** Routes that send a code email (sign-in code, reset code). */
-const CODE_EMAIL_ROUTES = new Set(["/email-otp/send-verification-otp", "/email-otp/request-password-reset"]);
-
-function emailIn(body: unknown): string | undefined {
-  const email = (body as { email?: unknown } | undefined)?.email;
-  return typeof email === "string" ? email : undefined;
-}
-
-/** Refuses the request when its email is over a limit (AC-F01-13); counts code emails. */
-async function enforceLimits(limiter: RateLimiter | undefined, path: string, email: string | undefined) {
-  if (limiter === undefined || email === undefined) return;
-  let wait: number | undefined;
-  if (path === PASSWORD_SIGN_IN) wait = await limiter.blocked(RATE_RULES.wrongPassword, email);
-  else if (CODE_EMAIL_ROUTES.has(path)) wait = await limiter.take(RATE_RULES.codeEmails, email);
-  if (wait !== undefined) throw tooManyAttempts(wait);
-}
-
-export interface AuthRoutesOptions {
-  auth: Auth;
-  limiter?: RateLimiter;
-}
-
-/** Mounts Better Auth at /api/auth/*, forwarding only the allowed routes. */
-export async function authRoutes(app: FastifyInstance, { auth, limiter }: AuthRoutesOptions): Promise<void> {
-  app.route({
-    method: ["GET", "POST"],
-    url: `${AUTH_BASE_PATH}/*`,
-    config: { access: "public" },
-    // The body is sent on as JSON, exactly as received; it is never logged (security rule S10).
-    handler: async (request, reply) => {
-      const url = new URL(request.url, auth.options.baseURL);
-      const path = url.pathname.slice(AUTH_BASE_PATH.length);
-      if (!isAllowedAuthPath(path)) {
-        return reply.status(404).send({ error: { code: "NOT_FOUND", message: "Not found.", requestId: request.id } });
-      }
-      const email = emailIn(request.body);
-      await enforceLimits(limiter, path, email);
-      const response = await auth.handler(
-        new Request(url, {
-          method: request.method,
-          headers: fromNodeHeaders(request.headers),
-          ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
-        }),
-      );
-      if (limiter && email !== undefined && path === PASSWORD_SIGN_IN && response.status === 401) {
-        await limiter.hit(RATE_RULES.wrongPassword, email);
-      }
-      reply.status(response.status);
-      response.headers.forEach((value, key) => reply.header(key, value));
-      return reply.send(response.body ? await response.text() : null);
-    },
-  });
 }

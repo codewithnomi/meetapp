@@ -1,0 +1,23 @@
+{
+  "title": "MeetApp sign-in",
+  "confirm": {
+    "heading": "Sign in to the MeetApp app on this computer?",
+    "code": "Check that the app shows the same code:",
+    "continue": "Continue",
+    "cancel": "Cancel"
+  },
+  "done": {
+    "heading": "You're signed in",
+    "body": "You can close this tab and go back to the MeetApp app."
+  },
+  "cancelled": {
+    "heading": "Sign-in was cancelled",
+    "SIGN_IN_CANCELLED": "Nothing was changed. You can close this tab and try again in the MeetApp app.",
+    "PROVIDER_EMAIL_UNVERIFIED": "Your Google/Microsoft email isn't verified; create an account with your email instead.",
+    "TOO_MANY_ATTEMPTS": "Too many attempts. Wait a few minutes, then try again in the MeetApp app."
+  },
+  "invalid": {
+    "heading": "This sign-in link isn't valid",
+    "body": "It may have expired or been used already. Start again in the MeetApp app."
+  }
+}

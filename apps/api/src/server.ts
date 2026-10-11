@@ -42,6 +42,7 @@ const accounts = createAccounts({
   outbox: emails.outbox,
   log,
   trustedOrigins: ALLOWED_ORIGINS,
+  storage,
 });
 
 const app = await buildApp(config, {
