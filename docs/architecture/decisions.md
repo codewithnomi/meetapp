@@ -275,13 +275,13 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none.
 
 ### D048: How sign-in and workspaces are built (F01)
-- **Status:** proposed (2026-10-11, with F01 design.md)
+- **Status:** accepted (2026-10-11, owner approved F01 design.md; proposed, with F01 design.md)
 - **Decision:** Better Auth (D020) is used for **identity only**: passwords (scrypt), email codes (emailOTP plugin), Google/Microsoft, sessions, sign out everywhere. **Workspaces, roles, invitations and join requests are our own module** (routes → service → repository) so our rules hold (one owner, any member can invite, approval for join requests) and every query filters by workspace (S2). The desktop app's sign-in token is kept **only in the Electron main process, encrypted with safeStorage** (Keychain), added to API requests as a bearer token and hidden from the page. Google/Microsoft use a **browser hand-off with a secret verifier** (the PKCE idea) that the app collects by polling, so no `meetapp://` link or local web server is needed. Sign-up is our own wrapper so an account exists only after the email code. Sign-in calls are made by the main process (the page never receives a token), and the browser hand-off shows a 4-digit match code the user confirms. **Remaining risk:** a user who is tricked into opening someone else's sign-in link *and* confirms a code without comparing it could sign the attacker's app in; the 60-second start window, the browser cookie and the code make this hard. Revisit with `meetapp://` links in F04.
 - **Why:** Better Auth's organization plugin has different rules (several owners, only admins invite, no join requests) and bypasses our layers; keeping the token out of the page protects it from any script injected into a page.
 - **Cost:** none.
 
 ### D049: New libraries for F01
-- **Status:** proposed (2026-10-11, with F01 design.md); each vetted with `/add-dependency` before it is added.
+- **Status:** accepted (2026-10-11, owner approved F01 design.md; proposed, with F01 design.md); each vetted with `/add-dependency` before it is added.
 - **Decision:** `better-auth` (sign-in), `react-router` (screens), `@tanstack/react-query` and `react-hook-form` (already planned in frontend.md), `sharp` (photo resizing and removing location data), `oauth2-mock-server` (dev only: a fake Google/Microsoft for tests), **BullMQ** (background jobs: emails and the daily join-request expiry; already named in overview.md, worker inside the API for now), and a list of the 10,000 most common passwords (offline check).
 - **Why:** widely used, maintained, free, permissive licenses; each does one job.
 - **Cost:** none.
