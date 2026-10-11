@@ -135,7 +135,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D025: Infrastructure stages and tool versions
 - **Status:** Stage 1 accepted, rest proposed (2026-10-09)
-- **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage; LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.
+- **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage (later replaced by RustFS, D035); LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.
 
 ### D026: Automatic commit, push and Pull Request
 - **Status:** accepted (2026-10-09, owner)
@@ -229,7 +229,8 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   - **Only MeetApp's containers:** logs and CPU/memory are collected only from containers of the `meetapp` Docker project. Other programs the owner runs in Docker (e.g. Open WebUI) are never read.
   - **Alert timing:** checks every 30 s, alert after **3** failed checks in a row (60–90 s after a stop = "down for more than a minute"), "recovered" after 2 good checks. The design's earlier `2` would have alerted after only 30–60 s.
   - **Older `.env` files are filled in:** `pnpm dev`, `pnpm test` and `pnpm monitoring` add any setting that `.env.example` has and `.env` lacks (with its comment), and say so. Existing values are never changed. Without this, Docker refuses to start anything once a new setting is added.
-  - **Slow checks run separately:** the monitoring checks (TC-F00-84 to 89) stop services and wait for alerts, about 20 minutes, so they run with `pnpm test:monitoring`, not in `pnpm test` or CI. Fast unit tests check the settings files on every run.
+  - **Slow checks run separately:** the monitoring checks (TC-F00-84 to 89) stop services and wait for alerts, about 12 minutes, so they run with `pnpm test:monitoring`, not in `pnpm test` or CI. Fast unit tests check the settings files on every run.
+  - **Wide access, local only:** to read container numbers Alloy runs privileged, with the Docker socket and read-only host folders. That is effectively full control of Docker, accepted only because it is local and optional; the security review asked to narrow it (F00 T-fix-2), and it must be revisited before anything runs online. "Only MeetApp's containers" is a filter in Alloy's settings, not a hard wall.
 - **Why:** fewer images to pin and update; the owner's other programs stay private; the alert matches the requirement (AC-F00-44); an updated project keeps working on an older `.env`.
 - **Cost:** none (all free, local only).
 
@@ -238,3 +239,10 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** the manual check TC-F00-92 (someone follows `docs/getting-started.md` on a clean Mac) is not done for F00. Instead: Claude made a fresh copy of the project, installed it and started the screens following the guide's commands; that run found and fixed a real problem (the screens didn't load until the design tokens were built). The automated test TC-F00-93 checks that every command the guide mentions exists.
 - **Why:** the owner's time; the main risk (a fresh copy not starting) was checked and fixed.
 - **Follow-up:** repeat the walk-through when a second person or a new Mac joins. TC-F00-83 (data after a real Mac restart) stays open until the owner's next restart.
+
+### D043: Libraries chosen while building F00
+- **Status:** accepted (2026-10-11, recorded after the F00 documentation review; each was vetted when added).
+- **Backend and data:** Fastify (web server), Drizzle ORM with the `pg` driver (database), ioredis (cache), Pino (logs), Zod (input and output checks, shared through packages/contracts), nodemailer (email), the AWS S3 client (files, works with RustFS and Cloudflare R2), livekit-server-sdk (call server), OpenTelemetry (traces and logs), prom-client (metrics), @sentry/node (optional crash reports).
+- **Building and checking:** pnpm workspaces + Turborepo (one repository, tasks in order), Vitest (unit and integration tests), Playwright (desktop and gallery tests, pinned image for screenshots), Storybook (component gallery), axe-core (accessibility), ESLint + Prettier, dependency-cruiser (layer rules), knip (unused code), jscpd (duplication), gitleaks and Semgrep (security, via Docker), osascript (macOS's own tool for the Mac notifications).
+- **Why:** free, widely used and maintained, permissive licenses (checked by `pnpm check:licenses`), and each does one job. New libraries still go through `/add-dependency`.
+- **Cost:** none.

@@ -4,6 +4,8 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: ".",
+  globalSetup: "./global-setup.ts",
+  globalTeardown: "./global-teardown.ts",
   outputDir: "test-results",
   // Each test opens real windows; one at a time keeps them from fighting over focus.
   workers: 1,

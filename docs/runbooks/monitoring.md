@@ -27,7 +27,7 @@ All ports can be moved in `.env` (`GATUS_PORT`, `GRAFANA_PORT`, `PROMETHEUS_PORT
 Every error answer carries a `requestId`. In Grafana → Explore → Loki, run `{service_name="meetapp-api"} | requestId="<the id>"`. The log line has a "Open trace" link to the request's trace in Tempo, which shows which step failed.
 
 ## Checking that monitoring works
-`pnpm test:monitoring` (about 20 minutes, keeps the Mac awake while it runs) stops each service in turn and checks the status page, the dashboard, logs, traces and the alerts. It needs Docker, and `pnpm dev` and `pnpm monitoring` must be closed first (it starts its own backend and notifier).
+`pnpm test:monitoring` (about 12 minutes, keeps the Mac awake while it runs) stops each service in turn and checks the status page, the dashboard, logs, traces and the alerts. It needs Docker, and `pnpm dev` and `pnpm monitoring` must be closed first (it starts its own backend and notifier).
 
 ## Privacy
 Only MeetApp's own containers are read. Other programs you run in Docker are never collected (D041).

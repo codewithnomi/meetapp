@@ -4,7 +4,7 @@ How to run MeetApp on a Mac, from nothing to the app window. Everything here is 
 
 ## What you need
 - **A Mac** with macOS 14 or newer.
-- **Docker Desktop** (free for personal use): https://www.docker.com/products/docker-desktop/. Install it, open it once and wait until it says "Engine running". About 8 GB of free disk space is needed for the services.
+- **Docker Desktop** (free for personal use): https://www.docker.com/products/docker-desktop/. Install it, open it once and wait until it says "Engine running". About 8 GB of free disk space is needed: the first start downloads about 2 GB of services, and their data and caches grow from there.
 - **Git** (comes with the Xcode command-line tools: run `xcode-select --install` once).
 - **mise**, which installs the exact Node.js, pnpm and Python versions this project uses (step 2). You don't need to install Node.js or pnpm yourself.
 

@@ -41,6 +41,16 @@ async function waitForApi(url: string): Promise<boolean> {
   return false;
 }
 
+/** Stops the backend and waits until it has ended (force-stops it after 15 s), so its port is free again. */
+async function stopApi(api: ChildProcess): Promise<void> {
+  if (api.exitCode !== null || api.signalCode !== null) return;
+  const exited = new Promise<void>((done) => api.once("exit", () => done()));
+  api.kill();
+  const timer = setTimeout(() => api.kill("SIGKILL"), 15_000);
+  await exited;
+  clearTimeout(timer);
+}
+
 async function desktopTests(env: Record<string, string>): Promise<boolean> {
   if (!run("node", ["tools/seed.ts", "add"])) return false;
   const apiUrl = `http://127.0.0.1:${env["API_PORT"] ?? "3000"}`;
@@ -56,7 +66,7 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
       MEETAPP_E2E_API_PID: String(api.pid),
     });
   } finally {
-    api.kill();
+    await stopApi(api);
   }
 }
 

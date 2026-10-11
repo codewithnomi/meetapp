@@ -48,11 +48,14 @@ Plain-English version first, technical names in brackets.
 | Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app |
 | Speech-to-text | Deepgram (cloud) / Whisper (local) | Top quality; local option for privacy |
 | AI brain | Claude (cloud) / Ollama (local) | Best quality answers; local option |
-| File storage | Cloudflare R2 | Cheap, no download fees |
+| File storage | Cloudflare R2 online; **RustFS** on the Mac (same S3 API, D035) | Cheap, no download fees |
 | Email | **Mailpit** locally (a fake inbox to see test emails, free); a sending service (e.g. Resend/Amazon SES) when online | Invites, verification, minutes |
 | Call relay (TURN) | LiveKit's built-in TURN server | Keeps calls working behind strict company firewalls (needs a domain + HTTPS when online) |
 | Feature flags | Simple flags table in our database (or self-hosted Unleash later) | Turn features on gradually / for testers |
 | Usage analytics | PostHog (free tier, privacy settings on, no transcript content ever) | Know which features are used. Comes with F10. |
+| Monitoring | Gatus (status page), Grafana Alloy (collector), Prometheus, Loki, Tempo, Grafana (D027, D030, D041) | Know what is down and why; alerts by email and Mac notification |
+| Building and checking the code | pnpm workspaces + Turborepo; Vitest, Playwright, Storybook; ESLint, Prettier, dependency-cruiser, knip, jscpd | One repository, every check automatic (code-quality.md) |
+| Backend libraries | Drizzle (database), ioredis (cache), Pino (logs), Zod (input checks), nodemailer (email), AWS S3 client (files), LiveKit server SDK, OpenTelemetry (traces) | Small, well-known, free (D043) |
 
 ## How the AI features work (simple)
 1. **Transcript:** every person's microphone is a separate audio stream. We convert each stream to text, so we always know exactly who said what.
@@ -61,6 +64,6 @@ Plain-English version first, technical names in brackets.
 4. **Persona:** your description is added to the AI's instructions, so it knows your context.
 5. **Integrations:** the AI can use connected tools (via MCP) to create tickets, but only after you click "confirm".
 
-## Code layout (when coding starts)
-One repository with all apps (monorepo):
-`apps/desktop`, `apps/web`, `apps/mobile`, `apps/api`, `apps/ai-worker`, `packages/ui`, `packages/core`, `packages/db`, `infra/`.
+## Code layout
+One repository with all apps (monorepo), exact map in `docs/engineering/project-structure.md`:
+`apps/desktop`, `apps/web`, `apps/api`, `packages/ui`, `packages/design-tokens`, `packages/contracts`, `packages/db`, `packages/config`, `infra/`, `tools/`. Later: `apps/ai-worker` (F05), `apps/mobile` (F11), `packages/core` (when first needed).

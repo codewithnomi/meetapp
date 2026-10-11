@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { launch, recordRequests } from "./desktop.ts";
+import { closeApp, launch, recordRequests } from "./desktop.ts";
 
 const BUILT_ASSETS = fileURLToPath(new URL("../../../apps/web/dist/assets", import.meta.url));
 
@@ -18,7 +18,7 @@ test("TC-F00-09 [AC-F00-03] the window opens within 5 s with the starter home sc
   await expect(page.getByRole("heading", { level: 1, name: "MeetApp" })).toBeVisible();
   await expect(page.getByText(/^Welcome/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
-  await app.close();
+  await closeApp(app);
 });
 
 test("TC-F00-30 [AC-F00-13b] fonts display with no internet, served from the app itself", async () => {
@@ -43,7 +43,7 @@ test("TC-F00-30 [AC-F00-13b] fonts display with no internet, served from the app
   expect(fonts.mono).toBe(true);
   expect(files.length).toBeGreaterThanOrEqual(2);
   for (const file of files) expect(file).toMatch(/^app:\/\/meetapp\/assets\//);
-  await app.close();
+  await closeApp(app);
 });
 
 test("TC-F00-31 [AC-F00-13b] nothing is fetched from Google or any outside address", async () => {
@@ -57,5 +57,5 @@ test("TC-F00-31 [AC-F00-13b] nothing is fetched from Google or any outside addre
   for (const address of addresses) expect(address).toMatch(/^(app:\/\/meetapp\/|http:\/\/127\.0\.0\.1[:/])/);
   for (const file of readdirSync(BUILT_ASSETS).filter((name) => name.endsWith(".css")))
     expect(readFileSync(`${BUILT_ASSETS}/${file}`, "utf8")).not.toMatch(/googleapis|gstatic/);
-  await app.close();
+  await closeApp(app);
 });

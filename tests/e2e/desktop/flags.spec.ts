@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { freshProfile, launch } from "./desktop.ts";
+import { closeApp, freshProfile, launch } from "./desktop.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const API_PID = Number(process.env["MEETAPP_E2E_API_PID"]);
@@ -39,6 +39,6 @@ test("TC-F00-72 [AC-F00-34] switching the demo flag off hides it within 30 s, an
     expect(apiStillRunning()).toBe(true);
   } finally {
     flag("off");
-    await app.close();
+    await closeApp(app);
   }
 });

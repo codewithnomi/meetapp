@@ -1,6 +1,6 @@
 // Theme and accent in the real window (AC-F00-08, 09, 10): TC-F00-16, 17, 19, 20, 21.
 import { expect, test, type Page } from "@playwright/test";
-import { freshProfile, htmlData, launch, resolvedColor } from "./desktop.ts";
+import { closeApp, freshProfile, htmlData, launch, resolvedColor } from "./desktop.ts";
 
 const SWITCH_MS = 1000;
 /** The 8 accents (design tokens) with the names the Settings screen shows. */
@@ -20,6 +20,13 @@ async function openSettings(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 }
 
+/** Waits until the choice is saved in the profile, so closing the app right after can't lose it. */
+async function saved(page: Page, field: "theme" | "accent", value: string): Promise<void> {
+  await expect
+    .poll(() => page.evaluate(() => window.localStorage.getItem("meetapp.appearance")), { timeout: SWITCH_MS })
+    .toContain(`"${field}":"${value}"`);
+}
+
 const background = (page: Page) => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
 
 test("TC-F00-16 [AC-F00-08] Dark applies at once without a reload and is remembered after a restart", async () => {
@@ -34,11 +41,12 @@ test("TC-F00-16 [AC-F00-08] Dark applies at once without a reload and is remembe
   expect(await background(first.page)).not.toBe(lightBackground);
   expect(await background(first.page)).toBe(await resolvedColor(first.page, "var(--bg)"));
   expect(await first.page.evaluate(() => (window as { marker?: number }).marker)).toBe(1);
-  await first.app.close();
+  await saved(first.page, "theme", "dark");
+  await closeApp(first.app);
 
   const again = await launch(profile);
   expect(await htmlData(again.page)).toMatchObject({ theme: "dark" });
-  await again.app.close();
+  await closeApp(again.app);
 });
 
 test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn", async () => {
@@ -46,7 +54,8 @@ test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn
   const first = await launch(profile);
   await openSettings(first.page);
   await first.page.getByRole("radio", { name: "Dark" }).click();
-  await first.app.close();
+  await saved(first.page, "theme", "dark");
+  await closeApp(first.app);
 
   const again = await launch(profile);
   await again.page.context().addInitScript(() => {
@@ -65,7 +74,7 @@ test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn
       theme: "dark",
       drawn: false,
     });
-  await again.app.close();
+  await closeApp(again.app);
 });
 
 test("TC-F00-19 [AC-F00-09] 'Same as my computer' follows the computer; 'Light' does not", async () => {
@@ -82,7 +91,7 @@ test("TC-F00-19 [AC-F00-09] 'Same as my computer' follows the computer; 'Light' 
   await page.emulateMedia({ colorScheme: "dark" });
   await page.waitForTimeout(SWITCH_MS);
   expect(await htmlData(page)).toMatchObject({ theme: "light" });
-  await app.close();
+  await closeApp(app);
 });
 
 test("TC-F00-20 [AC-F00-10] each of the 8 accents applies at once and the last one is remembered", async () => {
@@ -100,11 +109,12 @@ test("TC-F00-20 [AC-F00-10] each of the 8 accents applies at once and the last o
       await resolvedColor(first.page, "var(--accent-text)"),
     );
   }
-  await first.app.close();
+  await saved(first.page, "accent", "teal");
+  await closeApp(first.app);
 
   const again = await launch(profile);
   expect(await htmlData(again.page)).toMatchObject({ accent: "teal" });
-  await again.app.close();
+  await closeApp(again.app);
 });
 
 test("TC-F00-21 [AC-F00-10] a new user gets sky blue, with dark text on the main button", async () => {
@@ -116,5 +126,5 @@ test("TC-F00-21 [AC-F00-10] a new user gets sky blue, with dark text on the main
   // Dark text: the average of its red, green and blue parts is well below the middle (white would be 255).
   const channels = (onAccent.match(/\d+/g) ?? []).slice(0, 3).map(Number);
   expect(channels.reduce((sum, value) => sum + value, 0) / 3).toBeLessThan(128);
-  await app.close();
+  await closeApp(app);
 });

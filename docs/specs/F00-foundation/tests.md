@@ -12,7 +12,7 @@ Levels: unit · integration · e2e (real app flow, Playwright Electron or Playwr
 
 Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health returns 200 when all services are up`.
 
-**Monitoring checks:** TC-F00-84 to 89 stop and start services and wait for alerts (about 20 minutes), so they run with `pnpm test:monitoring`, not in `pnpm test` or CI (design.md section 3).
+**Monitoring checks:** TC-F00-84 to 89 stop and start services and wait for alerts (about 12 minutes), so they run with `pnpm test:monitoring`, not in `pnpm test` or CI (design.md section 3).
 
 **Neutral wording for pending owner decisions:**
 - AC-F00-41/44: "the status page" means the chosen tool (Gatus proposed in D030, Uptime Kuma in the AC). Tests read its status through its HTTP API.
@@ -228,7 +228,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 ### TC-F00-29: Owner judges the gallery against the design system
 - **Covers:** AC-F00-13
 - **Level:** manual
-- **Given** `pnpm storybook` running
+- **Given** the gallery running (`pnpm --filter @meetapp/ui storybook`)
 - **When** the owner compares each atom side by side with the approved design system (sizes, pill shapes, colors, icon names, Figtree)
 - **Then** the owner records "matches" or the differences in `verification.md`
 
@@ -705,6 +705,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 ### Documentation
 
 ### TC-F00-92: Getting-started walk-through on a clean Mac
+- **Status:** skipped by the owner for F00 (D042); repeat when a new person or Mac joins.
 - **Covers:** AC-F00-25, AC-F00-06, AC-F00-01
 - **Level:** manual
 - **Given** a Mac (or a fresh macOS user account) with only the prerequisites listed in `docs/getting-started.md`

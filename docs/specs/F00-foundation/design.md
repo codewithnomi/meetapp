@@ -31,11 +31,11 @@ mise.toml  package.json ("packageManager": "pnpm@10.x")  pnpm-workspace.yaml  tu
 eslint.config.js (re-exports packages/config)  .prettierrc  .env.example  .gitignore  .dockerignore
 .github/workflows/ci.yml, nightly-windows.yml   .github/dependabot.yml
 infra/docker-compose.yml   infra/livekit.yaml   infra/monitoring/{gatus,prometheus,alloy,loki,tempo,grafana}/…
-tools/preflight.mjs  tools/check-secrets.mjs  tools/dev.ts  tools/check-licenses.ts  tools/notifier.ts  tools/flag.ts  tools/check-structure.ts
+tools/preflight.mjs  tools/check-secrets.mjs  tools/dev.ts + dev-checks.ts  tools/test.ts  tools/monitoring.ts + notifier.ts  tools/check-licenses.ts + licenses.ts  tools/flag.ts  tools/seed.ts  tools/check-structure.ts  tools/check-container.ts  tools/visual.ts  (plus small helpers: cli.ts, database.ts, backend-config.ts, storage-test.ts, email-test.ts)
 apps/desktop   (Electron main + preload)
 apps/web       (React renderer: starter home screen + Settings panel)
 apps/api       (Fastify backend: health, flags, docs, metrics, errors)
-packages/design-tokens  packages/ui  packages/contracts  packages/db  packages/core  packages/config
+packages/design-tokens  packages/ui  packages/contracts  packages/db  packages/config   (packages/core: not needed in F00, created when first needed)
 tests/e2e  tests/fixtures (lint/secret/license fixtures, excluded from real scans)
 docs/getting-started.md  docs/runbooks/local-services.md  + README.md and CLAUDE.md in every app/package
 ```
@@ -46,7 +46,7 @@ docs/getting-started.md  docs/runbooks/local-services.md  + README.md and CLAUDE
 - Library versions are the latest stable at build time, locked in `pnpm-lock.yaml`.
 
 ## 3. Local services (`infra/docker-compose.yml`)
-Every image is pinned by version **and digest**, and every setting comes from `.env` (the compose file fails with "set in .env" if one is missing). **Every published port is bound to `127.0.0.1`** (e.g. `"127.0.0.1:5432:5432"`), including the monitoring ports, so other devices on the Wi-Fi can't connect (AC-F00-23). Named volumes keep data across restarts (AC-F00-40). Each service has a Docker health check, and `up --wait` waits for them.
+Every image is pinned by version **and digest**, and every setting comes from `.env` (the compose file fails with "set in .env" if one is missing). **Every published port is bound to `127.0.0.1`** (e.g. `"127.0.0.1:5432:5432"`), including the monitoring ports, so other devices on the Wi-Fi can't connect (AC-F00-23). Named volumes keep data across restarts (AC-F00-40). The core services, Prometheus and Grafana have a Docker health check, and `up --wait` waits for them; Gatus, Alloy, Loki and Tempo have none (the Loki and Tempo images have no shell or download tool; Grafana and Alloy retry until they are ready).
 
 | Service | Image (exact tag pinned) | Port(s) | Notes |
 |---|---|---|---|
@@ -68,13 +68,13 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 | Grafana | 3001 (`GRAFANA_PORT`) | "MeetApp overview" dashboard + alert rules, provisioned from `infra/monitoring/grafana/`. Opens without a login as a viewer (only this computer can reach it); the admin password is `GRAFANA_ADMIN_PASSWORD` in `.env` |
 
 - **Changed in T20:** Alloy's built-in exporters replace separate postgres-exporter/redis-exporter images (fewer images to pin and update), and Alloy pushes to Prometheus instead of Prometheus scraping. File storage (RustFS) has no Prometheus endpoint, so it is watched by Gatus only.
-- **Only MeetApp's containers (D041):** Alloy keeps logs and CPU/memory only for containers of the `meetapp` Docker project, so other programs the owner runs in Docker are never read. To read container numbers it runs privileged with read-only host folders (the Docker socket, `/sys`, `/var/lib/docker`, `/run/containerd`); this is acceptable only because it is local and optional, and must be revisited before anything runs online.
+- **Only MeetApp's containers (D041):** Alloy keeps logs and CPU/memory only for containers of the `meetapp` Docker project, so other programs the owner runs in Docker are never read. To read container numbers it runs privileged with read-only host folders (the Docker socket, the root folder `/` as `/rootfs` for the Docker disk size, `/sys`, `/var/lib/docker`, `/run/containerd`); this is acceptable only because it is local and optional, and must be revisited before anything runs online.
 - Containers reach the API and notifier on the Mac via `host.docker.internal` (works on Docker Desktop and OrbStack; task T1 verifies it).
 - **Alerts (AC-F00-44):** Gatus sends "down" and "recovered" alerts to email (Mailpit SMTP, to `ALERT_EMAIL_TO`) and to the local webhook `tools/notifier.ts`. **Timing (fixed in T20):** a check runs every 30 s, so with `failure-threshold: 3` the alert goes out 60–90 s after a service stops, matching "down for more than 1 minute". (The earlier `2` would alert after only 30–60 s.) A blip shorter than 30 s fails at most one check and never alerts. The status page itself turns red at the first failed check (within 30 s). If Mailpit itself is down, its alert arrives only through the notifier.
 - **Notifier (`tools/notifier.ts`):** a tiny web server on `127.0.0.1:NOTIFIER_PORT` (8090) with `POST /gatus` and `POST /grafana`. It accepts only small JSON bodies (≤ 16 KB) in the expected shape and shows a macOS notification with `osascript`, passing the text as arguments (never pasted into the script), so a service name can't run commands. Runs in the foreground of `pnpm monitoring` (closing it only stops the Mac notifications; email alerts keep working). macOS asks once to allow notifications.
 - **Grafana alerts:** "error spike" fires when 5xx > 5% of requests over 5 min; "disk nearly full" fires when the Docker disk is > 85% full. Both go to the same email and the notifier.
-- **`pnpm monitoring`** (`tools/monitoring.ts`): the same Docker and port checks as `pnpm dev` for the monitoring ports, `docker compose --profile monitoring up -d --wait` (the normal services too), prints the addresses, then runs the notifier. **`pnpm monitoring:stop`** stops only the monitoring containers (data kept). The backend sends traces and logs only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env` (`http://127.0.0.1:4318`).
-- **Monitoring checks (`pnpm test:monitoring`, about 20 minutes):** TC-F00-84 to 89 stop and start services and wait for alerts, so they are too slow for `pnpm test` and CI. They live in `infra/monitoring/*.monitoring.test.ts` and run only with this command. It keeps the Mac awake while it runs (`caffeinate -i`, built into macOS): in T20 the Mac's idle sleep froze Docker mid-run and made the timed checks fail. It needs Docker and a free `API_PORT` (it starts its own backend with `NODE_ENV=test` and tracing on, so the failing test route exists). The settings files themselves are checked by fast unit tests in `pnpm test`.
+- **`pnpm monitoring`** (`tools/monitoring.ts`): the same Docker and port checks as `pnpm dev` for the monitoring ports, removes the old monitoring containers (data kept, so they always start after a `docker compose down`), then `docker compose --profile monitoring up -d --wait` (the normal services too), prints the addresses, then runs the notifier. **`pnpm monitoring:stop`** stops only the monitoring containers (data kept). The backend sends traces and logs only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env` (`http://127.0.0.1:4318`).
+- **Monitoring checks (`pnpm test:monitoring`, about 12 minutes):** TC-F00-84 to 89 stop and start services and wait for alerts, so they are too slow for `pnpm test` and CI. They live in `infra/monitoring/*.monitoring.test.ts` and run only with this command. It keeps the Mac awake while it runs (`caffeinate -i`, built into macOS): in T20 the Mac's idle sleep froze Docker mid-run and made the timed checks fail. It needs Docker and a free `API_PORT` (it starts its own backend with `NODE_ENV=test` and tracing on, so the failing test route exists). The settings files themselves are checked by fast unit tests in `pnpm test`.
 
 ## 4. Commands
 **`pnpm dev`** (`preflight.mjs` → `dev.ts`):
@@ -95,8 +95,8 @@ Steps 1–4 fail within 10 s.
 **Other commands:**
 - `pnpm test`: starts the test services, or fails with the Docker message, then runs all Vitest projects (unit + integration, one merged coverage report) and the Playwright Electron e2e
   - **Details settled in T16:** `tools/test.ts`: Docker check (the same messages as `pnpm dev`), `.env` created if missing, `docker compose up -d --wait`, then `vitest run --coverage` with integration tests on (one merged report; thresholds from `@meetapp/config/vitest/coverage`, 80% for lines, functions, branches and statements in each business-logic folder group, and a failure names the group). Then the desktop tests: sample flags seeded (including the new test flag `demo`), the real backend started from `.env` on `API_PORT`, the screens built with that address, `pnpm test:e2e` run with `MEETAPP_E2E_API_URL`/`MEETAPP_E2E_API_PID` (the flag test TC-F00-72 needs them and is skipped without them), the backend stopped, and a ✓/✗ summary printed. Command-line launchers (`cli.ts`) are left out of coverage (they only call tested functions); the HTML report is `coverage/index.html`, a generated top-level folder the structure check allows. Quick runs without Docker: `pnpm test:unit`; `pnpm test:integration` and `pnpm test:e2e` still work on their own.
-- `pnpm check`: build, lint, typecheck, dependency-cruiser, knip, jscpd, licenses, structure
-- `pnpm storybook`: `--host 127.0.0.1`
+- `pnpm check`: lint, formatting, typecheck, dependency-cruiser, knip, jscpd, structure, licenses (the build runs separately: `pnpm build`, and in CI)
+- `pnpm --filter @meetapp/ui storybook`: the gallery, `--host 127.0.0.1`
 - `pnpm monitoring`, `pnpm monitoring:stop`, `pnpm test:monitoring` (section 3)
 - `pnpm seed`, `pnpm seed:clear`
 - `pnpm flag <key> on|off`: how the owner turns a feature on or off
@@ -258,13 +258,13 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 ## 12. CI (`.github/workflows`)
 **`ci.yml`** runs on `pull_request` and on `push` to `main` only, with `concurrency: cancel-in-progress`. It runs on `ubuntu-latest`, installs tools with mise-action, and runs these jobs in parallel:
 1. **check:** `pnpm install` (cached), `pnpm build`, lint, typecheck, dependency-cruiser, knip, jscpd, licenses, structure
-2. **test:** `docker compose -f infra/docker-compose.yml up -d --wait postgres redis storage livekit`, the same file as on the Mac. Then Vitest from the root (`test.projects`, one merged report). Coverage thresholds of 80% on `apps/api/src/modules/**`, `apps/api/src/providers/**`, `packages/core/**`, `packages/design-tokens/src/**` and `apps/web/src/features/**`.
+2. **test:** `node tools/test.ts --only vitest` (it starts the services from the same compose file as on the Mac). Then Vitest from the root (`test.projects`, one merged report). Coverage thresholds of 80% on `apps/api/src/modules/**`, `apps/api/src/providers/**`, `packages/core/**`, `packages/design-tokens/src/**` and `apps/web/src/features/**`.
 3. **e2e:** `sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0` (Ubuntu 24.04 needs this for Electron's sandbox, which stays **on**). Then the desktop build, and the Playwright Electron test under `xvfb`.
 4. **ui:** Storybook build, then visual + axe run in the pinned Playwright image. Diff report uploaded on failure.
 5. **security:** `pnpm audit --prod --audit-level high`, the gitleaks CLI image (not the action, which needs a license for organizations), Semgrep community rules.
 6. **container:** start the same services, build and run the API image, call `/api/v1/health`, then check `id -u` ≠ 0 and that there's no `.env` in the image.
 
-**`nightly-windows.yml`** runs daily, but exits immediately if `main` had no new commits in 24 h. Otherwise it runs install, typecheck, unit tests and the desktop build on `windows-latest`.
+**`nightly-windows.yml`** runs daily; its steps are skipped if `main` had no new commits in 24 h. Otherwise it runs install, typecheck, unit tests and the desktop build on `windows-latest`.
 
 **Details settled in T19:** a shared setup step (`.github/actions/setup`) installs the pinned tools with mise-action, restores the pnpm store cache and runs `pnpm install --frozen-lockfile` (the Electron binary only in the desktop jobs). Every outside action is pinned to a full commit (a test checks it). Jobs: **check** (`pnpm build` + `pnpm check`), **test** (`tools/test.ts --only vitest`, coverage report uploaded), **e2e** (AppArmor setting, `xvfb-run tools/test.ts --only desktop`, report uploaded on failure), **ui** (`pnpm test:visual` through Docker, as on the Mac), **security** (`pnpm audit --prod --audit-level high`, gitleaks over the whole history, Semgrep 1.177.0 with the javascript, typescript, nodejs and secrets community rules, `--metrics=off`), **container** (`pnpm check:container`), and **report**, which posts the "Do not merge" comment when any job failed on a Pull Request. One Semgrep finding (plain http to the local dev server) is marked as reviewed in the code with its reason. The Windows nightly runs the app's tests (`web`, `ui`, `desktop` projects), the type check and the desktop build; the tools in `tools/` are for macOS and Linux (they use POSIX shell scripts).
 
@@ -312,7 +312,7 @@ That totals about **1,350 min/month**, under the 1,500-minute target. If it gets
 |---|---|---|
 | 01, 25 | Timed manual run on the owner's Mac following getting-started; result recorded in verification.md. Failure paths (Docker off, port taken) are automated in dev-runner unit tests. | manual + unit |
 | 02, 07 | Integration: health with all services up returns 200; stop Redis/Postgres → 503 `down` within 5 s; restart → `ok` within 10 s, with no API restart | integration |
-| 03, 08, 09, 10 | Electron e2e: window within 5 s; theme and accent switch within 1 s and survive an app restart; `page.emulateMedia({colorScheme})` drives "System"; default sky with dark button text | e2e |
+| 03, 08, 09, 10 | Electron e2e: window within 5 s; theme and accent switch within 1 s and survive an app restart; `page.emulateMedia({colorScheme})` drives "System"; default sky with dark button text | e2e | **Test apps (T-fix-1):** every app a test starts is closed after the test even if the test failed, waited for until its process ends, and force-stopped after 10 s (`closeApp` in `tests/e2e/desktop/desktop.ts`); settings are confirmed saved before an app is closed; each run's profile folders are deleted at the end. A leftover app from one test once appeared in the next.
 | 04 | Integration: an empty DB gets migrated on API start | integration |
 | 05 | Unit: config with a missing variable exits 1 and names it | unit |
 | 06 | Script: `.env.example` has no paid-account setting; getting-started lists only free accounts | unit |

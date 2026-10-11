@@ -19,7 +19,7 @@ Owner's machine: Apple M4, 16 GB RAM, macOS 26. Good for development and for loc
 | Fake email inbox (**Mailpit**) | Docker container | View every email the app sends |
 | Backend API, AI worker | Run directly with hot reload while developing; also built as **container images** (Dockerfiles) so they run the same way online later |
 | Desktop app | Electron in development mode | |
-| Monitoring (Grafana/Prometheus) | Optional Docker profile, off by default | Turn on when we work on call quality |
+| Monitoring (Gatus, Alloy, Prometheus, Loki, Tempo, Grafana) | Optional Docker profile, built in F00: `pnpm monitoring` | Status page, dashboards, logs, traces, alerts (runbooks/monitoring.md) |
 
 **Tool versions are locked** for the whole project with **mise** (one file, `mise.toml`), so every computer and CI uses the same versions:
 - **Node.js 24 LTS.** Node 20, currently on the owner's Mac, stopped receiving security updates in April 2026.

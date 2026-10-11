@@ -1,10 +1,12 @@
 // Starts the built desktop app for a test, each run with its own fresh profile folder (so saved
-// settings start empty), and gives the main window.
+// settings start empty), and gives the main window. Every app a test starts is closed after the test,
+// even when the test failed, and force-stopped if it doesn't exit: a leftover app from one test once
+// showed up in the next (found in the F00 verification).
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { _electron, type ElectronApplication, type Page } from "@playwright/test";
+import { _electron, test, type ElectronApplication, type Page } from "@playwright/test";
 
 const DESKTOP = fileURLToPath(new URL("../../../apps/desktop", import.meta.url));
 
@@ -19,9 +21,33 @@ export interface RunningApp {
   page: Page;
 }
 
+/** How long an app may take to quit before it is force-stopped. */
+const CLOSE_MS = 10_000;
+const started = new Set<ElectronApplication>();
+
+/** A new, empty profile folder, inside this run's folder (deleted by global-teardown.ts). */
 export function freshProfile(): string {
-  return mkdtempSync(join(tmpdir(), "meetapp-e2e-"));
+  return mkdtempSync(join(process.env["MEETAPP_E2E_PROFILES"] ?? tmpdir(), "meetapp-e2e-"));
 }
+
+const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms).unref());
+
+/** Quits the app and waits until its process has really ended; force-stops it after 10 s. */
+export async function closeApp(app: ElectronApplication): Promise<void> {
+  started.delete(app);
+  const child = app.process();
+  const ended = () => child.exitCode !== null || child.signalCode !== null;
+  if (ended()) return;
+  const exited = new Promise<void>((done) => child.once("exit", () => done()));
+  await Promise.race([app.close().catch(() => undefined), wait(CLOSE_MS)]);
+  if (!ended()) child.kill("SIGKILL");
+  await Promise.race([exited, wait(CLOSE_MS)]);
+}
+
+// After every test: close whatever it left open (a failed check skips the test's own close).
+test.afterEach(async () => {
+  await Promise.all([...started].map(closeApp));
+});
 
 export async function launch(
   profile: string = freshProfile(),
@@ -31,6 +57,7 @@ export async function launch(
   for (const [key, value] of Object.entries(process.env))
     if (value !== undefined && !(key in env) && !LEFT_OUT.has(key)) env[key] = value;
   const app = await _electron.launch({ args: [DESKTOP], cwd: DESKTOP, env });
+  started.add(app);
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
   return { app, page };

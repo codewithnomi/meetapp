@@ -1,6 +1,6 @@
 // The desktop app's security settings in the real app (AC-F00-24): TC-F00-58, 59, 60, 61.
 import { expect, test } from "@playwright/test";
-import { launch, type RunningApp } from "./desktop.ts";
+import { closeApp, launch, type RunningApp } from "./desktop.ts";
 
 const DESIGN_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
@@ -16,7 +16,7 @@ test.beforeEach(async () => {
     shell.openExternal = async (url: string) => void opened.push(url);
   });
 });
-test.afterEach(async () => running.app.close());
+test.afterEach(async () => closeApp(running.app));
 
 test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the page", async () => {
   const { app, page } = running;

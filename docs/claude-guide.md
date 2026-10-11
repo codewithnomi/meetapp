@@ -113,7 +113,7 @@ Safety rules:
   | Playwright | Open the app and click through it to test | ready |
   | Postgres (read-only) | Look at the database tables and data; can't change anything | works once F00 starts the database |
   | Sentry | Read real crash reports | later, when a free Sentry account exists |
-  | Grafana | Query monitoring dashboards and logs | later, after monitoring is built |
+  | Grafana | Query monitoring dashboards and logs | monitoring is built (`pnpm monitoring`); the Grafana connection for Claude is still to be set up |
 
 
 ### 9. Plan mode

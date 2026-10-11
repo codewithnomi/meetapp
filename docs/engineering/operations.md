@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-11
 ---
 
 # Running in Production (Operations)
@@ -12,15 +12,18 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 
 | Question | Tool | What you see |
 |---|---|---|
-| **What is down right now?** | **Gatus** (status page, configured from a file, D030) | A green/red list: Backend, Database, Cache, Call server, File storage, Email, AI worker. Checked every 30 seconds, with history. |
-| **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests, errors, response times, CPU/memory, database connections, queue length, calls and participants |
-| Numbers over time (metrics) | **Prometheus** | Collected from the backend (`/metrics`), PostgreSQL and Redis exporters, LiveKit (built-in), file storage (RustFS) |
+| **What is down right now?** | **Gatus** (status page, configured from a file, D030) | A green/red list: Backend, Database, Cache, Call server, File storage, Email (AI worker added in F05). Checked every 30 seconds, with history. |
+| **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests per second, error rate, response time, database connections, cache status, CPU and memory per container (queue length, calls and participants added with F02/F05) |
+| Numbers over time (metrics) | **Prometheus** (stores) + **Grafana Alloy** (collects, D041) | The backend's `/metrics`, LiveKit, and Alloy's built-in exporters for PostgreSQL, Redis, containers and the Docker disk. File storage (RustFS) has no metrics; only the status page watches it |
 | What happened (logs) | **Loki** | All services' logs in one place, searchable by request ID |
 | Where a request failed (traces) | **Tempo** + **OpenTelemetry** | Each request's path through backend → database → AI worker, with timings and the failing step |
 | Crashes with code location | **Sentry** (free, optional) | Error + stack trace + which release |
-| Being told | **Alerts** in Grafana | Mac notification / email (Mailpit locally) when a service is down > 1 min, errors spike, or the disk is nearly full |
+| Being told: a service is down | **Gatus** alerts | Email (Mailpit locally) and a Mac notification when a service fails 3 checks in a row (60–90 s), and again when it recovers |
+| Being told: errors or disk | **Grafana** alert rules | "Error spike" (over 5% errors in 5 min) and "Disk nearly full" (Docker disk over 85%), same email and notification |
 
-Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, and the addresses are printed. Logs and traces from the API go to Grafana Alloy, which forwards them to Loki and Tempo. Claude uses the same tools through `/diagnose`.
+Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, prints the addresses and keeps the Mac notification helper running (`pnpm monitoring:stop` stops it). Logs and traces from the API go to Grafana Alloy, which forwards them to Loki and Tempo; both keep 7 days. How to use it: [runbooks/monitoring.md](../runbooks/monitoring.md). Claude uses the same tools through `/diagnose`.
+
+**Local-only risks (accepted for the Mac, revisit before anything runs online):** Alloy needs wide access to Docker to read container numbers (being narrowed in F00 T-fix-2); Grafana opens without a login as a read-only viewer; the notification helper listens on 127.0.0.1 only. Every port is bound to 127.0.0.1.
 
 ## 1. Monitoring later in production (same tools, plus)
 | What | Tool | Example |
@@ -44,7 +47,7 @@ Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts
 - Targets: lose at most 5 minutes of data; back online within 4 hours after a major failure.
 
 ## 4. Incidents
-- `docs/runbooks/` will hold step-by-step guides: "call server overloaded", "AI provider down", "database restore".
+- `docs/runbooks/` holds step-by-step guides: [local-services.md](../runbooks/local-services.md), [monitoring.md](../runbooks/monitoring.md), [ci.md](../runbooks/ci.md). Later: "call server overloaded", "AI provider down", "database restore".
 - After every serious incident, a short write-up: what happened, why, and what we changed.
 
 ## 5. Feature flags & analytics
