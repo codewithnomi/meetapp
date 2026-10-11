@@ -1,0 +1,30 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "tools/*.{ts,mjs}",
+        "tests/e2e/*/playwright.config.ts",
+        "tests/e2e/*/*.spec.ts",
+        "tests/e2e/*/serve-*.ts"
+      ],
+      "project": ["tools/**/*.{ts,mjs}", "infra/**/*.ts", "tests/e2e/**/*.ts"]
+    },
+    "packages/config": {
+      "ignoreDependencies": ["eslint-import-resolver-typescript"]
+    },
+    "packages/design-tokens": {
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "packages/ui": {
+      "ignoreDependencies": ["@fontsource-variable/figtree", "@fontsource-variable/jetbrains-mono"]
+    },
+    "apps/web": {
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "apps/desktop": {
+      "entry": ["src/main/main.ts", "src/preload/preload.ts", "scripts/*.ts"]
+    }
+  },
+  "ignoreBinaries": ["caffeinate"]
+}

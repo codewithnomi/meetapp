@@ -42,3 +42,9 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Probe scripts written by apps/api instrumentation tests (removed after each run)
+apps/api/src/.probe-*.mjs
+
+# Screenshots and logs from the Playwright browser tool used by Claude
+.playwright-mcp/

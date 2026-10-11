@@ -53,12 +53,12 @@ Avoid: god-classes/files, global mutable state, deep inheritance (prefer composi
 | Focused or skipped tests (`.only`, `.skip`) committed | not allowed |
 | Desktop/web bundle size | budget per screen, checked in CI (size-limit); growth must be justified |
 
-A limit may be broken only with a comment explaining why, and the reviewer must agree.
+A limit may be broken only with a comment explaining why, and the reviewer must agree. The lint check enforces the comment: `// eslint-disable-next-line <rule> -- <reason>`; a disable comment without a reason fails.
 
 ## 4. Tools (all free)
 | Language | Tools |
 |---|---|
-| TypeScript / React | **ESLint** (+ `typescript-eslint` strict, `eslint-plugin-sonarjs` for complexity/code smells, `eslint-plugin-boundaries` for Atomic + layer rules, `jsx-a11y`), **Prettier** (formatting), **dependency-cruiser** (architecture rules), **knip** (unused code), **jscpd** (duplication) |
+| TypeScript / React | **ESLint** (+ `typescript-eslint` strict, `eslint-plugin-sonarjs` for complexity/code smells, `eslint-plugin-boundaries` for Atomic levels, `jsx-a11y`, `eslint-comments` so every exception states a reason), **Prettier** (formatting), **dependency-cruiser** (Atomic levels, use other components only through their `index.ts`, backend layers, no circular imports), **knip** (unused code), **jscpd** (duplication) |
 | Python (AI worker) | **ruff** (lint + format), **mypy** (types, strict) |
 | Dart (Flutter, later) | **dart analyze** with `very_good_analysis` rules, **dart format** |
 

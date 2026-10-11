@@ -1,0 +1,19 @@
+{
+  "packages": [
+    {
+      "name": "eslint-plugin-sonarjs",
+      "license": "LGPL-3.0-only",
+      "reason": "Code-checking tool used only during development; never shipped inside MeetApp, so its license has no effect on our code."
+    },
+    {
+      "name": "@sonarsource/analyzer-commons-configurations",
+      "license": "LGPL-3.0-only",
+      "reason": "Part of eslint-plugin-sonarjs (development-only code checker); never shipped."
+    },
+    {
+      "name": "sentry",
+      "license": "FSL-1.1-Apache-2.0",
+      "reason": "Sentry's command-line helper, pulled in by the crash-reporting library. The license only forbids building a product that competes with Sentry; MeetApp doesn't. Each version becomes Apache-2.0 after two years. No duty to share our code."
+    }
+  ]
+}

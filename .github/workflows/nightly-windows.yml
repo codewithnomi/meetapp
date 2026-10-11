@@ -1,0 +1,45 @@
+# Windows check once a day (the owner has no Windows PC, D021): the app's code must build and its tests
+# must pass on Windows too. Skips itself when main had no new commits in the last 24 hours, to save
+# GitHub minutes (Windows minutes count double). Can also be started by hand.
+name: Nightly Windows
+
+on:
+  schedule:
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows build and app tests
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 50
+      - id: changes
+        name: Did main change in the last 24 hours?
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ -n "$(git log -1 --since='24 hours ago' --format=%H)" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "No new commits on main in 24 hours: nothing to check."
+          fi
+      - if: steps.changes.outputs.run == 'true'
+        uses: ./.github/actions/setup
+      - if: steps.changes.outputs.run == 'true'
+        run: pnpm build
+      - if: steps.changes.outputs.run == 'true'
+        run: pnpm typecheck
+      # The app's own tests (screens, components, desktop rules). The developer tools in tools/ are for
+      # the owner's Mac and CI's Linux and use POSIX shell scripts, so they don't run here.
+      - if: steps.changes.outputs.run == 'true'
+        run: pnpm exec vitest run --project web --project ui --project desktop
+      - if: steps.changes.outputs.run == 'true'
+        run: pnpm --filter @meetapp/desktop build

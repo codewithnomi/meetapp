@@ -1,0 +1,6 @@
+{
+  "name": "knip-fixture-unused-file",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts"
+}

@@ -1,0 +1,26 @@
+# Shared first steps of every CI job: the pinned tool versions from mise.toml (Node, pnpm, Python),
+# the cached pnpm store, then the locked libraries. Used after actions/checkout.
+name: Set up MeetApp
+description: Install the pinned tools and the locked libraries
+inputs:
+  electron:
+    description: Download the Electron app binary (only the desktop jobs need it)
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+      with:
+        cache: true
+    - id: store
+      shell: bash
+      run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ${{ steps.store.outputs.path }}
+        key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+        restore-keys: pnpm-${{ runner.os }}-
+    - shell: bash
+      env:
+        ELECTRON_SKIP_BINARY_DOWNLOAD: ${{ inputs.electron == 'true' && '' || '1' }}
+      run: pnpm install --frozen-lockfile

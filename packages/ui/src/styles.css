@@ -1,0 +1,25 @@
+/* The UI package's stylesheet: design tokens, then Tailwind with ONLY token classes (D029). */
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "@meetapp/design-tokens/tokens.css";
+@import "@meetapp/design-tokens/theme.css";
+@import "./fonts.css";
+
+/* Look for classes in the components only. */
+@source "./";
+
+@layer base {
+  body {
+    @apply m-0 bg-bg font-sans text-body text-ink antialiased;
+  }
+}
+
+@keyframes ma-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

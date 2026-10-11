@@ -1,0 +1,12 @@
+# Never copy secrets or local build output into an image (AC-F00-39, S7).
+.env
+.env.*
+!.env.example
+**/node_modules
+**/dist
+**/out
+**/coverage
+.git
+.claude
+docs
+tests

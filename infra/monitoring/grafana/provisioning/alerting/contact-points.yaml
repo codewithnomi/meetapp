@@ -1,0 +1,18 @@
+# Where Grafana's alerts go (AC-F00-44): the fake inbox (Mailpit) and the Mac notification helper.
+# ${...} values come from .env through docker-compose.yml.
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: MeetApp alerts
+    receivers:
+      - uid: meetapp-email
+        type: email
+        settings:
+          addresses: ${ALERT_EMAIL_TO}
+          singleEmail: true
+      - uid: meetapp-notifier
+        type: webhook
+        settings:
+          url: http://host.docker.internal:${NOTIFIER_PORT}/grafana
+          httpMethod: POST

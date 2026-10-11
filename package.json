@@ -1,0 +1,71 @@
+{
+  "name": "meetapp",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "preflight": "node tools/preflight.mjs",
+    "dev": "node tools/preflight.mjs && node tools/dev.ts",
+    "dev:apps": "turbo run dev",
+    "dev:stop": "docker compose -f infra/docker-compose.yml --env-file .env stop",
+    "monitoring": "node tools/preflight.mjs && node tools/monitoring.ts",
+    "monitoring:stop": "docker compose -f infra/docker-compose.yml --env-file .env --profile monitoring stop gatus prometheus alloy loki tempo grafana",
+    "desktop": "pnpm --filter @meetapp/web build && pnpm --filter @meetapp/desktop build && pnpm --filter @meetapp/desktop start",
+    "seed": "node tools/seed.ts add",
+    "seed:clear": "node tools/seed.ts clear",
+    "flag": "node tools/flag.ts",
+    "storage:test": "node tools/storage-test.ts",
+    "email:test": "node tools/email-test.ts",
+    "test": "node tools/test.ts",
+    "test:unit": "vitest run",
+    "test:integration": "VITEST_INTEGRATION=1 vitest run infra packages apps",
+    "test:e2e": "pnpm --filter @meetapp/web build && pnpm --filter @meetapp/desktop build && playwright test -c tests/e2e/desktop/playwright.config.ts",
+    "test:monitoring": "caffeinate -i env VITEST_MONITORING=1 vitest run --project node infra/monitoring",
+    "test:visual": "node tools/visual.ts",
+    "test:visual:update": "node tools/visual.ts --update",
+    "build": "turbo run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && turbo run typecheck",
+    "lint": "eslint --max-warnings=0 --cache --cache-location node_modules/.cache/eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:architecture": "depcruise --config .dependency-cruiser.cjs .",
+    "check:unused": "knip --no-progress",
+    "check:duplication": "jscpd .",
+    "check:structure": "node tools/check-structure.ts",
+    "check:licenses": "node tools/check-licenses.ts",
+    "check:container": "node tools/check-container.ts",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm check:architecture && pnpm check:unused && pnpm check:duplication && pnpm check:structure && pnpm check:licenses"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@meetapp/config": "workspace:*",
+    "@meetapp/db": "workspace:*",
+    "@playwright/test": "1.63.0",
+    "@types/node": "^26.6.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
+    "@vitest/coverage-v8": "5.0.3",
+    "acorn": "^8.19.0",
+    "dependency-cruiser": "^18.5.0",
+    "eslint": "^9.39.5",
+    "husky": "^9.1.7",
+    "jscpd": "^5.4.1",
+    "knip": "^6.41.0",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.7",
+    "typescript": "6.0.2",
+    "vitest": "^5.0.3",
+    "yaml": "^2.9.1"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,mts,cts,tsx,jsx}": [
+      "eslint --max-warnings=0 --no-warn-ignored --fix",
+      "prettier --write"
+    ],
+    "*.{json,yml,yaml,css}": "prettier --write"
+  }
+}

@@ -1,0 +1,12 @@
+# LiveKit call server settings for local development (docs/specs/F00-foundation/design.md section 3).
+# API key and secret come from .env (LIVEKIT_KEYS), never from this file.
+port: 7880
+rtc:
+  tcp_port: 7881
+  # One UDP port for all media keeps the Docker port list short.
+  udp_port: 7882
+  use_external_ip: false
+# Metrics for the monitoring profile (scraped inside the Docker network, not published).
+prometheus_port: 6789
+logging:
+  level: info

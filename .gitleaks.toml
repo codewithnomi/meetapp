@@ -1,0 +1,11 @@
+# Secrets scanner settings (AC-F00-18, security rule S7). Used before every commit and in CI.
+# The standard gitleaks rules apply everywhere. The only exception is tests/fixtures/, which holds
+# deliberately fake secrets used to test the scanners. Never add another path here.
+title = "MeetApp gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Deliberately fake secrets used by tests"
+paths = ['''^tests/fixtures/''']

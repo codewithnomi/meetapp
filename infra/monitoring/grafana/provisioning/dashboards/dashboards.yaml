@@ -1,0 +1,11 @@
+# Loads the dashboards in infra/monitoring/grafana/dashboards/ (mounted read-only).
+apiVersion: 1
+
+providers:
+  - name: MeetApp
+    folder: MeetApp
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards

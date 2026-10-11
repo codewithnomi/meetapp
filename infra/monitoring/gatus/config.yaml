@@ -1,0 +1,91 @@
+# Status page for MeetApp's local services (Gatus, decision D030; design.md section 3; AC-F00-41, 44).
+# Open http://127.0.0.1:8080 (GATUS_PORT). ${...} values come from .env through docker-compose.yml.
+# Every service is checked every 30 s. The page turns red at the first failed check (within 30 s);
+# an alert is sent after 3 failed checks in a row (60-90 s after a stop, so "down for over a minute"),
+# and a "recovered" alert after 2 good checks. A blip shorter than 30 s never alerts.
+
+storage:
+  type: memory
+
+ui:
+  title: MeetApp status
+  header: MeetApp local services
+
+alerting:
+  # Emails land in the fake inbox (Mailpit, http://127.0.0.1:8025).
+  email:
+    from: monitoring@meetapp.local
+    host: mailpit
+    port: 1025
+    to: ${ALERT_EMAIL_TO}
+  # The Mac notification helper (tools/notifier.ts), started by `pnpm monitoring`.
+  custom:
+    url: http://host.docker.internal:${NOTIFIER_PORT}/gatus
+    method: POST
+    headers:
+      Content-Type: application/json
+    body: |
+      {"service": "[ENDPOINT_NAME]", "status": "[ALERT_TRIGGERED_OR_RESOLVED]", "description": "[ALERT_DESCRIPTION]"}
+
+# The same alert settings for every service.
+x-alerts: &alerts
+  - type: email
+    failure-threshold: 3
+    success-threshold: 2
+    send-on-resolved: true
+    description: stopped answering its health check
+  - type: custom
+    failure-threshold: 3
+    success-threshold: 2
+    send-on-resolved: true
+    description: stopped answering its health check
+
+endpoints:
+  # The backend runs on the Mac (pnpm dev), not in Docker.
+  - name: Backend
+    group: MeetApp
+    url: http://host.docker.internal:${API_PORT}/api/v1/health
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+    alerts: *alerts
+
+  - name: Database
+    group: MeetApp
+    url: tcp://postgres:5432
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts: *alerts
+
+  - name: Cache
+    group: MeetApp
+    url: tcp://redis:6379
+    interval: 30s
+    conditions:
+      - "[CONNECTED] == true"
+    alerts: *alerts
+
+  - name: Call server
+    group: MeetApp
+    url: http://livekit:7880
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+    alerts: *alerts
+
+  - name: File storage
+    group: MeetApp
+    url: http://storage:9000/health
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+    alerts: *alerts
+
+  - name: Email
+    group: MeetApp
+    url: http://mailpit:8025/readyz
+    interval: 30s
+    conditions:
+      - "[STATUS] == 200"
+    alerts: *alerts

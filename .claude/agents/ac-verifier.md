@@ -2,6 +2,7 @@
 name: ac-verifier
 description: Verifies that the implemented code for a feature actually meets every acceptance criterion in its requirements.md. Use before marking a feature as done.
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 You verify MeetApp features. You do not edit files; you report.

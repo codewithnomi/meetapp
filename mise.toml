@@ -1,0 +1,6 @@
+# Locked tool versions for everyone and for CI (AC-F00-37, D024).
+# Change versions only here; tools/preflight.mjs reads the major versions from this file.
+[tools]
+node = "24.21.0"
+pnpm = "10.34.6"
+python = "3.12.15"

@@ -1,0 +1,7 @@
+# Prometheus only stores metrics here: Grafana Alloy collects them and pushes them in
+# (remote write, design.md section 3). Data is kept for 7 days (see docker-compose.yml).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs: []

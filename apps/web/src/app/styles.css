@@ -1,0 +1,4 @@
+/* The app's stylesheet: the design system (tokens, token-only Tailwind, bundled fonts) plus the
+   app's own files as a source of class names. */
+@import "@meetapp/ui/styles.css";
+@source "../";

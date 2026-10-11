@@ -135,14 +135,14 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D025: Infrastructure stages and tool versions
 - **Status:** Stage 1 accepted, rest proposed (2026-10-09)
-- **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage; LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.
+- **Decision:** See `docs/architecture/infrastructure.md`. Everything local for now; tool versions locked with mise (**Node 24 LTS**, since Node 20 on the owner's Mac is past end-of-life; Python 3.12); MinIO for local file storage (later replaced by RustFS, D035); LiveKit Cloud free tier when testing calls with people elsewhere; Hetzner + Cloudflare when going live.
 
 ### D026: Automatic commit, push and Pull Request
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** Claude commits and pushes after every finished task (feature branch `feat/FXX-name`). When `/spec-verify` passes, Claude opens the Pull Request automatically and waits for CI; the owner clicks **Merge**. A failed verification never opens a PR. Document-only changes are pushed/PR'd by `/save-progress`. Pushes to `main` and force pushes stay blocked by a hook.
 - **Why:** nothing is lost, no extra commands for the owner; the merge click is the last human check (free private repos have no branch protection).
 
-### D027: Monitoring from day one: Uptime Kuma, Prometheus, Grafana, Loki, Tempo (OpenTelemetry), optional Sentry
+### D027: Monitoring from day one: Gatus (status page, see D030), Prometheus, Grafana, Loki, Tempo (OpenTelemetry), optional Sentry
 - **Status:** accepted (2026-10-09, owner)
 - **Decision:** Built in F00 as a local Docker "monitoring" profile, then reused unchanged on servers. Status page = what's down; dashboards, logs and traces = why. Alerts via notification/email. Claude reads them through `/diagnose`.
 - **Why:** the owner wants to see in real time what is down and why, and problems are cheaper to fix when caught early.
@@ -160,3 +160,96 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   F00 then builds `packages/design-tokens` and the atoms **exactly** from the approved design system; each feature's design.md links its screens. `ui-reviewer` checks built screens against them.
 - **Fonts:** Figtree (interface) + JetBrains Mono (codes, timestamps), both free (Google Fonts).
 - **Why:** changing a design takes minutes; changing built code takes hours.
+
+### D030: F00 tooling choices
+- **Status:** accepted (2026-10-09, owner approved the Gatus change)
+- **Decision:** **Gatus** instead of Uptime Kuma for the status page (configured from a file kept in Git, alerts by email/webhook); **Grafana Alloy** to collect logs/traces/container metrics; **MinIO** pinned to an exact release (its community Docker images are no longer updated); **electron-vite** to build the desktop app; **React 19**; **Tailwind v4** with a theme generated from the design tokens; **Lucide** icons (mapped to the design system's icon names); fonts bundled via **fontsource**; **gitleaks** run from its Docker image (nothing installed on the Mac); **husky + lint-staged** for commit checks; **Semgrep** community rules in CI.
+- **Why:** all free, widely used, configured as code, and they keep the owner's Mac clean.
+
+### D031: Merge guard on GitHub's free plan
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** Stay on the free plan. Claude never opens or recommends merging a Pull Request with a failing check, and failing runs post a "Do not merge" comment. GitHub Pro (~$4/month, hard block) can be added later.
+
+### D032: Architecture review: guard rails for smooth development
+- **Status:** accepted (2026-10-09)
+- **Decision:** A session-start hook puts mise's locked tools on Claude's PATH. `progress.md` is kept short (5 newest sessions; older entries go to `docs/history/`). Every hook has automated tests (`tools/hooks.test.ts`). Code edits also require a feature with approved tasks in progress. Context7, Playwright and Postgres MCP are enabled for the project. The lint hook uses a cache. New skills: `/fix-ci`, `/deps-update`, `/add-dependency`, `/db-migration`. VS Code extension recommendations added.
+- **Why:** remove the recurring sources of friction (wrong tool versions, context bloat, silent hook breakage, stale library knowledge, CI and dependency toil, risky database changes) before they cost development time.
+
+### D033: Build pace: pause at milestones
+- **Status:** accepted (2026-10-09, owner)
+- **Decision:** During building, Claude continues from task to task on its own (each tested, committed, pushed, with a one-line update) and pauses only at milestones the owner can see or try, on failures it can't fix, or when a decision, cost or install is needed. Milestone tasks are marked "(milestone)" in tasks.md.
+
+### D034: TypeScript 7 for type checks, TypeScript 6 for lint tools; ESLint 9
+- **Status:** accepted (2026-10-10, made during F00 T2; owner informed)
+- **Decision:** Type checking uses **TypeScript 7** (the new, much faster compiler), installed under the name `@typescript/native`, so `tsc` is TypeScript 7. Lint and analysis tools (typescript-eslint, knip, dependency-cruiser) need the older TypeScript programming interface, so the `typescript` package name points to Microsoft's official compatibility package **`@typescript/typescript6`** (set in `pnpm-workspace.yaml`). This is the setup typescript-eslint itself recommends. **ESLint 9** (still maintained) is used instead of ESLint 10, because the accessibility plugin `eslint-plugin-jsx-a11y` does not support ESLint 10 yet.
+- **Why:** typescript-eslint refuses to run on TypeScript 7. This keeps fast type checks and working lint rules. Revisit when typescript-eslint supports TypeScript 7 (their issue #10940) and jsx-a11y supports ESLint 10; `/deps-update` checks this.
+
+### D035: RustFS replaces MinIO for local file storage
+- **Status:** accepted (2026-10-10, made during F00 T4; owner informed). Changes part of D030.
+- **Decision:** Local file storage uses **RustFS** (`rustfs/rustfs`, Apache-2.0 license, version 1.0.1), pinned by version and digest. It speaks the same "S3" language as Cloudflare R2, uses the same ports (9000 for the app, 9001 for a web file browser) and keeps files in a named Docker volume. The app's bucket is created by the storage service's own health check, so "healthy" means "ready to use" and no extra setup container is needed.
+- **Why:** MinIO's free Docker images are no longer available: the Docker Hub copy was removed and its other registry now requires a login. RustFS was built as a drop-in replacement for MinIO. SeaweedFS (also free) was the alternative; it is older but less of a drop-in. Because the app only talks "S3", switching storage later needs no code changes.
+
+### D036: Sentry 11 privacy settings, and observability details
+- **Status:** accepted (2026-10-10, made during F00 T9; owner informed)
+- **Decision:** Sentry 11 removed `sendDefaultPii` and now collects user info, cookies, headers, request bodies and more **by default**. MeetApp sets Sentry's `dataCollection` with **every category off**, and still strips request data, cookies, headers and user in `beforeSend` as a second safety net. Sentry 11 also no longer sets up its own tracing, so the design's "skip OpenTelemetry setup" option is unnecessary. Tracing and Sentry start from `apps/api/src/instrumentation.ts`, loaded before the backend, and only when their setting is filled in.
+- **Why:** error reports must never contain personal data (security rule S10, AC-F00-22). Relying on a changed default would have silently sent it.
+
+### D037: Design system fix: dark control borders reach 3:1
+- **Status:** accepted (2026-10-10, owner approved)
+- **Decision:** In the approved design system, dark-mode `line-strong` changes from #5d6b7b to **#637282**. Published as design system version 8; `packages/design-tokens/tokens.json` copied from it (new SHA-256 in the package README).
+- **Why:** the contrast check in F00 T10 found dark `line-strong` on `surface-raised` at 2.88:1, below the 3:1 that both WCAG and the design system's own text require for control borders. #637282 gives 3.18:1 and looks almost identical.
+
+### D038: Cheaper models for simple helper jobs
+- **Status:** accepted (2026-10-10, owner approved)
+- **Decision:** each helper names its model. **Haiku** (fast, cheapest): `docs-keeper`, `/spec-status`, `/save-progress`. **Sonnet** (middle): `test-writer`, `ui-reviewer`, `code-quality-reviewer`, `ac-verifier`. **Opus** (most capable): `security-auditor`, `spec-reviewer`, and the main conversation (design, building, hard bugs).
+- **Why:** saves usage on routine checks and status updates; security and spec gaps are where a miss costs most, so they keep the strongest model.
+- **Risk:** a cheaper reviewer may miss something. spec-verify still runs the Opus security audit before any feature is `done`; if a cheaper helper misses things, move it back up.
+
+### D039: Desktop app built with plain Vite instead of electron-vite
+- **Status:** accepted (2026-10-10, owner chose it during F00 T15). Changes part of D030.
+- **Decision:** `apps/desktop` builds its main process (ES module) and preload (CommonJS) with Vite 8's own build API in a small script. The screens are built and served by `apps/web` as they already are: in development Electron loads the Vite dev server (127.0.0.1:5173); otherwise it serves `apps/web/dist` from the `app://meetapp` scheme.
+- **Why:** electron-vite's stable release (5.0) supports Vite only up to 7, and our screens use Vite 8. Its Vite 8 version is still a beta that changed six times in two weeks. The replacement is about 50 lines we own, using only stable tools.
+- **Cost:** none. Packaging (F04) uses electron-builder on the built output either way.
+
+### D040: Desktop privacy and security hardening from the T15 audit
+- **Status:** accepted (2026-10-10, F00 T15; owner informed).
+- **Decision:**
+  - **Crash reports (Sentry, only with `SENTRY_DSN`):** no Sentry bridge in the pages (no injected preload, no `sentry-ipc://` scheme); native crash dumps off (they hold raw memory that can't be cleaned); console messages never collected; addresses in reports cut to their origin; every data category off (D036).
+  - **Development settings** (`MEETAPP_RENDERER_URL`, `MEETAPP_USER_DATA_DIR`, `VITE_API_URL`) are ignored by the packaged app; a dev server must be on this computer, and the backend must be on this computer or use https.
+  - **Extra guards:** redirects and frame navigation checked like navigation; device, screen-share and download requests refused; `form-action 'none'` added to the CSP; app:// answers only for host `meetapp` and never follows a shortcut out of the screens' folder; `app.enableSandbox()`.
+  - **Lint tools are devDependencies** of `@meetapp/config`, so `pnpm audit --prod` reports only what ships. `handlebars` is forced to ≥ 4.7.10 (2 critical fixes).
+  - **Accepted for now (development tools only, never shipped):** `braces` ≤ 3.0.3 inside the lint plugin (slowdown risk, no fixed version exists yet); an old `esbuild` inside drizzle-kit (the issue only affects esbuild's own dev server, which we don't run). Re-checked by `/deps-update`.
+- **Why:** the security audit of T15 found these; none were critical in our code, all were small to fix now.
+- **For F04 (packaging):** Electron fuses `RunAsNode` off, `EnableNodeOptionsEnvironmentVariable` off, `EnableNodeCliInspectArguments` off, `EnableEmbeddedAsarIntegrityValidation` on, `OnlyLoadAppFromAsar` on, `EnableCookieEncryption` on, `GrantFileProtocolExtraPrivileges` off; hardened runtime with only camera and microphone entitlements; DevTools off when packaged; signed updates (S18). For F02/F03: camera and microphone through an allow-list by permission and origin; outside links from chat through a confirmation.
+
+### D041: How local monitoring collects, alerts and is tested
+- **Status:** accepted (2026-10-10, F00 T20; owner informed). Refines D030.
+- **Decision:**
+  - **One collector:** Grafana Alloy gathers every number (the backend, LiveKit, and its built-in exporters for PostgreSQL, Redis, containers and the Docker disk) and pushes it to Prometheus, which only stores. No separate postgres-exporter or redis-exporter images. File storage (RustFS) has no metrics endpoint, so only the status page watches it.
+  - **Only MeetApp's containers:** logs and CPU/memory are collected only from containers of the `meetapp` Docker project. Other programs the owner runs in Docker (e.g. Open WebUI) are never read.
+  - **Alert timing:** checks every 30 s, alert after **3** failed checks in a row (60–90 s after a stop = "down for more than a minute"), "recovered" after 2 good checks. The design's earlier `2` would have alerted after only 30–60 s.
+  - **Older `.env` files are filled in:** `pnpm dev`, `pnpm test` and `pnpm monitoring` add any setting that `.env.example` has and `.env` lacks (with its comment), and say so. Existing values are never changed. Without this, Docker refuses to start anything once a new setting is added.
+  - **Slow checks run separately:** the monitoring checks (TC-F00-84 to 89) stop services and wait for alerts, about 12 minutes, so they run with `pnpm test:monitoring`, not in `pnpm test` or CI. Fast unit tests check the settings files on every run.
+  - **Access, local only (narrowed in T-fix-2):** Alloy is no longer privileged and no longer reads the whole disk. To read container numbers it still needs the Docker and containerd sockets (Docker Desktop's cAdvisor can't work without containerd), and either socket allows full control of Docker. A read-only Docker proxy was considered and left out, because the containerd socket would still give the same power. Accepted only because this is local and optional; revisit before anything runs online. "Only MeetApp's containers" is a filter in Alloy's settings, not a hard wall. Prometheus (9090) and the Alloy page (12345) have no login and no web-address check: on this Mac only, and accepted for local use; Grafana is the only one that enforces 127.0.0.1. Before anything runs online, they go behind a login.
+  - **Other T-fix-2 protections:** a read-only `meetapp_monitor` database login (pg_monitor) for the monitoring; container logs cleaned in Alloy (emails and secrets masked, database error details dropped) and PostgreSQL errors logged briefly (a value inside an error message is masked by the cleaning step); secrets in web addresses hidden in logs and traces; Grafana answers only to 127.0.0.1; the notifier accepts only JSON sent to its own address; traces and logs go only to this computer or over https; `.env` readable only by its owner.
+- **Why:** fewer images to pin and update; the owner's other programs stay private; the alert matches the requirement (AC-F00-44); an updated project keeps working on an older `.env`.
+- **Cost:** none (all free, local only).
+
+### D042: Getting-started walk-through by the owner skipped for F00
+- **Status:** accepted (2026-10-10, owner: "it doesn't matter now, let's move forward").
+- **Decision:** the manual check TC-F00-92 (someone follows `docs/getting-started.md` on a clean Mac) is not done for F00. Instead: Claude made a fresh copy of the project, installed it and started the screens following the guide's commands; that run found and fixed a real problem (the screens didn't load until the design tokens were built). The automated test TC-F00-93 checks that every command the guide mentions exists.
+- **Why:** the owner's time; the main risk (a fresh copy not starting) was checked and fixed.
+- **Follow-up:** repeat the walk-through when a second person or a new Mac joins. TC-F00-83 (data after a real Mac restart) stays open until the owner's next restart.
+
+### D043: Libraries chosen while building F00
+- **Status:** accepted (2026-10-11, recorded after the F00 documentation review; each was vetted when added).
+- **Backend and data:** Fastify (web server), Drizzle ORM with the `pg` driver (database), ioredis (cache), Pino (logs), Zod (input and output checks, shared through packages/contracts), nodemailer (email), the AWS S3 client (files, works with RustFS and Cloudflare R2), livekit-server-sdk (call server), OpenTelemetry (traces and logs, with its http, pg, ioredis and pino instrumentation packages), prom-client (metrics), @sentry/node (optional crash reports), @fastify/cors, @fastify/swagger + @fastify/swagger-ui (API docs, development only), @fastify/type-provider-zod (Zod checks on routes).
+- **App screens and desktop:** React 19 with Vite 8 (D039), Tailwind CSS v4 (styles from the design tokens), i18next + react-i18next (translations), Zustand (small app state), Radix UI (switch, tooltip: accessible building blocks), Lucide (icons), Fontsource (fonts bundled, nothing fetched from Google), Electron with @sentry/electron (optional crash reports).
+- **Building and checking:** pnpm workspaces + Turborepo (one repository, tasks in order), Vitest (unit and integration tests), Playwright (desktop and gallery tests, pinned image for screenshots), Storybook (component gallery), axe-core (accessibility), ESLint + Prettier, dependency-cruiser (layer rules), knip (unused code), jscpd (duplication), gitleaks and Semgrep (security, via Docker), osascript (macOS's own tool for the Mac notifications).
+- **Why:** free, widely used and maintained, permissive licenses (checked by `pnpm check:licenses`), and each does one job. New libraries still go through `/add-dependency`.
+- **Cost:** none.
+
+### D044: Owner's last two hands-on checks deferred for F00
+- **Status:** accepted (2026-10-11, owner: "make it pending for later and move to the next phase").
+- **Decision:** TC-F00-83 (data survives a real Mac restart) and TC-F00-90 (a Mac notification really appears when a service is down for over a minute, and on recovery) are deferred; F00 can be verified and merged without them. Their behaviour is covered automatically: TC-F00-82 (services stopped and started keep their data) and TC-F00-88 (the notifier receives the "down" and "recovered" calls).
+- **Follow-up:** the owner does them when convenient (instructions and the data snapshot are in progress.md); any problem becomes a fix on the next feature branch.
