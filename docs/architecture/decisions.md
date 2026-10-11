@@ -253,3 +253,15 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-11, owner: "make it pending for later and move to the next phase").
 - **Decision:** TC-F00-83 (data survives a real Mac restart) and TC-F00-90 (a Mac notification really appears when a service is down for over a minute, and on recovery) are deferred; F00 can be verified and merged without them. Their behaviour is covered automatically: TC-F00-82 (services stopped and started keep their data) and TC-F00-88 (the notifier receives the "down" and "recovered" calls).
 - **Follow-up:** the owner does them when convenient (instructions and the data snapshot are in progress.md); any problem becomes a fix on the next feature branch.
+
+### D045: F01 account and workspace choices
+- **Status:** accepted (2026-10-11, owner)
+- **Decision:** anyone can sign up (email, Google, Microsoft); people join a company workspace by email invitation or by an invite link that the owner and admins can turn on, off or replace; **any member can invite** (members invite as member only, the owner and admins can also invite admins); two-step sign-in (authenticator codes) comes later with the admin console (F10).
+- **Why:** open sign-up matches the vision (individuals and teams); invite links make onboarding quick while staying under the admins' control; letting members invite helps teams grow without waiting for an admin; Google and Microsoft sign-in already offer their own two-step protection, so F01 stays smaller.
+- **Cost:** none (Google and Microsoft sign-in are free to set up).
+
+### D046: F01 email links, invitations and member visibility
+- **Status:** accepted (2026-10-11, owner)
+- **Decision:** links in emails (verify, reset password, invitation) open **small MeetApp web pages** that do one thing and send the person back to the desktop app; an **email invitation works only for the invited email address**; **every member sees the member list** with names, photos, emails, roles and join dates; a removed person **can rejoin through the invite link** if it is on (the app then suggests replacing the link).
+- **Why:** the web pages work on any device (even a phone) without waiting for the web app (F10) or `meetapp://` links (F04); a forwarded invitation can't let a stranger in; coworkers can see who's in the workspace, like Teams and Slack; admins keep control by replacing the invite link.
+- **Cost:** none.

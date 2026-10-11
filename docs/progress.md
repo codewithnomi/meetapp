@@ -5,9 +5,9 @@
 
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
-- **Stage:** **F00 Foundation done and verified (PASS, 2026-10-11)** on branch `feat/F00-foundation`; Pull Request to `main` open, waiting for the owner to click Merge. Second `/spec-verify F00` after fix tasks T-fix-1…5: all tests green, every AC met (4 WEAK: owner-accepted deferrals D042/D044, and Dependabot which needs `main`), no Critical/High security issue (one High found in the re-audit was fixed during verification), docs up to date. See `docs/specs/F00-foundation/verification.md`. **Owner checks still open (D044, not blocking):** TC-F00-83 after the next Mac restart (before-snapshot: flags `demo` off, `home.welcome_banner` on, `labs.preview_features` off; stored file `checks/storage-test-47afe917.txt` in bucket `meetapp-dev`; after the restart run `pnpm dev`, then `pnpm flag list` and look for the file at http://127.0.0.1:9001) and TC-F00-90 (Mac notification: `pnpm monitoring`, then stop a service for over a minute).
+- **Stage:** **F00 Foundation done** (PASS 2026-10-11, merged to `main` in PR #3). **F01 Accounts & workspaces:** requirements **draft** written on branch `feat/F01-accounts` (`docs/specs/F01-accounts/requirements.md`, 33 ACs), reviewed by spec-reviewer, owner choices recorded (D045, D046); waiting for the owner's approval. **F00 owner checks still open (D044, not blocking):** TC-F00-83 after the next Mac restart (before-snapshot: flags `demo` off, `home.welcome_banner` on, `labs.preview_features` off; stored file `checks/storage-test-47afe917.txt` in bucket `meetapp-dev`; after the restart run `pnpm dev`, then `pnpm flag list` and look for the file at http://127.0.0.1:9001) and TC-F00-90 (Mac notification: `pnpm monitoring`, then stop a service for over a minute).
 - **Design phase (D029):** design system **approved** (buttons and inputs pill-shaped): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs v1 (8 screens) **approved**: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
-- **Next step:** the owner clicks **Merge** on the F00 Pull Request. Then `/next` starts **F01 (Accounts & workspaces)** on a new branch with `/spec-new F01` (requirements draft for the owner's approval). Offered earlier: make F02's first build step a bare two-person call demo (owner to decide when F02 starts). `pnpm dev` starts everything; `pnpm monitoring` shows the status page (http://127.0.0.1:8080) and dashboards (http://127.0.0.1:3001).
+- **Next step:** the owner approves the F01 requirements (or says what to change). Then: design the F01 screens not yet in the approved canvas (sign-up, verify, reset, workspace switcher, members, invitations, profile, the small web pages) for the owner's approval (D029), then `/spec-design F01`. Offered earlier: make F02's first build step a bare two-person call demo (owner to decide when F02 starts).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
@@ -37,6 +37,10 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-11: Session 3 (F00 merged; F01 requirements draft)
+- Owner merged PR #3: **F00 is in `main`.** New branch `feat/F01-accounts`.
+- F01 requirements drafted from features.md, D020, D022, security and privacy docs; owner answered 8 product questions (D045, D046); spec-reviewer's gaps fixed (no way to tell which emails have accounts, safe account linking with Google/Microsoft, invite edge cases and limits, sign-out timing, network errors, photo privacy, seed safety).
 
 ### 2026-10-11: Session 3 (F00 verification fixes, part 3: second verification, PASS)
 - `pnpm test:monitoring` 21/22 at first: the new live log-cleaning check couldn't write a log line into the cache container (not allowed from outside); it now triggers a database error carrying a fake email and password and checks Loki stores them masked. T-fix-2 ticked.
