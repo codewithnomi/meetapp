@@ -181,6 +181,15 @@ describe("TC-F00-50 [AC-F00-20] container logs are cleaned before they are store
     expect(clean).toMatch(/stage\.drop \{[^}]*DETAIL\|STATEMENT/);
   });
 
+  it("TC-F00-50 [AC-F00-20] the secret mask also catches JSON-style values", () => {
+    // Security re-audit (F00): '"password":"x"' has a quote between the name and the colon.
+    const line = /stage\.replace \{\s*expression = "(.*password.*)"\s*replace\s*= "\[redacted\]"/.exec(alloy);
+    const expression = JSON.parse(`"${line?.[1] ?? ""}"`) as string;
+    const mask = new RegExp(expression.replace(/^\(\?i\)/, ""), "i");
+    expect(mask.exec('{"password":"hunter2"}')?.[1]).toBe('"hunter2"');
+    expect(mask.exec("db password=hunter2 failed")?.[1]).toBe("hunter2");
+  });
+
   it("TC-F00-50 [AC-F00-20] PostgreSQL logs errors without the failing values or statement", () => {
     const compose = readFileSync(COMPOSE_FILE, "utf8");
     const postgres = compose.slice(compose.indexOf("  postgres:"), compose.indexOf("  redis:"));

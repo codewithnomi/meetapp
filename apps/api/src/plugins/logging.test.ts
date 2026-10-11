@@ -16,6 +16,20 @@ describe("TC-F00-50 [AC-F00-20] secrets in web addresses are hidden", () => {
     expect(redactQuery("/x?page=2")).toBe("/x?page=2");
   });
 
+  it("TC-F00-50 [AC-F00-20] a broken address (stray %) is logged as it is, without failing the request", async () => {
+    expect(redactQuery("/x?%E0%A4%A=1&token=t")).toBe("/x?%E0%A4%A=1&token=REDACTED");
+    expect(redactQuery("/x?%")).toBe("/x?%");
+    const logs = captureLogs();
+    const app = await buildApp(fakeConfig("test"), { logDestination: logs.stream });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/health?%&token=secret-789" });
+      expect(response.statusCode).not.toBe(500);
+      expect(logs.text()).not.toContain("secret-789");
+    } finally {
+      await app.close();
+    }
+  });
+
   it("TC-F00-50 [AC-F00-20] the request log line never contains a token from the address", async () => {
     const logs = captureLogs();
     const app = await buildApp(fakeConfig("test"), { logDestination: logs.stream });

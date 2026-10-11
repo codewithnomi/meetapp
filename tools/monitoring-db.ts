@@ -1,6 +1,7 @@
 // The monitoring's own database login (security review, F00). Alloy reads database numbers as
 // `meetapp_monitor`, which has only PostgreSQL's built-in read-only monitoring rights (pg_monitor),
-// so a problem in the monitoring can't change or read the app's data. Its password is
+// so a problem in the monitoring can't change the app's data or read its tables. (pg_monitor does see
+// the text of running queries; the backend passes values separately from the query text.) Its password is
 // MONITORING_DB_PASSWORD in .env. `pnpm monitoring` (and the monitoring checks) set it up each time;
 // running it again only brings the password in step.
 import { spawnSync } from "node:child_process";
@@ -40,5 +41,8 @@ export function ensureMonitoringRole(compose: string[], env: Record<string, stri
     encoding: "utf8",
     timeout: 30_000,
   });
-  return result.status === 0 ? undefined : `The monitoring database login could not be set up:\n${result.stderr}`;
+  if (result.status === 0) return undefined;
+  // psql may repeat the failing line, which holds the password.
+  const details = (result.stderr ?? "").replaceAll(/PASSWORD '[^']*'/g, "PASSWORD '[redacted]'");
+  return `The monitoring database login could not be set up:\n${details}`;
 }

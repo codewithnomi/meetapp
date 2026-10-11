@@ -13,11 +13,12 @@ if (otlpEndpoint && isAllowedOtlpEndpoint(otlpEndpoint)) {
   register("@opentelemetry/instrumentation/hook.mjs", import.meta.url);
   const { startTelemetry } = await import("./observability/telemetry.ts");
   const sdk = startTelemetry(otlpEndpoint);
-  // Sends what is still batched, once: on a stop (server.ts) or when the process ends on its own.
+  // Sends what is still batched, once: on a stop (server.ts) or when the process ends on its own
+  // (where a failed final send must not crash the exit).
   let stopping: Promise<void> | undefined;
   const stopTelemetry = () => (stopping ??= sdk.shutdown());
   onShutdown(stopTelemetry);
-  process.once("beforeExit", () => void stopTelemetry());
+  process.once("beforeExit", () => void stopTelemetry().catch(() => undefined));
 }
 
 if (sentryDsn) {

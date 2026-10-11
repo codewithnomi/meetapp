@@ -48,13 +48,16 @@ function fromGatus(body: unknown): Notification[] {
   throw new HttpError(400);
 }
 
-const GRAFANA_STATES: Record<string, string> = { firing: "is firing", resolved: "resolved" };
+const GRAFANA_STATES = new Map([
+  ["firing", "is firing"],
+  ["resolved", "resolved"],
+]);
 
 /** One Grafana alert as a notification, or undefined when it isn't one we can show. */
 function grafanaAlert(alert: unknown): Notification | undefined {
   if (!isRecord(alert) || !isRecord(alert["labels"])) return undefined;
   const alertName = alert["labels"]["alertname"];
-  const state = GRAFANA_STATES[String(alert["status"])];
+  const state = GRAFANA_STATES.get(String(alert["status"]));
   if (typeof alertName !== "string" || alertName.trim() === "" || state === undefined) return undefined;
   return { title: TITLE, message: `${alertName.slice(0, MAX_NAME_LENGTH)} ${state}` };
 }

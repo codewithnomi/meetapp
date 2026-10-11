@@ -147,6 +147,7 @@ describe("TC-F00-96 [AC-F00-44] notifier", () => {
     const body = grafana(
       { status: "firing", labels: { alertname: "Error spike" } },
       { status: "pending", labels: { alertname: "Odd one" } },
+      { status: "toString", labels: { alertname: "Built-in name" } },
       { status: "resolved", labels: {} },
       { status: "resolved", labels: { alertname: "Disk nearly full" } },
     );

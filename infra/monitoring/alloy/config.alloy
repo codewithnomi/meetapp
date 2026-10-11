@@ -162,7 +162,7 @@ loki.process "clean" {
   }
 
   stage.replace {
-    expression = "(?i)(?:password|passwd|pwd|secret|token|api[_-]?key|authorization)\\s*[=:]\\s*(\"[^\"]*\"|'[^']*'|\\S+)"
+    expression = "(?i)(?:password|passwd|pwd|secret|token|api[_-]?key|authorization)\"?\\s*[=:]\\s*(\"[^\"]*\"|'[^']*'|\\S+)"
     replace    = "[redacted]"
   }
 

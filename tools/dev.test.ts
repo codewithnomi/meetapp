@@ -327,6 +327,10 @@ describe(".env file", () => {
     chmodSync(join(dir, ".env"), 0o644);
     expect(addMissingSettings(dir)).toEqual(["B"]);
     expect(statSync(join(dir, ".env")).mode & 0o777).toBe(0o600);
+    // Security re-audit (F00): an existing open .env is fixed even when nothing needs adding.
+    chmodSync(join(dir, ".env"), 0o644);
+    expect(addMissingSettings(dir)).toEqual([]);
+    expect(statSync(join(dir, ".env")).mode & 0o777).toBe(0o600);
   });
 
   it("TC-F00-06 [AC-F00-05] the start, test and monitoring commands add missing settings and say so", () => {

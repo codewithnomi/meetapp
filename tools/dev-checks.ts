@@ -60,7 +60,7 @@ const SETTING_LINE = /^\s*([A-Z][A-Z0-9_]*)\s*=/;
  * Adds to .env every setting that .env.example has and .env doesn't (settings added by later work,
  * e.g. the monitoring ports), with the comment lines above it. Existing values are never changed.
  * Docker refuses to start anything while a setting the compose file needs is missing.
- * Returns the names it added.
+ * Also makes .env owner-only every time, so an older, open .env is fixed too. Returns the names it added.
  */
 export function addMissingSettings(root: string): string[] {
   const target = join(root, ".env");
@@ -82,8 +82,8 @@ export function addMissingSettings(root: string): string[] {
   }
   if (added.length > 0) {
     appendFileSync(target, `\n# ---------- Added from .env.example ----------\n${blocks.join("\n")}\n`);
-    ownerOnly(target);
   }
+  ownerOnly(target);
   return added;
 }
 

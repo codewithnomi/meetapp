@@ -122,6 +122,7 @@ describe("TC-F00-50 [AC-F00-20] maskSensitiveText hides secrets inside free text
     ['token: "..."', `token: "${TOKEN}" rejected`, "token: [redacted] rejected", TOKEN],
     ["api_key=", "api_key=" + "k-9f8e7d", "api_key=[redacted]", "k-9f8e7d"],
     ["Secret : '...'", "Secret : 'xyz pq'", "Secret : [redacted]", "xyz pq"],
+    ['JSON "password":"..."', `{"password":"${PASSWORD}"}`, '{"password":[redacted]}', PASSWORD],
   ])("TC-F00-50 [AC-F00-20] hides the value of %s", (_label, input, expected, secret) => {
     const masked = maskSensitiveText(input);
     expect(masked).toBe(expected);

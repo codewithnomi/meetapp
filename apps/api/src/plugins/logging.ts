@@ -18,7 +18,7 @@ const REDACT_PATHS = [
 
 const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
 const SECRET_ASSIGNMENT =
-  /\b(password|passwd|pwd|secret|token|api[_-]?key|authorization)(\s*[=:]\s*)("[^"]*"|'[^']*'|\S+)/gi;
+  /\b(password|passwd|pwd|secret|token|api[_-]?key|authorization)("?\s*[=:]\s*)("[^"]*"|'[^']*'|\S+)/gi;
 
 /** Address parts (?name=value) whose value is a secret: reset, sign-in and API links (security review, F00). */
 export const SENSITIVE_QUERY_PARAMS = [
@@ -37,6 +37,15 @@ export const SENSITIVE_QUERY_PARAMS = [
 
 const SENSITIVE_NAMES = new Set(SENSITIVE_QUERY_PARAMS);
 
+/** A name with a broken %-code (e.g. "?%") is compared as written, so logging never throws. */
+function readableName(name: string): string {
+  try {
+    return decodeURIComponent(name).toLowerCase();
+  } catch {
+    return name.toLowerCase();
+  }
+}
+
 /** "/reset?token=abc&lang=en" → "/reset?token=REDACTED&lang=en" (names compared without regard to case). */
 export function redactQuery(url: string): string {
   const start = url.indexOf("?");
@@ -46,7 +55,7 @@ export function redactQuery(url: string): string {
     .split("&")
     .map((part) => {
       const name = part.split("=")[0] ?? "";
-      return SENSITIVE_NAMES.has(decodeURIComponent(name).toLowerCase()) ? `${name}=REDACTED` : part;
+      return SENSITIVE_NAMES.has(readableName(name)) ? `${name}=REDACTED` : part;
     });
   return `${url.slice(0, start)}?${parts.join("&")}`;
 }
