@@ -12,8 +12,8 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
 
 ## Backend: sign-in
 
-- [ ] **T1: Libraries, settings and the code map.**
-  - Vet and add the D049 libraries with `/add-dependency`: better-auth, bullmq, sharp, react-router, @tanstack/react-query, react-hook-form, oauth2-mock-server (dev only) and the common-passwords list (licence checked).
+- [x] **T1: Libraries, settings and the code map.**
+  - Vet the D049 libraries with `/add-dependency` (versions, licences, activity recorded in D049): better-auth, bullmq, sharp, react-router, @tanstack/react-query, react-hook-form, oauth2-mock-server (dev only) and the common-passwords list. Each is **installed in the task that first uses it**, because `pnpm check` fails on unused libraries.
   - New settings in `config.ts` and `.env.example`: `BETTER_AUTH_SECRET`, `DATA_ENCRYPTION_KEY`, `GOOGLE_*`, `MICROSOFT_*`, `SUPPORT_EMAIL`, `APP_PUBLIC_URL`.
   - The new folders go into `docs/engineering/project-structure.md` and the structure check.
   - Covers: AC-F01-33 (start-up checks part).

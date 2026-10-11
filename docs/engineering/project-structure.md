@@ -29,7 +29,7 @@ meetapp/
 │   ├── desktop/                   Electron shell (F04)
 │   │   ├── CLAUDE.md              Rules for this app
 │   │   └── src/
-│   │       ├── main/              Window, security, app:// files, settings, Sentry (later: deep links, updates, notifications)
+│   │       ├── main/              Window, security, app:// files, settings, Sentry, sign-in token and calls (F01: auth-token, auth-bridge, api-auth, provider-sign-in) (later: deep links, updates, notifications)
 │   │       └── preload/           The only bridge between app pages and the computer
 │   │
 │   ├── web/                       React app: pages and app wiring (loaded inside desktop)
@@ -46,8 +46,9 @@ meetapp/
 │   │   └── src/
 │   │       ├── server.ts          Starts the server
 │   │       ├── config/            Settings from .env, validated at start
-│   │       ├── plugins/           Error handler, logging, metrics, API docs (later: auth, rate limiting)
+│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts, session.ts), rate-limit.ts, workspace-access.ts (F01)
 │   │       ├── modules/           One folder per business area:
+│   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; each may hold emails/ templates; invitations/page/ is the invitation web page)
 │   │       │   └── meetings/
 │   │       │       ├── meetings.routes.ts       HTTP endpoints only
 │   │       │       ├── meetings.service.ts      Business rules

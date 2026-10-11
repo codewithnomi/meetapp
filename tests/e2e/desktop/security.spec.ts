@@ -7,8 +7,13 @@ const DESIGN_CSP =
   "connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 let running: RunningApp;
+// False until this test's app has started, so a failed start is reported as itself, not as a crash
+// while closing the previous test's app.
+let launched = false;
 test.beforeEach(async () => {
+  launched = false;
   running = await launch();
+  launched = true;
   // No test may open the real browser: "open in browser" is recorded instead.
   await running.app.evaluate(({ shell }) => {
     const opened: string[] = [];
@@ -16,7 +21,9 @@ test.beforeEach(async () => {
     shell.openExternal = async (url: string) => void opened.push(url);
   });
 });
-test.afterEach(async () => closeApp(running.app));
+test.afterEach(async () => {
+  if (launched) await closeApp(running.app);
+});
 
 test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the page", async () => {
   const { app, page } = running;

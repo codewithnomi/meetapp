@@ -89,7 +89,7 @@ Names match the approved canvas.
 - **Removed or renamed** (AC-21, 23, 24): when the 30-second check notices a change, the app shows "You are no longer a member of <name>", switches to Personal, and updates names.
 
 ## 3. Identity: Better Auth (identity only)
-Better Auth 1.6 runs inside the API (`plugins/auth.ts`) at `/api/auth/*`, stores its data with Drizzle in PostgreSQL, and is used only for **who you are**. Workspaces are our own module (section 5, D048). Items marked *(verify)* are checked against its docs and source at build time; the full list is at the end of this file.
+Better Auth (1.7 at T1; this design was written against the 1.6 docs and is re-checked in T3) runs inside the API (`plugins/auth.ts`) at `/api/auth/*`, stores its data with Drizzle in PostgreSQL, and is used only for **who you are**. Workspaces are our own module (section 5, D048). Items marked *(verify)* are checked against its docs and source at build time; the full list is at the end of this file.
 
 **Only these Better Auth routes are reachable;** every other one answers 404 (`disabledPaths` or an allow-list in front of the mount *(verify)*):
 - `sign-in/email`, `sign-in/email-otp`, `email-otp/send-verification-otp`;
