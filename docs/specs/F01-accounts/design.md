@@ -256,7 +256,7 @@ Redis (not tables):
 - rate-limit counters;
 - idempotency keys (10 min).
 
-Better Auth's table names and columns are generated with its CLI into a normal Drizzle migration and reviewed (`/db-migration`).
+Better Auth's tables follow its core schema (checked against its docs in T2) and are written as normal Drizzle tables in `packages/db/src/schema/auth.ts`, with database-made UUIDs and times with time zone; migration `0001_accounts_workspaces` (`/db-migration`). Columns that record **who did something** (`invited_by`, `decided_by`, `removed_by`) are kept as "unknown" (set to empty) if that account is ever deleted, so the history stays; rows **about** a person go with their account.
 
 ## 8. Backend endpoints (all JSON, Zod schemas in `packages/contracts`, OpenAPI at `/docs`)
 | Endpoint | Who | What |
