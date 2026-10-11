@@ -9,12 +9,21 @@ import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from
 export class AppError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
+  readonly retryAfterSeconds: number | undefined;
 
-  constructor(status: number, code: ErrorCode, message: string) {
+  constructor(status: number, code: ErrorCode, message: string, retryAfterSeconds?: number) {
     super(message);
     this.status = status;
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+/** 429: too many tries; the message says how long to wait (AC-F01-13). */
+export function tooManyAttempts(retryAfterSeconds: number): AppError {
+  const minutes = Math.max(1, Math.ceil(retryAfterSeconds / 60));
+  const message = `Too many attempts, try again in ${String(minutes)} minute${minutes === 1 ? "" : "s"}.`;
+  return new AppError(429, "TOO_MANY_ATTEMPTS", message, retryAfterSeconds);
 }
 
 function send(reply: FastifyReply, status: number, error: ErrorResponse["error"]): FastifyReply {
@@ -24,7 +33,12 @@ function send(reply: FastifyReply, status: number, error: ErrorResponse["error"]
 function handleError(error: FastifyError | AppError, request: FastifyRequest, reply: FastifyReply): FastifyReply {
   const requestId = request.id;
   if (error instanceof AppError) {
-    return send(reply, error.status, { code: error.code, message: error.message, requestId });
+    const { retryAfterSeconds } = error;
+    if (retryAfterSeconds === undefined) {
+      return send(reply, error.status, { code: error.code, message: error.message, requestId });
+    }
+    reply.header("retry-after", String(retryAfterSeconds));
+    return send(reply, error.status, { code: error.code, message: error.message, requestId, retryAfterSeconds });
   }
   if (hasZodFastifySchemaValidationErrors(error)) {
     const details = error.validation.map((issue) => ({

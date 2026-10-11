@@ -10,6 +10,8 @@ import { createEmailOutbox } from "../emails/outbox.ts";
 import { createAccountsRepository } from "../modules/accounts/accounts.repository.ts";
 import { createAccountsService } from "../modules/accounts/accounts.service.ts";
 import { createAuth, type Auth } from "../plugins/auth.ts";
+import { createRateLimiter } from "../plugins/rate-limit.ts";
+import { createCacheProvider } from "../providers/cache.ts";
 import { createEmailProvider } from "../providers/email.ts";
 import { localConfig } from "./integration.ts";
 
@@ -28,9 +30,13 @@ export async function startAuthTestApp(): Promise<AuthTestApp> {
   const email = createEmailProvider(config);
   const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
   const auth = createAuth({ config, db: database.db, outbox: emails.outbox, log, trustedOrigins: ALLOWED_ORIGINS });
+  const cache = createCacheProvider(config, log);
+  // Wait for Redis, or the first limit checks would be let through as "Redis unavailable".
+  if (!cache.isReady()) await new Promise((ready) => cache.redis.once("ready", ready));
+  const limiter = createRateLimiter({ store: cache.redis, secret: config.DATA_ENCRYPTION_KEY });
   const app = await buildApp(config, {
     logLevel: "silent",
-    accounts: { auth, service: createAccountsService(createAccountsRepository(database.db)) },
+    accounts: { auth, service: createAccountsService(createAccountsRepository(database.db)), limiter },
   });
   return {
     app,
@@ -40,6 +46,7 @@ export async function startAuthTestApp(): Promise<AuthTestApp> {
       await app.close();
       await emails.close();
       await email.close();
+      await cache.close();
       await database.drop();
     },
   };

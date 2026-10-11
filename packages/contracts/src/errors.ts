@@ -10,6 +10,7 @@ export const ERROR_CODES = [
   "FORBIDDEN",
   "TERMS_REQUIRED",
   "PASSWORD_WEAK",
+  "TOO_MANY_ATTEMPTS",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
@@ -21,6 +22,8 @@ export const errorResponseSchema = z
       message: z.string(),
       requestId: z.string(),
       details: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+      /** With TOO_MANY_ATTEMPTS: seconds until trying again works (also in the Retry-After header). */
+      retryAfterSeconds: z.number().int().positive().optional(),
     }),
   })
   .meta({ id: "ErrorResponse", description: "Standard error body. Quote the requestId when reporting a problem." });

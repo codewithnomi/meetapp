@@ -17,6 +17,7 @@ import { registerDocs } from "./plugins/docs.ts";
 import { registerErrorHandling } from "./plugins/errors.ts";
 import { loggerOptions } from "./plugins/logging.ts";
 import { registerMetrics, type MetricsSources } from "./plugins/metrics.ts";
+import type { RateLimiter } from "./plugins/rate-limit.ts";
 import { registerSessionCheck } from "./plugins/session.ts";
 
 /** Only the app's own pages may call the backend from a browser (AC-F00-23, design.md section 9). */
@@ -32,7 +33,7 @@ export interface BuildOptions {
   flags?: FlagsSource;
   metrics?: MetricsSources;
   /** Sign-in and accounts (F01). Without them nobody is signed in: only public routes answer. */
-  accounts?: { auth: Auth; service: AccountsService };
+  accounts?: { auth: Auth; service: AccountsService; limiter?: RateLimiter };
 }
 
 const NO_FLAGS: FlagsSource = { list: async () => [] };
@@ -59,7 +60,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) {
-    await app.register(authRoutes, { auth: options.accounts.auth });
+    const { auth, limiter } = options.accounts;
+    await app.register(authRoutes, limiter ? { auth, limiter } : { auth });
     await app.register(accountsRoutes, { accounts: options.accounts.service });
   }
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);

@@ -11,6 +11,8 @@ import { bearer, emailOTP } from "better-auth/plugins";
 import type { FastifyBaseLogger, FastifyInstance } from "fastify";
 import type { Config } from "../config/config.ts";
 import type { Outbox } from "../emails/outbox.ts";
+import { tooManyAttempts } from "./errors.ts";
+import { RATE_RULES, type RateLimiter } from "./rate-limit.ts";
 import type { SessionReader } from "./session.ts";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, checkPassword } from "../modules/accounts/password-rule.ts";
 import { hashSessionTokens } from "./auth-adapter.ts";
@@ -147,26 +149,54 @@ export function authSessionReader(auth: Auth): SessionReader {
   };
 }
 
+const PASSWORD_SIGN_IN = "/sign-in/email";
+/** Routes that send a code email (sign-in code, reset code). */
+const CODE_EMAIL_ROUTES = new Set(["/email-otp/send-verification-otp", "/forget-password/email-otp"]);
+
+function emailIn(body: unknown): string | undefined {
+  const email = (body as { email?: unknown } | undefined)?.email;
+  return typeof email === "string" ? email : undefined;
+}
+
+/** Refuses the request when its email is over a limit (AC-F01-13); counts code emails. */
+async function enforceLimits(limiter: RateLimiter | undefined, path: string, email: string | undefined) {
+  if (limiter === undefined || email === undefined) return;
+  let wait: number | undefined;
+  if (path === PASSWORD_SIGN_IN) wait = await limiter.blocked(RATE_RULES.wrongPassword, email);
+  else if (CODE_EMAIL_ROUTES.has(path)) wait = await limiter.take(RATE_RULES.codeEmails, email);
+  if (wait !== undefined) throw tooManyAttempts(wait);
+}
+
+export interface AuthRoutesOptions {
+  auth: Auth;
+  limiter?: RateLimiter;
+}
+
 /** Mounts Better Auth at /api/auth/*, forwarding only the allowed routes. */
-export async function authRoutes(app: FastifyInstance, options: { auth: Auth }): Promise<void> {
+export async function authRoutes(app: FastifyInstance, { auth, limiter }: AuthRoutesOptions): Promise<void> {
   app.route({
     method: ["GET", "POST"],
     url: `${AUTH_BASE_PATH}/*`,
     config: { access: "public" },
     // The body is sent on as JSON, exactly as received; it is never logged (security rule S10).
     handler: async (request, reply) => {
-      const url = new URL(request.url, options.auth.options.baseURL);
+      const url = new URL(request.url, auth.options.baseURL);
       const path = url.pathname.slice(AUTH_BASE_PATH.length);
       if (!isAllowedAuthPath(path)) {
         return reply.status(404).send({ error: { code: "NOT_FOUND", message: "Not found.", requestId: request.id } });
       }
-      const response = await options.auth.handler(
+      const email = emailIn(request.body);
+      await enforceLimits(limiter, path, email);
+      const response = await auth.handler(
         new Request(url, {
           method: request.method,
           headers: fromNodeHeaders(request.headers),
           ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
         }),
       );
+      if (limiter && email !== undefined && path === PASSWORD_SIGN_IN && response.status === 401) {
+        await limiter.hit(RATE_RULES.wrongPassword, email);
+      }
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
       return reply.send(response.body ? await response.text() : null);

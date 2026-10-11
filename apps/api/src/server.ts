@@ -11,6 +11,7 @@ import { ConfigError, loadConfig, type Config } from "./config/config.ts";
 import { runShutdownHooks } from "./observability/shutdown.ts";
 import { createAuth } from "./plugins/auth.ts";
 import { loggerOptions } from "./plugins/logging.ts";
+import { createRateLimiter } from "./plugins/rate-limit.ts";
 import { createCacheProvider } from "./providers/cache.ts";
 import { createDatabaseProvider } from "./providers/database.ts";
 import { createEmailProvider } from "./providers/email.ts";
@@ -43,7 +44,15 @@ const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
   flags: createFlagsRepository(database.db),
   metrics: { databasePool: database.poolStats, cacheReady: cache.isReady },
-  accounts: { auth, service: createAccountsService(createAccountsRepository(database.db)) },
+  accounts: {
+    auth,
+    service: createAccountsService(createAccountsRepository(database.db)),
+    limiter: createRateLimiter({
+      store: cache.redis,
+      secret: config.DATA_ENCRYPTION_KEY,
+      onStoreError: (error) => log.warn({ err: error }, "rate limits unavailable; requests let through"),
+    }),
+  },
 });
 
 /** Closes everything and always exits: a failure while closing must not leave the backend half-closed. */

@@ -301,7 +301,7 @@ Errors use the F00 format: 400, 401, 403, 404, 409 (`ALREADY_MEMBER`, `PENDING_R
 | Invitation page views per network address | 60 | 1 hour |
 | Desktop hand-off starts per network address | 20 | 1 hour |
 
-Better Auth's own per-address limiter stays on as a second layer. A refused try answers `429 TOO_MANY_ATTEMPTS` with `retryAfterSeconds`, the same for unknown emails.
+Better Auth's own per-address limiter stays on as a second layer. A refused try answers `429 TOO_MANY_ATTEMPTS` with `retryAfterSeconds`, the same for unknown emails. Windows follow the clock (for example 10:00–10:15), so a lockout lasts until the current window ends, at most 15 minutes for passwords. The limits sit in our `/api/auth/*` route in front of Better Auth, which sees the email and the outcome. If Redis can't be reached, requests are let through and a warning is logged (Better Auth's own limiter still applies). Built in T4.
 
 ## 10. Emails
 Templates live in `apps/api/src/emails/`, with text from the translation files; each has an HTML version and a plain-text version (AC-27):

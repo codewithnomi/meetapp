@@ -1,7 +1,7 @@
 ---
 feature: F01
 title: Accounts & workspaces
-status: approved
+status: in-progress
 updated: 2026-10-11
 ---
 
@@ -36,9 +36,9 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-06, 10, 11, 13, 16, 29, 70, 80.
   - Check: only the allowed Better Auth routes answer; password and code sign-in work against the real database and Mailpit.
 
-- [ ] **T4: Rate limits.**
+- [x] **T4: Rate limits.**
   - `plugins/rate-limit.ts` (Redis, HMAC of the email).
-  - Applied to Better Auth routes through `hooks.before` and to our sign-up.
+  - Applied in our `/api/auth/*` route in front of Better Auth (it sees the email and the outcome; design.md section 9), and to our sign-up.
   - Same answer and timing for unknown emails.
   - Covers: AC-F01-13.
   - Tests: TC-F01-12, 33, 34, 35.
@@ -48,7 +48,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - `POST /auth/sign-up` and `/sign-up/verify`: pending record per `signupId`, one transaction.
   - Personal workspace created through the workspaces service, with repair in `GET /me`.
   - Covers: AC-F01-01, 02, 04, 14, 29 (sign-up part).
-  - Tests: TC-F01-02, 03, 04, 05, 07, 08, 09, 37.
+  - Tests: TC-F01-02, 03, 04, 05, 07, 08, 09, 37; plus the sign-up parts of TC-F01-12 (timing) and TC-F01-34 (51st sign-up per address), whose other parts are in T4.
   - Check: a second sign-up for the same email can't change the first; a double submit makes one account.
 
 - [ ] **T6: Passwords and signing out everywhere.**
@@ -67,7 +67,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Runbook `docs/runbooks/sign-in-providers.md` (how the owner creates free keys).
   - Tested with oauth2-mock-server.
   - Covers: AC-F01-07, 08.
-  - Tests: TC-F01-15, 17, 18, 19, 20, 21, 22, 25.
+  - Tests: TC-F01-15, 17, 18, 19, 20, 21, 22, 25; plus the provider part of TC-F01-33 (provider attempts count toward the wrong-password limit).
   - Check: every hand-off attack in TC-19 fails; the normal path gives the desktop a new session and revokes the browser one.
 
 ## Desktop and screens: sign-in
