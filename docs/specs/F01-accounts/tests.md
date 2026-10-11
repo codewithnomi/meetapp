@@ -609,7 +609,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F01-08 [AC-F01-04] wrong cod
 - **Level:** security
 - **Given** the running API
 - **When** each Better Auth route not in the allow-list is called (`sign-up/email`, `update-user`, `change-email`, `delete-user`, `link-social`, `unlink-account`, `change-password`, `organization/*`, `list-sessions`, `get-session` with a token in the body, and others from Better Auth's route list)
-- **Then** each answers 404 without side effects; the allowed routes (`sign-in/email`, `sign-in/email-otp`, `email-otp/send-verification-otp`, `forget-password/email-otp`, `email-otp/reset-password`, `sign-in/social`, `callback/*`, `sign-out`, `revoke-sessions`) work; a user cannot set `termsVersion`, `theme`, `avatarKey` and other `input: false` fields through any route
+- **Then** each answers 404 without side effects; the allowed routes (`sign-in/email`, `sign-in/email-otp`, `email-otp/send-verification-otp`, `email-otp/request-password-reset`, `sign-in/social`, `callback/*`, `sign-out`, `revoke-sessions`) work; a user cannot set `termsVersion`, `theme`, `avatarKey` and other `input: false` fields through any route
 
 ### TC-F01-81: Secrets never appear in logs, security
 - **Covers:** AC-F01-33

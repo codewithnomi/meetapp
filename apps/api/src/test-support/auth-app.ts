@@ -62,25 +62,32 @@ export function testEmail(label: string): string {
 }
 
 /**
- * An existing account with a confirmed email and a password, made through Better Auth's own
- * internals (the sign-up flow arrives in T5). `termsAccepted` false imitates a first Google sign-in.
+ * An existing account with a confirmed email, made through Better Auth's own internals. With a
+ * `password` it has a password login; without one it imitates a Google-only account.
+ * `termsAccepted` false imitates a first Google sign-in.
  */
 export async function createUser(
   auth: Auth,
-  options: { email: string; password: string; termsAccepted?: boolean },
+  options: { email: string; password?: string; termsAccepted?: boolean },
 ): Promise<string> {
   const context = await auth.$context;
   const accepted = options.termsAccepted === false ? {} : { termsVersion: "draft-1", termsAcceptedAt: new Date() };
   const created = await context.internalAdapter.createUser(
     { name: "Test Person", email: options.email, emailVerified: true, ...accepted },
-    { method: "email-password" },
+    options.password === undefined
+      ? { method: "oauth", oauth: { providerId: "google" } }
+      : { method: "email-password" },
   );
-  await context.internalAdapter.linkAccount({
-    userId: created.id,
-    providerId: "credential",
-    accountId: created.id,
-    password: await context.password.hash(options.password),
-  });
+  await context.internalAdapter.linkAccount(
+    options.password === undefined
+      ? { userId: created.id, providerId: "google", accountId: randomUUID() }
+      : {
+          userId: created.id,
+          providerId: "credential",
+          accountId: created.id,
+          password: await context.password.hash(options.password),
+        },
+  );
   return created.id;
 }
 

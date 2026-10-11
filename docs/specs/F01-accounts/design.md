@@ -94,7 +94,7 @@ Better Auth (1.7 at T1; this design was written against the 1.6 docs and is re-c
 
 **Only these Better Auth routes are reachable;** every other one answers 404 (`disabledPaths` or an allow-list in front of the mount *(verify)*):
 - `sign-in/email`, `sign-in/email-otp`, `email-otp/send-verification-otp`;
-- `forget-password/email-otp`, `email-otp/reset-password`;
+- `email-otp/request-password-reset` (the reset code; Better Auth deprecated `forget-password/email-otp`, T6);
 - `sign-in/social`, `callback/*`;
 - `sign-out`, `revoke-sessions`.
 
@@ -117,12 +117,13 @@ Plugins and settings:
 - **Passwords:**
   - Better Auth's default **scrypt** hash, a slow one-way hash made for passwords (AC-33). 10–128 characters.
   - A hook refuses the 10,000 most common passwords (a bundled list, checked offline).
-  - After a reset every session is revoked (`revokeSessionsOnPasswordReset`) and a new one is made for this computer (AC-09).
+  - After a reset every session is revoked (`revokeSessionsOnPasswordReset`) and a new one is made for this computer (AC-09). Better Auth's reset doesn't sign in, so the reset goes through our `POST /api/v1/auth/reset-password`, which calls it on the server and then starts the new session; `email-otp/reset-password` itself is not reachable over HTTP (T6).
+  - A password change (AC-10) checks the current password with Better Auth's hasher, or takes a reset code when the account has none (the same code as Forgot password). Then every session ends and this computer gets a new token in `set-auth-token`. A wrong current password counts toward the wrong-password limit (T6).
 - **Provider tokens** are stored encrypted (S8, Better Auth's token-encryption option *(verify)*).
 - **User fields added**, none of them settable through Better Auth (`input: false`): `termsVersion`, `termsAcceptedAt`, `ageConfirmedAt`, `theme`, `accent`, `lastWorkspaceId`, `avatarKey`. `user.image` is never shown directly (section 6).
 - **Personal workspace:** created through the **workspaces service** after a user is created, as insert-or-ignore with a unique rule (one per user). `GET /api/v1/me` repairs it if it is missing (AC-14).
 - **Our limits on Better Auth routes:**
-  - a `hooks.before` on `sign-in/*`, `email-otp/*` and `forget-password/*` applies `plugins/rate-limit.ts` (section 9);
+  - a `hooks.before` on `sign-in/*` and `email-otp/*` applies `plugins/rate-limit.ts` (section 9);
   - counters grow even when no account exists or no email is sent;
   - an unknown email does the same password-hash work as a wrong password, so timing doesn't reveal anything *(verify)*.
 
@@ -269,11 +270,12 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `POST /api/v1/auth/sign-up/verify` | public | finish sign-up with the code |
 | `POST /api/v1/auth/sign-up/resend` | public | "Send a new code": the old code stops working (T5) |
 | `POST /api/v1/auth/desktop/init` · `GET /start` · `GET`/`POST /done` · `POST /exchange` | public (main process or browser) | browser hand-off (section 4) |
-| `POST /api/v1/auth/sign-out-everywhere` | signed in | revoke every session (AC-12) |
+| `POST /api/v1/auth/reset-password` | public | `{ email, code, newPassword }`: new password with the reset code; signs out every device and signs in here (AC-09, T6) |
+| `POST /api/v1/auth/sign-out-everywhere` | signed in | revoke every session, this one included; `204` (AC-12) |
 | `GET /api/v1/me` | signed in | profile, preferences, workspaces with role, counts of pending requests (the 30-second check) |
 | `POST /api/v1/me/terms` | signed in | accept terms + 16+ (first Google/Microsoft sign-in) |
 | `PATCH /api/v1/me` · `PATCH /api/v1/me/preferences` · `PUT/DELETE /api/v1/me/avatar` | signed in | profile, theme/accent, photo |
-| `POST /api/v1/me/password` | signed in | change password (current one or an emailed code); revokes other sessions |
+| `POST /api/v1/me/password` | signed in | `{ newPassword, currentPassword }` or `{ newPassword, code }`: change password; revokes other sessions, new token for this one |
 | `GET /api/v1/users/:id/avatar` | shares a workspace | photo |
 | `GET /api/v1/me/invitations` · `POST /api/v1/invitations/:id/accept` · `/decline` | invited email | invitations for me |
 | `POST /api/v1/join/lookup` | signed in | `{linkOrCode}` → workspace name and size (no other data) |
@@ -427,6 +429,8 @@ Each item is checked against the current docs and source before the task that us
 - Item 5: `revokeSessionsOnPasswordReset` and `account.encryptOAuthTokens` exist.
 - Item 7: password sign-in hashes the given password even for an unknown email, so timing matches.
 - Items 3, 6 and 8 are checked in T5 and T7.
+
+**Checked in T6:** Better Auth's emailOTP reset revokes every session but does not sign in, and creates a password login for a Google/Microsoft-only account. `forget-password/email-otp` is deprecated in 1.7; `email-otp/request-password-reset` behaves the same (no email for unknown addresses, same answer).
 
 ## Decisions made here
 - **D048 (proposed):**

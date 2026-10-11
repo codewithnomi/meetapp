@@ -13,9 +13,10 @@ import type { FastifyBaseLogger, FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { Config } from "../config/config.ts";
 import type { Outbox } from "../emails/outbox.ts";
-import { tooManyAttempts } from "./errors.ts";
+import { AppError, tooManyAttempts } from "./errors.ts";
 import { RATE_RULES, type RateLimiter } from "./rate-limit.ts";
 import type { SessionReader } from "./session.ts";
+import type { PasswordAuth } from "../modules/accounts/passwords.service.ts";
 import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
@@ -32,8 +33,7 @@ const AUTH_ROUTE_ALLOW_LIST = [
   "/sign-in/email",
   "/sign-in/email-otp",
   "/email-otp/send-verification-otp",
-  "/forget-password/email-otp",
-  "/email-otp/reset-password",
+  "/email-otp/request-password-reset",
   "/sign-in/social",
   "/sign-out",
   "/revoke-sessions",
@@ -42,7 +42,10 @@ const AUTH_ROUTE_ALLOW_LIST = [
 const CALLBACK_PREFIX = "/callback/";
 const AUTH_BASE_PATH = "/api/auth";
 
-/** Routes whose body carries a new password: checked against our password rule first. */
+/**
+ * Routes whose body carries a new password: checked against our password rule first. The reset itself
+ * is reached only through our `/api/v1/auth/reset-password`, which signs in on this computer after it.
+ */
 const NEW_PASSWORD_ROUTES = new Set(["/email-otp/reset-password"]);
 
 function isAllowedAuthPath(path: string): boolean {
@@ -179,6 +182,45 @@ export async function hashPassword(auth: Auth, password: string): Promise<string
   return (await auth.$context).password.hash(password);
 }
 
+/** Better Auth's answers to a wrong reset code, as our error codes (the same as sign-up's codes). */
+const CODE_ERRORS: Record<string, () => AppError> = {
+  INVALID_OTP: () => new AppError(400, "CODE_INVALID", "That code isn't right."),
+  TOO_MANY_ATTEMPTS: () => new AppError(400, "CODE_INVALID", "That code isn't right."),
+  OTP_EXPIRED: () => new AppError(400, "CODE_EXPIRED", "That code has expired. Ask for a new one."),
+};
+
+async function resetWithCode(auth: Auth, email: string, code: string, newPassword: string): Promise<string> {
+  try {
+    await auth.api.resetPasswordEmailOTP({ body: { email, otp: code, password: newPassword } });
+  } catch (error) {
+    const known = error instanceof APIError ? CODE_ERRORS[String(error.body?.code)] : undefined;
+    throw known ? known() : error;
+  }
+  const found = await (await auth.$context).internalAdapter.findUserByEmail(email.toLowerCase());
+  if (!found) throw new Error("The account disappeared during a password reset");
+  return found.user.id;
+}
+
+/** Password reset and change for our passwords service, done with Better Auth's own hasher. */
+export function passwordAuth(auth: Auth): PasswordAuth {
+  const endAllSessions = async (userId: string) => (await auth.$context).internalAdapter.deleteUserSessions(userId);
+  return {
+    resetWithCode: (email, code, newPassword) => resetWithCode(auth, email, code, newPassword),
+    changeWithCurrent: async (userId, currentPassword, newPassword) => {
+      const { internalAdapter, password } = await auth.$context;
+      const login = await internalAdapter.findCredentialAccount(userId);
+      if (!login?.password || !(await password.verify({ hash: login.password, password: currentPassword }))) {
+        return false;
+      }
+      await internalAdapter.updatePassword(userId, await password.hash(newPassword));
+      await endAllSessions(userId);
+      return true;
+    },
+    endAllSessions,
+    issueSession: (userId) => issueSession(auth, userId),
+  };
+}
+
 /** Reads the signed-in person from the request's bearer token (or cookie) through Better Auth. */
 export function authSessionReader(auth: Auth): SessionReader {
   return {
@@ -193,7 +235,7 @@ export function authSessionReader(auth: Auth): SessionReader {
 
 const PASSWORD_SIGN_IN = "/sign-in/email";
 /** Routes that send a code email (sign-in code, reset code). */
-const CODE_EMAIL_ROUTES = new Set(["/email-otp/send-verification-otp", "/forget-password/email-otp"]);
+const CODE_EMAIL_ROUTES = new Set(["/email-otp/send-verification-otp", "/email-otp/request-password-reset"]);
 
 function emailIn(body: unknown): string | undefined {
   const email = (body as { email?: unknown } | undefined)?.email;

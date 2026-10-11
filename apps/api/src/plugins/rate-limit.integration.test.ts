@@ -26,7 +26,7 @@ function post(url: string, payload: object) {
 }
 const signIn = (email: string, password: string) => post("/api/auth/sign-in/email", { email, password });
 const askCode = (email: string) => post("/api/auth/email-otp/send-verification-otp", { email, type: "sign-in" });
-const askReset = (email: string) => post("/api/auth/forget-password/email-otp", { email });
+const askReset = (email: string) => post("/api/auth/email-otp/request-password-reset", { email });
 
 interface Refusal {
   status: number;

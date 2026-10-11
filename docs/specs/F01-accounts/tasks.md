@@ -51,7 +51,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-02, 03, 04, 05, 07, 08, 09, 37; plus the sign-up parts of TC-F01-12 (timing) and TC-F01-34 (51st sign-up per address), whose other parts are in T4.
   - Check: a second sign-up for the same email can't change the first; a double submit makes one account.
 
-- [ ] **T6: Passwords and signing out everywhere.**
+- [x] **T6: Passwords and signing out everywhere.**
   - Reset by code (sessions revoked, a new one for this computer).
   - Change password (current password or an emailed code; `400 PASSWORD_WRONG`).
   - `POST /auth/sign-out-everywhere`.

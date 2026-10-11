@@ -153,6 +153,10 @@ describe("TC-F01-80 [AC-F01-33] [AC-F01-34] only the allowed Better Auth routes 
     "/api/auth/get-session",
     "/api/auth/organization/create",
     "/api/auth/email-otp/verify-email",
+    // Reached only through /api/v1/auth/reset-password, which also signs in on this computer (T6).
+    "/api/auth/email-otp/reset-password",
+    // Deprecated by Better Auth; /api/auth/email-otp/request-password-reset replaces it.
+    "/api/auth/forget-password/email-otp",
     "/api/auth/callback/../sign-up/email",
   ];
 
@@ -185,13 +189,15 @@ describe("TC-F01-06 [AC-F01-03] the password rule also guards password reset", (
     async () => {
       const email = testEmail("reset-weak");
       await createUser(t.auth, { email, password: PASSWORD });
-      const response = await post("/api/auth/email-otp/reset-password", {
+      const response = await post("/api/v1/auth/reset-password", {
         email,
-        otp: "000000",
-        password: "password123",
+        code: "000000",
+        newPassword: "password123",
       });
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(response.json())).toContain("too common");
+      expect(response.json()).toMatchObject({
+        error: { code: "PASSWORD_WEAK", message: expect.stringContaining("too common") },
+      });
     },
   );
 });

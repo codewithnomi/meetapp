@@ -55,3 +55,24 @@ export const signUpVerifyBodySchema = z
 export const signUpResendBodySchema = z.object({ signupId: z.uuid() }).meta({ id: "SignUpResend" });
 
 export const signUpResentSchema = z.object({ next: z.literal("code") }).meta({ id: "SignUpResent" });
+
+const emailedCode = z.string().regex(/^\d{6}$/);
+/** The same rule as sign-up; length and common-password checks give PASSWORD_WEAK (AC-F01-03). */
+const newPassword = z.string().min(1).max(1_000);
+
+/** Forgot password (AC-F01-09): the code from `/api/auth/email-otp/request-password-reset`. */
+export const resetPasswordBodySchema = z
+  .object({ email: z.email().max(254), code: emailedCode, newPassword })
+  .meta({ id: "ResetPassword" });
+
+/** Change password (AC-F01-10): exactly one of the current password or an emailed reset code. */
+export const changePasswordBodySchema = z
+  .object({
+    currentPassword: z.string().min(1).max(1_000).optional(),
+    code: emailedCode.optional(),
+    newPassword,
+  })
+  .refine((body) => (body.currentPassword === undefined) !== (body.code === undefined), {
+    message: "Send either the current password or the emailed code.",
+  })
+  .meta({ id: "ChangePassword" });

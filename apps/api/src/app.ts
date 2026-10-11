@@ -7,6 +7,7 @@ import type { DestinationStream } from "pino";
 import type { Config } from "./config/config.ts";
 import type { Accounts } from "./accounts.ts";
 import { accountsRoutes } from "./modules/accounts/accounts.routes.ts";
+import { passwordsRoutes } from "./modules/accounts/passwords.routes.ts";
 import { signUpRoutes } from "./modules/accounts/sign-up.routes.ts";
 import { flagsRoutes } from "./modules/flags/flags.routes.ts";
 import { createFlagsService, type FlagsSource } from "./modules/flags/flags.service.ts";
@@ -60,10 +61,11 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) {
-    const { auth, limiter, service, signUp } = options.accounts;
+    const { auth, limiter, service, signUp, passwords } = options.accounts;
     await app.register(authRoutes, { auth, limiter });
     await app.register(accountsRoutes, { accounts: service });
     await app.register(signUpRoutes, { signUp, accounts: service });
+    await app.register(passwordsRoutes, { passwords, accounts: service });
   }
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
