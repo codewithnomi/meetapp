@@ -191,7 +191,7 @@ describe("TC-F01-06 [AC-F01-03] the password rule also guards password reset", (
         password: "password123",
       });
       expect(response.statusCode).toBe(400);
-      expect(JSON.stringify(response.json())).toContain("TOO_COMMON");
+      expect(JSON.stringify(response.json())).toContain("too common");
     },
   );
 });

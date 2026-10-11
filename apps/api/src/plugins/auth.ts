@@ -3,18 +3,25 @@
 // Only the routes in AUTH_ROUTE_ALLOW_LIST are reachable; everything else Better Auth offers answers
 // 404, so its own sign-up, profile and organization routes can't be used to get around our rules.
 import { account, session, user, verification, type Database } from "@meetapp/db";
-import { betterAuth, type BetterAuthOptions } from "better-auth";
+import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError, createAuthMiddleware } from "better-auth/api";
+import { APIError, createAuthEndpoint, createAuthMiddleware } from "better-auth/api";
+import { setSessionCookie } from "better-auth/cookies";
 import { fromNodeHeaders } from "better-auth/node";
 import { bearer, emailOTP } from "better-auth/plugins";
 import type { FastifyBaseLogger, FastifyInstance } from "fastify";
+import { z } from "zod";
 import type { Config } from "../config/config.ts";
 import type { Outbox } from "../emails/outbox.ts";
 import { tooManyAttempts } from "./errors.ts";
 import { RATE_RULES, type RateLimiter } from "./rate-limit.ts";
 import type { SessionReader } from "./session.ts";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, checkPassword } from "../modules/accounts/password-rule.ts";
+import {
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH,
+  PASSWORD_MESSAGES,
+  checkPassword,
+} from "../modules/accounts/password-rule.ts";
 import { hashSessionTokens } from "./auth-adapter.ts";
 
 const DAY_SECONDS = 24 * 60 * 60;
@@ -70,7 +77,7 @@ const passwordRuleHook = createAuthMiddleware(async (context) => {
   if (!NEW_PASSWORD_ROUTES.has(context.path)) return;
   const body = context.body as { password?: unknown } | undefined;
   const problem = typeof body?.password === "string" ? checkPassword(body.password) : "TOO_SHORT";
-  if (problem) throw new APIError("BAD_REQUEST", { code: "PASSWORD_WEAK", message: problem });
+  if (problem) throw new APIError("BAD_REQUEST", { code: "PASSWORD_WEAK", message: PASSWORD_MESSAGES[problem] });
 });
 
 /** 6-digit email codes (D047): 15 minutes, 5 tries, stored hashed, never creating accounts. */
@@ -91,6 +98,28 @@ function emailCodes(outbox: Outbox, log: FastifyBaseLogger) {
     },
   });
 }
+
+/**
+ * Lets our own code start a session for a user it has just created (sign-up with a code, T5), so the
+ * desktop gets the same signed token as after any sign-in. Server-side only: the path is not in the
+ * allow-list, so it can't be called over HTTP.
+ */
+const sessionIssuer = {
+  id: "meetapp-session-issuer",
+  endpoints: {
+    issueSession: createAuthEndpoint(
+      "/meetapp/issue-session",
+      { method: "POST", body: z.object({ userId: z.string() }) },
+      async (context) => {
+        const found = await context.context.internalAdapter.findUserById(context.body.userId);
+        if (!found) throw new APIError("NOT_FOUND");
+        const created = await context.context.internalAdapter.createSession(found.id);
+        await setSessionCookie(context, { session: created, user: found });
+        return context.json({ ok: true });
+      },
+    ),
+  },
+} satisfies BetterAuthPlugin;
 
 /** Better Auth's own messages carry no secrets; they go to our logs without their arguments. */
 function authLogger(log: FastifyBaseLogger) {
@@ -130,12 +159,25 @@ export function createAuth({ config, db, outbox, log, trustedOrigins }: AuthDepe
       session: { create: { before: async (data) => ({ data: { ...data, ipAddress: null, userAgent: null } }) } },
     },
     hooks: { before: passwordRuleHook },
-    plugins: [emailCodes(outbox, log), bearer()],
+    plugins: [emailCodes(outbox, log), bearer(), sessionIssuer],
     logger: authLogger(log),
   });
 }
 
 export type Auth = ReturnType<typeof createAuth>;
+
+/** A new session for a user our code created; returns the token the desktop app keeps. */
+export async function issueSession(auth: Auth, userId: string): Promise<string> {
+  const { headers } = await auth.api.issueSession({ body: { userId }, returnHeaders: true });
+  const token = headers.get("set-auth-token");
+  if (token === null) throw new Error("Better Auth did not return a session token");
+  return token;
+}
+
+/** Better Auth's own password hasher (scrypt), so our sign-up stores passwords it can check. */
+export async function hashPassword(auth: Auth, password: string): Promise<string> {
+  return (await auth.$context).password.hash(password);
+}
 
 /** Reads the signed-in person from the request's bearer token (or cookie) through Better Auth. */
 export function authSessionReader(auth: Auth): SessionReader {

@@ -34,3 +34,5 @@ export function createDatabase(url: string, options: DatabaseOptions = {}) {
 }
 
 export type Database = ReturnType<typeof createDatabase>["db"];
+/** The database or an open transaction: repositories accept either, so callers can group writes. */
+export type Executor = Database | Parameters<Parameters<Database["transaction"]>[0]>[0];

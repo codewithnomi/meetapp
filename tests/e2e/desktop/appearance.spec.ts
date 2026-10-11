@@ -98,6 +98,9 @@ test("TC-F00-20 [AC-F00-10] each of the 8 accents applies at once and the last o
   const profile = freshProfile();
   const first = await launch(profile);
   await openSettings(first.page);
+  // A fixed theme: if the Mac switched light/dark mid-test, the expected colors would go stale.
+  await first.page.getByRole("radio", { name: "Light" }).click();
+  await expect.poll(() => htmlData(first.page), { timeout: SWITCH_MS }).toMatchObject({ theme: "light" });
   const button = first.page.getByRole("button", { name: "Start meeting" });
   for (const [accent, name] of ACCENTS) {
     await first.page.getByRole("radio", { name, exact: true }).click();

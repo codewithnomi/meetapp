@@ -18,3 +18,10 @@ export function checkPassword(password: string): PasswordProblem | undefined {
   if (COMMON.has(password.toLowerCase())) return "TOO_COMMON";
   return undefined;
 }
+
+/** What the person sees when a password is refused. */
+export const PASSWORD_MESSAGES: Record<PasswordProblem, string> = {
+  TOO_SHORT: `Use at least ${String(MIN_PASSWORD_LENGTH)} characters.`,
+  TOO_LONG: `Use at most ${String(MAX_PASSWORD_LENGTH)} characters.`,
+  TOO_COMMON: "This password is too common. Choose another one.",
+};

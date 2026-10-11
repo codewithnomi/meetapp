@@ -5,12 +5,10 @@ import { runMigrations } from "@meetapp/db";
 import { createTestDatabase, type TestDatabase } from "@meetapp/db/testing";
 import type { FastifyInstance } from "fastify";
 import { pino } from "pino";
+import { createAccounts } from "../accounts.ts";
 import { ALLOWED_ORIGINS, buildApp } from "../app.ts";
 import { createEmailOutbox } from "../emails/outbox.ts";
-import { createAccountsRepository } from "../modules/accounts/accounts.repository.ts";
-import { createAccountsService } from "../modules/accounts/accounts.service.ts";
-import { createAuth, type Auth } from "../plugins/auth.ts";
-import { createRateLimiter } from "../plugins/rate-limit.ts";
+import type { Auth } from "../plugins/auth.ts";
 import { createCacheProvider } from "../providers/cache.ts";
 import { createEmailProvider } from "../providers/email.ts";
 import { localConfig } from "./integration.ts";
@@ -23,21 +21,27 @@ export interface AuthTestApp {
 }
 
 export async function startAuthTestApp(): Promise<AuthTestApp> {
-  const config = localConfig();
+  // Its own key for the attempt counters, so counts left in Redis by earlier runs (all from
+  // 127.0.0.1, within the same hour) can't use up this run's limits.
+  const config = { ...localConfig(), DATA_ENCRYPTION_KEY: `test-${randomUUID()}` };
   const database = await createTestDatabase();
   await runMigrations(database.url);
   const log = pino({ level: "silent" });
   const email = createEmailProvider(config);
   const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
-  const auth = createAuth({ config, db: database.db, outbox: emails.outbox, log, trustedOrigins: ALLOWED_ORIGINS });
   const cache = createCacheProvider(config, log);
   // Wait for Redis, or the first limit checks would be let through as "Redis unavailable".
   if (!cache.isReady()) await new Promise((ready) => cache.redis.once("ready", ready));
-  const limiter = createRateLimiter({ store: cache.redis, secret: config.DATA_ENCRYPTION_KEY });
-  const app = await buildApp(config, {
-    logLevel: "silent",
-    accounts: { auth, service: createAccountsService(createAccountsRepository(database.db)), limiter },
+  const accounts = createAccounts({
+    config,
+    db: database.db,
+    redis: cache.redis,
+    outbox: emails.outbox,
+    log,
+    trustedOrigins: ALLOWED_ORIGINS,
   });
+  const { auth } = accounts;
+  const app = await buildApp(config, { logLevel: "silent", accounts });
   return {
     app,
     auth,

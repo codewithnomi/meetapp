@@ -142,6 +142,7 @@ Better Auth's own email sign-up would create the account before the email is pro
    - The unique email rule stops a double click, or a second pending record, from making a second account; the later one gets `CODE_INVALID`.
    - The Redis record is deleted after the commit.
    - The session token goes only to the desktop main process (section 4).
+   - The session itself is made by Better Auth through a small server-only extension (`/meetapp/issue-session`, not in the HTTP allow-list), so it is signed exactly like after any sign-in (T5).
    - For an email that already had an account, `verify` always answers `CODE_INVALID`, with the same counting.
 
 ## 4. Desktop sign-in and the token (AC-07, 11, 12, 34)
@@ -266,6 +267,7 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `GET /api/v1/auth/providers` | public | which of Google/Microsoft are configured |
 | `POST /api/v1/auth/sign-up` | public | start sign-up (section 3) |
 | `POST /api/v1/auth/sign-up/verify` | public | finish sign-up with the code |
+| `POST /api/v1/auth/sign-up/resend` | public | "Send a new code": the old code stops working (T5) |
 | `POST /api/v1/auth/desktop/init` · `GET /start` · `GET`/`POST /done` · `POST /exchange` | public (main process or browser) | browser hand-off (section 4) |
 | `POST /api/v1/auth/sign-out-everywhere` | signed in | revoke every session (AC-12) |
 | `GET /api/v1/me` | signed in | profile, preferences, workspaces with role, counts of pending requests (the 30-second check) |

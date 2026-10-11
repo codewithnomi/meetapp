@@ -2,4 +2,15 @@
 export { ERROR_CODES, errorResponseSchema, type ErrorCode, type ErrorResponse } from "./errors.ts";
 export { healthCheckStateSchema, healthResponseSchema, type HealthResponse } from "./health.ts";
 export { flagSchema, flagsResponseSchema, type Flag } from "./flags.ts";
-export { acceptTermsBodySchema, meResponseSchema, type MeResponse } from "./accounts.ts";
+export {
+  ACCENT_CHOICES,
+  THEME_CHOICES,
+  acceptTermsBodySchema,
+  meResponseSchema,
+  signUpBodySchema,
+  signUpResendBodySchema,
+  signUpResentSchema,
+  signUpStartedSchema,
+  signUpVerifyBodySchema,
+  type MeResponse,
+} from "./accounts.ts";

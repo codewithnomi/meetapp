@@ -11,6 +11,8 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 | A desktop test misses a light/dark switch on GitHub only | Linux runners start slower, so a switch can happen before the app listens | The app re-checks the computer's setting when it starts listening (`followSystemTheme`) |
 | A desktop test hangs when closing the app | A test let `shell.openExternal` really open a browser | Desktop tests record "open in browser" instead (`security.spec.ts` beforeEach) |
 | Electron opens no window from a VS Code terminal | VS Code sets `ELECTRON_RUN_AS_NODE=1` | All start scripts and tests remove it |
+| An accent-color test fails once, with the dark-mode color where the light one was expected (F01 T5) | The Mac switched light→dark during the test while the window followed the computer | Tests that compare colors pick a theme first (TC-F00-20 clicks "Light") |
+| A sign-up test gets 429 "too many attempts" only on a second run within an hour (F01 T5) | Attempt counters stay in the shared Redis, and every test comes from 127.0.0.1 | Each test backend gets its own random counter key (`startAuthTestApp`) |
 
 ## Rules
 - Never skip, delete or loosen a test, rule, threshold or scan to make CI pass.

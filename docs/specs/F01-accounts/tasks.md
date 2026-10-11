@@ -44,7 +44,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-12, 33, 34, 35.
   - Check: each limit refuses with `retryAfterSeconds`; the unknown-email timing stays inside the margin.
 
-- [ ] **T5: Sign-up with a code.**
+- [x] **T5: Sign-up with a code.**
   - `POST /auth/sign-up` and `/sign-up/verify`: pending record per `signupId`, one transaction.
   - Personal workspace created through the workspaces service, with repair in `GET /me`.
   - Covers: AC-F01-01, 02, 04, 14, 29 (sign-up part).

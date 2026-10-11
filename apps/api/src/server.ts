@@ -2,16 +2,13 @@
 // listen (AC-F00-04, 05). Ctrl+C or a stop signal closes everything cleanly.
 import { databaseUrl, runMigrations } from "@meetapp/db";
 import { pino } from "pino";
+import { createAccounts } from "./accounts.ts";
 import { ALLOWED_ORIGINS, buildApp } from "./app.ts";
 import { createEmailOutbox } from "./emails/outbox.ts";
-import { createAccountsRepository } from "./modules/accounts/accounts.repository.ts";
-import { createAccountsService } from "./modules/accounts/accounts.service.ts";
 import { createFlagsRepository } from "./modules/flags/flags.repository.ts";
 import { ConfigError, loadConfig, type Config } from "./config/config.ts";
 import { runShutdownHooks } from "./observability/shutdown.ts";
-import { createAuth } from "./plugins/auth.ts";
 import { loggerOptions } from "./plugins/logging.ts";
-import { createRateLimiter } from "./plugins/rate-limit.ts";
 import { createCacheProvider } from "./providers/cache.ts";
 import { createDatabaseProvider } from "./providers/database.ts";
 import { createEmailProvider } from "./providers/email.ts";
@@ -38,21 +35,20 @@ const livekit = createLiveKitProvider(config);
 const storage = createStorageProvider(config);
 const email = createEmailProvider(config);
 const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
-const auth = createAuth({ config, db: database.db, outbox: emails.outbox, log, trustedOrigins: ALLOWED_ORIGINS });
+const accounts = createAccounts({
+  config,
+  db: database.db,
+  redis: cache.redis,
+  outbox: emails.outbox,
+  log,
+  trustedOrigins: ALLOWED_ORIGINS,
+});
 
 const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
   flags: createFlagsRepository(database.db),
   metrics: { databasePool: database.poolStats, cacheReady: cache.isReady },
-  accounts: {
-    auth,
-    service: createAccountsService(createAccountsRepository(database.db)),
-    limiter: createRateLimiter({
-      store: cache.redis,
-      secret: config.DATA_ENCRYPTION_KEY,
-      onStoreError: (error) => log.warn({ err: error }, "rate limits unavailable; requests let through"),
-    }),
-  },
+  accounts,
 });
 
 /** Closes everything and always exits: a failure while closing must not leave the backend half-closed. */

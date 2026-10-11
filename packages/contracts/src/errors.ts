@@ -11,6 +11,8 @@ export const ERROR_CODES = [
   "TERMS_REQUIRED",
   "PASSWORD_WEAK",
   "TOO_MANY_ATTEMPTS",
+  "CODE_INVALID",
+  "CODE_EXPIRED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];
