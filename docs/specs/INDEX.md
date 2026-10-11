@@ -5,7 +5,7 @@
 | ID | Feature | Phase | Requirements | Design | Tests | Tasks | Code | Verified (tests + security) |
 |---|---|---|---|---|---|---|---|---|
 | F00 | Foundation | 0 | approved | approved | approved | approved | done | PASS 2026-10-11 (verification.md) |
-| F01 | Accounts & workspaces | 1 | approved | not started | not started | not started | not started | - |
+| F01 | Accounts & workspaces | 1 | approved | draft | not started | not started | not started | - |
 | F02 | Meetings & calling | 1 | not started | not started | not started | not started | not started | - |
 | F03 | In-meeting chat | 1 | not started | not started | not started | not started | not started | - |
 | F04 | Desktop app | 1 | not started | not started | not started | not started | not started | - |
