@@ -336,11 +336,13 @@ describe("monitoring checks", () => {
     async () => {
       // Security review (F00): container logs are cleaned in Alloy before they are stored.
       const marker = `clean-check-${Date.now()}`;
-      const line = `${marker} user alice@example.com password=hunter2`;
-      const write = compose(["exec", "-T", "redis", "sh", "-c", `echo '${line}' > /proc/1/fd/1`]);
-      expect(write.code, write.output).toBe(0);
+      // A failed query makes the database log the bad value, the way a real leak would happen.
+      const sql = `SELECT '${marker} user alice@example.com password=hunter2'::int`;
+      const psql = `psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -q -c "${sql}"`;
+      const write = compose(["exec", "-T", "postgres", "sh", "-c", psql]);
+      expect(write.output).toContain("invalid input syntax");
       const start = (Date.now() - 5 * MIN) * 1_000_000;
-      const query = encodeURIComponent(`{container="meetapp-redis-1"} |= "${marker}"`);
+      const query = encodeURIComponent(`{container="meetapp-postgres-1"} |= "${marker}"`);
       const stored = await until(
         "the line in Loki",
         2 * MIN,
