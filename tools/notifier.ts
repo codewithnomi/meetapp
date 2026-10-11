@@ -1,7 +1,8 @@
 // The Mac notification helper for monitoring alerts (AC-F00-44, design.md section 3).
 // Gatus (POST /gatus) and Grafana (POST /grafana) send their "down"/"recovered" alerts here, and each
 // one becomes a macOS notification. `pnpm monitoring` (tools/monitoring.ts) starts it on
-// 127.0.0.1:NOTIFIER_PORT. Only small, well-formed JSON bodies are accepted.
+// 127.0.0.1:NOTIFIER_PORT. Only small, well-formed JSON bodies sent as JSON to one of its own
+// addresses are accepted (security review, F00).
 import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 
@@ -16,6 +17,8 @@ export interface NotifierOptions {
 
 const MAX_BODY_BYTES = 16 * 1024;
 const MAX_NAME_LENGTH = 100;
+/** At most this many alerts per call, so one call can't open hundreds of notifications. */
+const MAX_ALERTS = 20;
 const TITLE = "MeetApp alert";
 
 class HttpError extends Error {
@@ -45,17 +48,28 @@ function fromGatus(body: unknown): Notification[] {
   throw new HttpError(400);
 }
 
-/** Grafana webhook: {"alerts": [{"status": "firing" | "resolved", "labels": {"alertname": "…"}}]}. */
+const GRAFANA_STATES: Record<string, string> = { firing: "is firing", resolved: "resolved" };
+
+/** One Grafana alert as a notification, or undefined when it isn't one we can show. */
+function grafanaAlert(alert: unknown): Notification | undefined {
+  if (!isRecord(alert) || !isRecord(alert["labels"])) return undefined;
+  const alertName = alert["labels"]["alertname"];
+  const state = GRAFANA_STATES[String(alert["status"])];
+  if (typeof alertName !== "string" || alertName.trim() === "" || state === undefined) return undefined;
+  return { title: TITLE, message: `${alertName.slice(0, MAX_NAME_LENGTH)} ${state}` };
+}
+
+/**
+ * Grafana webhook: {"alerts": [{"status": "firing" | "resolved", "labels": {"alertname": "…"}}]}.
+ * Alerts we can't show are skipped, so one odd alert doesn't hide the others; 400 only if none is valid.
+ */
 function fromGrafana(body: unknown): Notification[] {
   const alerts = isRecord(body) ? body["alerts"] : undefined;
   if (!Array.isArray(alerts) || alerts.length === 0) throw new HttpError(400);
-  return alerts.map((alert: unknown) => {
-    if (!isRecord(alert) || !isRecord(alert["labels"])) throw new HttpError(400);
-    const alertName = name(alert["labels"]["alertname"]);
-    if (alert["status"] === "firing") return { title: TITLE, message: `${alertName} is firing` };
-    if (alert["status"] === "resolved") return { title: TITLE, message: `${alertName} resolved` };
-    throw new HttpError(400);
-  });
+  if (alerts.length > MAX_ALERTS) throw new HttpError(413);
+  const notifications = alerts.map(grafanaAlert).filter((n): n is Notification => n !== undefined);
+  if (notifications.length === 0) throw new HttpError(400);
+  return notifications;
 }
 
 const ROUTES: Record<string, (body: unknown) => Notification[]> = { "/gatus": fromGatus, "/grafana": fromGrafana };
@@ -76,10 +90,29 @@ async function readJson(request: IncomingMessage): Promise<unknown> {
   }
 }
 
+/** Names this helper answers to: this computer, and Docker's name for it (Gatus and Grafana). */
+const OWN_HOSTS = ["127.0.0.1", "localhost", "host.docker.internal"];
+
+/**
+ * Only callers that know where the helper is: the Host must be one of ours with our port. A web page
+ * open in the browser can't use a look-alike address (DNS rebinding) or skip the JSON check below.
+ */
+function isOwnHost(request: IncomingMessage): boolean {
+  const port = String(request.socket.localPort);
+  return OWN_HOSTS.some((host) => request.headers.host === `${host}:${port}`);
+}
+
+/** Browsers send a JSON body only after asking permission (which this helper never gives). */
+function isJson(request: IncomingMessage): boolean {
+  return (request.headers["content-type"] ?? "").split(";")[0]?.trim().toLowerCase() === "application/json";
+}
+
 async function handle(request: IncomingMessage, options: NotifierOptions): Promise<number> {
+  if (!isOwnHost(request)) return 403;
   const parse = ROUTES[new URL(request.url ?? "/", "http://127.0.0.1").pathname];
   if (!parse) return 404;
   if (request.method !== "POST") return 405;
+  if (!isJson(request)) return 415;
   const notifications = parse(await readJson(request));
   for (const notification of notifications) await options.notify(notification);
   return 204;

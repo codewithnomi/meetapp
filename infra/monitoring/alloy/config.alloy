@@ -26,11 +26,11 @@ prometheus.scrape "livekit" {
   forward_to      = [prometheus.remote_write.local.receiver]
 }
 
+// Read-only monitoring login (tools/monitoring-db.ts), never the app's owner account.
 prometheus.exporter.postgres "database" {
   data_source_names = [string.format(
-    "postgresql://%s:%s@postgres:5432/%s?sslmode=disable",
-    sys.env("POSTGRES_USER"),
-    sys.env("POSTGRES_PASSWORD"),
+    "postgresql://meetapp_monitor:%s@postgres:5432/%s?sslmode=disable",
+    sys.env("MONITORING_DB_PASSWORD"),
     sys.env("POSTGRES_DB"),
   )]
 }
@@ -48,7 +48,6 @@ prometheus.exporter.cadvisor "containers" {
 
 // How full the Docker disk is (for the "disk nearly full" alert).
 prometheus.exporter.unix "docker_disk" {
-  rootfs_path    = "/rootfs"
   set_collectors = ["filesystem"]
 }
 
@@ -144,6 +143,29 @@ loki.source.docker "containers" {
   host       = "unix:///var/run/docker.sock"
   targets    = discovery.relabel.containers.output
   labels     = { source = "docker" }
+  forward_to = [loki.process.clean.receiver]
+}
+
+// Cleaning before storage (security rule S10; security review, F00): container logs don't pass through
+// the backend's own redaction, so emails and "password=…"-style values are masked here (the same
+// patterns as apps/api/src/plugins/logging.ts), and database error details that quote stored values
+// are dropped.
+loki.process "clean" {
+  stage.drop {
+    expression          = "\\b(DETAIL|STATEMENT):"
+    drop_counter_reason = "database_error_details"
+  }
+
+  stage.replace {
+    expression = "([\\w.+-]+@[\\w-]+(?:\\.[\\w-]+)+)"
+    replace    = "[email]"
+  }
+
+  stage.replace {
+    expression = "(?i)(?:password|passwd|pwd|secret|token|api[_-]?key|authorization)\\s*[=:]\\s*(\"[^\"]*\"|'[^']*'|\\S+)"
+    replace    = "[redacted]"
+  }
+
   forward_to = [loki.write.local.receiver]
 }
 

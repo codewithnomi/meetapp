@@ -9,6 +9,8 @@ export const healthRoutes: FastifyPluginAsyncZod<{ health: HealthService }> = as
     {
       schema: {
         summary: "Is the backend and every service it needs working?",
+        description:
+          "Checks the database, cache, call server and file storage. Answers 200 with `ok` for each part when all work, or 503 with `down` for each part that doesn't. Used by the status page and the tests; needs no login.",
         tags: ["health"],
         response: { 200: healthResponseSchema, 503: healthResponseSchema },
       },

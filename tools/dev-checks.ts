@@ -2,7 +2,7 @@
 // Kept apart from tools/dev.ts so each check can be tested with fake inputs.
 import { spawnSync } from "node:child_process";
 import { createSocket } from "node:dgram";
-import { appendFileSync, copyFileSync, existsSync, readFileSync } from "node:fs";
+import { appendFileSync, chmodSync, copyFileSync, existsSync, readFileSync } from "node:fs";
 import { connect, createServer } from "node:net";
 import { join } from "node:path";
 
@@ -40,11 +40,17 @@ export const DOCKER_MESSAGES: Record<Exclude<DockerState, "ok">, string> = {
   "not-running": "Docker isn't running. Open Docker Desktop and try again.",
 };
 
+/** .env holds the local passwords: only its owner may read it (security review, F00). */
+function ownerOnly(path: string): void {
+  chmodSync(path, 0o600);
+}
+
 /** Copies .env.example to .env when .env is missing. Never overwrites. Returns true if it copied. */
 export function ensureEnvFile(root: string): boolean {
   const target = join(root, ".env");
   if (existsSync(target)) return false;
   copyFileSync(join(root, ".env.example"), target);
+  ownerOnly(target);
   return true;
 }
 
@@ -62,7 +68,7 @@ export function addMissingSettings(root: string): string[] {
   const added: string[] = [];
   const blocks: string[] = [];
   let comments: string[] = [];
-  for (const line of readFileSync(join(root, ".env.example"), "utf8").split("\n")) {
+  for (const line of readFileSync(join(root, ".env.example"), "utf8").split(/\r?\n/)) {
     const key = SETTING_LINE.exec(line)?.[1];
     if (key === undefined) {
       comments = line.trim().startsWith("#") ? [...comments, line] : [];
@@ -74,8 +80,10 @@ export function addMissingSettings(root: string): string[] {
     }
     comments = [];
   }
-  if (added.length > 0)
+  if (added.length > 0) {
     appendFileSync(target, `\n# ---------- Added from .env.example ----------\n${blocks.join("\n")}\n`);
+    ownerOnly(target);
+  }
   return added;
 }
 

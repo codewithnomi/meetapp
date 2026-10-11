@@ -14,6 +14,7 @@ import {
   parseOwnPorts,
   readEnv,
 } from "./dev-checks.ts";
+import { ensureMonitoringRole } from "./monitoring-db.ts";
 import { createNotifier, showMacNotification } from "./notifier.ts";
 
 const COMPOSE = [
@@ -68,6 +69,8 @@ async function main(): Promise<void> {
   spawnSync("docker", [...COMPOSE, "rm", "--stop", "--force", ...MONITORING_SERVICES], { stdio: "ignore" });
   const up = spawnSync("docker", [...COMPOSE, "up", "-d", "--wait"], { stdio: "inherit" });
   if (up.status !== 0) fail("Monitoring did not start. Run `docker compose -f infra/docker-compose.yml logs`.");
+  const roleProblem = ensureMonitoringRole(COMPOSE, env);
+  if (roleProblem) fail(roleProblem);
 
   say(`\nMonitoring is running on this computer:\n${addresses(env)}\n`);
   if (!env["OTEL_EXPORTER_OTLP_ENDPOINT"]) {

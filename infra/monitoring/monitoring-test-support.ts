@@ -8,7 +8,7 @@ import { parse } from "yaml";
 export const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 export const COMPOSE_FILE = join(ROOT, "infra/docker-compose.yml");
 export const ENV_EXAMPLE = join(ROOT, ".env.example");
-const ENV_FILE = existsSync(join(ROOT, ".env")) ? join(ROOT, ".env") : ENV_EXAMPLE;
+export const ENV_FILE = existsSync(join(ROOT, ".env")) ? join(ROOT, ".env") : ENV_EXAMPLE;
 
 /** Reads and parses a YAML or JSON file below the repository root. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test files read loosely shaped settings

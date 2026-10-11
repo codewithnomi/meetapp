@@ -89,6 +89,21 @@ describe("TC-F00-51 [AC-F00-21] docs are available in development", () => {
   });
 });
 
+describe("TC-F00-51 [AC-F00-21] every documented endpoint explains itself", () => {
+  it("TC-F00-51 [AC-F00-21] each operation in /docs/json has a summary and a description (docs review, F00)", async () => {
+    const instance = await appFor("development");
+    const document = (await instance.inject({ method: "GET", url: "/docs/json" })).json<OpenApiDocument>();
+    for (const [path, operations] of Object.entries(document.paths)) {
+      for (const [method, operation] of Object.entries(
+        operations as Record<string, { summary?: string; description?: string }>,
+      )) {
+        expect(operation.summary, `${method} ${path} summary`).toBeTruthy();
+        expect(operation.description, `${method} ${path} description`).toBeTruthy();
+      }
+    }
+  });
+});
+
 describe("TC-F00-52 [AC-F00-21] docs are hidden outside development (security)", () => {
   it.each(["production", "test"] as const)(
     "TC-F00-52 [AC-F00-21] with NODE_ENV=%s every docs path is 404",

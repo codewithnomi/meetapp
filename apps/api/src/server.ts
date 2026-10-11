@@ -37,12 +37,22 @@ const app = await buildApp(config, {
   metrics: { databasePool: database.poolStats, cacheReady: cache.isReady },
 });
 
+/** Closes everything and always exits: a failure while closing must not leave the backend half-closed. */
 async function shutDown(): Promise<void> {
-  await app.close();
-  await Promise.allSettled([database.close(), cache.close(), storage.close()]);
-  // Send the last traces, logs and error reports first: process.exit() would drop them.
-  await runShutdownHooks();
-  process.exit(0);
+  // Backstop: if closing hangs, leave anyway after 10 s so the port is freed.
+  setTimeout(() => process.exit(1), 10_000).unref();
+  let code = 0;
+  try {
+    await app.close();
+    await Promise.allSettled([database.close(), cache.close(), storage.close()]);
+  } catch (error) {
+    log.error({ err: error }, "Closing the backend failed");
+    code = 1;
+  } finally {
+    // Send the last traces, logs and error reports first: process.exit() would drop them.
+    await runShutdownHooks();
+    process.exit(code);
+  }
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) process.once(signal, () => void shutDown());

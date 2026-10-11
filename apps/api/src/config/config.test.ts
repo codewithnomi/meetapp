@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { CONFIG_KEYS, OPTIONAL_KEYS, fakeEnv } from "../test-support/fake-env.ts";
-import { ConfigError, configSchema, loadConfig } from "./config.ts";
+import { ConfigError, configSchema, isAllowedOtlpEndpoint, loadConfig } from "./config.ts";
 
 const ROOT = fileURLToPath(new URL("../../../..", import.meta.url));
 const SERVER = join(ROOT, "apps/api/src/server.ts");
@@ -135,5 +135,31 @@ describe("TC-F00-11 [AC-F00-05] service addresses and the email sender have safe
     expect(loadConfig({ ...fakeEnv(), EMAIL_FROM: "Team <team@example.test>" }).EMAIL_FROM).toBe(
       "Team <team@example.test>",
     );
+  });
+
+  // Security review (F00): logs and traces may only go to this computer, or over https (S6).
+  it.each(["http://127.0.0.1:4318", "http://localhost:4318", "https://otlp.example.com"])(
+    "TC-F00-53 [AC-F00-22] the OTel endpoint %s is accepted",
+    (endpoint) => {
+      expect(loadConfig({ ...fakeEnv(), OTEL_EXPORTER_OTLP_ENDPOINT: endpoint }).OTEL_EXPORTER_OTLP_ENDPOINT).toBe(
+        endpoint,
+      );
+      expect(isAllowedOtlpEndpoint(endpoint)).toBe(true);
+    },
+  );
+
+  it.each(["http://192.168.1.20:4318", "http://otlp.example.com", "ftp://127.0.0.1", "not a url"])(
+    "TC-F00-53 [AC-F00-22] the OTel endpoint %s is refused (only this computer, or https)",
+    (endpoint) => {
+      expect(configErrorFor({ ...fakeEnv(), OTEL_EXPORTER_OTLP_ENDPOINT: endpoint }).message).toContain(
+        "Invalid setting OTEL_EXPORTER_OTLP_ENDPOINT",
+      );
+      expect(isAllowedOtlpEndpoint(endpoint)).toBe(false);
+    },
+  );
+
+  it("TC-F00-53 [AC-F00-22] instrumentation.ts starts tracing only for an allowed endpoint", () => {
+    const source = readFileSync(join(ROOT, "apps/api/src/instrumentation.ts"), "utf8");
+    expect(source).toMatch(/isAllowedOtlpEndpoint\(otlpEndpoint\)/);
   });
 });

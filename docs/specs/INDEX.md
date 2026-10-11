@@ -4,7 +4,7 @@
 
 | ID | Feature | Phase | Requirements | Design | Tests | Tasks | Code | Verified (tests + security) |
 |---|---|---|---|---|---|---|---|---|
-| F00 | Foundation | 0 | approved | approved | approved | approved | in progress (fixes T-fix-1…5) | FAIL 2026-10-11 (verification.md) |
+| F00 | Foundation | 0 | approved | approved | approved | approved | in progress | FAIL 2026-10-11, fixes T-fix-1…5 (verification.md) |
 | F01 | Accounts & workspaces | 1 | not started | not started | not started | not started | not started | - |
 | F02 | Meetings & calling | 1 | not started | not started | not started | not started | not started | - |
 | F03 | In-meeting chat | 1 | not started | not started | not started | not started | not started | - |

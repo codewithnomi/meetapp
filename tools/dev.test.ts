@@ -3,7 +3,7 @@
 // these tests never start a real service and never read or write the real .env.
 import { spawnSync } from "node:child_process";
 import { createSocket, type Socket } from "node:dgram";
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createServer, type AddressInfo, type Server } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -305,6 +305,28 @@ describe(".env file", () => {
     expect(env).toContain("# New thing\n# (second line)\nNEW_ONE=x\n");
     expect(addMissingSettings(dir)).toEqual([]);
     expect(readFileSync(join(dir, ".env"), "utf8")).toBe(env);
+  });
+
+  it("TC-F00-06 [AC-F00-05] a .env.example with Windows line endings adds clean lines", () => {
+    const dir = tempDir("meetapp-env-");
+    writeFileSync(join(dir, ".env.example"), "# A\r\nA=1\r\n# New\r\nNEW=x\r\n");
+    writeFileSync(join(dir, ".env"), "A=1\n");
+    expect(addMissingSettings(dir)).toEqual(["NEW"]);
+    const env = readFileSync(join(dir, ".env"), "utf8");
+    expect(env).not.toContain("\r");
+    expect(parseEnvFile(env)).toEqual({ A: "1", NEW: "x" });
+  });
+
+  it("TC-F00-06 [AC-F00-05] .env is readable only by its owner, when created and when settings are added", () => {
+    // Security review (F00): .env holds the local passwords; other accounts on the Mac must not read it.
+    const dir = tempDir("meetapp-env-");
+    writeFileSync(join(dir, ".env.example"), "# A\nA=1\n# B\nB=2\n");
+    expect(ensureEnvFile(dir)).toBe(true);
+    expect(statSync(join(dir, ".env")).mode & 0o777).toBe(0o600);
+    writeFileSync(join(dir, ".env"), "A=1\n", { mode: 0o644 });
+    chmodSync(join(dir, ".env"), 0o644);
+    expect(addMissingSettings(dir)).toEqual(["B"]);
+    expect(statSync(join(dir, ".env")).mode & 0o777).toBe(0o600);
   });
 
   it("TC-F00-06 [AC-F00-05] the start, test and monitoring commands add missing settings and say so", () => {

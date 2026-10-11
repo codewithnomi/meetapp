@@ -5,8 +5,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import type { Server } from "node:http";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ensureMonitoringRole } from "../../tools/monitoring-db.ts";
 import { createNotifier, type Notification } from "../../tools/notifier.ts";
-import { ROOT, type Json, compose, setting } from "./monitoring-test-support.ts";
+import { COMPOSE_FILE, ENV_FILE, ROOT, type Json, compose, setting } from "./monitoring-test-support.ts";
 
 const MIN = 60_000;
 const API = `http://127.0.0.1:${setting("API_PORT")}`;
@@ -173,6 +174,10 @@ beforeAll(async () => {
   if (await answers(`${API}/api/v1/health`)) throw new Error("The API port already answers: stop pnpm dev first.");
   const up = compose(["--profile", "monitoring", "up", "-d", "--wait"], 8 * MIN);
   if (up.code !== 0) throw new Error(`docker compose up failed:\n${up.output}`);
+  const roleProblem = ensureMonitoringRole(["compose", "-f", COMPOSE_FILE, "--env-file", ENV_FILE], {
+    MONITORING_DB_PASSWORD: setting("MONITORING_DB_PASSWORD"),
+  });
+  if (roleProblem) throw new Error(roleProblem);
   notifier = createNotifier({ notify: (n) => void calls.push(n) });
   await new Promise<void>((resolve, reject) => {
     notifier.once("error", (error: NodeJS.ErrnoException) =>
@@ -322,6 +327,38 @@ describe("monitoring checks", () => {
       expect(text).not.toContain("hunter2");
       expect(text).not.toContain("alice@example.com");
       expect(text).toMatch(/"code":\s*("STATUS_CODE_ERROR"|2)/);
+    },
+  );
+
+  it(
+    "TC-F00-50 [AC-F00-20] a container's log line reaches Loki with its email and password masked",
+    { timeout: 3 * MIN },
+    async () => {
+      // Security review (F00): container logs are cleaned in Alloy before they are stored.
+      const marker = `clean-check-${Date.now()}`;
+      const line = `${marker} user alice@example.com password=hunter2`;
+      const write = compose(["exec", "-T", "redis", "sh", "-c", `echo '${line}' > /proc/1/fd/1`]);
+      expect(write.code, write.output).toBe(0);
+      const start = (Date.now() - 5 * MIN) * 1_000_000;
+      const query = encodeURIComponent(`{container="meetapp-redis-1"} |= "${marker}"`);
+      const stored = await until(
+        "the line in Loki",
+        2 * MIN,
+        async () => {
+          const result = await grafana(
+            `/api/datasources/proxy/uid/loki/loki/api/v1/query_range?query=${query}&start=${start}&limit=10`,
+          );
+          const lines = (result.data.result as { values: string[][] }[]).flatMap((s) =>
+            s.values.map((v) => v[1] ?? ""),
+          );
+          return lines.length > 0 ? lines.join("\n") : undefined;
+        },
+        5000,
+      );
+      expect(stored).not.toContain("alice@example.com");
+      expect(stored).not.toContain("hunter2");
+      expect(stored).toContain("[email]");
+      expect(stored).toContain("[redacted]");
     },
   );
 

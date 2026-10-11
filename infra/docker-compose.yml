@@ -26,6 +26,9 @@ services:
 
   postgres:
     image: pgvector/pgvector:0.8.7-pg17@sha256:ac08538c6f8b9904c33c8224c5e5706dbe760aca29db1d096972b4052c22a75d
+    # Errors are logged without the failing values (DETAIL) or the statement, so a log line can't quote
+    # stored personal data (security rule S10; security review, F00).
+    command: ["postgres", "-c", "log_error_verbosity=terse", "-c", "log_min_error_statement=panic"]
     environment:
       POSTGRES_USER: "${POSTGRES_USER:?set in .env}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set in .env}"
@@ -141,8 +144,9 @@ services:
     restart: unless-stopped
 
   # The one collector: metrics (scrapes + built-in exporters), container logs, and the backend's
-  # traces and logs over OTLP. Privileged with host mounts so it can read container CPU/memory
-  # (cAdvisor) and the Docker disk; it is local-only and never published beyond 127.0.0.1.
+  # traces and logs over OTLP. Not privileged; it reads container CPU/memory (cAdvisor) and the Docker
+  # disk through read-only host folders. The Docker and containerd sockets it needs still allow full
+  # control of Docker: accepted only because this is local and optional (D041).
   alloy:
     image: grafana/alloy:v1.20.1@sha256:2aa2099af76c0098d4af7a4d6e48f86cb66dc1a000222ad927a1c67c6542d13f
     profiles: ["monitoring"]
@@ -151,17 +155,14 @@ services:
       - --server.http.listen-addr=0.0.0.0:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
-    privileged: true
     environment:
       API_PORT: "${API_PORT:?set in .env}"
-      POSTGRES_USER: "${POSTGRES_USER:?set in .env}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set in .env}"
+      MONITORING_DB_PASSWORD: "${MONITORING_DB_PASSWORD:?set in .env}"
       POSTGRES_DB: "${POSTGRES_DB:?set in .env}"
     volumes:
       - ./monitoring/alloy/config.alloy:/etc/alloy/config.alloy:ro
       - alloydata:/var/lib/alloy/data
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /:/rootfs:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /run/containerd:/run/containerd:ro
@@ -208,6 +209,10 @@ services:
       # Only this computer can reach Grafana, so it opens without a login, read-only.
       GF_AUTH_ANONYMOUS_ENABLED: "true"
       GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Answers only to 127.0.0.1, so a web page can't reach it through a look-alike address (DNS rebinding).
+      GF_SERVER_DOMAIN: 127.0.0.1
+      GF_SERVER_ENFORCE_DOMAIN: "true"
+      GF_SERVER_ROOT_URL: "http://127.0.0.1:${GRAFANA_PORT:?set in .env}/"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"

@@ -2,6 +2,9 @@
 // A missing or invalid setting stops the backend with its name and a pointer to .env.example.
 // Values are never printed, so a wrong setting can't leak a password into the terminal or logs.
 import { z } from "zod";
+import { isAllowedOtlpEndpoint } from "./otlp-endpoint.ts";
+
+export { isAllowedOtlpEndpoint };
 
 const port = z.coerce.number().int().min(1).max(65_535);
 const text = z.string().min(1);
@@ -44,7 +47,8 @@ export const configSchema = z.object({
   MAILPIT_HOST: host,
   EMAIL_FROM: withDefault("MeetApp <no-reply@meetapp.local>"),
   SENTRY_DSN: optional,
-  OTEL_EXPORTER_OTLP_ENDPOINT: optional,
+  // Only this computer, or https (otlp-endpoint.ts).
+  OTEL_EXPORTER_OTLP_ENDPOINT: optional.refine((value) => value === undefined || isAllowedOtlpEndpoint(value)),
 });
 
 export type Config = z.infer<typeof configSchema>;

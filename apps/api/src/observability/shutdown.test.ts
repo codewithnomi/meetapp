@@ -69,7 +69,7 @@ describe("TC-F00-87 [AC-F00-43] the last traces are sent before the backend stop
   it("TC-F00-87 [AC-F00-43] server.ts runs the shutdown hooks before it exits", () => {
     const source = readFileSync(join(API_SRC, "server.ts"), "utf8");
     const shutDown = /async function shutDown\(\)[^]*?\n\}/.exec(source)?.[0] ?? "";
-    expect(shutDown).toMatch(/await runShutdownHooks\(\);[^]*process\.exit\(0\)/);
+    expect(shutDown).toMatch(/await runShutdownHooks\(\);\s*process\.exit\(code\)/);
   });
 
   it("TC-F00-87 [AC-F00-43] every hook is awaited, and a hook that hangs can't block the stop", async () => {
@@ -86,5 +86,20 @@ describe("TC-F00-87 [AC-F00-43] the last traces are sent before the backend stop
     await runShutdownHooks(300);
     expect(done).toEqual(["slow"]);
     expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  // Bug review (F00): a failure while closing used to leave the backend half-closed, holding its port.
+  it("TC-F00-87 [AC-F00-43] server.ts always exits after a stop, even if closing fails, with a 10 s backstop", () => {
+    const source = readFileSync(join(API_SRC, "server.ts"), "utf8");
+    const shutDown = /async function shutDown\(\)[^]*?\n\}/.exec(source)?.[0] ?? "";
+    expect(shutDown).toMatch(/try \{[^]*\} catch[^]*\} finally \{[^]*process\.exit\(/);
+    expect(shutDown).toMatch(/setTimeout\([^]*process\.exit\(1\)[^]*10_000\)\.unref\(\)/);
+  });
+
+  it("TC-F00-87 [AC-F00-43] tracing is shut down once, however the backend ends", () => {
+    const source = readFileSync(INSTRUMENTATION, "utf8");
+    expect(source.match(/sdk\.shutdown\(\)/g)).toHaveLength(1);
+    expect(source).toMatch(/onShutdown\(stopTelemetry\)/);
+    expect(source).toMatch(/beforeExit", \(\) => void stopTelemetry\(\)/);
   });
 });

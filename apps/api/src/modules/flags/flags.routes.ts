@@ -9,6 +9,8 @@ export const flagsRoutes: FastifyPluginAsyncZod<{ flags: FlagsService }> = async
     {
       schema: {
         summary: "Which features are switched on? Keys not listed are off.",
+        description:
+          "The feature switches from the database, read at most every 10 seconds. The apps ask every 15 seconds, so switching a feature off hides it within 30 seconds. A key that isn't listed counts as off.",
         tags: ["flags"],
         response: { 200: flagsResponseSchema },
       },

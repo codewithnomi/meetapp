@@ -162,3 +162,47 @@ describe("TC-F00-95 [AC-F00-41] pnpm monitoring starts after a `docker compose d
     expect(source).not.toMatch(/"rm"[^\n]*"-v"/);
   });
 });
+
+describe("TC-F00-50 [AC-F00-20] container logs are cleaned before they are stored", () => {
+  // Security review (F00): container logs went to Loki raw, e.g. a database error quoting an email.
+  const alloy = readFileSync(`${ROOT}/infra/monitoring/alloy/config.alloy`, "utf8");
+
+  it("TC-F00-50 [AC-F00-20] container logs pass through a cleaning step before Loki", () => {
+    /** One top-level Alloy block: from its name to the closing brace at the start of a line. */
+    const block = (name: string) => alloy.slice(alloy.indexOf(name), alloy.indexOf("\n}\n", alloy.indexOf(name)));
+    expect(block('loki.source.docker "containers"')).toMatch(/forward_to\s*=\s*\[loki\.process\.clean\.receiver\]/);
+    expect(block('loki.process "clean"')).toMatch(/forward_to\s*=\s*\[loki\.write\.local\.receiver\]/);
+  });
+
+  it("TC-F00-50 [AC-F00-20] the cleaning step masks emails and secrets and drops database error details", () => {
+    const clean = alloy.slice(alloy.indexOf('loki.process "clean"'));
+    expect(clean).toContain('replace    = "[email]"');
+    expect(clean).toContain('replace    = "[redacted]"');
+    expect(clean).toMatch(/stage\.drop \{[^}]*DETAIL\|STATEMENT/);
+  });
+
+  it("TC-F00-50 [AC-F00-20] PostgreSQL logs errors without the failing values or statement", () => {
+    const compose = readFileSync(COMPOSE_FILE, "utf8");
+    const postgres = compose.slice(compose.indexOf("  postgres:"), compose.indexOf("  redis:"));
+    expect(postgres).toContain("log_error_verbosity=terse");
+    expect(postgres).toContain("log_min_error_statement=panic");
+  });
+});
+
+describe("TC-F00-95 [AC-F00-41] monitoring runs with as little access as it needs (security review, F00)", () => {
+  const compose = readFileSync(COMPOSE_FILE, "utf8");
+  const service = (name: string) =>
+    compose.slice(compose.indexOf(`  ${name}:`), compose.indexOf("restart:", compose.indexOf(`  ${name}:`)));
+
+  it("TC-F00-95 [AC-F00-41] Alloy is not privileged and can't read the whole disk", () => {
+    const alloy = service("alloy");
+    expect(alloy).not.toMatch(/privileged:\s*true/);
+    expect(alloy).not.toContain("/:/rootfs");
+  });
+
+  it("TC-F00-95 [AC-F00-41] Grafana answers only at 127.0.0.1", () => {
+    const grafana = service("grafana");
+    expect(grafana).toMatch(/GF_SERVER_DOMAIN: 127\.0\.0\.1/);
+    expect(grafana).toMatch(/GF_SERVER_ENFORCE_DOMAIN: "true"/);
+  });
+});

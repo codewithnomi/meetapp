@@ -1,4 +1,5 @@
 // TC-F00-96: the desktop notifier turns Gatus and Grafana webhooks into notifications, safely.
+import { request } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createNotifier, macNotificationCommand, type Notification } from "./notifier.ts";
@@ -20,7 +21,8 @@ afterEach(async () => {
 
 function send(path: string, body: unknown, method = "POST") {
   const payload = typeof body === "string" ? body : JSON.stringify(body);
-  return fetch(`${base}${path}`, { method, ...(method === "GET" ? {} : { body: payload }) });
+  const headers = { "Content-Type": "application/json" };
+  return fetch(`${base}${path}`, { method, headers, ...(method === "GET" ? {} : { body: payload }) });
 }
 
 const grafana = (...alerts: unknown[]) => ({ alerts });
@@ -79,5 +81,82 @@ describe("TC-F00-96 [AC-F00-44] notifier", () => {
       expect(script).not.toContain(name);
     }
     expect(args).toContain(`${name} is down`);
+  });
+
+  // Security review (F00): a web page open in the browser could post to 127.0.0.1 without a check
+  // (a text/plain body needs no browser permission), or reach it through a look-alike address.
+  it("TC-F00-96 [AC-F00-44] a body not sent as JSON is refused with 415 and notifies nothing", async () => {
+    const body = JSON.stringify({ service: "Backend", status: "TRIGGERED" });
+    const response = await fetch(`${base}/gatus`, { method: "POST", headers: { "Content-Type": "text/plain" }, body });
+    expect(response.status).toBe(415);
+    expect(calls).toEqual([]);
+  });
+
+  it.each(["evil.example.com", "127.0.0.1:1", "meetapp.local"])(
+    "TC-F00-96 [AC-F00-44] a request for another address (Host %s) is refused with 403",
+    async (host) => {
+      const status = await new Promise<number | undefined>((resolve, reject) => {
+        const port = (server.address() as AddressInfo).port;
+        const req = request(
+          {
+            host: "127.0.0.1",
+            port,
+            path: "/gatus",
+            method: "POST",
+            headers: { Host: host, "Content-Type": "application/json" },
+          },
+          (res) => {
+            res.resume();
+            resolve(res.statusCode);
+          },
+        );
+        req.on("error", reject);
+        req.end(JSON.stringify({ service: "Backend", status: "TRIGGERED" }));
+      });
+      expect(status).toBe(403);
+      expect(calls).toEqual([]);
+    },
+  );
+
+  it("TC-F00-96 [AC-F00-44] the addresses Docker and this computer use are accepted", async () => {
+    const port = String((server.address() as AddressInfo).port);
+    for (const host of [`127.0.0.1:${port}`, `localhost:${port}`, `host.docker.internal:${port}`]) {
+      const status = await new Promise<number | undefined>((resolve, reject) => {
+        const req = request(
+          {
+            host: "127.0.0.1",
+            port: Number(port),
+            path: "/gatus",
+            method: "POST",
+            headers: { Host: host, "Content-Type": "application/json; charset=utf-8" },
+          },
+          (res) => {
+            res.resume();
+            resolve(res.statusCode);
+          },
+        );
+        req.on("error", reject);
+        req.end(JSON.stringify({ service: "Cache", status: "RESOLVED" }));
+      });
+      expect(status, host).toBe(204);
+    }
+  });
+
+  // Bug review (F00): one odd alert in a Grafana batch used to drop the whole batch.
+  it("TC-F00-96 [AC-F00-44] a Grafana batch with some invalid alerts still notifies the valid ones", async () => {
+    const body = grafana(
+      { status: "firing", labels: { alertname: "Error spike" } },
+      { status: "pending", labels: { alertname: "Odd one" } },
+      { status: "resolved", labels: {} },
+      { status: "resolved", labels: { alertname: "Disk nearly full" } },
+    );
+    expect((await send("/grafana", body)).status).toBe(204);
+    expect(calls.map((c) => c.message)).toEqual(["Error spike is firing", "Disk nearly full resolved"]);
+  });
+
+  it("TC-F00-96 [AC-F00-44] more than 20 alerts in one call is refused with 413 and notifies nothing", async () => {
+    const alerts = Array.from({ length: 21 }, (_, i) => ({ status: "firing", labels: { alertname: `A${String(i)}` } }));
+    expect((await send("/grafana", grafana(...alerts))).status).toBe(413);
+    expect(calls).toEqual([]);
   });
 });
