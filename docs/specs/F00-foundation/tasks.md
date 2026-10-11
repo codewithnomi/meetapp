@@ -79,6 +79,20 @@ The code-quality and secret checks come early (T2, T3), so every later step is c
   Covers: AC-F00-01, 25, 26, 36, 40, plus the owner's look check for 13. Tests: TC-F00-77, 93 (automated); TC-F00-01, 29, 83, 92 (manual, recorded in verification.md). Check: the owner runs `pnpm dev` from the guide and reviews the gallery.
   Also (found at the T5 milestone): getting-started must include turning mise on in the terminal (`eval "$(mise activate zsh)"` as the last line of `~/.zshrc`), otherwise `pnpm dev` runs on the Mac's default Node and preflight stops it.
 
+## Fix tasks from verification (2026-10-11, verification.md: FAIL)
+- [ ] **T-fix-1: Reliable desktop tests.** One `closeApp` helper that waits for the app to exit and force-stops it after 10 s; every test closes its app in `finally`; TC-F00-16/17 wait until the setting is saved before closing; TC-F00-72 keeps its 30 s rule but measures from the backend switch, with margin for a busy Mac; test profiles deleted afterwards; `tools/test.ts` waits for the backend to exit. Check: 5 full `pnpm test` runs in a row, all green.
+  Covers: AC-F00-08, 34. Tests: TC-F00-16, 17, 72.
+- [ ] **T-fix-2: Monitoring and logging hardening (security review).** Medium: Alloy without `privileged` and the whole-disk mount, Docker socket through a read-only proxy; container logs masked/dropped before Loki (Postgres `DETAIL`/`STATEMENT`, emails, secrets) and terse Postgres error logs; query strings redacted in traces and request logs. Low: Grafana only on 127.0.0.1 (enforce domain); notifier accepts only `application/json` from the expected Host; `pg_monitor`-only database role for monitoring; `OTEL_EXPORTER_OTLP_ENDPOINT` only local or https; `.env` owner-only (0600). Update D041.
+  Covers: AC-F00-20, 23, 41–44; security rules S6, S10. Tests: new unit tests per item + `pnpm test:monitoring`.
+- [ ] **T-fix-3: Small bugs (bug review).** Backend stop: try/finally plus a 10 s backstop; OpenTelemetry shut down once and awaited; notifier skips invalid Grafana alerts (400 only if none valid) and caps alerts per call; `.env` additions handle Windows line endings.
+  Covers: AC-F00-43, 44, 05. Tests: unit tests per item.
+- [ ] **T-fix-4: Documentation brought up to date** (docs review list in verification.md): operations.md, project-structure.md, overview.md, infrastructure.md, claude-guide.md, design.md details, tasks.md T20 text, monitoring-check duration in all places, `.env.example` per-setting comments, a decision entry for the libraries chosen in F00, privacy note on local logs (owner confirms).
+  Covers: AC-F00-26, 36. Tests: TC-F00-77, 93 + docs-keeper re-check.
+- [ ] **T-fix-5: Owner's remaining hands-on checks.** TC-F00-83 (data after a real Mac restart; snapshot in progress.md) and TC-F00-90 (a Mac notification appears when a service is down for over a minute, and on recovery).
+  Covers: AC-F00-40, 44. Tests: TC-F00-83, 90 (manual).
+
+Follow-ups, not blocking (UI and code-quality "Should fix"): listed in verification.md; pick up with the next UI/tooling work.
+
 ## Coverage check
 All 96 test cases are assigned:
 - T1: 78–79
