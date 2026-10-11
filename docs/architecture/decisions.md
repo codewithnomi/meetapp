@@ -262,6 +262,13 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D046: F01 email links, invitations and member visibility
 - **Status:** accepted (2026-10-11, owner)
-- **Decision:** links in emails (verify, reset password, invitation) open **small MeetApp web pages** that do one thing and send the person back to the desktop app; an **email invitation works only for the invited email address**; **every member sees the member list** with names, photos, emails, roles and join dates; a removed person **can rejoin through the invite link** if it is on (the app then suggests replacing the link).
+- **Decision:** ~~links in emails (verify, reset password) open small MeetApp web pages~~ (replaced by D047: codes typed into the app; only the invitation email keeps a small web page); an **email invitation works only for the invited email address**; **every member sees the member list** with names, photos, emails, roles and join dates; ~~a removed person can rejoin through the invite link~~ (replaced by D047: using the join link or code sends a request that the owner or an admin approves, so a removed person can ask again and an admin decides).
 - **Why:** the web pages work on any device (even a phone) without waiting for the web app (F10) or `meetapp://` links (F04); a forwarded invitation can't let a stranger in; coworkers can see who's in the workspace, like Teams and Slack; admins keep control by replacing the invite link.
+- **Cost:** none.
+
+### D047: F01 follows how Microsoft Teams handles accounts and joining
+- **Status:** accepted (2026-10-11, owner: "update according to how Teams actually handles it")
+- **Decision:** sign-in asks for the email first, then the password; confirming an email, resetting a password and (optionally) signing in without a password use a **6-digit code sent by email and typed into the app**, as Microsoft accounts do; a workspace's **join link and join code** (like a Teams team code) send a **request to join** that the owner or an admin approves or rejects, as for a private team in Teams; email invitations need no further approval. Replaces parts of D046 (email web pages for verify/reset; rejoining without approval).
+- **Why:** people coming from Teams find the same steps; codes work in the desktop app without a web app (F10) or `meetapp://` links (F04); accounts exist only after the email is proven, which removes the risk of someone registering another person's email; approval keeps admins in control of who joins.
+- **Sources:** Microsoft support, "Use a link or code to join a team"; Microsoft 365 message MC1437678 (join by code needs owner approval for private teams, rolled out Aug–Sep 2026).
 - **Cost:** none.
