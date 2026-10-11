@@ -5,7 +5,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 // tests into `pnpm test` in T16. Integration tests need the local services; run with `pnpm test:integration`.
 const INTEGRATION_TESTS = ["**/*.integration.test.ts"];
 const integration = process.env["VITEST_INTEGRATION"] === "1";
-// Monitoring checks stop services and wait for alerts (about 20 minutes): only `pnpm test:monitoring` runs them.
+// Monitoring checks stop services and wait for alerts (about 12 minutes): only `pnpm test:monitoring` runs them.
 const MONITORING_TESTS = ["**/*.monitoring.test.ts"];
 const monitoring = process.env["VITEST_MONITORING"] === "1";
 

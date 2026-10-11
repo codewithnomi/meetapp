@@ -2,7 +2,7 @@
 feature: F00
 title: Foundation
 status: approved
-updated: 2026-10-09
+updated: 2026-10-11
 ---
 
 # F00 Foundation: Design (HOW)
@@ -31,7 +31,7 @@ mise.toml  package.json ("packageManager": "pnpm@10.x")  pnpm-workspace.yaml  tu
 eslint.config.js (re-exports packages/config)  .prettierrc  .env.example  .gitignore  .dockerignore
 .github/workflows/ci.yml, nightly-windows.yml   .github/dependabot.yml
 infra/docker-compose.yml   infra/livekit.yaml   infra/monitoring/{gatus,prometheus,alloy,loki,tempo,grafana}/…
-tools/preflight.mjs  tools/check-secrets.mjs  tools/dev.ts + dev-checks.ts  tools/test.ts  tools/monitoring.ts + notifier.ts  tools/check-licenses.ts + licenses.ts  tools/flag.ts  tools/seed.ts  tools/check-structure.ts  tools/check-container.ts  tools/visual.ts  (plus small helpers: cli.ts, database.ts, backend-config.ts, storage-test.ts, email-test.ts)
+tools/preflight.mjs  tools/check-secrets.mjs  tools/dev.ts + dev-checks.ts  tools/test.ts  tools/monitoring.ts + notifier.ts + monitoring-db.ts  tools/check-licenses.ts + licenses.ts  tools/flag.ts  tools/seed.ts  tools/check-structure.ts  tools/check-container.ts  tools/visual.ts  (plus small helpers: cli.ts, database.ts, backend-config.ts, storage-test.ts, email-test.ts)
 apps/desktop   (Electron main + preload)
 apps/web       (React renderer: starter home screen + Settings panel)
 apps/api       (Fastify backend: health, flags, docs, metrics, errors)
@@ -71,9 +71,9 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 - **Only MeetApp's containers, least access (D041, T-fix-2):** Alloy keeps logs and CPU/memory only for containers of the `meetapp` Docker project, so other programs the owner runs in Docker are never read. It is not privileged; it reads container numbers and the Docker disk through read-only host folders (`/sys`, `/var/lib/docker`) and the Docker and containerd sockets, which still allow full control of Docker (accepted only because local and optional; revisit before anything runs online). Container logs pass a cleaning step before Loki (emails and "password=…" masked, database `DETAIL`/`STATEMENT` lines dropped), and PostgreSQL logs errors briefly (no statement text or `DETAIL` lines; a value quoted inside an error message is still masked by the cleaning step, checked live by TC-F00-50). The database exporter uses a read-only `meetapp_monitor` login (pg_monitor rights, password `MONITORING_DB_PASSWORD`), set up by `pnpm monitoring`. Grafana answers only to 127.0.0.1 (enforced domain).
 - Containers reach the API and notifier on the Mac via `host.docker.internal` (works on Docker Desktop and OrbStack; task T1 verifies it).
 - **Alerts (AC-F00-44):** Gatus sends "down" and "recovered" alerts to email (Mailpit SMTP, to `ALERT_EMAIL_TO`) and to the local webhook `tools/notifier.ts`. **Timing (fixed in T20):** a check runs every 30 s, so with `failure-threshold: 3` the alert goes out 60–90 s after a service stops, matching "down for more than 1 minute". (The earlier `2` would alert after only 30–60 s.) A blip shorter than 30 s fails at most one check and never alerts. The status page itself turns red at the first failed check (within 30 s). If Mailpit itself is down, its alert arrives only through the notifier.
-- **Notifier (`tools/notifier.ts`):** a tiny web server on `127.0.0.1:NOTIFIER_PORT` (8090) with `POST /gatus` and `POST /grafana`. It accepts only small JSON bodies (≤ 16 KB) in the expected shape and shows a macOS notification with `osascript`, passing the text as arguments (never pasted into the script), so a service name can't run commands. Runs in the foreground of `pnpm monitoring` (closing it only stops the Mac notifications; email alerts keep working). macOS asks once to allow notifications.
+- **Notifier (`tools/notifier.ts`):** a tiny web server on `127.0.0.1:NOTIFIER_PORT` (8090) with `POST /gatus` and `POST /grafana`. It accepts only small JSON bodies (≤ 16 KB) in the expected shape and shows a macOS notification with `osascript`, passing the text as arguments (never pasted into the script), so a service name can't run commands. **Checks (T-fix-2/3):** the Host must be 127.0.0.1, localhost or host.docker.internal with the notifier's port (else 403) and the Content-Type `application/json` (else 415), so a web page can't show fake alerts; at most 20 alerts per call (else 413); Grafana alerts it can't show are skipped and the rest shown (400 only when none is valid). Runs in the foreground of `pnpm monitoring` (closing it only stops the Mac notifications; email alerts keep working). macOS asks once to allow notifications.
 - **Grafana alerts:** "error spike" fires when 5xx > 5% of requests over 5 min; "disk nearly full" fires when the Docker disk is > 85% full. Both go to the same email and the notifier.
-- **`pnpm monitoring`** (`tools/monitoring.ts`): the same Docker and port checks as `pnpm dev` for the monitoring ports, removes the old monitoring containers (data kept, so they always start after a `docker compose down`), then `docker compose --profile monitoring up -d --wait` (the normal services too), prints the addresses, then runs the notifier. **`pnpm monitoring:stop`** stops only the monitoring containers (data kept). The backend sends traces and logs only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env` (`http://127.0.0.1:4318`).
+- **`pnpm monitoring`** (`tools/monitoring.ts`): the same Docker and port checks as `pnpm dev` for the monitoring ports, removes the old monitoring containers (data kept, so they always start after a `docker compose down`), then `docker compose --profile monitoring up -d --wait` (the normal services too), then creates or updates the read-only `meetapp_monitor` database login (`tools/monitoring-db.ts`, `pg_monitor` rights only, password `MONITORING_DB_PASSWORD`), prints the addresses, then runs the notifier. **`pnpm monitoring:stop`** stops only the monitoring containers (data kept). The backend sends traces and logs only when `OTEL_EXPORTER_OTLP_ENDPOINT` is set in `.env` (`http://127.0.0.1:4318`); only this computer (127.0.0.1, localhost, [::1]) over http or an https address is accepted, anything else stops the backend at start-up (`config/otlp-endpoint.ts`, T-fix-2).
 - **Monitoring checks (`pnpm test:monitoring`, about 12 minutes):** TC-F00-84 to 89 stop and start services and wait for alerts, so they are too slow for `pnpm test` and CI. They live in `infra/monitoring/*.monitoring.test.ts` and run only with this command. It keeps the Mac awake while it runs (`caffeinate -i`, built into macOS): in T20 the Mac's idle sleep froze Docker mid-run and made the timed checks fail. It needs Docker and a free `API_PORT` (it starts its own backend with `NODE_ENV=test` and tracing on, so the failing test route exists). The settings files themselves are checked by fast unit tests in `pnpm test`.
 
 ## 4. Commands
@@ -82,7 +82,7 @@ Every image is pinned by version **and digest**, and every setting comes from `.
 2. Check Docker:
    - if the `docker` command is missing: "Docker isn't installed. See docs/getting-started.md."
    - if `docker info` fails, or doesn't answer within 3 s twice in a row: "Docker isn't running. Open Docker Desktop and try again." (A timeout gets one more try because a busy Docker can be slow to answer once, as seen on GitHub in T20; a clear failure is not retried. At most 6 s.)
-3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`). If `.env` exists but lacks settings that `.env.example` has (added by later work), append them with their comments and say so; existing values are never changed (D041).
+3. If `.env` is missing, copy it from `.env.example` and say so (done before the port check, because the ports are read from `.env`). If `.env` exists but lacks settings that `.env.example` has (added by later work), append them with their comments and say so; existing values are never changed (D041). `.env` is made owner-only (0600) on every start, because it holds the local passwords (T-fix-2).
 4. Check that ports **3000, 5173, 5432, 6379, 7880, 7881, 7882/udp, 9000, 9001, 1025, 8025** (or the values set in `.env`) are free. A port counts as taken if something answers on it or it can't be opened, which also catches programs listening on all addresses. All taken ports are listed at once. Ports already held by this project's own containers (`docker compose ps`) are ignored. If one is taken: "Port 5432 is in use by another program (probably a local PostgreSQL). Stop it or change POSTGRES_PORT in .env."
 5. `docker compose up -d --wait`.
 6. Turborepo (`pnpm dev:apps`, with the shell's settings passed through so `.env` values can be overridden) runs `api` and `desktop` in parallel with hot reload. `apps/web` serves the renderer, the desktop app waits for it and opens the window, and the API runs migrations on startup.
@@ -199,7 +199,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 | `GET /docs`, `/docs/json` | Swagger UI + OpenAPI from `packages/contracts`. Registered **only when `NODE_ENV=development`**; returns 404 otherwise (AC-F00-21). |
 
 - **Config (AC-F00-05):** `config.ts` validates `process.env` with Zod at startup. If anything is missing it prints the setting's name and "see .env.example", then exits with code 1. It never prints a setting's value. In development the API reads the root `.env` (`node --env-file-if-exists`); values already set in the shell win.
-- **Logger masking:** besides `redact`, error messages and stacks are masked: email addresses and `password=…`/`token: …`-style values become `[email]`/`[redacted]`.
+- **Logger masking:** besides `redact`, error messages and stacks are masked: email addresses and `password=…`/`token: …`-style values become `[email]`/`[redacted]` (also JSON-style `"password":"…"`). **Web addresses (T-fix-2):** the request log shows the address with the values of sensitive names (`SENSITIVE_QUERY_PARAMS` in `plugins/logging.ts`: token, code, state, password, key, email …, any letter case) replaced by `REDACTED`; traces hide the same names (`httpInstrumentationConfig` in `observability/telemetry.ts`). A broken address (`?%`) is logged as written.
 - **Errors (AC-F00-20):**
   - every request gets a `requestId`
   - unknown errors return `500 {error:{code:"INTERNAL_ERROR", message:"Something went wrong. Reference: <id>", requestId}}`, never a stack trace
@@ -208,7 +208,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
   - pino JSON with `requestId` and `traceId`
   - `redact` removes authorization, cookie, password, token, secret, email, name, firstName, lastName and displayName fields, plus request bodies
   - an error serializer masks email-like strings inside messages, such as database errors (S10)
-- **Traces and logs** go over OTLP to Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`) when it is set (AC-F00-43). Without it the API runs normally. **On stop** (found in T20) the backend first sends whatever it still holds (traces and logs are sent in batches every few seconds; Sentry reports too), at most 5 s, then exits (`observability/shutdown.ts`). Before, `process.exit()` dropped the last batch, so the request that came just before a stop was missing from the monitoring.
+- **Traces and logs** go over OTLP to Alloy (`OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318`) when it is set (AC-F00-43). Without it the API runs normally. **On stop** (found in T20) the backend first sends whatever it still holds (traces and logs are sent in batches every few seconds; Sentry reports too), at most 5 s, then exits (`observability/shutdown.ts`). **Always exits (T-fix-3):** closing runs in try/finally (exit code 1 if something fails to close), telemetry is shut down only once, and a 10 s backstop ends the process if closing hangs. Before, `process.exit()` dropped the last batch, so the request that came just before a stop was missing from the monitoring.
 - **Sentry (AC-F00-22, D036):** `@sentry/node` 11 starts only if `SENTRY_DSN` is set, from `src/instrumentation.ts` (loaded with `--import`). `dataCollection` has every category off (Sentry 11 replaced `sendDefaultPii`); it no longer sets up OpenTelemetry itself, so our own OTel runs alone. Its `beforeSend` also removes `request.data`, cookies, headers, query string and `user`. Only unexpected 500 errors are reported, tagged with the requestId.
 - **Flags cache:** 10 s; requests arriving together after expiry share one database read.
 - **Metrics labels:** the route pattern (e.g. `/api/v1/flags`), never the raw URL.
@@ -234,6 +234,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 |---|---|---|
 | `feature_flags` | `id` (uuid, primary key), `key` (text, unique), `enabled` (bool, default false), `description` (text), `created_at`, `updated_at` | Turn features on and off without a restart (AC-F00-34) |
 
+- Not a table: the `meetapp_monitor` database login (read-only monitoring rights) is created by `pnpm monitoring`, not by a migration.
 - Migrations run automatically when the API starts (AC-F00-04).
 - `pnpm seed` adds sample flags (`home.welcome_banner` on, `labs.preview_features` off); seeding twice adds nothing. `pnpm seed:clear` removes only those. Users and a workspace join the seed in F01 (AC-F00-45).
 - `pnpm flag <key> on|off` switches an existing flag; `pnpm flag list` shows all. Keys are lower-case words joined by `.`, `_` or `-` (max 64). Bad input is refused before the database is touched; an unknown key is an error, never silently created.
@@ -295,6 +296,7 @@ Layers per `backend.md`: `modules/<area>/{routes,service,repository,schemas}`, p
 - Docs pages only exist in development.
 - Sentry is off by default and never receives personal data.
 - Nothing is fetched from Google at runtime.
+- Local monitoring (T-fix-2, D041): logs and traces kept 7 days on the Mac only, emails and secrets masked before storage; Alloy not privileged; read-only `meetapp_monitor` database login; Grafana answers only to 127.0.0.1; the notifier accepts only JSON from its own address; traces go only to this computer or https; `.env` owner-only.
 
 ## Cost impact
 **$0.** Rough CI budget on GitHub Free (2,000 min/month):

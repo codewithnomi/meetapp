@@ -42,7 +42,7 @@ The first time, Docker downloads the services (a few minutes). After that it tak
 - a table with the address of every service,
 - the MeetApp window with the starter home screen.
 
-On the first run `pnpm dev` creates your settings file `.env` from `.env.example` and says so. Later updates may add settings; `pnpm dev` adds any missing ones to `.env` and tells you.
+On the first run `pnpm dev` creates your settings file `.env` from `.env.example` and says so. Later updates may add settings; `pnpm dev` adds any missing ones to `.env` and tells you. `.env` holds local passwords, so `pnpm dev` makes it readable only by you.
 
 **Stop:** close the window and press Ctrl+C in the terminal. `pnpm dev:stop` stops the services; your data is kept.
 

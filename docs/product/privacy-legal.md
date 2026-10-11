@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-11
 ---
 
 # Privacy & Legal Requirements
@@ -25,7 +25,7 @@ updated: 2026-10-09
 A public list of every service that touches user data, and why:
 LiveKit Cloud (development only; self-hosted in production), Deepgram (speech-to-text), Anthropic (AI), embedding provider, Sentry (errors), cloud hosting, email provider, payment provider.
 - Use only providers that **don't train on our customers' data** and offer a data processing agreement.
-- **Local monitoring (F00, on the developer's Mac only):** the backend's logs and traces and the MeetApp containers' logs are kept for 7 days in Loki and Tempo on that Mac, never sent to a third party. Secrets and personal data are removed before logging (security rule S10); the remaining gaps (database error details, web-address query parts) are being closed in F00 T-fix-2. (Confirmed by the owner on 2026-10-11.)
+- **Local monitoring (F00, on the developer's Mac only):** the backend's logs and traces and the MeetApp containers' logs are kept for 7 days in Loki and Tempo on that Mac, never sent to a third party. Secrets and personal data are removed before logging (security rule S10); database error details and secrets in web addresses are removed too (F00 T-fix-2). The cleaning works on patterns, so an unusual secret format could still get through. (Confirmed by the owner on 2026-10-11.)
 
 ## 4. Documents needed before launch
 Privacy Policy · Terms of Service · Data Processing Agreement (for companies) · Cookie policy (web) · Acceptable Use Policy · Sub-processor list.

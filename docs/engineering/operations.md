@@ -15,7 +15,7 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 | **What is down right now?** | **Gatus** (status page, configured from a file, D030) | A green/red list: Backend, Database, Cache, Call server, File storage, Email (AI worker added in F05). Checked every 30 seconds, with history. |
 | **Why is it down / slow?** | **Grafana** dashboards | One "MeetApp overview" dashboard: requests per second, error rate, response time, database connections, cache status, CPU and memory per container (queue length, calls and participants added with F02/F05) |
 | Numbers over time (metrics) | **Prometheus** (stores) + **Grafana Alloy** (collects, D041) | The backend's `/metrics`, LiveKit, and Alloy's built-in exporters for PostgreSQL, Redis, containers and the Docker disk. File storage (RustFS) has no metrics; only the status page watches it |
-| What happened (logs) | **Loki** | All services' logs in one place, searchable by request ID |
+| What happened (logs) | **Loki** | The backend's logs and the MeetApp containers' logs (only the `meetapp` Docker project) in one place, searchable by request ID; emails and secrets masked before they are stored |
 | Where a request failed (traces) | **Tempo** + **OpenTelemetry** | Each request's path through backend → database → AI worker, with timings and the failing step |
 | Crashes with code location | **Sentry** (free, optional) | Error + stack trace + which release |
 | Being told: a service is down | **Gatus** alerts | Email (Mailpit locally) and a Mac notification when a service fails 3 checks in a row (60–90 s), and again when it recovers |
@@ -23,7 +23,7 @@ The same monitoring runs on the owner's Mac now and on servers later, so we alwa
 
 Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts it, prints the addresses and keeps the Mac notification helper running (`pnpm monitoring:stop` stops it). Logs and traces from the API go to Grafana Alloy, which forwards them to Loki and Tempo; both keep 7 days. How to use it: [runbooks/monitoring.md](../runbooks/monitoring.md). Claude uses the same tools through `/diagnose`.
 
-**Local-only risks (accepted for the Mac, revisit before anything runs online):** Alloy needs wide access to Docker to read container numbers (being narrowed in F00 T-fix-2); Grafana opens without a login as a read-only viewer; the notification helper listens on 127.0.0.1 only. Every port is bound to 127.0.0.1.
+**Local-only risks (accepted for the Mac, revisit before anything runs online):** Alloy is not privileged and has no whole-disk access, but it reads the Docker and containerd sockets, which allow full control of Docker (D041); Grafana opens without a login as a read-only viewer and answers only to 127.0.0.1; Prometheus and the Alloy page have no login; the notification helper listens on 127.0.0.1 only and accepts only JSON from its own address. The database numbers are read with a read-only `meetapp_monitor` login (pg_monitor rights). Every port is bound to 127.0.0.1.
 
 ## 1. Monitoring later in production (same tools, plus)
 | What | Tool | Example |

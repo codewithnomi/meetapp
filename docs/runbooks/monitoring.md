@@ -3,9 +3,10 @@
 Optional. It shows what is up or down, live numbers, logs and traces, and sends alerts. Everything is free and runs only on this Mac (design.md section 3, decisions D030 and D041).
 
 ## Start and stop
-- `pnpm monitoring` starts it (and the normal services if they aren't running), prints the addresses, then keeps running to show **Mac notifications** for alerts. Keep that window open; Ctrl+C closes only the notifications (alert emails keep working).
+- `pnpm monitoring` starts it (and the normal services if they aren't running), sets up the monitoring's own read-only database login (`meetapp_monitor`, password `MONITORING_DB_PASSWORD` in `.env`), prints the addresses, then keeps running to show **Mac notifications** for alerts. Keep that window open; Ctrl+C closes only the notifications (alert emails keep working).
 - `pnpm monitoring:stop` stops the monitoring containers. Their data is kept.
-- To see the backend's **logs and traces**, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` in `.env` and restart `pnpm dev`.
+- To see the backend's **logs and traces**, set `OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318` in `.env` and restart `pnpm dev`. Only an address on this computer (127.0.0.1, localhost) or an https address is accepted; anything else stops the backend at start-up.
+- **"The monitoring database login could not be set up":** the database isn't running yet (start `pnpm dev` or run `pnpm monitoring` again), or `MONITORING_DB_PASSWORD` in `.env` contains characters other than letters, digits, `_`, `.` and `-`.
 
 ## Where to look
 | What | Address | Use it for |
@@ -30,4 +31,4 @@ Every error answer carries a `requestId`. In Grafana → Explore → Loki, run `
 `pnpm test:monitoring` (about 12 minutes, keeps the Mac awake while it runs) stops each service in turn and checks the status page, the dashboard, logs, traces and the alerts. It needs Docker, and `pnpm dev` and `pnpm monitoring` must be closed first (it starts its own backend and notifier).
 
 ## Privacy
-Only MeetApp's own containers are read. Other programs you run in Docker are never collected (D041).
+Only MeetApp's own containers are read. Other programs you run in Docker are never collected (D041). Logs and traces stay on this Mac for 7 days (Loki and Tempo) and are never sent anywhere else; email addresses and secrets are masked before they are stored.

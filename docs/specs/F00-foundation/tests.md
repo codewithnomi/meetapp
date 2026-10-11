@@ -14,8 +14,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 
 **Monitoring checks:** TC-F00-84 to 89 stop and start services and wait for alerts (about 12 minutes), so they run with `pnpm test:monitoring`, not in `pnpm test` or CI (design.md section 3).
 
-**Neutral wording for pending owner decisions:**
-- AC-F00-41/44: "the status page" means the chosen tool (Gatus proposed in D030, Uptime Kuma in the AC). Tests read its status through its HTTP API.
+**How some AC words are read in the tests:**
+- AC-F00-41/44: "the status page" means the chosen tool (Gatus, D030). Tests read its status through its HTTP API.
 - AC-F00-45: "seed data" means whatever F00's seed covers (feature flags proposed; users and a workspace possibly in F01). Tests assert "every seeded record", not a fixed list.
 - AC-F00-19: merge-blocking is tested as "every check appears on the PR and a failing check marks the PR failing". If branch protection is enabled, TC-F00-47 also asserts the Merge button is blocked.
 
@@ -28,7 +28,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** manual (performance)
 - **Given** the owner's Mac with Docker running, images already downloaded, nothing of MeetApp running
 - **When** the owner runs `pnpm dev` and starts a stopwatch
-- **Then** within 2 minutes LiveKit, Postgres, Redis, storage (RustFS), Mailpit and the API are healthy, the MeetApp window is open, and the terminal prints an address table with one line per service (API, renderer, LiveKit, Postgres, Redis, MinIO, Mailpit). The time is recorded in `verification.md`.
+- **Then** within 2 minutes LiveKit, Postgres, Redis, storage (RustFS), Mailpit and the API are healthy, the MeetApp window is open, and the terminal prints an address table with one line per service (API, renderer, LiveKit, Postgres, Redis, RustFS, Mailpit). The time is recorded in `verification.md`.
 
 ### TC-F00-02: Docker not installed
 - **Covers:** AC-F00-01
@@ -64,7 +64,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Level:** unit
 - **Given** a temp project folder with `.env.example` and no `.env`
 - **When** preflight runs
-- **Then** `.env` is created with the same content as `.env.example` and a message says so; an existing `.env` is never overwritten
+- **Then** `.env` is created with the same content as `.env.example` and a message says so; an existing `.env` is never overwritten; `.env` is owner-only (0600) after every start, also when settings are added or an older `.env` was readable by others (security review, T-fix-2)
 
 ### TC-F00-07: Health returns 200 when everything is up
 - **Covers:** AC-F00-02
@@ -383,6 +383,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** the request from TC-F00-49 with an `Authorization` and `Cookie` header, and the captured pino output
 - **When** the log lines for that request are inspected
 - **Then** they contain the same requestId and none of: `hunter2`, `alice@example.com`, the authorization/cookie values, or the request body
+- **Also (security review, T-fix-2):** sensitive names in a web address (`?token=`, `?code=`, `?password=` …, any letter case) are shown as `REDACTED` in the request log and hidden in traces (both directions); a broken address such as `?%` is logged as written and the request still gets its normal answer; emails and `password=…`/`"password":"…"` values are masked in free text. **Live (monitoring check):** a database error carrying a fake email and password reaches Loki with them masked (Alloy's cleaning step); `DETAIL`/`STATEMENT` lines are dropped and PostgreSQL logs errors tersely
 
 ### TC-F00-51: Docs available in development
 - **Covers:** AC-F00-21
@@ -404,6 +405,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** `SENTRY_DSN` unset (and, separately, `OTEL_EXPORTER_OTLP_ENDPOINT` unset)
 - **When** the API and the Electron main start
 - **Then** Sentry/OTel init is not called, startup succeeds and health returns 200
+- **Also (security review, T-fix-2):** `OTEL_EXPORTER_OTLP_ENDPOINT` is accepted only for 127.0.0.1, localhost, [::1] over http or any https address; any other value stops the backend at start-up
 
 ### TC-F00-54: Sentry receives no personal data, security
 - **Covers:** AC-F00-22
@@ -659,6 +661,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** monitoring running and the test route from TC-F00-49
 - **When** the failing request is made and its requestId taken from the response
 - **Then** within 30 s Loki returns log lines with that requestId and a traceId, and Tempo returns that trace with the failing span marked as error; the log lines still pass the redaction checks of TC-F00-50
+- **Also (bug review, T-fix-3):** a span made just before the backend stops still reaches the collector; telemetry is shut down once only; the backend always exits (try/finally, a 10 s backstop, exit code 1 when closing fails)
 
 ### TC-F00-88: Down and recovered alerts are sent
 - **Covers:** AC-F00-44
@@ -680,6 +683,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** the files in `infra/monitoring/` and `infra/docker-compose.yml`
 - **When** the test reads them
 - **Then** Gatus watches backend, database, cache, call server, file storage and email every 30 s with `failure-threshold: 3`, `success-threshold: 2` and `send-on-resolved: true`, alerting by email and the notifier; every monitoring service is in the `monitoring` profile; Grafana has the "MeetApp overview" dashboard with panels for request count, error rate, response time, database connections, cache status and CPU/memory per container, plus the "error spike" and "disk nearly full" alert rules sent to email and the notifier; every new `.env` setting is documented in `.env.example`
+- **Also (security review, T-fix-2):** Alloy is not privileged and mounts no whole disk (only read-only `/sys`, `/var/lib/docker`, the Docker and containerd sockets); it keeps only the `meetapp` project's containers; the database exporter uses the `meetapp_monitor` login with `pg_monitor` rights only (password: letters, digits, `_ . -`; set up by `pnpm monitoring`, errors never show the password); Grafana enforces the 127.0.0.1 domain
 
 ### TC-F00-96: The notifier shows only well-formed alerts, safely
 - **Covers:** AC-F00-44
@@ -687,6 +691,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F00-07 [AC-F00-02] health re
 - **Given** the notifier with a fake "show notification" step
 - **When** it receives a Gatus "TRIGGERED"/"RESOLVED" call, a Grafana "firing"/"resolved" call, a wrong path, a wrong method, a body that is not JSON, a body over 16 KB, and a service name containing quotes and `do shell script`
 - **Then** valid calls show "<service> is down" / "<service> recovered" (204); the others answer 404/405/400/413 and show nothing; the macOS command receives the text as separate arguments, never inside the script text
+- **Also (T-fix-2/3):** a wrong Host (not 127.0.0.1, localhost or host.docker.internal with the notifier's port) gets 403; a Content-Type other than `application/json` gets 415; more than 20 alerts in one call gets 413; in a Grafana batch, alerts that can't be shown (unknown state, missing name) are skipped and the rest are shown (400 only when none is valid)
 
 ### TC-F00-90: macOS notification appears
 - **Covers:** AC-F00-44
