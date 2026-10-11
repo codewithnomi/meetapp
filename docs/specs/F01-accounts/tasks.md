@@ -1,7 +1,7 @@
 ---
 feature: F01
 title: Accounts & workspaces
-status: draft
+status: approved
 updated: 2026-10-11
 ---
 
