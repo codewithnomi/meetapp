@@ -7,6 +7,8 @@ export const healthRoutes: FastifyPluginAsyncZod<{ health: HealthService }> = as
   app.get(
     "/api/v1/health",
     {
+      // Before sign-in too: the apps check health and flags on the sign-in screen.
+      config: { access: "public" },
       schema: {
         summary: "Is the backend and every service it needs working?",
         description:

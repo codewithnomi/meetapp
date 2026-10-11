@@ -535,7 +535,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F01-08 [AC-F01-04] wrong cod
 - **Level:** unit
 - **Given** the five templates: code (sign-up, sign-in, reset), invitation, request to join, request decided, "someone tried to create an account"
 - **When** each is rendered with sample data, including a workspace and person name of `<script>alert(1)</script>`
-- **Then** each has an HTML and a plain-text version, the MeetApp name and logo (placeholder), the validity time where relevant (15 minutes / 7 days), no request for a password, all text from translation keys (no literal strings, checked against the translation file), code emails show the code prominently and "If you didn't ask for this, ignore this email", and the HTML in names is escaped in both versions
+- **Then** each has an HTML and a plain-text version, the MeetApp name and logo (placeholder), the validity time where relevant (15 minutes / 7 days), no request for a password, all text from translation keys (no literal strings, checked against the translation file), code emails show the code prominently and "If you didn't ask for this, ignore this email", and HTML in names is escaped in the HTML version, stays inert text in the plain-text version, and angle brackets never appear in subjects; colors come from the design tokens
 
 ### TC-F01-71: Accessibility and look of new components
 - **Covers:** AC-F01-28

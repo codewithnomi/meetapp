@@ -5,15 +5,19 @@ import { serializerCompiler, validatorCompiler } from "@fastify/type-provider-zo
 import Fastify, { LogController, type FastifyInstance } from "fastify";
 import type { DestinationStream } from "pino";
 import type { Config } from "./config/config.ts";
+import { accountsRoutes } from "./modules/accounts/accounts.routes.ts";
+import type { AccountsService } from "./modules/accounts/accounts.service.ts";
 import { flagsRoutes } from "./modules/flags/flags.routes.ts";
 import { createFlagsService, type FlagsSource } from "./modules/flags/flags.service.ts";
 import { healthRoutes } from "./modules/health/health.routes.ts";
 import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
+import { authRoutes, authSessionReader, type Auth } from "./plugins/auth.ts";
 import { registerDocs } from "./plugins/docs.ts";
 import { registerErrorHandling } from "./plugins/errors.ts";
 import { loggerOptions } from "./plugins/logging.ts";
 import { registerMetrics, type MetricsSources } from "./plugins/metrics.ts";
+import { registerSessionCheck } from "./plugins/session.ts";
 
 /** Only the app's own pages may call the backend from a browser (AC-F00-23, design.md section 9). */
 export const ALLOWED_ORIGINS = ["app://meetapp", "http://127.0.0.1:5173"];
@@ -27,6 +31,8 @@ export interface BuildOptions {
   /** Where feature flags come from (the database in server.ts). Without it every flag list is empty (= all off). */
   flags?: FlagsSource;
   metrics?: MetricsSources;
+  /** Sign-in and accounts (F01). Without them nobody is signed in: only public routes answer. */
+  accounts?: { auth: Auth; service: AccountsService };
 }
 
 const NO_FLAGS: FlagsSource = { list: async () => [] };
@@ -46,11 +52,16 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
   registerErrorHandling(app);
   registerMetrics(app, options.metrics);
+  registerSessionCheck(app, options.accounts ? authSessionReader(options.accounts.auth) : undefined);
   await app.register(cors, { origin: ALLOWED_ORIGINS });
   if (config.NODE_ENV === "development") await registerDocs(app);
 
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
+  if (options.accounts) {
+    await app.register(authRoutes, { auth: options.accounts.auth });
+    await app.register(accountsRoutes, { accounts: options.accounts.service });
+  }
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }

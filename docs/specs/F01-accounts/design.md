@@ -28,10 +28,11 @@ apps/api/src/
   plugins/session.ts          reads the session on every request (request.user); 401 if missing; terms gate
   plugins/rate-limit.ts       Redis counters for the per-email, per-user and per-address limits (S5)
   plugins/workspace-access.ts loads the caller's membership for :workspaceId; 404 if not a member (S2)
-  modules/accounts/           sign-up with code, desktop hand-off, profile, preferences, photo; emails/
-  modules/workspaces/         workspaces, members, roles (workspaces.permissions.ts); emails/
-  modules/invitations/        email invitations and the invitation web page (page/); emails/
-  modules/join-requests/      join link and code, requests to join, the daily expiry job; emails/
+  emails/                     all email templates (HTML + text; words in emails/locales/en.json) and the outbox (BullMQ)
+  modules/accounts/           sign-up with code, desktop hand-off, profile, preferences, photo
+  modules/workspaces/         workspaces, members, roles (workspaces.permissions.ts)
+  modules/invitations/        email invitations and the invitation web page (page/)
+  modules/join-requests/      join link and code, requests to join, the daily expiry job
 packages/db/src/schema/       auth tables (Better Auth) + workspace tables; migrations
 packages/contracts/src/       Zod schemas for every new endpoint (shared with the app)
 apps/web/src/
@@ -416,6 +417,14 @@ Each item is checked against the current docs and source before the task that us
 6. Account linking without "trusted providers"; the Microsoft `xms_edov` claim and the consumer-tenant check.
 7. Signing in with an unknown email takes as long as a wrong password.
 8. A Microsoft photo arriving as data in `user.image` (we ignore it and fetch the photo ourselves).
+
+**Checked in T3 (Better Auth 1.7.7, source read):**
+- Item 1: `disabledPaths` is a block list, so our Fastify route keeps its own **allow-list** and forwards nothing else.
+- Item 2: all four emailOTP options exist.
+- Item 4: Better Auth stores session tokens readable and looks them up by value. A thin wrapper around its database adapter therefore stores only a SHA-256 fingerprint of each session token and looks up by fingerprint, so AC-33 holds (D048).
+- Item 5: `revokeSessionsOnPasswordReset` and `account.encryptOAuthTokens` exist.
+- Item 7: password sign-in hashes the given password even for an unknown email, so timing matches.
+- Items 3, 6 and 8 are checked in T5 and T7.
 
 ## Decisions made here
 - **D048 (proposed):**

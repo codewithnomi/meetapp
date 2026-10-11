@@ -1,7 +1,18 @@
 // The one error format every endpoint uses (docs/engineering/backend.md, AC-F00-20).
 import { z } from "zod";
 
-export const ERROR_CODES = ["BAD_REQUEST", "NOT_FOUND", "INTERNAL_ERROR"] as const;
+export const ERROR_CODES = [
+  "BAD_REQUEST",
+  "NOT_FOUND",
+  "INTERNAL_ERROR",
+  // F01: signing in and terms.
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "TERMS_REQUIRED",
+  "PASSWORD_WEAK",
+] as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[number];
 
 export const errorResponseSchema = z
   .object({

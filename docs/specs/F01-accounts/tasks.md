@@ -27,7 +27,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-59.
   - Check: migrations run on an empty and on the F00 database; a second owner and a second personal workspace are refused by the database.
 
-- [ ] **T3: Better Auth in the API.**
+- [x] **T3: Better Auth in the API.**
   - `plugins/auth.ts`: route allow-list, emailOTP, bearer, scrypt, 30-day sliding sessions, common-password hook.
   - `plugins/session.ts` with the terms gate.
   - The BullMQ email queue, with code and "someone tried" email templates (HTML + text, translated).

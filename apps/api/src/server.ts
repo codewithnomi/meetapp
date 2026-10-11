@@ -2,13 +2,18 @@
 // listen (AC-F00-04, 05). Ctrl+C or a stop signal closes everything cleanly.
 import { databaseUrl, runMigrations } from "@meetapp/db";
 import { pino } from "pino";
-import { buildApp } from "./app.ts";
+import { ALLOWED_ORIGINS, buildApp } from "./app.ts";
+import { createEmailOutbox } from "./emails/outbox.ts";
+import { createAccountsRepository } from "./modules/accounts/accounts.repository.ts";
+import { createAccountsService } from "./modules/accounts/accounts.service.ts";
 import { createFlagsRepository } from "./modules/flags/flags.repository.ts";
 import { ConfigError, loadConfig, type Config } from "./config/config.ts";
 import { runShutdownHooks } from "./observability/shutdown.ts";
+import { createAuth } from "./plugins/auth.ts";
 import { loggerOptions } from "./plugins/logging.ts";
 import { createCacheProvider } from "./providers/cache.ts";
 import { createDatabaseProvider } from "./providers/database.ts";
+import { createEmailProvider } from "./providers/email.ts";
 import { createLiveKitProvider } from "./providers/livekit.ts";
 import { createStorageProvider } from "./providers/storage.ts";
 
@@ -30,11 +35,15 @@ const database = createDatabaseProvider(config, log);
 const cache = createCacheProvider(config, log);
 const livekit = createLiveKitProvider(config);
 const storage = createStorageProvider(config);
+const email = createEmailProvider(config);
+const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
+const auth = createAuth({ config, db: database.db, outbox: emails.outbox, log, trustedOrigins: ALLOWED_ORIGINS });
 
 const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
   flags: createFlagsRepository(database.db),
   metrics: { databasePool: database.poolStats, cacheReady: cache.isReady },
+  accounts: { auth, service: createAccountsService(createAccountsRepository(database.db)) },
 });
 
 /** Closes everything and always exits: a failure while closing must not leave the backend half-closed. */
@@ -44,7 +53,7 @@ async function shutDown(): Promise<void> {
   let code = 0;
   try {
     await app.close();
-    await Promise.allSettled([database.close(), cache.close(), storage.close()]);
+    await Promise.allSettled([emails.close(), database.close(), cache.close(), storage.close(), email.close()]);
   } catch (error) {
     log.error({ err: error }, "Closing the backend failed");
     code = 1;

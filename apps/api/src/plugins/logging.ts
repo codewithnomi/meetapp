@@ -2,7 +2,20 @@
 // (AC-F00-20, security rule S10). Request bodies are never logged.
 import { pino, type LoggerOptions } from "pino";
 
-const SECRET_FIELDS = ["password", "token", "secret", "authorization", "cookie", "email"];
+// "code" is not here on purpose: error codes must stay readable; email codes only travel in request
+// bodies, which are never logged.
+const SECRET_FIELDS = [
+  "password",
+  "newPassword",
+  "currentPassword",
+  "otp",
+  "verifier",
+  "token",
+  "secret",
+  "authorization",
+  "cookie",
+  "email",
+];
 const NAME_FIELDS = ["name", "firstName", "lastName", "displayName"];
 const SENSITIVE = [...SECRET_FIELDS, ...NAME_FIELDS];
 
@@ -11,6 +24,7 @@ const REDACT_PATHS = [
   "req.headers.authorization",
   "req.headers.cookie",
   'req.headers["set-cookie"]',
+  'res.headers["set-auth-token"]',
   "req.body",
   "body",
   ...SENSITIVE.flatMap((field) => [field, `*.${field}`, `*.*.${field}`]),

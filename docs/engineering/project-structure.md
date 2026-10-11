@@ -48,13 +48,14 @@ meetapp/
 │   │       ├── config/            Settings from .env, validated at start
 │   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts, session.ts), rate-limit.ts, workspace-access.ts (F01)
 │   │       ├── modules/           One folder per business area:
-│   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; each may hold emails/ templates; invitations/page/ is the invitation web page)
+│   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; invitations/page/ is the invitation web page)
 │   │       │   └── meetings/
 │   │       │       ├── meetings.routes.ts       HTTP endpoints only
 │   │       │       ├── meetings.service.ts      Business rules
 │   │       │       ├── meetings.repository.ts   Database access only
 │   │       │       ├── meetings.schemas.ts      Zod input/output (or from packages/contracts)
 │   │       │       └── meetings.test.ts
+│   │       ├── emails/            Email templates (HTML + text, words in emails/locales/) and the email outbox queue (F01)
 │   │       ├── jobs/              Background jobs (BullMQ)
 │   │       ├── observability/     Tracing, Sentry, clean shutdown
 │   │       └── providers/         Outside services behind interfaces, one file each: database, cache, livekit, storage, email
