@@ -2,3 +2,4 @@
 // "@meetapp/ui/styles.css".
 export * from "./atoms/index.ts";
 export * from "./molecules/index.ts";
+export * from "./templates/index.ts";

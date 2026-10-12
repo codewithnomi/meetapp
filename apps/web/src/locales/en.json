@@ -32,6 +32,130 @@
       "previewPrimary": "Start meeting",
       "previewGhost": "Copy invite link",
       "previewBadge": "Host"
+    },
+    "account": {
+      "title": "Account",
+      "signedInAs": "Signed in as {{email}}",
+      "signOut": "Sign out",
+      "signingOut": "Signing out"
     }
+  },
+  "auth": {
+    "brand": "MeetApp",
+    "tiles": {
+      "headline": "Meetings that remember what was said.",
+      "description": "Calls with up to 100 people, live captions with names, and minutes in your inbox when the meeting ends."
+    },
+    "signIn": {
+      "title": "Sign in to MeetApp",
+      "subtitle": "Use your email to sign in.",
+      "email": "Email",
+      "continue": "Continue with email",
+      "newHere": "New to MeetApp?",
+      "createAccount": "Create an account",
+      "legal": "By continuing you agree to the Terms and the Privacy Policy. Meetings with AI notes show a notice to everyone.",
+      "placeholder": "aisha@aria.com"
+    },
+    "password": {
+      "title": "Enter your password",
+      "subtitle": "Or get a one-time code by email instead.",
+      "label": "Password",
+      "forgot": "Forgot password?",
+      "submit": "Sign in",
+      "submitting": "Signing in",
+      "useCode": "Email me a code instead",
+      "changeEmail": "Use a different email: {{email}}"
+    },
+    "create": {
+      "title": "Create your account",
+      "subtitle": "Free for individuals and teams.",
+      "email": "Email",
+      "name": "Your name",
+      "nameHint": "Shown to people in your meetings.",
+      "password": "Password",
+      "passwordHint": "At least 10 characters. Avoid common passwords.",
+      "terms": "I agree to the Terms and the Privacy Policy, and I am 16 or older.",
+      "submit": "Create account",
+      "submitting": "Creating your account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "steps": {
+        "details": "Your details",
+        "detailsHint": "Name, email and a password.",
+        "confirm": "Confirm your email",
+        "confirmHint": "Type the 6-digit code we email you.",
+        "done": "You're in",
+        "doneHint": "Your personal workspace is ready. Create or join a company workspace any time.",
+        "footer": "Joining a team? Use the email address your invitation was sent to."
+      }
+    },
+    "code": {
+      "titles": {
+        "signUp": "Confirm your email",
+        "signIn": "Sign in with a code",
+        "reset": "Reset your password"
+      },
+      "sentBefore": "We sent a 6-digit code to",
+      "sentAfter": "Type it here to confirm it's you.",
+      "label": "Code",
+      "digit": "Digit {{position}} of {{length}}",
+      "hint": "Paste works too. Code expires in {{time}}.",
+      "expired": "This code has expired. Send a new code.",
+      "submit": "Confirm",
+      "submitting": "Checking the code",
+      "noEmail": "No email? Check spam.",
+      "resend": "Send a new code",
+      "resent": "We sent a new code. The old one no longer works.",
+      "differentEmail": "Use a different email",
+      "asideFrom": "From MeetApp · Your code",
+      "asideRule": "Works for 15 minutes, once. If you didn't ask for it, ignore the email.",
+      "asideNote": "The same code screen confirms a new email, signs you in without a password, and lets you reset a forgotten one.",
+      "asideSample": "482 913"
+    },
+    "newPassword": {
+      "title": "Choose a new password",
+      "forEmail": "For {{email}}",
+      "label": "New password",
+      "hint": "At least 10 characters. Avoid common passwords.",
+      "repeat": "Type it again",
+      "submit": "Save and sign in",
+      "submitting": "Saving",
+      "note": "You'll stay signed in here. Other devices will need the new password.",
+      "back": "Back to sign in",
+      "steps": {
+        "email": "Email entered",
+        "code": "Code confirmed",
+        "password": "New password",
+        "footer": "For your safety, every other computer and phone signed in to your account is signed out after the change."
+      }
+    },
+    "terms": {
+      "title": "Before you start",
+      "body": "Accept the Terms and the Privacy Policy to use MeetApp.",
+      "agree": "I agree to the Terms and the Privacy Policy, and I am 16 or older.",
+      "submit": "Continue",
+      "submitting": "Saving"
+    },
+    "validation": {
+      "email": "Enter a full email address, like aisha@aria.com.",
+      "name": "Enter your name (at most 60 characters).",
+      "passwordShort": "Use at least 10 characters.",
+      "passwordLong": "Use at most 128 characters.",
+      "passwordsDiffer": "The two passwords don't match.",
+      "terms": "Tick the box to continue.",
+      "code": "Type all 6 digits."
+    },
+    "errors": {
+      "network": "Can't reach MeetApp. Check your connection.",
+      "retry": "Retry",
+      "wrongPassword": "Email or password is wrong. Check both, or use a code instead.",
+      "codeInvalid": "That code isn't right. Check the email, or send a new code.",
+      "codeTooManyTries": "Too many wrong tries for this code. Send a new code.",
+      "codeExpired": "This code has expired. Send a new code.",
+      "passwordCommon": "This password is too common. Choose another one.",
+      "tooManyAttempts": "Too many attempts, try again in {{minutes}} minute(s).",
+      "generic": "Something went wrong. Try again."
+    },
+    "loading": "Loading"
   }
 }

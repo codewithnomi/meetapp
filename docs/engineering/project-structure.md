@@ -37,7 +37,7 @@ meetapp/
 │   │   └── src/
 │   │       ├── app/               Routing, providers (theme, query, i18n), error boundary
 │   │       ├── pages/             One folder per screen: MeetingPage/, HomePage/ …
-│   │       ├── features/          Page-level logic per feature: auth/, meetings/, chat/, ask-ai/
+│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, meetings/, chat/, ask-ai/
 │   │       │   └── meetings/      hooks (useJoinMeeting), api calls, state stores
 │   │       └── locales/           Translation files: en.json …
 │   │

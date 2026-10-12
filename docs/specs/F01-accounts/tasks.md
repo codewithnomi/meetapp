@@ -83,7 +83,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-84, 85.
   - Check: from the page, the token can't be found in storage, cookies or responses.
 
-- [ ] **T9: Sign-in screens. (milestone)**
+- [x] **T9: Sign-in screens. (milestone)**
   - React Router (signed-out area, terms gate, signed-in area).
   - TanStack Query and an API client with a 10 s timeout and Retry.
   - New UI parts with stories and tests: AuthLayout template, CodeInput.

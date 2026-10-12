@@ -4,7 +4,7 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { closeApp, freshProfile, launch } from "./desktop.ts";
+import { closeApp, codeFor, freshProfile, launch } from "./desktop.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const MAILPIT_URL = process.env["MEETAPP_E2E_MAILPIT_URL"];
@@ -16,20 +16,6 @@ interface AuthBridge {
   signOut: () => Promise<unknown>;
 }
 type PageWindow = Window & { meetapp: { auth: AuthBridge } };
-
-/** The newest 6-digit code sent to `email`, from Mailpit. */
-async function codeFor(email: string): Promise<string> {
-  for (let attempt = 0; attempt < 50; attempt++) {
-    const query = encodeURIComponent(`to:"${email}"`);
-    const found = (await (await fetch(`${MAILPIT_URL}/api/v1/search?query=${query}`)).json()) as {
-      messages: { Subject: string }[];
-    };
-    const code = found.messages.map((message) => /\b(\d{6})\b/.exec(message.Subject)?.[1]).find(Boolean);
-    if (code) return code;
-    await new Promise((done) => setTimeout(done, 200));
-  }
-  throw new Error(`no code email to ${email}`);
-}
 
 /** The token main keeps, read and decrypted inside main; undefined when it lives only in memory. */
 function storedToken(app: ElectronApplication, profile: string): Promise<string | undefined> {
@@ -97,7 +83,7 @@ test("TC-F01-84 [AC-F01-34] the page never sees the token; main adds it; token r
     [email, PASSWORD] as const,
   );
   expect(started).toMatchObject({ ok: true });
-  const code = await codeFor(email);
+  const code = await codeFor(email, new Date(0));
   const finished = await page.evaluate(
     ([id, value]) => (window as unknown as PageWindow).meetapp.auth.finishSignUp(id, value),
     [started.signupId ?? "", code] as const,

@@ -1,9 +1,10 @@
 // SettingsPage, Appearance section: TC-F00-16, 20 and 21 at component level (default System + sky,
 // theme and accent apply to <html> at once, are saved and survive a restart; keyboard works).
 import { ACCENTS, type Accent } from "@meetapp/design-tokens";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PAT, installFakeAuth } from "../../features/auth/fake-auth.tsx";
 import { fakeColorScheme, resetAppearanceDom } from "../../test-utils/fakeColorScheme.ts";
 
 const html = document.documentElement;
@@ -24,7 +25,8 @@ async function startApp(onBack = vi.fn()) {
   vi.resetModules();
   await import("../../features/appearance/apply-saved.ts");
   const { SettingsPage } = await import("./SettingsPage.tsx");
-  const view = render(<SettingsPage onBack={onBack} />);
+  const { renderWithApp } = await import("../../features/auth/fake-auth.tsx");
+  const view = renderWithApp(<SettingsPage onBack={onBack} />);
   return { ...view, onBack, user: userEvent.setup() };
 }
 
@@ -36,6 +38,7 @@ const saved = (): unknown => JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "nu
 beforeEach(() => {
   resetAppearanceDom();
   fakeColorScheme(false);
+  installFakeAuth(PAT);
 });
 afterEach(() => vi.unstubAllGlobals());
 

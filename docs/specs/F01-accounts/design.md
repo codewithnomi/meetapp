@@ -46,8 +46,9 @@ apps/desktop/src/main/
   auth-bridge.ts              performs every sign-in call itself, so the token never reaches the page
   api-auth.ts                 adds the token to requests to the API (data and photos)
   provider-sign-in.ts         opens the browser for Google/Microsoft and collects the result
-packages/ui                   new molecules/organisms: CodeInput, WorkspaceSwitcher, MemberRow, InviteForm,
-                              JoinLinkCard, RequestRow, AvatarUpload; template AuthLayout
+packages/ui                   new molecules/organisms: CodeInput, Notice (T9), WorkspaceSwitcher, MemberRow, InviteForm,
+                              JoinLinkCard, RequestRow, AvatarUpload; template AuthLayout (with AuthTiles and
+                              AuthSteps, the stage pieces the sign-in screens share)
 ```
 `docs/engineering/project-structure.md` gains these folders in the same change. Everything the API serves lives under `apps/api`, so the F00 backend container keeps working.
 
@@ -58,6 +59,7 @@ Names match the approved canvas.
   1. You type your email and choose **Continue with email**.
   2. The **password step** always comes next, whether or not the email has an account (AC-05).
   3. From there: **Sign in**, **Email me a code instead** (AC-06) or **Forgot password?** (AC-09).
+- **Built in T9:** routes live in memory (`MemoryRouter`; the desktop app has no address bar). While the session is unknown a spinner shows; if main can't reach the backend, "Can't reach MeetApp" with Retry. Until T10 adds the Google/Microsoft buttons, the Sign in subtitle reads "Use your email to sign in." Until T16's Profile screen, Settings has a small Account section (who is signed in, **Sign out**). The reset code is checked together with the new password, so a wrong reset code shows on the New password screen.
 - **Google or Microsoft** (AC-07): the app shows "Finish signing in in your browser", a 4-digit **match code** and a **Cancel** button, and waits (section 4).
 - **Create account** (AC-01): email, name, password and the terms tick. Then the **code** screen (AC-04), then home, in your personal workspace.
 - **Code** screen: one screen serves three purposes (sign-up, sign-in, reset), named in the heading.

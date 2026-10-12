@@ -1,13 +1,13 @@
-// The window opens with the starter home screen (AC-F00-03), and fonts work offline with nothing
+// The window opens with the first screen (AC-F00-03; Sign in since F01), and fonts work offline with nothing
 // fetched from Google or any other outside address (AC-F00-13b): TC-F00-09, 30, 31.
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { closeApp, launch, recordRequests } from "./desktop.ts";
+import { closeApp, launch, launchSignedIn, recordRequests } from "./desktop.ts";
 
 const BUILT_ASSETS = fileURLToPath(new URL("../../../apps/web/dist/assets", import.meta.url));
 
-test("TC-F00-09 [AC-F00-03] the window opens within 5 s with the starter home screen", async () => {
+test("TC-F00-09 [AC-F00-03] the window opens within 5 s with the first screen (Sign in, since F01)", async () => {
   const started = Date.now();
   const { app, page } = await launch();
   await expect
@@ -15,9 +15,9 @@ test("TC-F00-09 [AC-F00-03] the window opens within 5 s with the starter home sc
     .toBe(true);
   expect(Date.now() - started).toBeLessThan(5000);
 
-  await expect(page.getByRole("heading", { level: 1, name: "MeetApp" })).toBeVisible();
-  await expect(page.getByText(/^Welcome/)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Settings" })).toBeVisible();
+  // Nobody is signed in in a fresh profile, so the first screen is Sign in (F01 design.md section 1).
+  await expect(page.getByRole("heading", { level: 1, name: "Sign in to MeetApp" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue with email" })).toBeVisible();
   await closeApp(app);
 });
 
@@ -47,7 +47,7 @@ test("TC-F00-30 [AC-F00-13b] fonts display with no internet, served from the app
 });
 
 test("TC-F00-31 [AC-F00-13b] nothing is fetched from Google or any outside address", async () => {
-  const { app, page } = await launch();
+  const { app, page } = await launchSignedIn();
   const addresses = recordRequests(page);
   await page.reload();
   await page.getByRole("button", { name: "Settings" }).click();

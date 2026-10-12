@@ -1,9 +1,11 @@
 // SettingsPage (page): the Appearance section of the approved Settings design — theme, accent color
 // and a small preview. Choices apply to the whole app at once and are remembered (AC-F00-08, 10).
+// Below it, Account: who is signed in, and Sign out (F01).
 import { ACCENTS, type Accent } from "@meetapp/design-tokens";
 import { AccentPicker, Badge, Button, SegmentedControl, type IconName } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { THEME_CHOICES, useAppearance, type ThemeChoice } from "../../features/appearance/index.ts";
+import { useSession, useSignOut } from "../../features/auth/index.ts";
 
 const THEME_ICONS: Record<ThemeChoice, IconName> = { light: "sun", dark: "moon", system: "monitor" };
 
@@ -79,6 +81,34 @@ function AppearanceSection() {
   );
 }
 
+/** Who is signed in, and Sign out (AC-F01-12). The full Profile screen arrives in F01 T16. */
+function AccountSection() {
+  const { t } = useTranslation();
+  const { data: user } = useSession();
+  const signOut = useSignOut();
+  return (
+    <section aria-labelledby="account-title" className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 id="account-title" className="m-0 text-heading text-ink">
+          {t("settings.account.title")}
+        </h2>
+        {user ? (
+          <p className="m-0 text-body text-ink-muted">{t("settings.account.signedInAs", { email: user.email })}</p>
+        ) : null}
+      </div>
+      {signOut.isPending ? (
+        <Button variant="secondary" className="self-start" loading loadingLabel={t("settings.account.signingOut")}>
+          {t("settings.account.signOut")}
+        </Button>
+      ) : (
+        <Button variant="secondary" className="self-start" onClick={() => signOut.mutate()}>
+          {t("settings.account.signOut")}
+        </Button>
+      )}
+    </section>
+  );
+}
+
 export function SettingsPage({ onBack }: SettingsPageProps) {
   const { t } = useTranslation();
   return (
@@ -92,6 +122,7 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
         </h1>
       </header>
       <AppearanceSection />
+      <AccountSection />
     </main>
   );
 }
