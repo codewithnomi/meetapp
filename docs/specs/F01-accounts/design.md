@@ -221,7 +221,7 @@ Better Auth's own email sign-up would create the account before the email is pro
   - The invited email sees the invitation in the app: `GET /api/v1/me/invitations` matches the verified email of the signed-in user. Accepting checks the email again on the server, so only the invited address can use it.
 - **Join link and code (AC-19):**
   - Each workspace has one `join_secret`: 24 random bytes for the link, plus a 10-character code (letters and digits, without look-alikes like 0/O and 1/I).
-  - Both are stored **encrypted** (AES-256-GCM, with a key version), because members must be able to copy them again later. Lookup uses a separate keyed hash (HMAC) column, so the database is never searched by the secret itself. Both keys come from `DATA_ENCRYPTION_KEY` through HKDF, with different labels.
+  - Both are stored **encrypted** (AES-256-GCM, with a key version), because members must be able to copy them again later. Lookup uses keyed hash (HMAC) columns, one for the link and one for the code, so the database is never searched by the secret itself. (T13: the second column was added because one column can't hold both lookups.) Both keys come from `DATA_ENCRYPTION_KEY` through HKDF, with different labels.
   - AC-33's "stored only as hashes" covers invitation links and codes; the join link is reversible on purpose.
   - A wrong, switched-off or replaced link or code gets the same 404, and lookups are limited (section 9).
   - Replacing makes a new secret; the old one stops at once.
@@ -243,6 +243,14 @@ Better Auth's own email sign-up would create the account before the email is pro
   - Two invitations to the same email at the same moment are handled one after the other (the workspace row is locked briefly), so there is still one pending.
   - The invitation page shows the email as `x***@example.com`. Every unusable link gets the same 404 page. Its "Get MeetApp" link points to the project's GitHub releases page until MeetApp has its own website (with the hosting decision).
   - The hand-off page and the invitation page share one page frame (`plugins/html-page.ts`): no scripts, the style allowed by its hash, and `form-action 'none'` on pages without a form.
+- **Built in T13:**
+  - The join link looks like `<APP_PUBLIC_URL>/join/<random part>`; people paste it (or type the code) under **Join a workspace** in the app. There is no web page behind it yet. Codes are matched without caring about case, spaces or dashes.
+  - Turning the link on while it is already on keeps it; turning it on after it was off, or **Replace**, makes a new link and code. Off forgets them entirely.
+  - Lookups and requests count toward the limits before anything is looked up, so right and wrong links and codes count the same.
+  - A second request while one is waiting answers `409 PENDING_REQUEST`. A decision on a request already decided answers `409 ALREADY_DECIDED`; on one older than 14 days, `410 REQUEST_EXPIRED`. A waiting request older than 14 days is listed as `expired` and doesn't stop the person from asking again.
+  - `GET /me` gives each workspace a `pendingRequests` count (for the owner and admins; 0 for members), used for the app's badge.
+  - The daily job runs at 03:00 UTC (BullMQ job scheduler, `modules/join-requests/expiry-job.ts`), started by `server.ts`.
+  - The other limits from section 9 are in place: invitation page views (an over-limit view gets a "Too many attempts" page, 429) and desktop hand-off starts (counted when the app starts one).
 
 ## 6. Profile, photo and preferences (AC-25, 26)
 - **Name:** 1–60 characters, trimmed. Shown everywhere as plain text (React escapes it; emails escape it: AC-35).
@@ -265,7 +273,7 @@ Better Auth's own email sign-up would create the account before the email is pro
 | `session` (Better Auth) | id, token (hashed, *verify*), user_id, expires_at (no IP address or browser stored) | "Remember me" and sign out everywhere |
 | `account` (Better Auth) | id, user_id, provider_id (credential/google/microsoft), account_id, password (scrypt hash), access/refresh tokens (encrypted) | Ways to sign in |
 | `verification` (Better Auth) | id, identifier, value (hashed code), expires_at | Email codes |
-| `workspaces` | id, name, kind (`personal`/`company`), created_by, join_enabled, join_secret_enc, join_key_version, join_lookup_hmac (unique), created_at, updated_at; **unique partial (created_by) where kind = personal** | Workspaces |
+| `workspaces` | id, name, kind (`personal`/`company`), created_by, join_enabled, join_secret_enc, join_key_version, join_lookup_hmac (unique; the code's keyed hash), join_link_hmac (unique; the link's keyed hash, added in migration `0002_join_link_lookup`, T13), created_at, updated_at; **unique partial (created_by) where kind = personal** | Workspaces |
 | `workspace_members` | id, workspace_id, user_id, role (`owner`/`admin`/`member`), created_at (= joined), updated_at; unique (workspace_id, user_id); **unique partial index: one owner per workspace** | Who is in which workspace |
 | `invitations` | id, workspace_id, email, role, token_hash (unique), invited_by, status, expires_at, created_at, updated_at; unique partial (workspace_id, email) where pending | Email invitations |
 | `join_requests` | id, workspace_id, user_id, via (`link`/`code`), status, decided_by, decided_at, created_at, updated_at; unique partial (workspace_id, user_id) where pending | Requests to join |

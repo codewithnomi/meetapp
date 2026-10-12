@@ -7,6 +7,12 @@ import { TERMS_VERSION } from "./sign-up.service.ts";
 
 const THEMES = new Set(["light", "dark", "system"]);
 
+/** Their workspaces, each with the requests to join waiting for them (0 where they can't decide). */
+async function workspacesWithCounts(workspaces: WorkspacesRepository, userId: string) {
+  const [list, counts] = await Promise.all([workspaces.listForUser(userId), workspaces.pendingRequestCounts(userId)]);
+  return list.map((workspace) => ({ ...workspace, pendingRequests: counts.get(workspace.id) ?? 0 }));
+}
+
 export function createAccountsService(
   repository: AccountsRepository,
   workspaces: WorkspacesRepository,
@@ -28,7 +34,7 @@ export function createAccountsService(
           theme,
           accent: row.accent,
         },
-        workspaces: await workspaces.listForUser(row.id),
+        workspaces: await workspacesWithCounts(workspaces, row.id),
       };
     },
     /** Records the terms and the 16+ statement (first Google/Microsoft sign-in, AC-F01-07). */

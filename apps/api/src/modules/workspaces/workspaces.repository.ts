@@ -1,9 +1,9 @@
 // Workspaces: database access only (F01 design.md section 5). Every read of workspace data filters by
 // workspace id (S2). The personal workspace is created with every account (AC-F01-14); the database
 // allows only one per person, so creating it twice is harmless.
-import { memberRemovals, user, workspaceMembers, workspaces, type Executor } from "@meetapp/db";
+import { joinRequests, memberRemovals, user, workspaceMembers, workspaces, type Executor } from "@meetapp/db";
 import type { MemberRole, WorkspaceSummary } from "@meetapp/contracts";
-import { and, asc, count, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, ne, sql } from "drizzle-orm";
 import type { Membership } from "./workspaces.permissions.ts";
 
 /** Shown as "Personal" in the app; only its owner is ever in it. */
@@ -58,6 +58,7 @@ function personal(executor: Executor) {
       return found.length > 0;
     },
     ensurePersonalWorkspace: (userId: string) => insertPersonalWorkspace(executor, userId),
+    pendingRequestCounts: (userId: string) => pendingRequestCounts(executor, userId),
   };
 }
 
@@ -219,6 +220,20 @@ class TransferRefused extends Error {
     super(outcome);
     this.outcome = outcome;
   }
+}
+
+/** Requests to join waiting in each workspace where the person is the owner or an admin (the app's badge). */
+async function pendingRequestCounts(executor: Executor, userId: string): Promise<Map<string, number>> {
+  const rows = await executor
+    .select({ workspaceId: joinRequests.workspaceId, n: count() })
+    .from(joinRequests)
+    .innerJoin(
+      workspaceMembers,
+      and(eq(workspaceMembers.workspaceId, joinRequests.workspaceId), eq(workspaceMembers.userId, userId)),
+    )
+    .where(and(eq(joinRequests.status, "pending"), inArray(workspaceMembers.role, ["owner", "admin"])))
+    .groupBy(joinRequests.workspaceId);
+  return new Map(rows.map((row) => [row.workspaceId, row.n]));
 }
 
 export type WorkspacesRepository = ReturnType<typeof createWorkspacesRepository>;

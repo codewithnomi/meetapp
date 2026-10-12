@@ -45,6 +45,8 @@ const accounts = createAccounts({
   storage,
 });
 
+const expiryJob = await accounts.startExpiryJob();
+
 const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
   flags: createFlagsRepository(database.db),
@@ -59,7 +61,14 @@ async function shutDown(): Promise<void> {
   let code = 0;
   try {
     await app.close();
-    await Promise.allSettled([emails.close(), database.close(), cache.close(), storage.close(), email.close()]);
+    await Promise.allSettled([
+      expiryJob.close(),
+      emails.close(),
+      database.close(),
+      cache.close(),
+      storage.close(),
+      email.close(),
+    ]);
   } catch (error) {
     log.error({ err: error }, "Closing the backend failed");
     code = 1;

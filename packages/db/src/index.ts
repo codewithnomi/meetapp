@@ -6,6 +6,7 @@ export {
   account,
   featureFlags,
   invitations,
+  joinRequests,
   memberRemovals,
   session,
   user,

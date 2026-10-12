@@ -5,7 +5,7 @@
 // from the provider, so it keeps none.
 import { createHash, createHmac, randomInt, randomUUID, timingSafeEqual } from "node:crypto";
 import type { SignInProvider } from "@meetapp/contracts";
-import { AppError } from "../../plugins/errors.ts";
+import { AppError, tooManyAttempts } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import type { DesktopSignIn, DesktopSignInStatus, DesktopSignInsRepository } from "./desktop-sign-ins.repository.ts";
 import { PROVIDER_EMAIL_UNVERIFIED } from "./provider-profile.ts";
@@ -188,9 +188,12 @@ async function exchange(
 export function createDesktopSignInService(deps: DesktopSignInDependencies) {
   const steps = createSteps(deps);
   return {
-    /** The app starts: a request id and the code to show (AC-F01-07). */
-    async init(provider: SignInProvider, challenge: string) {
+    /** The app starts: a request id and the code to show (AC-F01-07). `address` is the caller's network address. */
+    async init(provider: SignInProvider, challenge: string, address: string) {
       if (!deps.enabled[provider]) throw unknownRequest();
+      // 20 starts an hour per network address (design.md section 9).
+      const wait = await deps.limiter?.take(RATE_RULES.handOffStarts, address);
+      if (wait !== undefined) throw tooManyAttempts(wait);
       const requestId = randomUUID();
       const matchCode = String(randomInt(0, 10_000)).padStart(4, "0");
       await deps.repository.save(requestId, { provider, challenge, matchCode, createdAt: steps.now(), status: "new" });

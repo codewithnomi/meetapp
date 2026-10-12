@@ -22,6 +22,13 @@ export const RATE_RULES = {
   someoneTried: { name: "someone-tried", limit: 1, windowSeconds: 60 * 60 },
   /** Invitation emails per sender, across all workspaces: 50 a day (AC-F01-17). */
   invitationEmails: { name: "invitation-emails", limit: 50, windowSeconds: 24 * 60 * 60 },
+  /** Join lookups and requests together: 20 an hour per person, 60 per network address (AC-F01-13). */
+  joinPerUser: { name: "join-user", limit: 20, windowSeconds: 60 * 60 },
+  joinPerAddress: { name: "join-address", limit: 60, windowSeconds: 60 * 60 },
+  /** Views of the invitation web page per network address: 60 an hour. */
+  invitationPage: { name: "invitation-page", limit: 60, windowSeconds: 60 * 60 },
+  /** Google/Microsoft desktop hand-off starts per network address: 20 an hour. */
+  handOffStarts: { name: "hand-off-starts", limit: 20, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

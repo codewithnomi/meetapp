@@ -10,5 +10,9 @@
   "invalid": {
     "heading": "This invitation is no longer valid",
     "body": "This invitation is no longer valid; ask for a new one."
+  },
+  "busy": {
+    "heading": "Too many attempts",
+    "body": "This page was opened too often from your network. Try again in an hour."
   }
 }

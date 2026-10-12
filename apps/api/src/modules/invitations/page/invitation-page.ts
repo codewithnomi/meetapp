@@ -15,7 +15,9 @@ const pages = htmlPages({
 export const INVITATION_PAGE_HEADERS = pages.headers;
 
 export type InvitationPage =
-  { page: "valid"; workspaceName: string; inviterName: string | null; email: string } | { page: "invalid" };
+  | { page: "valid"; workspaceName: string; inviterName: string | null; email: string }
+  | { page: "invalid" }
+  | { page: "busy" };
 
 /** `pat@example.test` → `p***@example.test`: enough to recognise, not enough to collect. */
 export function maskEmail(email: string): string {
@@ -28,6 +30,9 @@ const fill = (text: string, values: Record<string, string>) =>
   escapeHtml(text).replace(/\{\{(\w+)\}\}/g, (_match, key: string) => escapeHtml(values[key] ?? ""));
 
 export function renderInvitationPage(page: InvitationPage): string {
+  if (page.page === "busy") {
+    return pages.layout(words.title, words.busy.heading, `<p>${escapeHtml(words.busy.body)}</p>`);
+  }
   if (page.page === "invalid") {
     return pages.layout(words.title, words.invalid.heading, `<p>${escapeHtml(words.invalid.body)}</p>`);
   }

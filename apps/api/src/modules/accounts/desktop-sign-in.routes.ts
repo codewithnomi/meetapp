@@ -120,7 +120,9 @@ export const desktopSignInRoutes: FastifyPluginAsyncZod<DesktopSignInRoutesOptio
     () => enabled,
   );
 
-  app.post(`${PATH}/init`, INIT, async (request) => desktopSignIn.init(request.body.provider, request.body.challenge));
+  app.post(`${PATH}/init`, INIT, async (request) =>
+    desktopSignIn.init(request.body.provider, request.body.challenge, request.ip),
+  );
 
   app.post(`${PATH}/exchange`, EXCHANGE, async (request, reply) => {
     const finished = await desktopSignIn.exchange(request.body.requestId, request.body.verifier);

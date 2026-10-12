@@ -1,5 +1,5 @@
 // Puts the accounts pieces together (F01): Better Auth, the rate limiter, and the accounts, sign-up,
-// passwords, desktop sign-in, workspaces and invitations services. Used by server.ts and by the integration tests,
+// passwords, desktop sign-in, workspaces, invitations and join services. Used by server.ts and by the integration tests,
 // so both run the same wiring.
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
@@ -17,6 +17,11 @@ import { createSignUpService } from "./modules/accounts/sign-up.service.ts";
 import { createWorkspacesRepository } from "./modules/workspaces/workspaces.repository.ts";
 import { createInvitationsService } from "./modules/invitations/invitations.service.ts";
 import { createInvitationsRepository } from "./modules/invitations/invitations.repository.ts";
+import { startExpiryJob } from "./modules/join-requests/expiry-job.ts";
+import { createJoinLinkService } from "./modules/join-requests/join-link.service.ts";
+import { createJoinRequestsRepository } from "./modules/join-requests/join-requests.repository.ts";
+import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
+import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
 import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
@@ -82,7 +87,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
   };
 }
 
-/** Workspaces, invitations, the membership check and repeat-safe creates. */
+/** Workspaces, invitations, joining, the membership check and repeat-safe creates. */
 function workspacePieces(
   { config, db, redis, outbox }: Pick<AccountsWiring, "config" | "db" | "redis" | "outbox">,
   limiter: ReturnType<typeof createRateLimiter>,
@@ -97,8 +102,31 @@ function workspacePieces(
       outbox,
       publicUrl: config.APP_PUBLIC_URL,
     }),
+    ...joinPieces({ config, db, outbox }, limiter),
     membershipLookup: workspaces.findMembership,
     idempotency: createIdempotency({ store: redisIdempotencyStore(redis) }),
+  };
+}
+
+/** The join link and code, requests to join, and the daily expiry job (started by server.ts). */
+function joinPieces(
+  { config, db, outbox }: Pick<AccountsWiring, "config" | "db" | "outbox">,
+  limiter: ReturnType<typeof createRateLimiter>,
+) {
+  const repository = createJoinRequestsRepository(db);
+  const secrets = createJoinSecrets(config.DATA_ENCRYPTION_KEY, config.APP_PUBLIC_URL);
+  const workspaces = createWorkspacesRepository(db);
+  const joinRequests = createJoinRequestsService({
+    repository,
+    secrets,
+    limiter,
+    outbox,
+    isMember: async (workspaceId, userId) => (await workspaces.memberRole(workspaceId, userId)) !== undefined,
+  });
+  return {
+    joinLink: createJoinLinkService(repository, secrets),
+    joinRequests,
+    startExpiryJob: () => startExpiryJob({ host: config.REDIS_HOST, port: config.REDIS_PORT }, joinRequests.expireOld),
   };
 }
 

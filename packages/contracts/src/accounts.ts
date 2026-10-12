@@ -13,8 +13,11 @@ export const meResponseSchema = z
       theme: z.enum(["light", "dark", "system"]).nullable(),
       accent: z.string().nullable(),
     }),
-    /** Every workspace they are in, with their role; Personal first (AC-F01-14, 23). */
-    workspaces: z.array(workspaceSchema),
+    /**
+     * Every workspace they are in, with their role; Personal first (AC-F01-14, 23). `pendingRequests`
+     * counts requests to join waiting for the owner and admins (0 for members; AC-F01-19).
+     */
+    workspaces: z.array(workspaceSchema.extend({ pendingRequests: z.number().int() })),
   })
   .meta({ id: "Me", description: "The signed-in person and their workspaces." });
 

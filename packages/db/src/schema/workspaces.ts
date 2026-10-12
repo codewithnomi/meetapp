@@ -36,8 +36,10 @@ export const workspaces = pgTable(
     /** The join link and code, encrypted (AES-256-GCM); members must be able to copy them again. */
     joinSecretEnc: text("join_secret_enc"),
     joinKeyVersion: integer("join_key_version"),
-    /** Keyed hash used to look a link or code up, so the database is never searched by the secret. */
+    /** Keyed hash used to look the join code up, so the database is never searched by the secret. */
     joinLookupHmac: text("join_lookup_hmac").unique(),
+    /** The same for the join link (the column above is the code's). */
+    joinLinkHmac: text("join_link_hmac").unique(),
     ...timestamps(),
   },
   (table) => [

@@ -120,7 +120,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-43, 44, 45, 46, 47.
   - Check: a forwarded invitation can't be used by another email; the page shows "no longer valid" for an old one.
 
-- [ ] **T13: Join link, join code and requests.**
+- [x] **T13: Join link, join code and requests.**
   - Encrypted join secret (HKDF keys, key version), turn on/off, replace.
   - Lookup with the same 404 for wrong, off or old secrets.
   - Requests with approve/reject (decided only once); emails to owner/admins and to the person.

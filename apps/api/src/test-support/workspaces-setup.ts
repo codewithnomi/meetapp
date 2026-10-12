@@ -34,7 +34,7 @@ export async function seedWorkspace(t: AuthTestApp, people: [Person, Role][], na
 }
 
 export function caller(t: AuthTestApp) {
-  return (token: string, method: "GET" | "POST" | "PATCH" | "DELETE", url: string, payload?: object) =>
+  return (token: string, method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", url: string, payload?: object) =>
     t.app.inject({
       method,
       url,

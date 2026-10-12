@@ -88,11 +88,9 @@ export const invitationsRoutes: FastifyPluginAsyncZod<{
   });
 
   app.get("/invite/:token", PAGE, async (request, reply) => {
-    const page = await invitations.page(request.params.token);
+    const page = await invitations.page(request.params.token, request.ip);
     // Every unusable invitation gets the same status and page (TC-F01-47).
-    return reply
-      .status(page.page === "valid" ? 200 : 404)
-      .headers(INVITATION_PAGE_HEADERS)
-      .send(renderInvitationPage(page));
+    const status = { valid: 200, invalid: 404, busy: 429 }[page.page];
+    return reply.status(status).headers(INVITATION_PAGE_HEADERS).send(renderInvitationPage(page));
   });
 };

@@ -44,6 +44,9 @@ export async function initHandOff(app: FastifyInstance, provider: "google" | "mi
     method: "POST",
     url: "/api/v1/auth/desktop/init",
     payload: { provider, challenge },
+    // Each hand-off from its own address, as separate computers would be: the 20-an-hour start limit
+    // per address is tested on its own (join-limits.integration.test.ts).
+    remoteAddress: `10.${[0, 0, 0].map(() => String(randomBytes(1)[0] ?? 0)).join(".")}`,
   });
   if (response.statusCode !== 200) throw new Error(`init answered ${String(response.statusCode)}`);
   return { ...response.json<Omit<HandOff, "verifier">>(), verifier };

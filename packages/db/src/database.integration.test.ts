@@ -170,3 +170,25 @@ describe("TC-F00-75 [AC-F00-34] switching flags is safe against injection", () =
     expect(await flagRows("test.does_not_exist")).toHaveLength(0);
   });
 });
+
+describe("TC-F01-78 [AC-F01-19] join link lookup column", () => {
+  it("TC-F01-78 [AC-F01-19] workspaces.join_link_hmac exists and is unique", SLOW, async () => {
+    const column = await rowsOf<{ name: string }>(
+      db,
+      sql`select column_name as name from information_schema.columns where table_name = 'workspaces' and column_name = 'join_link_hmac'`,
+    );
+    expect(column).toHaveLength(1);
+    const owner = await rowsOf<{ id: string }>(
+      db,
+      sql`insert into "user" (id, name, email) values (gen_random_uuid(), 'T', ${`hmac-${Date.now()}@example.test`}) returning id`,
+    );
+    const ownerId = owner[0]?.id;
+    const add = (hmac: string) =>
+      db.execute(
+        sql`insert into workspaces (name, kind, created_by, join_link_hmac) values ('W', 'company', ${ownerId}, ${hmac})`,
+      );
+    await add("a".repeat(64));
+    await expect(add("a".repeat(64))).rejects.toThrow();
+    await expect(add("b".repeat(64))).resolves.toBeDefined();
+  });
+});

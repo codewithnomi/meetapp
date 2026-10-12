@@ -22,6 +22,9 @@ export const ERROR_CODES = [
   "WORKSPACE_LIMIT",
   "ALREADY_MEMBER",
   "INVITATION_GONE",
+  "PENDING_REQUEST",
+  "ALREADY_DECIDED",
+  "REQUEST_EXPIRED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

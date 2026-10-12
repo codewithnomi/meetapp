@@ -16,6 +16,8 @@ import { localConfig } from "./integration.ts";
 
 export interface AuthTestApp {
   app: FastifyInstance;
+  /** The services behind the routes, for steps no route starts (for example the daily expiry job). */
+  accounts: ReturnType<typeof createAccounts>;
   storage: ReturnType<typeof createStorageProvider>;
   auth: Auth;
   database: TestDatabase;
@@ -60,6 +62,7 @@ export async function startAuthTestApp(
   const app = await buildApp(config, { logLevel: "silent", accounts });
   return {
     app,
+    accounts,
     storage,
     auth,
     database,

@@ -129,7 +129,7 @@ function workspaceSide(deps: InvitationsDependencies) {
 }
 
 /** The invited person's side: their list, join and decline. */
-function inviteeSide({ repository, memberRole, now = () => new Date() }: InvitationsDependencies) {
+function inviteeSide({ repository, memberRole, limiter, now = () => new Date() }: InvitationsDependencies) {
   /** Theirs and still usable; 404 if it isn't for their verified email, 410 if it can't be used now. */
   async function usable(userId: string, invitationId: string) {
     const row = await repository.findForUser(invitationId, userId);
@@ -161,7 +161,9 @@ function inviteeSide({ repository, memberRole, now = () => new Date() }: Invitat
       return { workspace, switchTo: row.workspaceId };
     },
     /** What the web page shows for a link's token (AC-F01-18): the same "invalid" for every unusable one. */
-    async page(token: string): Promise<InvitationPage> {
+    async page(token: string, address: string): Promise<InvitationPage> {
+      // 60 views an hour per network address (design.md section 9).
+      if ((await limiter.take(RATE_RULES.invitationPage, address)) !== undefined) return { page: "busy" };
       const row = await repository.findByTokenHash(hashToken(token));
       if (!row || row.status !== "pending" || row.expiresAt <= now()) return { page: "invalid" };
       return { page: "valid", workspaceName: row.workspaceName, inviterName: row.inviterName, email: row.email };

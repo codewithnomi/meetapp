@@ -54,3 +54,12 @@ export {
   myInvitationsResponseSchema,
   sentInvitationsResponseSchema,
 } from "./invitations.ts";
+export {
+  joinLinkSchema,
+  joinLookupResponseSchema,
+  joinRequestParamsSchema,
+  joinRequestResponseSchema,
+  joinRequestsResponseSchema,
+  linkOrCodeBodySchema,
+  setJoinLinkBodySchema,
+} from "./join.ts";
