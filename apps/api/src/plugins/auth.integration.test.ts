@@ -203,3 +203,11 @@ describe("TC-F01-06 [AC-F01-03] the password rule also guards password reset", (
     },
   );
 });
+
+describe("TC-F01-84 [AC-F01-34] the app can read a 401", () => {
+  it("TC-F01-84 [AC-F01-34] a refused request from the app still carries its CORS headers", async () => {
+    const response = await t.app.inject({ url: "/api/v1/me", headers: ORIGIN });
+    expect(response.statusCode).toBe(401);
+    expect(response.headers["access-control-allow-origin"]).toBe("app://meetapp");
+  });
+});

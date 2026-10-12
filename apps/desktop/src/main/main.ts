@@ -1,7 +1,12 @@
 // The desktop app's main process (design.md section 5): one locked-down window showing apps/web.
 // Development: the Vite dev server (MEETAPP_RENDERER_URL). Otherwise: the built screens on app://meetapp.
-import { BrowserWindow, app, session, shell } from "electron";
+import { join } from "node:path";
+import { BrowserWindow, app, safeStorage, session, shell } from "electron";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
+import { createAuthActions } from "./auth-actions.ts";
+import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
+import { createAuthClient } from "./auth-client.ts";
+import { createTokenStore } from "./auth-token.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
 import { APP_ORIGIN, contentSecurityPolicy, webPreferences } from "./security.ts";
 import { startSentry } from "./sentry.ts";
@@ -37,6 +42,10 @@ function openWindow(): void {
 // Not awaited at the top level: Electron only becomes ready after this file has finished running.
 void app.whenReady().then(() => {
   lockDownSession(session.defaultSession, csp, settings.devServerUrl);
+  // safeStorage works only once the app is ready.
+  const tokens = createTokenStore(safeStorage, join(app.getPath("userData"), "auth-token"));
+  registerAuthBridge(createAuthActions(createAuthClient(settings.apiUrl, tokens), tokens), appUrl);
+  applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
   if (!settings.devServerUrl) serveScreens(settings.rendererDir, csp);
   openWindow();
 });

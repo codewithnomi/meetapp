@@ -72,7 +72,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
 
 ## Desktop and screens: sign-in
 
-- [ ] **T8: The token stays in the desktop's main part.**
+- [x] **T8: The token stays in the desktop's main part.**
   - `auth-token.ts` (safeStorage, memory-only fallback).
   - `auth-bridge.ts` (every sign-in call made by main; preload `meetapp.auth`; messages accepted only from the app's own page).
   - `api-auth.ts` (bearer header for data and photos; the page's requests to `/api/auth/*` cancelled).

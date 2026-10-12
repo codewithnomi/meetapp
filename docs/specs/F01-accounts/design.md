@@ -149,15 +149,16 @@ Better Auth's own email sign-up would create the account before the email is pro
 
 ## 4. Desktop sign-in and the token (AC-07, 11, 12, 34)
 - **The page never sees the token.** Better Auth returns the token in response headers and bodies, so the page may not call any route that creates a session:
-  - The main process **cancels** any request from the page to `/api/auth/*`, `/api/v1/auth/sign-up/verify` and `/api/v1/auth/desktop/*` (`session.webRequest.onBeforeRequest`).
+  - The main process **cancels** any request from the page to `/api/auth/*`, `/api/v1/auth/*` (except `GET /api/v1/auth/providers`) and `/api/v1/me/password` (`session.webRequest.onBeforeRequest`); reset and change password also hand out a new token (T6), so they go through main too (T8).
+  - The backend registers CORS before its sign-in check, so a `401` still carries CORS headers and the page can read "signed out" (found in T8).
   - Instead, the preload bridge offers `meetapp.auth`:
     - `signInWithPassword(email, password)`, `requestCode(email, purpose)`, `signInWithCode(email, code)`;
-    - `startSignUp(form)`, `finishSignUp(signupId, code)`, `resetPassword(email, code, newPassword)`;
+    - `startSignUp(form)`, `resendSignUpCode(signupId)`, `finishSignUp(signupId, code)`, `resetPassword(email, code, newPassword)`, `changePassword(change)`;
     - `startProviderSignIn(provider)`, `cancelProviderSignIn()`;
     - `signOut()`, `signOutEverywhere()`, `status()`.
-  - Main makes each call itself with `net.fetch`, keeps the token, and returns only `{ ok, user }` or an error code to the page.
+  - Main makes each call itself (Node's `fetch`, which the page's request rules don't touch), keeps the token, and returns only `{ ok, user }` (or `{ ok, signupId }` for the first sign-up step) or an error code to the page. Input from the page is checked first (known action, short texts or flat objects). `startProviderSignIn`/`cancelProviderSignIn` arrive in T10.
   - Main accepts these messages only from the app's own window and page origin.
-- **Storage:** the token is encrypted with Electron **safeStorage** (the key is held by the macOS Keychain, or Windows' DPAPI) and saved in the app's data folder. If encryption isn't available, the token is kept in memory only, and the user signs in again after a restart.
+- **Storage:** the token is encrypted with Electron **safeStorage** (the key is held by the macOS Keychain, or Windows' DPAPI) and saved in the app's data folder. If encryption isn't available (or on Linux only the fixed `basic_text` key is), the token is kept in memory only, and the user signs in again after a restart. A damaged file, or one written with another key, is deleted.
 - **Use:** `session.webRequest.onBeforeSendHeaders` adds `Authorization: Bearer <token>` to every request to the API origin, photos (`<img>`) included. The F00 CORS setting gains `authorization` and `idempotency-key` as allowed headers.
 - **Sign out:**
   - **Sign out:** main calls `/api/auth/sign-out` (best effort), then deletes the token.

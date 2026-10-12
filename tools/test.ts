@@ -64,6 +64,7 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
       VITE_API_URL: apiUrl,
       MEETAPP_E2E_API_URL: apiUrl,
       MEETAPP_E2E_API_PID: String(api.pid),
+      MEETAPP_E2E_MAILPIT_URL: `http://127.0.0.1:${env["MAILPIT_WEB_PORT"] ?? "8025"}`,
     });
   } finally {
     await stopApi(api);

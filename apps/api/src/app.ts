@@ -56,8 +56,13 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   });
   registerErrorHandling(app);
   registerMetrics(app, options.metrics);
+  // The desktop's main process adds the token (authorization); creating things sends an idempotency key (F01).
+  await app.register(cors, {
+    origin: ALLOWED_ORIGINS,
+    allowedHeaders: ["content-type", "authorization", "idempotency-key"],
+  });
+  // After CORS, so a 401 still carries its CORS headers and the app can read "signed out" (T8).
   registerSessionCheck(app, options.accounts ? authSessionReader(options.accounts.auth) : undefined);
-  await app.register(cors, { origin: ALLOWED_ORIGINS });
   if (config.NODE_ENV === "development") await registerDocs(app);
 
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });

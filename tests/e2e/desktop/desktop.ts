@@ -85,3 +85,32 @@ export function recordRequests(page: Page): string[] {
   page.on("request", (request) => addresses.push(request.url()));
   return addresses;
 }
+
+/**
+ * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4): the
+ * platform name and the sign-in calls main makes for the page. Anything else is a leak.
+ */
+export const BRIDGE = {
+  meetapp: ["platform", "auth"],
+  auth: [
+    "signInWithPassword",
+    "requestCode",
+    "signInWithCode",
+    "startSignUp",
+    "resendSignUpCode",
+    "finishSignUp",
+    "resetPassword",
+    "changePassword",
+    "signOut",
+    "signOutEverywhere",
+    "status",
+  ],
+};
+
+/** What the page sees on `window.meetapp`: its keys, and the keys of `window.meetapp.auth`. */
+export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; auth: string[] }> {
+  return page.evaluate(() => {
+    const bridge = (window as { meetapp?: { auth?: object } }).meetapp ?? {};
+    return { meetapp: Object.keys(bridge), auth: Object.keys(bridge.auth ?? {}) };
+  });
+}
