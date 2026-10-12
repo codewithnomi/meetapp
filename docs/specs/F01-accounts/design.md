@@ -251,6 +251,13 @@ Better Auth's own email sign-up would create the account before the email is pro
   - `GET /me` gives each workspace a `pendingRequests` count (for the owner and admins; 0 for members), used for the app's badge.
   - The daily job runs at 03:00 UTC (BullMQ job scheduler, `modules/join-requests/expiry-job.ts`), started by `server.ts`.
   - The other limits from section 9 are in place: invitation page views (an over-limit view gets a "Too many attempts" page, 429) and desktop hand-off starts (counted when the app starts one).
+- **Built in T14:**
+  - The signed-in app now has the side menu of the canvas (`AppLayout` template): the workspace switcher on top (`WorkspaceSwitcher` organism, Radix dropdown menu), then **Home** and **Settings**. The other items (People and so on) arrive with their screens. Settings keeps its own full-page layout with **Back** for now.
+  - Home's heading is the open workspace's name ("Personal" for the personal one).
+  - `PUT /api/v1/me/last-workspace {workspaceId}` remembers the open workspace (404 if not a member); `GET /me` returns `currentWorkspaceId`: the last used while still a member, else Personal. Switching shows the new workspace at once; the backend is told in the background.
+  - "Create a company workspace" is a `Dialog` molecule (Radix dialog) with the form; one Idempotency-Key per opening of the dialog. The new workspace is added to the list at once and opened.
+  - "Join with a link or code" opens the Join screen, built in T15; until then it stays on Home.
+  - CORS now also allows `PUT`, `PATCH` and `DELETE` from the app's own origins (the default allowed only `GET`, `HEAD` and `POST`, which silently blocked the app's "remember the last workspace" call).
 
 ## 6. Profile, photo and preferences (AC-25, 26)
 - **Name:** 1–60 characters, trimmed. Shown everywhere as plain text (React escapes it; emails escape it: AC-35).

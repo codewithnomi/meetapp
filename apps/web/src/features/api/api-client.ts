@@ -23,6 +23,8 @@ export class ApiError extends Error {
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
+  /** Extra headers, e.g. an Idempotency-Key when creating something (AC-F01-29). */
+  headers?: Record<string, string>;
   apiUrl?: string;
   fetcher?: typeof fetch;
 }
@@ -37,12 +39,13 @@ async function errorOf(response: Response): Promise<ApiError> {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, apiUrl = API_URL, fetcher = fetch } = options;
+  const { method = "GET", body, headers = {}, apiUrl = API_URL, fetcher = fetch } = options;
   let response: Response;
   try {
     response = await fetcher(`${apiUrl}${path}`, {
       method,
-      ...(body === undefined ? {} : { body: JSON.stringify(body), headers: { "content-type": "application/json" } }),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      headers: body === undefined ? headers : { ...headers, "content-type": "application/json" },
       signal: AbortSignal.timeout(TIME_LIMIT_MS),
     });
   } catch {

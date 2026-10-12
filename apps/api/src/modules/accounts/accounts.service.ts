@@ -13,6 +13,14 @@ async function workspacesWithCounts(workspaces: WorkspacesRepository, userId: st
   return list.map((workspace) => ({ ...workspace, pendingRequests: counts.get(workspace.id) ?? 0 }));
 }
 
+/** The list, and the one to open: the last used while they are still in it, else Personal (AC-F01-16). */
+async function workspacesToOpen(workspaces: WorkspacesRepository, userId: string, lastWorkspaceId: string | null) {
+  const list = await workspacesWithCounts(workspaces, userId);
+  const last = list.find((workspace) => workspace.id === lastWorkspaceId);
+  const personal = list.find((workspace) => workspace.kind === "personal");
+  return { workspaces: list, currentWorkspaceId: (last ?? personal ?? list[0])?.id ?? null };
+}
+
 export function createAccountsService(
   repository: AccountsRepository,
   workspaces: WorkspacesRepository,
@@ -34,8 +42,13 @@ export function createAccountsService(
           theme,
           accent: row.accent,
         },
-        workspaces: await workspacesWithCounts(workspaces, row.id),
+        ...(await workspacesToOpen(workspaces, row.id, row.lastWorkspaceId)),
       };
+    },
+    /** Remembers the workspace the app shows, for the next start (AC-F01-16); 404 if they aren't in it. */
+    async setLastWorkspace(userId: string, workspaceId: string): Promise<void> {
+      if (!(await workspaces.findMembership(workspaceId, userId))) throw new AppError(404, "NOT_FOUND", "Not found.");
+      await repository.setLastWorkspace(userId, workspaceId);
     },
     /** Records the terms and the 16+ statement (first Google/Microsoft sign-in, AC-F01-07). */
     async acceptTerms(userId: string): Promise<void> {

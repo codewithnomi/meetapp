@@ -63,6 +63,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(cors, {
     origin: ALLOWED_ORIGINS,
     allowedHeaders: ["content-type", "authorization", "idempotency-key"],
+    // The screens also change and remove things (F01: rename, roles, last workspace, cancel…).
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
   // After CORS, so a 401 still carries its CORS headers and the app can read "signed out" (T8).
   registerSessionCheck(app, options.accounts ? authSessionReader(options.accounts.auth) : undefined);

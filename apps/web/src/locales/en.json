@@ -160,7 +160,8 @@
       "tooManyAttempts": "Too many attempts, try again in {{minutes}} minute(s).",
       "generic": "Something went wrong. Try again.",
       "cancelled": "Sign-in was cancelled.",
-      "unverified": "Your Google/Microsoft email isn't verified; create an account with your email instead."
+      "unverified": "Your Google/Microsoft email isn't verified; create an account with your email instead.",
+      "workspaceLimit": "You can own at most 20 workspaces."
     },
     "loading": "Loading",
     "providers": {
@@ -179,6 +180,41 @@
       "google": "Google",
       "microsoft": "Microsoft",
       "help": "Closed the browser tab? Press Cancel and try again."
+    }
+  },
+  "workspaces": {
+    "personal": "Personal",
+    "onlyYou": "Only you",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "switcher": {
+      "menu": "Switch workspace",
+      "heading": "Your workspaces",
+      "create": "Create a workspace",
+      "join": "Join with a link or code"
+    },
+    "nav": {
+      "label": "Main",
+      "home": "Home",
+      "settings": "Settings"
+    },
+    "create": {
+      "title": "Create a company workspace",
+      "description": "A shared place for your team's meetings, minutes and AI answers. You'll be its owner.",
+      "name": "Workspace name",
+      "hint": "Usually your company or team name. 2 to 60 characters.",
+      "nameRule": "Use 2 to 60 characters.",
+      "nextTitle": "What happens next",
+      "nextInvite": "Invite teammates by email. Anyone in the workspace can invite others.",
+      "nextJoin": "Or turn on a join link and code. You approve each request to join.",
+      "nextPersonal": "Your personal workspace stays private to you.",
+      "cancel": "Cancel",
+      "submit": "Create workspace",
+      "pending": "Creating workspace",
+      "close": "Close"
     }
   }
 }

@@ -198,8 +198,22 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
   }
   // The screens ask who is signed in when they start.
   await running.page.reload();
-  await expect(running.page.getByRole("heading", { level: 1, name: "MeetApp" })).toBeVisible();
+  await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
   return running;
+}
+
+/**
+ * Like launchSignedIn, but with an account of its own (for tests that change the account's state, such as
+ * its last-used workspace). Returns the app, the page and the account's email.
+ */
+export async function launchNewAccount(profile: string = freshProfile()) {
+  test.skip(!API_URL || !MAILPIT, "needs the backend and Mailpit; runs from `pnpm test`");
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
+  const email = `e2e-${randomUUID()}@example.test`;
+  await signUpThroughBridge(running.page, email);
+  await running.page.reload();
+  await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
+  return { ...running, email };
 }
 
 /** The token main keeps, read and decrypted inside main; undefined when it lives only in memory. */

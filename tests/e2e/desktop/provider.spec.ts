@@ -95,7 +95,7 @@ test("TC-F01-23 [AC-F01-07] Continue with Microsoft: same code in the app and th
   expect(Date.now() - started).toBeLessThan(5_000);
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Continue" }).click();
-  await expect(title(page, "MeetApp")).toBeVisible();
+  await expect(title(page, "Personal")).toBeVisible();
   await browser.dispose();
   await closeApp(app);
 });

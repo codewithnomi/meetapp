@@ -48,7 +48,7 @@ test("TC-F01-01 [AC-F01-01] [AC-F01-04] TC-F01-14 [AC-F01-05] [AC-F01-06] create
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(title(page, "Confirm your email")).toBeVisible();
   await typeCode(page, email, since);
-  await expect(title(page, "MeetApp")).toBeVisible();
+  await expect(title(page, "Personal")).toBeVisible();
 
   // Password sign-in; a wrong one first (TC-F01-14).
   await signOut(page);
@@ -58,7 +58,7 @@ test("TC-F01-01 [AC-F01-01] [AC-F01-04] TC-F01-14 [AC-F01-05] [AC-F01-06] create
   await expect(page.getByRole("alert")).toContainText("Email or password is wrong");
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(title(page, "MeetApp")).toBeVisible();
+  await expect(title(page, "Personal")).toBeVisible();
 
   // Code sign-in (TC-F01-14).
   await signOut(page);
@@ -67,6 +67,6 @@ test("TC-F01-01 [AC-F01-01] [AC-F01-04] TC-F01-14 [AC-F01-05] [AC-F01-06] create
   await page.getByRole("button", { name: "Email me a code instead" }).click();
   await expect(title(page, "Sign in with a code")).toBeVisible();
   await typeCode(page, email, since);
-  await expect(title(page, "MeetApp")).toBeVisible();
+  await expect(title(page, "Personal")).toBeVisible();
   await closeApp(app);
 });

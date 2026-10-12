@@ -22,7 +22,7 @@ test("TC-F01-30 [AC-F01-11] a restart keeps the person signed in; a revoked sess
   await closeApp(first.app);
 
   const again = await launch(profile, { VITE_API_URL: API_URL ?? "" });
-  await expect(title(again.page, "MeetApp")).toBeVisible();
+  await expect(title(again.page, "Personal")).toBeVisible();
   await closeApp(again.app);
 
   // The session ends on the server (e.g. Sign out everywhere on another computer).
@@ -47,7 +47,7 @@ test("TC-F01-32 [AC-F01-12] Sign out ends only this window; Sign out everywhere 
   await a.page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(title(a.page, "Sign in to MeetApp")).toBeVisible();
   await b.page.reload();
-  await expect(title(b.page, "MeetApp")).toBeVisible();
+  await expect(title(b.page, "Personal")).toBeVisible();
   await closeApp(a.app);
 
   const again = await launchSignedIn(freshProfile());

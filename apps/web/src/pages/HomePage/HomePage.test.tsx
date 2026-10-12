@@ -16,7 +16,7 @@ function flagsReply(enabled: boolean | "fail") {
 }
 
 function renderHome(fetcher: typeof fetch, onOpenSettings = vi.fn()) {
-  render(<HomePage onOpenSettings={onOpenSettings} flagOptions={{ apiUrl: API, fetcher }} />);
+  render(<HomePage onOpenSettings={onOpenSettings} onJoin={vi.fn()} flagOptions={{ apiUrl: API, fetcher }} />);
   return onOpenSettings;
 }
 

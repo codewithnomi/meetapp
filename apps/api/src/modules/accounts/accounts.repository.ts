@@ -28,6 +28,9 @@ export function createAccountsRepository(db: Database) {
         .set({ image: null, ...(avatarKey === undefined ? {} : { avatarKey }) })
         .where(eq(user.id, id));
     },
+    setLastWorkspace: async (id: string, workspaceId: string) => {
+      await db.update(user).set({ lastWorkspaceId: workspaceId }).where(eq(user.id, id));
+    },
     acceptTerms: async (id: string, termsVersion: string, at: Date) => {
       await db.update(user).set({ termsVersion, termsAcceptedAt: at, ageConfirmedAt: at }).where(eq(user.id, id));
     },

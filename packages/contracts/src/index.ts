@@ -7,6 +7,7 @@ export {
   THEME_CHOICES,
   acceptTermsBodySchema,
   changePasswordBodySchema,
+  lastWorkspaceBodySchema,
   meResponseSchema,
   resetPasswordBodySchema,
   signUpBodySchema,

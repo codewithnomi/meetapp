@@ -18,6 +18,8 @@ export const meResponseSchema = z
      * counts requests to join waiting for the owner and admins (0 for members; AC-F01-19).
      */
     workspaces: z.array(workspaceSchema.extend({ pendingRequests: z.number().int() })),
+    /** The workspace to open: the last used while they are still in it, else Personal (AC-F01-16). */
+    currentWorkspaceId: z.uuid().nullable(),
   })
   .meta({ id: "Me", description: "The signed-in person and their workspaces." });
 
@@ -82,3 +84,6 @@ export const changePasswordBodySchema = z
     message: "Send either the current password or the emailed code.",
   })
   .meta({ id: "ChangePassword" });
+
+/** The workspace the app shows now; opened first at the next start (AC-F01-16). */
+export const lastWorkspaceBodySchema = z.object({ workspaceId: z.uuid() }).meta({ id: "LastWorkspace" });

@@ -132,7 +132,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
 
 ## Screens: workspaces and profile
 
-- [ ] **T14: Workspace switcher and creating a workspace.**
+- [x] **T14: Workspace switcher and creating a workspace.**
   - UI parts: WorkspaceSwitcher, create dialog.
   - Last-used workspace with Personal as the fallback; renames reach everyone through the 30-second check.
   - Covers: AC-F01-15, 16, 24.

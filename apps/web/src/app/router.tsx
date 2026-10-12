@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { errorText, useSession } from "../features/auth/index.ts";
+import { CurrentWorkspaceProvider } from "../features/workspaces/index.ts";
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
@@ -70,12 +71,16 @@ function SignedOutRoutes() {
 
 function SignedInRoutes() {
   const navigate = useNavigate();
+  // "Join with a link or code" opens the Join screen (T15); until then it stays on Home.
+  const home = <HomePage onOpenSettings={() => void navigate("/settings")} onJoin={() => void navigate("/join")} />;
   return (
-    <Routes>
-      <Route path="/" element={<HomePage onOpenSettings={() => void navigate("/settings")} />} />
-      <Route path="/settings" element={<SettingsPage onBack={() => void navigate("/")} />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <CurrentWorkspaceProvider>
+      <Routes>
+        <Route path="/" element={home} />
+        <Route path="/settings" element={<SettingsPage onBack={() => void navigate("/")} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </CurrentWorkspaceProvider>
   );
 }
 
