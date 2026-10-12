@@ -20,6 +20,8 @@ export const ERROR_CODES = [
   "PERSONAL_WORKSPACE",
   "OWNER_MUST_TRANSFER",
   "WORKSPACE_LIMIT",
+  "ALREADY_MEMBER",
+  "INVITATION_GONE",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

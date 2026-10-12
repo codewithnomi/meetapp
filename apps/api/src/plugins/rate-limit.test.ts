@@ -74,6 +74,20 @@ describe("TC-F01-34 [AC-F01-13] code emails per address and sign-ups per network
   });
 });
 
+describe("TC-F01-44 [AC-F01-17] invitation emails per sender", () => {
+  it("TC-F01-44 [AC-F01-17] the 51st in a day is refused, another sender is not affected, 24 hours later it works", async () => {
+    const clock = { now: Date.UTC(2026, 9, 11, 0, 0, 0) };
+    const limiter = limiterAt(clock, memoryStore().store);
+    for (let sent = 1; sent <= 50; sent++) {
+      expect(await limiter.take(RATE_RULES.invitationEmails, "sender-1")).toBeUndefined();
+    }
+    expect(await limiter.take(RATE_RULES.invitationEmails, "sender-1")).toBeGreaterThan(0);
+    expect(await limiter.take(RATE_RULES.invitationEmails, "sender-2")).toBeUndefined();
+    clock.now += 24 * 60 * 60 * 1_000;
+    expect(await limiter.take(RATE_RULES.invitationEmails, "sender-1")).toBeUndefined();
+  });
+});
+
 describe("TC-F01-35 [AC-F01-13] limits reveal nothing", () => {
   it("TC-F01-35 [AC-F01-13] counters are stored under an HMAC, never the plain email", async () => {
     const clock = { now: Date.UTC(2026, 9, 11, 10, 0, 0) };

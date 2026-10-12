@@ -1,9 +1,9 @@
 // Company workspaces and the personal one (F01 T11; AC-F01-14, 15): creating, names, the 20-workspace
 // limit, double submit and the personal workspace's rules. Own database; needs the `pnpm dev` services.
-import { workspaces } from "@meetapp/db";
+import { invitations, workspaces } from "@meetapp/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { bearer, startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
+import { bearer, startAuthTestApp, testEmail, type AuthTestApp } from "../../test-support/auth-app.ts";
 import {
   caller,
   errorCode,
@@ -170,6 +170,21 @@ describe("the personal workspace", () => {
     await expect(second).rejects.toThrow();
   });
 
-  it.todo("TC-F01-38 [AC-F01-14] invitations to a personal workspace are 409 PERSONAL_WORKSPACE (T12)");
+  it(
+    "TC-F01-38 [AC-F01-14] invitations to a personal workspace are 409 PERSONAL_WORKSPACE; outsiders get 404",
+    SLOW,
+    async () => {
+      const me = await newPerson(t, "inviter-p");
+      const outsider = await newPerson(t, "outsider-i");
+      const url = `/api/v1/workspaces/${await personalOf(me)}/invitations`;
+      const email = testEmail("nobody");
+      const own = await call(me.token, "POST", url, { email });
+      expect([own.statusCode, errorCode(own)]).toEqual([409, "PERSONAL_WORKSPACE"]);
+      expect((await call(outsider.token, "POST", url, { email })).statusCode).toBe(404);
+      const stored = await t.database.db.select().from(invitations).where(eq(invitations.email, email));
+      expect(stored).toHaveLength(0);
+      expect((await call(outsider.token, "GET", "/api/v1/me/invitations")).json()).toEqual({ invitations: [] });
+    },
+  );
   it.todo("TC-F01-38 [AC-F01-14] join link, code and join requests on a personal workspace are refused (T13)");
 });

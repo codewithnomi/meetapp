@@ -237,6 +237,12 @@ Better Auth's own email sign-up would create the account before the email is pro
   - `Idempotency-Key` (8–100 letters, digits, `-` or `_`) is kept in Redis for 10 minutes per person (`plugins/idempotency.ts`). A copy that arrives while the first still runs waits for its result; a refused first try can be repeated with the same key.
   - The member list also returns `yourActions`, the actions the caller's role allows (from the same role table), so the app offers only those.
   - Role changes and removals check the other person's role at the moment of the change, so two admins acting at once can't skip the table.
+- **Built in T12:**
+  - Pending invitations: the owner and admins see all; a member sees the ones they sent. **Send again** makes a new link and email (the old link stops) and counts toward the 50 a day.
+  - A replaced, cancelled, declined, accepted or expired invitation answers `410 INVITATION_GONE`; an invitation for another email answers 404, the same as one that doesn't exist.
+  - Two invitations to the same email at the same moment are handled one after the other (the workspace row is locked briefly), so there is still one pending.
+  - The invitation page shows the email as `x***@example.com`. Every unusable link gets the same 404 page. Its "Get MeetApp" link points to the project's GitHub releases page until MeetApp has its own website (with the hosting decision).
+  - The hand-off page and the invitation page share one page frame (`plugins/html-page.ts`): no scripts, the style allowed by its hash, and `form-action 'none'` on pages without a form.
 
 ## 6. Profile, photo and preferences (AC-25, 26)
 - **Name:** 1–60 characters, trimmed. Shown everywhere as plain text (React escapes it; emails escape it: AC-35).

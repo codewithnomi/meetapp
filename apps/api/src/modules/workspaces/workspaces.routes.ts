@@ -14,7 +14,7 @@ import {
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import type { Idempotency } from "../../plugins/idempotency.ts";
 import { signedInUser } from "../../plugins/session.ts";
-import { memberOf, personId, workspaceAccess, type MembershipLookup } from "../../plugins/workspace-access.ts";
+import { memberOf, idParam, workspaceAccess, type MembershipLookup } from "../../plugins/workspace-access.ts";
 import type { WorkspacesService } from "./workspaces.service.ts";
 
 const tags = ["workspaces"];
@@ -113,12 +113,12 @@ export const workspacesRoutes: FastifyPluginAsyncZod<{
   app.get("/api/v1/workspaces/:workspaceId/members", MEMBERS, async (request) => workspaces.members(memberOf(request)));
 
   app.patch("/api/v1/workspaces/:workspaceId/members/:userId", CHANGE_ROLE, async (request, reply) => {
-    await workspaces.changeRole(memberOf(request), personId(request.params.userId), request.body.role);
+    await workspaces.changeRole(memberOf(request), idParam(request.params.userId), request.body.role);
     return reply.status(204).send();
   });
 
   app.delete("/api/v1/workspaces/:workspaceId/members/:userId", REMOVE, async (request, reply) => {
-    await workspaces.remove(memberOf(request), personId(request.params.userId));
+    await workspaces.remove(memberOf(request), idParam(request.params.userId));
     return reply.status(204).send();
   });
 

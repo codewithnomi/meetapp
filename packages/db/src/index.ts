@@ -5,6 +5,7 @@ export { MIGRATIONS_FOLDER, migrationCount, runMigrations } from "./migrate.ts";
 export {
   account,
   featureFlags,
+  invitations,
   memberRemovals,
   session,
   user,

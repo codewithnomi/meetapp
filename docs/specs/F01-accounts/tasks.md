@@ -111,7 +111,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-38, 39, 40, 55, 56, 57, 58, 60.
   - Check: the role table holds for every action; a removed person's next request gets 404.
 
-- [ ] **T12: Email invitations.**
+- [x] **T12: Email invitations.**
   - Invite (members as member only; owner and admins as admin; limit 50/day; already-a-member; replace; cancel; resend).
   - Accept and decline for the invited email only; admin role re-checked when accepted.
   - Invitation email.

@@ -46,7 +46,7 @@ meetapp/
 │   │   └── src/
 │   │       ├── server.ts          Starts the server
 │   │       ├── config/            Settings from .env, validated at start
-│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts (F01)
+│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01)
 │   │       ├── modules/           One folder per business area:
 │   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; invitations/page/ is the invitation web page, accounts/page/ the Google/Microsoft hand-off page)
 │   │       │   └── meetings/

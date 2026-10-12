@@ -1,0 +1,14 @@
+{
+  "title": "MeetApp invitation",
+  "valid": {
+    "heading": "You're invited to {{workspace}}",
+    "invitedBy": "{{inviter}} invited {{email}} to join {{workspace}} on MeetApp.",
+    "invitedByUnknown": "{{email}} was invited to join {{workspace}} on MeetApp.",
+    "howTo": "Open the MeetApp app and sign in or create an account with that email address. The invitation is waiting there, with Join and Decline.",
+    "getApp": "Get MeetApp"
+  },
+  "invalid": {
+    "heading": "This invitation is no longer valid",
+    "body": "This invitation is no longer valid; ask for a new one."
+  }
+}

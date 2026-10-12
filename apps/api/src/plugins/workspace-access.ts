@@ -38,8 +38,8 @@ export function memberOf(request: FastifyRequest): Membership {
   return request.membership;
 }
 
-/** A `:userId` in the address that can't be anyone's id is a member that doesn't exist. */
-export function personId(value: string): string {
+/** An id in the address (`:userId`, `:invitationId`) that can't be anyone's is one that doesn't exist: 404. */
+export function idParam(value: string): string {
   if (!UUID.test(value)) throw notFound();
   return value;
 }

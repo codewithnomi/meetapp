@@ -14,6 +14,7 @@ import { flagsRoutes } from "./modules/flags/flags.routes.ts";
 import { createFlagsService, type FlagsSource } from "./modules/flags/flags.service.ts";
 import { healthRoutes } from "./modules/health/health.routes.ts";
 import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
+import { invitationsRoutes } from "./modules/invitations/invitations.routes.ts";
 import { workspacesRoutes } from "./modules/workspaces/workspaces.routes.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
 import { authSessionReader } from "./plugins/auth.ts";
@@ -70,7 +71,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) {
     const { auth, limiter, service, signUp, passwords, desktopSignIn, providers } = options.accounts;
-    const { workspaces, membershipLookup, idempotency } = options.accounts;
+    const { workspaces, invitations, membershipLookup, idempotency } = options.accounts;
     await app.register(authRoutes, { auth, limiter });
     await app.register(accountsRoutes, { accounts: service });
     await app.register(signUpRoutes, { signUp, accounts: service });
@@ -82,6 +83,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       secureCookies: config.APP_PUBLIC_URL.startsWith("https:"),
     });
     await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
+    await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
   }
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;

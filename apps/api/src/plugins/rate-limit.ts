@@ -20,6 +20,8 @@ export const RATE_RULES = {
   signUps: { name: "sign-ups", limit: 50, windowSeconds: 60 * 60 },
   /** "Someone tried to create an account with your email": at most one notice an hour (AC-F01-02). */
   someoneTried: { name: "someone-tried", limit: 1, windowSeconds: 60 * 60 },
+  /** Invitation emails per sender, across all workspaces: 50 a day (AC-F01-17). */
+  invitationEmails: { name: "invitation-emails", limit: 50, windowSeconds: 24 * 60 * 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */
