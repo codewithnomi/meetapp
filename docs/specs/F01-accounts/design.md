@@ -231,6 +231,12 @@ Better Auth's own email sign-up would create the account before the email is pro
 - **Removal (AC-21, 23):** deletes the membership row (their content stays, owned by the workspace) and writes a `member_removals` row, used for the "removed earlier" badge. Their next request in that workspace gets 404.
 - **Hand-over (AC-22):** one transaction swaps the roles: the old owner becomes admin, the new one owner.
 - **Limits (AC-15):** a user can own at most 20 company workspaces at a time, checked in the service. A hand-over counts for the new owner.
+- **Built in T11:**
+  - The access check runs before the request body is checked, so an outsider gets 404 whatever they send; a malformed workspace or person id is also 404.
+  - Over the limit, creating answers `409 WORKSPACE_LIMIT` ("You can own at most 20 workspaces."); a hand-over to someone who already owns 20 answers the same. Creating locks the person's row for that moment, so two creates sent together can't pass the limit.
+  - `Idempotency-Key` (8–100 letters, digits, `-` or `_`) is kept in Redis for 10 minutes per person (`plugins/idempotency.ts`). A copy that arrives while the first still runs waits for its result; a refused first try can be repeated with the same key.
+  - The member list also returns `yourActions`, the actions the caller's role allows (from the same role table), so the app offers only those.
+  - Role changes and removals check the other person's role at the moment of the change, so two admins acting at once can't skip the table.
 
 ## 6. Profile, photo and preferences (AC-25, 26)
 - **Name:** 1–60 characters, trimmed. Shown everywhere as plain text (React escapes it; emails escape it: AC-35).
@@ -296,7 +302,7 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `GET /api/v1/workspaces/:workspaceId/requests` · `POST …/:id/approve` · `/reject` | owner/admin | requests |
 | `GET /invite/:token` | public | invitation web page (HTML; `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex`, strict CSP, limited per network address) |
 
-Errors use the F00 format: 400, 401, 403, 404, 409 (`ALREADY_MEMBER`, `PENDING_REQUEST`), 410 (expired or cancelled invitation), and 429 `TOO_MANY_ATTEMPTS` with `retryAfterSeconds`.
+Errors use the F00 format: 400, 401, 403, 404, 409 (`ALREADY_MEMBER`, `PENDING_REQUEST`, `PERSONAL_WORKSPACE`, `OWNER_MUST_TRANSFER`, `WORKSPACE_LIMIT`), 410 (expired or cancelled invitation), and 429 `TOO_MANY_ATTEMPTS` with `retryAfterSeconds`.
 
 ## 9. Rate limits (AC-13, S5)
 `plugins/rate-limit.ts` keeps fixed-window counters in Redis. Email-based counters are keyed by an HMAC of the lower-cased email and grow whether or not an account exists.

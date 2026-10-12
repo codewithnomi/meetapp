@@ -1,5 +1,6 @@
 // The signed-in person (F01 design.md section 8): `GET /api/v1/me` and accepting the terms.
 import { z } from "zod";
+import { workspaceSchema } from "./workspaces.ts";
 
 export const meResponseSchema = z
   .object({
@@ -12,8 +13,10 @@ export const meResponseSchema = z
       theme: z.enum(["light", "dark", "system"]).nullable(),
       accent: z.string().nullable(),
     }),
+    /** Every workspace they are in, with their role; Personal first (AC-F01-14, 23). */
+    workspaces: z.array(workspaceSchema),
   })
-  .meta({ id: "Me", description: "The signed-in person." });
+  .meta({ id: "Me", description: "The signed-in person and their workspaces." });
 
 export type MeResponse = z.infer<typeof meResponseSchema>;
 

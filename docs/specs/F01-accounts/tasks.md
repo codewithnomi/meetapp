@@ -102,7 +102,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
 
 ## Backend: workspaces
 
-- [ ] **T11: Workspaces, roles and members.**
+- [x] **T11: Workspaces, roles and members.**
   - `plugins/workspace-access.ts` (404 for outsiders) and `workspaces.permissions.ts`.
   - Create (Idempotency-Key, own at most 20), rename, member list, change role, remove (with a `member_removals` row), leave, hand over.
   - Personal-workspace rules (`409 PERSONAL_WORKSPACE`).

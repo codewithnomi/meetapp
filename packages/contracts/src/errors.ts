@@ -16,6 +16,10 @@ export const ERROR_CODES = [
   "PASSWORD_WRONG",
   "SIGN_IN_CANCELLED",
   "PROVIDER_EMAIL_UNVERIFIED",
+  // F01: workspaces.
+  "PERSONAL_WORKSPACE",
+  "OWNER_MUST_TRANSFER",
+  "WORKSPACE_LIMIT",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

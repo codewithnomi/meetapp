@@ -1,5 +1,6 @@
 // Puts the accounts pieces together (F01): Better Auth, the rate limiter, and the accounts, sign-up,
-// passwords and desktop sign-in services. Used by server.ts and by the integration tests, so both run the same wiring.
+// passwords, desktop sign-in and workspaces services. Used by server.ts and by the integration tests,
+// so both run the same wiring.
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
 import type { Redis } from "ioredis";
@@ -14,7 +15,9 @@ import { createProviderPhotoImporter, type ProviderPhotoDependencies } from "./m
 import { createPendingSignUpsRepository } from "./modules/accounts/pending-sign-ups.repository.ts";
 import { createSignUpService } from "./modules/accounts/sign-up.service.ts";
 import { createWorkspacesRepository } from "./modules/workspaces/workspaces.repository.ts";
+import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
 import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
+import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
 import { createRateLimiter } from "./plugins/rate-limit.ts";
 
@@ -65,7 +68,19 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
         log.warn({ problem: problem instanceof Error ? problem.name : "unknown" }, "provider photo not copied"),
     }),
   });
-  return { auth, limiter, service, signUp, passwords, desktopSignIn, providers };
+  const workspacesService = createWorkspacesService(workspaces);
+  return {
+    auth,
+    limiter,
+    service,
+    signUp,
+    passwords,
+    desktopSignIn,
+    providers,
+    workspaces: workspacesService,
+    membershipLookup: workspaces.findMembership,
+    idempotency: createIdempotency({ store: redisIdempotencyStore(redis) }),
+  };
 }
 
 export type Accounts = ReturnType<typeof createAccounts>;

@@ -25,3 +25,23 @@ export {
   providersResponseSchema,
   type SignInProvider,
 } from "./desktop-sign-in.ts";
+export {
+  MEMBER_ROLES,
+  WORKSPACE_ACTIONS,
+  WORKSPACE_KINDS,
+  changeRoleBodySchema,
+  createWorkspaceBodySchema,
+  idempotencyHeadersSchema,
+  memberParamsSchema,
+  membersResponseSchema,
+  renameWorkspaceBodySchema,
+  transferBodySchema,
+  workspaceCreatedSchema,
+  workspaceNameSchema,
+  workspaceParamsSchema,
+  workspaceSchema,
+  type MemberRole,
+  type MembersResponse,
+  type WorkspaceAction,
+  type WorkspaceSummary,
+} from "./workspaces.ts";

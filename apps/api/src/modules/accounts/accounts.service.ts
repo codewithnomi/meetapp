@@ -28,6 +28,7 @@ export function createAccountsService(
           theme,
           accent: row.accent,
         },
+        workspaces: await workspaces.listForUser(row.id),
       };
     },
     /** Records the terms and the 16+ statement (first Google/Microsoft sign-in, AC-F01-07). */
