@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { errorText, useSession } from "../features/auth/index.ts";
+import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
@@ -61,6 +62,7 @@ function SignedOutRoutes() {
       <Route path="/create-account" element={<CreateAccountPage />} />
       <Route path="/code" element={<CodePage />} />
       <Route path="/new-password" element={<NewPasswordPage />} />
+      <Route path="/browser-sign-in" element={<BrowserSignInPage />} />
       <Route path="*" element={<Navigate to="/sign-in" replace />} />
     </Routes>
   );

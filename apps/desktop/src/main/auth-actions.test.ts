@@ -4,6 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { createAuthActions, isValidCall } from "./auth-actions.ts";
 import { createAuthClient } from "./auth-client.ts";
+import { createProviderSignIn } from "./provider-sign-in.ts";
 import type { TokenStore } from "./auth-token.ts";
 
 const TOKEN = "secret-session-token.signature";
@@ -47,7 +48,9 @@ function fakeBackend(options: { down?: boolean; signInStatus?: number } = {}) {
 function setUp(options: Parameters<typeof fakeBackend>[0] = {}) {
   const tokens = memoryTokens();
   const backend = fakeBackend(options);
-  const actions = createAuthActions(createAuthClient("http://api.test", tokens, backend.fetchImpl), tokens);
+  const client = createAuthClient("http://api.test", tokens, backend.fetchImpl);
+  const providers = createProviderSignIn({ client, tokens, openInBrowser: async () => true });
+  const actions = createAuthActions(client, tokens, providers);
   return { tokens, actions, seen: backend.seen };
 }
 

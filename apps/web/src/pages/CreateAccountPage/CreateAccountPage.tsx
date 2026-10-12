@@ -11,6 +11,7 @@ import {
   TEXT_LINK,
   ActionErrorNotice,
   AuthHeading,
+  ProviderButtons,
   SubmitButton,
   TermsCheckbox,
   authBridge,
@@ -47,17 +48,25 @@ function HaveAccount() {
   );
 }
 
+/** Starts the sign-up with this computer's look, then opens the code screen. */
 function useStartSignUp() {
   const navigate = useNavigate();
   const { theme, accent } = useAppearance();
   const start = useAuthAction((form: SignUpForm) => authBridge().startSignUp({ ...form, theme, accent }));
-  const submit = (form: SignUpForm) =>
+  const submit = (fields: { email: string; name: string; password: string }) => {
+    const form = {
+      email: fields.email.trim(),
+      name: fields.name.trim(),
+      password: fields.password,
+      termsAccepted: true as const,
+    };
     start.mutate(form, {
       onSuccess: ({ signupId }) => {
         const state: CodeScreenState = { purpose: "signUp", email: form.email, signupId: signupId ?? "" };
         void navigate("/code", { state });
       },
     });
+  };
   return { start, submit };
 }
 
@@ -66,14 +75,13 @@ export function CreateAccountPage() {
   const fieldError = useFieldError();
   const { register, handleSubmit, formState } = useForm({ resolver: zodResolver(createAccountForm) });
   const { start, submit } = useStartSignUp();
-  const onSubmit = handleSubmit(({ email, name, password }) =>
-    submit({ email: email.trim(), name: name.trim(), password, termsAccepted: true }),
-  );
+  const onSubmit = handleSubmit(submit);
   const fields = { email: register("email"), name: register("name"), password: register("password") };
   return (
     <AuthLayout brand={t("auth.brand")} aside={<CreateAside />}>
       <form noValidate className="flex flex-col gap-4.5" onSubmit={onSubmit}>
         <AuthHeading title={t("auth.create.title")}>{t("auth.create.subtitle")}</AuthHeading>
+        <ProviderButtons dividerLabel={t("auth.providers.orEmail")} />
         <Input
           id="new-email"
           label={t("auth.create.email")}

@@ -59,6 +59,7 @@ Names match the approved canvas.
   1. You type your email and choose **Continue with email**.
   2. The **password step** always comes next, whether or not the email has an account (AC-05).
   3. From there: **Sign in**, **Email me a code instead** (AC-06) or **Forgot password?** (AC-09).
+- **Built in T10:** the Google/Microsoft buttons (only for providers set up), "Finish signing in in your browser" with the code, a spinner and Cancel; a cancel, an unverified email or a lock brings the person back to Sign in with the reason. Settings gains **Sign out everywhere** next to **Sign out**. A `401` from any screen's own call makes the app ask main who is signed in again.
 - **Built in T9:** routes live in memory (`MemoryRouter`; the desktop app has no address bar). While the session is unknown a spinner shows; if main can't reach the backend, "Can't reach MeetApp" with Retry. Until T10 adds the Google/Microsoft buttons, the Sign in subtitle reads "Use your email to sign in." Until T16's Profile screen, Settings has a small Account section (who is signed in, **Sign out**). The reset code is checked together with the new password, so a wrong reset code shows on the New password screen.
 - **Google or Microsoft** (AC-07): the app shows "Finish signing in in your browser", a 4-digit **match code** and a **Cancel** button, and waits (section 4).
 - **Create account** (AC-01): email, name, password and the terms tick. Then the **code** screen (AC-04), then home, in your personal workspace.
@@ -105,7 +106,7 @@ So Better Auth's own sign-up, update-user, change-email, delete-user, link/unlin
 Plugins and settings:
 - **`emailOTP`:** `otpLength: 6`, `expiresIn: 900` (15 min), `allowedAttempts: 5`, `storeOTP: "hashed"`, `overrideDefaultEmailVerification: true`, `disableSignUp: true`. `sendVerificationOTP` only queues the email and is never awaited, so timing doesn't reveal anything.
 - **`bearer`:** the desktop app sends `Authorization: Bearer <token>`. The app never uses cookies.
-- **Social providers:** `google` and `microsoft` (tenant `common`), each switched on only when its client id and secret are set (AC-07). `GET /api/v1/auth/providers` tells the app which buttons to show.
+- **Social providers:** `google` and `microsoft` (tenant `common`), each switched on only when its client id and secret are set (AC-07). `GET /api/v1/auth/providers` tells the app which buttons to show. An optional `MICROSOFT_AUTHORITY` setting points Microsoft sign-in elsewhere: a national Microsoft cloud, or the local fake provider of the desktop tests (https only; plain http only on this computer and never in production). With it, Better Auth's Graph photo lookup is off (T10).
 - **Verified provider email only (AC-08):**
   - Google: `email_verified` must be true.
   - Microsoft: the `xms_edov` optional claim must be true (set up in the app registration), or the account must be in Microsoft's consumer tenant. This avoids the known "nOAuth" problem.
@@ -156,7 +157,7 @@ Better Auth's own email sign-up would create the account before the email is pro
   - Instead, the preload bridge offers `meetapp.auth`:
     - `signInWithPassword(email, password)`, `requestCode(email, purpose)`, `signInWithCode(email, code)`;
     - `startSignUp(form)`, `resendSignUpCode(signupId)`, `finishSignUp(signupId, code)`, `resetPassword(email, code, newPassword)`, `changePassword(change)`;
-    - `startProviderSignIn(provider)`, `cancelProviderSignIn()`;
+    - `startProviderSignIn(provider)` (opens the browser, answers with the match code), `finishProviderSignIn()` (waits for the browser, Cancel or 5 minutes; T10), `cancelProviderSignIn()`;
     - `signOut()`, `signOutEverywhere()`, `status()`.
   - Main makes each call itself (Node's `fetch`, which the page's request rules don't touch), keeps the token, and returns only `{ ok, user }` (or `{ ok, signupId }` for the first sign-up step) or an error code to the page. Input from the page is checked first (known action, short texts or flat objects). `startProviderSignIn`/`cancelProviderSignIn` arrive in T10.
   - Main accepts these messages only from the app's own window and page origin.

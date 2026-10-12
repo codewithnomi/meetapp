@@ -40,6 +40,9 @@ The return addresses below use that value. Replace `localhost:3010` if yours dif
    MICROSOFT_CLIENT_SECRET=<the secret value>
    ```
 
+## The MICROSOFT_AUTHORITY setting
+Leave it empty. It exists for national Microsoft clouds and for the desktop tests, which point it at a local fake provider (`pnpm test` sets it by itself).
+
 ## Check it
 1. Restart with `pnpm dev`. `http://localhost:3010/api/v1/auth/providers` shows `true` for each provider you set up.
 2. In the app, choose **Continue with Google** (or Microsoft). Your browser opens. Sign in, check that the 4-digit code matches the app, and press **Continue**.

@@ -7,8 +7,9 @@ import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
 import { createTokenStore } from "./auth-token.ts";
+import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
-import { APP_ORIGIN, contentSecurityPolicy, webPreferences } from "./security.ts";
+import { canOpenHandOffStart, contentSecurityPolicy, webPreferences, APP_ORIGIN } from "./security.ts";
 import { startSentry } from "./sentry.ts";
 import { readSettings } from "./settings.ts";
 
@@ -44,7 +45,14 @@ void app.whenReady().then(() => {
   lockDownSession(session.defaultSession, csp, settings.devServerUrl);
   // safeStorage works only once the app is ready.
   const tokens = createTokenStore(safeStorage, join(app.getPath("userData"), "auth-token"));
-  registerAuthBridge(createAuthActions(createAuthClient(settings.apiUrl, tokens), tokens), appUrl);
+  const client = createAuthClient(settings.apiUrl, tokens);
+  const providers = createProviderSignIn({
+    client,
+    tokens,
+    // Only the backend's start link (https, or this computer in development: D040 extended).
+    openInBrowser: async (url) => canOpenHandOffStart(url, app.isPackaged) && (await shell.openExternal(url), true),
+  });
+  registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
   if (!settings.devServerUrl) serveScreens(settings.rendererDir, csp);
   openWindow();

@@ -24,6 +24,9 @@ export function installFakeAuth(signedIn: SignedInUser | null = null): FakeAuth 
     signedIn ? { ok: true as const, user: signedIn } : { ok: false as const, code: "SIGNED_OUT" };
   const ok = async () => ({ ok: true as const });
   const auth: FakeAuth = {
+    startProviderSignIn: vi.fn<AuthBridge["startProviderSignIn"]>(async () => ({ ok: true, matchCode: "4821" })),
+    finishProviderSignIn: vi.fn<AuthBridge["finishProviderSignIn"]>(async () => ({ ok: true, user: PAT })),
+    cancelProviderSignIn: vi.fn<AuthBridge["cancelProviderSignIn"]>(ok),
     signInWithPassword: vi.fn<AuthBridge["signInWithPassword"]>(async () => ({ ok: true, user: PAT })),
     requestCode: vi.fn<AuthBridge["requestCode"]>(ok),
     signInWithCode: vi.fn<AuthBridge["signInWithCode"]>(async () => ({ ok: true, user: PAT })),

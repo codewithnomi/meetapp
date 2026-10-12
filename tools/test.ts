@@ -4,6 +4,7 @@
 // backend. Prints a short summary and fails if any part failed. CI runs the two parts as separate jobs:
 // `--only vitest` and `--only desktop`.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { createServer, type AddressInfo } from "node:net";
 import { join } from "node:path";
 import { ROOT, fail } from "./cli.ts";
 import { DOCKER_MESSAGES, addMissingSettings, checkDocker, ensureEnvFile, readEnv } from "./dev-checks.ts";
@@ -20,12 +21,39 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv = {}): bool
 }
 
 /** The real backend with the local settings, as `pnpm dev` runs it (without reloading). */
-function startApi(): ChildProcess {
+function startApi(extraEnv: Record<string, string>): ChildProcess {
   return spawn(
     process.execPath,
     ["--env-file-if-exists=../../.env", "--import", "./src/instrumentation.ts", "src/server.ts"],
-    { cwd: join(ROOT, "apps/api"), stdio: "ignore", env: { ...process.env, NODE_ENV: "test" } },
+    { cwd: join(ROOT, "apps/api"), stdio: "ignore", env: { ...process.env, ...extraEnv, NODE_ENV: "test" } },
   );
+}
+
+/** A port nothing listens on right now (for the desktop tests' fake Microsoft sign-in). */
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const { port } = server.address() as AddressInfo;
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+/**
+ * Microsoft sign-in pointed at a local fake provider, which the desktop tests start on this port
+ * (F01 T10). Settings given here win over .env, so the owner's own keys are never used in tests.
+ */
+function fakeMicrosoft(apiUrl: string, port: number): Record<string, string> {
+  return {
+    MICROSOFT_CLIENT_ID: "test-microsoft-client",
+    MICROSOFT_CLIENT_SECRET: "test-microsoft-secret",
+    MICROSOFT_AUTHORITY: `http://127.0.0.1:${String(port)}`,
+    GOOGLE_CLIENT_ID: "",
+    GOOGLE_CLIENT_SECRET: "",
+    APP_PUBLIC_URL: apiUrl,
+  };
 }
 
 async function waitForApi(url: string): Promise<boolean> {
@@ -54,7 +82,8 @@ async function stopApi(api: ChildProcess): Promise<void> {
 async function desktopTests(env: Record<string, string>): Promise<boolean> {
   if (!run("node", ["tools/seed.ts", "add"])) return false;
   const apiUrl = `http://127.0.0.1:${env["API_PORT"] ?? "3000"}`;
-  const api = startApi();
+  const providerPort = await freePort();
+  const api = startApi(fakeMicrosoft(apiUrl, providerPort));
   try {
     if (!(await waitForApi(apiUrl))) {
       process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);
@@ -64,6 +93,7 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
       VITE_API_URL: apiUrl,
       MEETAPP_E2E_API_URL: apiUrl,
       MEETAPP_E2E_API_PID: String(api.pid),
+      MEETAPP_E2E_FAKE_PROVIDER_PORT: String(providerPort),
       MEETAPP_E2E_MAILPIT_URL: `http://127.0.0.1:${env["MAILPIT_WEB_PORT"] ?? "8025"}`,
     });
   } finally {

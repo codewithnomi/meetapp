@@ -57,3 +57,20 @@ describe("TC-F01-20 [AC-F01-07] Google and Microsoft are on only when both their
     expect(problems.join("\n")).not.toContain("ms-id");
   });
 });
+
+describe("TC-F01-23 [AC-F01-07] MICROSOFT_AUTHORITY (national clouds, the desktop tests' fake provider)", () => {
+  it("TC-F01-23 [AC-F01-07] empty means Microsoft's own; https is accepted", () => {
+    expect(loadConfig(fakeEnv()).MICROSOFT_AUTHORITY).toBeUndefined();
+    expect(problemsFor({ ...fakeEnv(), MICROSOFT_AUTHORITY: "https://login.microsoftonline.us" })).toEqual([]);
+  });
+
+  it("TC-F01-23 [AC-F01-07] plain http only on this computer, and never in production", () => {
+    const local = { ...fakeEnv(), MICROSOFT_AUTHORITY: "http://127.0.0.1:3021" };
+    expect(problemsFor({ ...local, NODE_ENV: "test" })).toEqual([]);
+    expect(problemsFor({ ...local, NODE_ENV: "production" })).toContainEqual(
+      expect.stringContaining("MICROSOFT_AUTHORITY"),
+    );
+    const remote = { ...fakeEnv(), NODE_ENV: "test", MICROSOFT_AUTHORITY: "http://login.example.test" };
+    expect(problemsFor(remote)).toContainEqual(expect.stringContaining("MICROSOFT_AUTHORITY"));
+  });
+});

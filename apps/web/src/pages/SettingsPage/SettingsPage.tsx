@@ -5,7 +5,7 @@ import { ACCENTS, type Accent } from "@meetapp/design-tokens";
 import { AccentPicker, Badge, Button, SegmentedControl, type IconName } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { THEME_CHOICES, useAppearance, type ThemeChoice } from "../../features/appearance/index.ts";
-import { useSession, useSignOut } from "../../features/auth/index.ts";
+import { useSession, useSignOut, useSignOutEverywhere } from "../../features/auth/index.ts";
 
 const THEME_ICONS: Record<ThemeChoice, IconName> = { light: "sun", dark: "moon", system: "monitor" };
 
@@ -81,11 +81,31 @@ function AppearanceSection() {
   );
 }
 
-/** Who is signed in, and Sign out (AC-F01-12). The full Profile screen arrives in F01 T16. */
+/** Sign out (this computer) or Sign out everywhere (every device), as in AC-F01-12. */
+function SignOutButtons() {
+  const { t } = useTranslation();
+  const signOut = useSignOut();
+  const everywhere = useSignOutEverywhere();
+  const busy = signOut.isPending || everywhere.isPending;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-3">
+        <Button variant="secondary" disabled={busy} onClick={() => signOut.mutate()}>
+          {t("settings.account.signOut")}
+        </Button>
+        <Button variant="danger" disabled={busy} onClick={() => everywhere.mutate()}>
+          {t("settings.account.signOutEverywhere")}
+        </Button>
+      </div>
+      <p className="m-0 text-caption text-ink-muted">{t("settings.account.everywhereHint")}</p>
+    </div>
+  );
+}
+
+/** Who is signed in, and the sign-out buttons (AC-F01-12). The full Profile screen arrives in F01 T16. */
 function AccountSection() {
   const { t } = useTranslation();
   const { data: user } = useSession();
-  const signOut = useSignOut();
   return (
     <section aria-labelledby="account-title" className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -96,15 +116,7 @@ function AccountSection() {
           <p className="m-0 text-body text-ink-muted">{t("settings.account.signedInAs", { email: user.email })}</p>
         ) : null}
       </div>
-      {signOut.isPending ? (
-        <Button variant="secondary" className="self-start" loading loadingLabel={t("settings.account.signingOut")}>
-          {t("settings.account.signOut")}
-        </Button>
-      ) : (
-        <Button variant="secondary" className="self-start" onClick={() => signOut.mutate()}>
-          {t("settings.account.signOut")}
-        </Button>
-      )}
+      <SignOutButtons />
     </section>
   );
 }

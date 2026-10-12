@@ -59,3 +59,12 @@ export function useSignOut() {
     onSuccess: () => queryClient.setQueryData(SESSION_KEY, null),
   });
 }
+
+/** Signs every device out, this one included; this computer is signed out whatever the answer (AC-F01-12). */
+export function useSignOutEverywhere() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => authBridge().signOutEverywhere(),
+    onSettled: () => queryClient.setQueryData(SESSION_KEY, null),
+  });
+}

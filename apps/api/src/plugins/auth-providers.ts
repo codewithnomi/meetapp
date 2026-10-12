@@ -26,6 +26,11 @@ export function socialProviders(config: Config): SocialProviders {
       clientSecret: config.MICROSOFT_CLIENT_SECRET ?? "",
       tenantId: "common",
       prompt: "select_account",
+      // A national cloud or the tests' fake provider has no photo at Microsoft's Graph address.
+      ...(config.MICROSOFT_AUTHORITY !== undefined && {
+        authority: config.MICROSOFT_AUTHORITY,
+        disableProfilePhoto: true,
+      }),
       mapProfileToUser: (profile) => ({ emailVerified: microsoftEmailVerified(profile) }),
     };
   }

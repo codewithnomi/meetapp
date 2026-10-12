@@ -92,7 +92,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-01, 14, 28, 73.
   - Check: **the owner can create an account, confirm the code from Mailpit, sign out and sign in again in the desktop app.**
 
-- [ ] **T10: Google/Microsoft in the app, and staying signed in.**
+- [x] **T10: Google/Microsoft in the app, and staying signed in.**
   - The "Finish signing in in your browser" screen with the match code and Cancel.
   - The app opens signed in after a restart.
   - Sign out and Sign out everywhere in the app; the 30-second check.

@@ -29,6 +29,14 @@ const PROVIDER_KEYS = [
   ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"],
 ] as const;
 
+/** https anywhere; plain http only on this computer and only outside production (desktop tests). */
+function isAllowedAuthority(value: string, environment: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const { protocol, hostname } = new URL(value);
+  if (protocol === "https:") return true;
+  return protocol === "http:" && environment !== "production" && (hostname === "127.0.0.1" || hostname === "localhost");
+}
+
 export const configSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]),
@@ -65,12 +73,22 @@ export const configSchema = z
     GOOGLE_CLIENT_SECRET: optional,
     MICROSOFT_CLIENT_ID: optional,
     MICROSOFT_CLIENT_SECRET: optional,
+    // Where Microsoft sign-in happens; empty means Microsoft's own (login.microsoftonline.com). Set only
+    // for a national Microsoft cloud, or to a local fake provider in the desktop tests.
+    MICROSOFT_AUTHORITY: optional,
     // Shown on the profile screen for data requests (privacy-legal.md §2).
     SUPPORT_EMAIL: z.email(),
     // The backend's address as people's browsers reach it (invitation page, Google/Microsoft hand-off).
     APP_PUBLIC_URL: z.url({ protocol: /^https?$/ }),
   })
   .superRefine((config, context) => {
+    if (config.MICROSOFT_AUTHORITY !== undefined && !isAllowedAuthority(config.MICROSOFT_AUTHORITY, config.NODE_ENV)) {
+      context.addIssue({
+        code: "custom",
+        path: ["MICROSOFT_AUTHORITY"],
+        message: "must be https (http only on this computer, and never in production)",
+      });
+    }
     for (const [id, secretKey] of PROVIDER_KEYS) {
       if ((config[id] === undefined) !== (config[secretKey] === undefined)) {
         context.addIssue({

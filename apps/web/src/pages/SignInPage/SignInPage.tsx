@@ -2,16 +2,33 @@
 // email comes first; the password step always follows, whether or not the email has an account, so
 // the screen never tells which emails are registered. From there: sign in, a code instead, or reset.
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AuthLayout, AuthTiles, Button, Input } from "@meetapp/ui";
+import { AuthLayout, AuthTiles, Button, Input, Notice } from "@meetapp/ui";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router";
-import { TEXT_LINK, AuthHeading, emailForm, useFieldError } from "../../features/auth/index.ts";
+import {
+  AuthHeading,
+  ProviderButtons,
+  TEXT_LINK,
+  emailForm,
+  errorText,
+  useFieldError,
+  useProviders,
+} from "../../features/auth/index.ts";
 import { PasswordStep } from "./PasswordStep.tsx";
+
+/** Why a Google/Microsoft sign-in ended, shown when it brings the person back here. */
+function ReturnNotice({ code }: { code: string | undefined }) {
+  const { t } = useTranslation();
+  if (code === undefined) return null;
+  const text = errorText(code);
+  return <Notice tone="danger">{t(text.key, text.values ?? {})}</Notice>;
+}
 
 function EmailStep({ initial, onContinue }: { initial: string; onContinue: (email: string) => void }) {
   const { t } = useTranslation();
+  const providers = useProviders();
   const fieldError = useFieldError();
   const { register, handleSubmit, formState } = useForm({
     resolver: zodResolver(emailForm),
@@ -20,7 +37,10 @@ function EmailStep({ initial, onContinue }: { initial: string; onContinue: (emai
   const emailInput = register("email");
   return (
     <form noValidate className="flex flex-col gap-5" onSubmit={handleSubmit(({ email }) => onContinue(email.trim()))}>
-      <AuthHeading title={t("auth.signIn.title")}>{t("auth.signIn.subtitle")}</AuthHeading>
+      <AuthHeading title={t("auth.signIn.title")}>
+        {providers.google || providers.microsoft ? t("auth.signIn.subtitleProviders") : t("auth.signIn.subtitle")}
+      </AuthHeading>
+      <ProviderButtons dividerLabel={t("auth.providers.or")} />
       <Input
         id="email"
         label={t("auth.signIn.email")}
@@ -48,12 +68,14 @@ export function SignInPage() {
   const { t } = useTranslation();
   const location = useLocation();
   const [email, setEmail] = useState<string | null>(null);
-  const initial = (location.state as { email?: string } | null)?.email ?? "";
+  const returned = location.state as { email?: string; notice?: string } | null;
+  const initial = returned?.email ?? "";
   return (
     <AuthLayout
       brand={t("auth.brand")}
       aside={<AuthTiles headline={t("auth.tiles.headline")} description={t("auth.tiles.description")} />}
     >
+      {email === null ? <ReturnNotice code={returned?.notice} /> : null}
       {email === null ? (
         <EmailStep initial={initial} onContinue={setEmail} />
       ) : (

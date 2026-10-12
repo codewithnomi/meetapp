@@ -37,7 +37,10 @@
       "title": "Account",
       "signedInAs": "Signed in as {{email}}",
       "signOut": "Sign out",
-      "signingOut": "Signing out"
+      "signingOut": "Signing out",
+      "signOutEverywhere": "Sign out everywhere",
+      "signingOutEverywhere": "Signing out everywhere",
+      "everywhereHint": "Signs out every computer and phone signed in to your account, this one included."
     }
   },
   "auth": {
@@ -54,7 +57,8 @@
       "newHere": "New to MeetApp?",
       "createAccount": "Create an account",
       "legal": "By continuing you agree to the Terms and the Privacy Policy. Meetings with AI notes show a notice to everyone.",
-      "placeholder": "aisha@aria.com"
+      "placeholder": "aisha@aria.com",
+      "subtitleProviders": "Use your work account, or your email."
     },
     "password": {
       "title": "Enter your password",
@@ -154,8 +158,27 @@
       "codeExpired": "This code has expired. Send a new code.",
       "passwordCommon": "This password is too common. Choose another one.",
       "tooManyAttempts": "Too many attempts, try again in {{minutes}} minute(s).",
-      "generic": "Something went wrong. Try again."
+      "generic": "Something went wrong. Try again.",
+      "cancelled": "Sign-in was cancelled.",
+      "unverified": "Your Google/Microsoft email isn't verified; create an account with your email instead."
     },
-    "loading": "Loading"
+    "loading": "Loading",
+    "providers": {
+      "google": "Continue with Google",
+      "microsoft": "Continue with Microsoft",
+      "or": "or",
+      "orEmail": "or with your email"
+    },
+    "browser": {
+      "title": "Finish signing in in your browser",
+      "body": "Your browser opened {{provider}}. Sign in there, then check that the page shows this code:",
+      "code": "Code",
+      "starting": "Opening your browser",
+      "waiting": "Waiting for your browser",
+      "cancel": "Cancel",
+      "google": "Google",
+      "microsoft": "Microsoft",
+      "help": "Closed the browser tab? Press Cancel and try again."
+    }
   }
 }

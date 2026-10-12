@@ -3,14 +3,25 @@
 // or an error code; the token never leaves the main process. Free of Electron imports.
 import type { AuthClient, AuthResult, PasswordChange, SignUpForm, StepResult } from "./auth-client.ts";
 import type { TokenStore } from "./auth-token.ts";
+import type { ProviderSignIn } from "./provider-sign-in.ts";
 
 /** The one channel the preload uses; the action name and its arguments travel with it. */
 export const AUTH_CHANNEL = "meetapp:auth";
 
 const SIGNED_OUT = { ok: false, code: "SIGNED_OUT" } as const;
 
-export function createAuthActions(client: AuthClient, tokens: TokenStore) {
+const PROVIDERS = new Set(["google", "microsoft"]);
+
+export function createAuthActions(client: AuthClient, tokens: TokenStore, providers: ProviderSignIn) {
   return {
+    /** Google/Microsoft: opens the browser; answers with the 4-digit code to show (AC-F01-07). */
+    startProviderSignIn: async (provider: string) =>
+      PROVIDERS.has(provider)
+        ? providers.start(provider as "google" | "microsoft")
+        : ({ ok: false, code: "BAD_REQUEST" } as const),
+    /** Waits for the person to finish in the browser (or Cancel, or 5 minutes). */
+    finishProviderSignIn: (): Promise<AuthResult> => providers.finish(),
+    cancelProviderSignIn: (): Promise<{ ok: true }> => providers.cancel(),
     signInWithPassword: (email: string, password: string): Promise<AuthResult> =>
       client.signingIn("/api/auth/sign-in/email", { email, password }),
     requestCode: (email: string, purpose: "sign-in" | "reset"): Promise<StepResult> =>
@@ -55,6 +66,9 @@ export function createAuthActions(client: AuthClient, tokens: TokenStore) {
 export type AuthActions = ReturnType<typeof createAuthActions>;
 export type AuthActionName = keyof AuthActions;
 export const AUTH_ACTION_NAMES = [
+  "startProviderSignIn",
+  "finishProviderSignIn",
+  "cancelProviderSignIn",
   "signInWithPassword",
   "requestCode",
   "signInWithCode",

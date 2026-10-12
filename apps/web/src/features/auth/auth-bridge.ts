@@ -20,7 +20,14 @@ export interface SignUpForm {
 type PasswordChange = { newPassword: string } & ({ currentPassword: string } | { code: string });
 
 /** `window.meetapp.auth` as the preload exposes it (apps/desktop/src/preload/preload.ts). */
+export type SignInProvider = "google" | "microsoft";
+
 export interface AuthBridge {
+  /** Opens the browser; answers with the 4-digit code to show (AC-F01-07). */
+  startProviderSignIn: (provider: SignInProvider) => Promise<{ ok: true; matchCode: string } | AuthFailure>;
+  /** Waits until the person finishes in the browser, Cancel is pressed, or 5 minutes pass. */
+  finishProviderSignIn: () => Promise<AuthResult>;
+  cancelProviderSignIn: () => Promise<{ ok: true }>;
   signInWithPassword: (email: string, password: string) => Promise<AuthResult>;
   requestCode: (email: string, purpose: "sign-in" | "reset") => Promise<StepResult>;
   signInWithCode: (email: string, code: string) => Promise<AuthResult>;
@@ -37,6 +44,9 @@ export interface AuthBridge {
 const unavailable = async (): Promise<AuthFailure> => ({ ok: false, code: "NO_DESKTOP" });
 
 const NO_DESKTOP: AuthBridge = {
+  startProviderSignIn: unavailable,
+  finishProviderSignIn: unavailable,
+  cancelProviderSignIn: async () => ({ ok: true }),
   signInWithPassword: unavailable,
   requestCode: unavailable,
   signInWithCode: unavailable,

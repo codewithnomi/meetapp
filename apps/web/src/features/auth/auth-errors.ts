@@ -9,6 +9,8 @@ type ErrorName =
   | "codeExpired"
   | "passwordCommon"
   | "tooManyAttempts"
+  | "cancelled"
+  | "unverified"
   | "generic";
 
 /** Text key and values for t(): e.g. { key: "auth.errors.tooManyAttempts", values: { minutes: 3 } }. */
@@ -26,6 +28,8 @@ const KEYS: Record<string, ErrorName> = {
   CODE_EXPIRED: "codeExpired",
   OTP_EXPIRED: "codeExpired",
   PASSWORD_WEAK: "passwordCommon",
+  SIGN_IN_CANCELLED: "cancelled",
+  PROVIDER_EMAIL_UNVERIFIED: "unverified",
 };
 
 /** `retryAfterSeconds` comes with TOO_MANY_ATTEMPTS (our limits, AC-F01-13). */

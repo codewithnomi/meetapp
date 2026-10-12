@@ -94,6 +94,9 @@ export function recordRequests(page: Page): string[] {
 export const BRIDGE = {
   meetapp: ["platform", "auth"],
   auth: [
+    "startProviderSignIn",
+    "finishProviderSignIn",
+    "cancelProviderSignIn",
     "signInWithPassword",
     "requestCode",
     "signInWithCode",
@@ -197,4 +200,15 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
   await running.page.reload();
   await expect(running.page.getByRole("heading", { level: 1, name: "MeetApp" })).toBeVisible();
   return running;
+}
+
+/** The token main keeps, read and decrypted inside main; undefined when it lives only in memory. */
+export function storedToken(app: ElectronApplication, profile: string): Promise<string | undefined> {
+  return app.evaluate(
+    ({ safeStorage }, file) => {
+      const fs = process.getBuiltinModule("node:fs");
+      return fs.existsSync(file) ? safeStorage.decryptString(fs.readFileSync(file)) : undefined;
+    },
+    join(profile, "auth-token"),
+  );
 }

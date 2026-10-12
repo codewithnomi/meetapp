@@ -25,15 +25,15 @@ export type PasswordChange = { newPassword: string } & ({ currentPassword: strin
 const APP_ORIGIN = "app://meetapp";
 const TIME_LIMIT_MS = 10_000;
 
-interface Answer {
+export interface Answer {
   status: number;
   token: string | null;
   body: Record<string, unknown>;
 }
 
-type Failure = Extract<AuthResult, { ok: false }>;
+export type Failure = Extract<AuthResult, { ok: false }>;
 
-function failureOf(answer: Answer): Failure {
+export function failureOf(answer: Answer): Failure {
   const error = (answer.body["error"] ?? answer.body) as {
     code?: unknown;
     message?: unknown;

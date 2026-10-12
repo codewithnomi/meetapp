@@ -1,6 +1,6 @@
-export { authBridge, type AuthBridge, type SignedInUser, type SignUpForm } from "./auth-bridge.ts";
+export { authBridge, type AuthBridge, type SignedInUser, type SignInProvider, type SignUpForm } from "./auth-bridge.ts";
 export { errorText } from "./auth-errors.ts";
-export { useAuthAction, useSession, useSignOut } from "./session.ts";
+export { SESSION_KEY, useAuthAction, useSession, useSignOut, useSignOutEverywhere } from "./session.ts";
 export { ActionErrorNotice } from "./ActionErrorNotice.tsx";
 export {
   createAccountForm,
@@ -17,3 +17,6 @@ export { TermsCheckbox } from "./TermsCheckbox.tsx";
 export { AuthHeading } from "./AuthHeading.tsx";
 export { useAcceptTerms } from "./accept-terms.ts";
 export { TEXT_LINK } from "./text-link.ts";
+export { useProviders } from "./providers.ts";
+export { ProviderButtons } from "./ProviderButtons.tsx";
+export { useBrowserSignIn } from "./browser-sign-in.ts";

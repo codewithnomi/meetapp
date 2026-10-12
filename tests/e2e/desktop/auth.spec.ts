@@ -2,9 +2,8 @@
 // through `window.meetapp.auth` (the code comes from the fake inbox); then the token main keeps is looked
 // for everywhere the page can see. Needs the backend and Mailpit, so it runs from `pnpm test`.
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
-import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
-import { closeApp, codeFor, freshProfile, launch } from "./desktop.ts";
+import { expect, test, type Page } from "@playwright/test";
+import { closeApp, codeFor, freshProfile, launch, storedToken } from "./desktop.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const MAILPIT_URL = process.env["MEETAPP_E2E_MAILPIT_URL"];
@@ -16,17 +15,6 @@ interface AuthBridge {
   signOut: () => Promise<unknown>;
 }
 type PageWindow = Window & { meetapp: { auth: AuthBridge } };
-
-/** The token main keeps, read and decrypted inside main; undefined when it lives only in memory. */
-function storedToken(app: ElectronApplication, profile: string): Promise<string | undefined> {
-  return app.evaluate(
-    ({ safeStorage }, file) => {
-      const fs = process.getBuiltinModule("node:fs");
-      return fs.existsSync(file) ? safeStorage.decryptString(fs.readFileSync(file)) : undefined;
-    },
-    join(profile, "auth-token"),
-  );
-}
 
 /** Everything the page itself can read: its storages, cookies, databases and window properties. */
 function pageVisible(page: Page): Promise<string> {

@@ -187,3 +187,71 @@ describe("TC-F01-15 [AC-F01-07] the terms gate", () => {
     );
   });
 });
+
+describe("TC-F01-23 [AC-F01-07] Google/Microsoft from the app", () => {
+  /** The backend says which providers are on; other calls fail like a missing backend. */
+  function providersOn(google: boolean, microsoft: boolean) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (String(url).endsWith("/api/v1/auth/providers")) return Response.json({ google, microsoft });
+        throw new TypeError("Failed to fetch");
+      }),
+    );
+  }
+
+  it("TC-F01-20 [AC-F01-07] only the providers set up on the backend get a button", async () => {
+    providersOn(true, false);
+    renderWithApp(<AppRoutes />);
+    expect(await screen.findByRole("button", { name: "Continue with Google" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Continue with Microsoft" })).not.toBeInTheDocument();
+    expect(screen.getByText("Use your work account, or your email.")).toBeInTheDocument();
+  });
+
+  it("TC-F01-23 [AC-F01-07] the app shows the code while the browser finishes, then is signed in", async () => {
+    providersOn(true, true);
+    let finish: (value: { ok: true; user: typeof PAT }) => void = () => undefined;
+    auth.finishProviderSignIn.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+    renderWithApp(<AppRoutes />);
+    await user().click(await screen.findByRole("button", { name: "Continue with Microsoft" }));
+    await heading("Finish signing in in your browser");
+    expect(await screen.findByLabelText("Code")).toHaveTextContent("4821");
+    expect(auth.startProviderSignIn).toHaveBeenCalledWith("microsoft");
+    auth.status.mockResolvedValue({ ok: true, user: PAT });
+    finish({ ok: true, user: PAT });
+    expect(await heading("MeetApp")).toBeInTheDocument();
+  });
+
+  it("TC-F01-18 [AC-F01-07] Cancel returns to Sign in with 'Sign-in was cancelled' and tells main", async () => {
+    providersOn(true, false);
+    auth.finishProviderSignIn.mockReturnValue(new Promise(() => undefined));
+    renderWithApp(<AppRoutes />);
+    await user().click(await screen.findByRole("button", { name: "Continue with Google" }));
+    await heading("Finish signing in in your browser");
+    await user().click(screen.getByRole("button", { name: "Cancel" }));
+    await heading("Sign in to MeetApp");
+    expect(screen.getByRole("alert")).toHaveTextContent("Sign-in was cancelled.");
+    await waitFor(() => expect(auth.cancelProviderSignIn).toHaveBeenCalled());
+  });
+
+  it("TC-F01-22 [AC-F01-08] an unverified provider email is explained on the Sign in screen", async () => {
+    providersOn(true, false);
+    auth.finishProviderSignIn.mockResolvedValue({ ok: false, code: "PROVIDER_EMAIL_UNVERIFIED" });
+    renderWithApp(<AppRoutes />);
+    await user().click(await screen.findByRole("button", { name: "Continue with Google" }));
+    await heading("Sign in to MeetApp");
+    expect(screen.getByRole("alert")).toHaveTextContent("isn't verified");
+  });
+});
+
+describe("TC-F01-32 [AC-F01-12] signing out", () => {
+  it("TC-F01-32 [AC-F01-12] Sign out everywhere shows Sign in at once", async () => {
+    auth.status.mockResolvedValue({ ok: true, user: PAT });
+    renderWithApp(<AppRoutes />, { path: "/settings" });
+    await heading("Settings");
+    auth.status.mockResolvedValue({ ok: false, code: "SIGNED_OUT" });
+    await user().click(screen.getByRole("button", { name: "Sign out everywhere" }));
+    expect(await heading("Sign in to MeetApp")).toBeInTheDocument();
+    expect(auth.signOutEverywhere).toHaveBeenCalledOnce();
+  });
+});
