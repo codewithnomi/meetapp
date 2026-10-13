@@ -158,7 +158,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
 
 ## Finishing
 
-- [ ] **T17: Seed data.**
+- [x] **T17: Seed data.**
   - `pnpm seed` adds the example users, the "Example team" workspace (owner, admin, member) and a pending request; `seed:clear` removes only those.
   - It refuses outside local.
   - The runbook notes the test password.

@@ -32,7 +32,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("Profile and account", () => {
   it("TC-F01-63 [AC-F01-25] the name is saved trimmed; an empty one is refused before sending", async () => {
-    open({ "PATCH /api/v1/me": noContent });
+    open({
+      // Like the real backend: the next /me has the new name.
+      "PATCH /api/v1/me": (body) => {
+        api.handlers["/api/v1/me"] = () => json(withUser(body as object));
+        return noContent();
+      },
+    });
     const field = await screen.findByRole("textbox", { name: "Your name" });
     expect(field).toHaveValue("Pat Lee");
     await userEvent.clear(field);
@@ -43,8 +49,9 @@ describe("Profile and account", () => {
     await userEvent.clear(field);
     await userEvent.type(field, "  Pat Q  ");
     await userEvent.click(screen.getByRole("button", { name: "Save name" }));
-    expect(await screen.findByText("Name saved.")).toBeInTheDocument();
     expect(api.callsTo("PATCH", "/api/v1/me")[0]?.body).toEqual({ name: "Pat Q" });
+    await waitFor(() => expect(screen.getByRole("textbox", { name: "Your name" })).toHaveValue("Pat Q"));
+    expect(screen.getByText("Name saved.")).toBeInTheDocument();
   });
 
   it("TC-F01-68 [AC-F01-25] a photo file is sent as it is; a big or wrong file shows the exact rule unsent", async () => {

@@ -17,6 +17,20 @@ The services `pnpm dev` starts in Docker (`infra/docker-compose.yml`, design.md 
 - `docker compose -f infra/docker-compose.yml --env-file .env ps`: which services run and whether they are healthy.
 - `docker compose -f infra/docker-compose.yml --env-file .env logs <service>`: a service's log, e.g. `logs postgres`.
 
+## Example accounts (`pnpm seed`)
+`pnpm seed` adds sample flags and four example accounts. They all use the local test password **`meetapp-dev-password`**:
+
+| Email | In "Example team" |
+|---|---|
+| `owner@example.test` | owner |
+| `admin@example.test` | admin |
+| `member@example.test` | member |
+| `asker@example.test` | not yet: has asked to join (waiting for approval) |
+
+- Running it again adds nothing.
+- `pnpm seed:clear` removes only these accounts, their workspaces and the sample flags; your own data stays.
+- Both commands refuse to run unless `NODE_ENV` is `development` or `test` and the database is on this computer (`POSTGRES_HOST` is `127.0.0.1`, `localhost` or `::1`), because the password above is public.
+
 ## Problems and fixes
 | What you see | Why | Fix |
 |---|---|---|

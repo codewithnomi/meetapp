@@ -38,9 +38,11 @@ function Photo({ person }: { person: Person }) {
   );
 }
 
-function NameForm({ name }: { name: string }) {
+type NameUpdate = ReturnType<typeof useUpdateName>;
+
+/** The field; the save itself lives in the section, so its result outlives a refreshed name. */
+function NameForm({ name, update }: { name: string; update: NameUpdate }) {
   const { t } = useTranslation();
-  const update = useUpdateName();
   const [value, setValue] = useState(name);
   const [ruleBroken, setRuleBroken] = useState(false);
   const submit = (event: FormEvent) => {
@@ -73,7 +75,6 @@ function NameForm({ name }: { name: string }) {
         )}
       </div>
       <div className="basis-full empty:hidden">
-        {update.isSuccess ? <Notice tone="success">{t("profile.name.saved")}</Notice> : null}
         <ActionErrorNotice error={update.error} onRetry={() => update.mutate(value.trim())} />
       </div>
     </form>
@@ -82,6 +83,7 @@ function NameForm({ name }: { name: string }) {
 
 export function ProfileSection({ person }: { person: Person }) {
   const { t } = useTranslation();
+  const update = useUpdateName();
   return (
     <section aria-labelledby="profile-title" className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
@@ -92,7 +94,8 @@ export function ProfileSection({ person }: { person: Person }) {
       </div>
       <Photo person={person} />
       {/* A new key when the saved name changes (e.g. in another window), so the field shows it. */}
-      <NameForm key={person.name} name={person.name} />
+      <NameForm key={person.name} name={person.name} update={update} />
+      {update.isSuccess ? <Notice tone="success">{t("profile.name.saved")}</Notice> : null}
     </section>
   );
 }

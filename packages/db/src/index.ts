@@ -17,3 +17,4 @@ export {
   type User,
 } from "./schema.ts";
 export { SEED_FLAGS, clearSeed, seedDatabase } from "./seed.ts";
+export { SEED_PASSWORD, SEED_PEOPLE, SEED_TEAM } from "./seed-people.ts";

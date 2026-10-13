@@ -105,7 +105,8 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
 
 describe("TC-F00-91 [AC-F00-45] seed and clear", () => {
   it("TC-F00-91 [AC-F00-45] seeding twice adds every sample record exactly once", SLOW, async () => {
-    expect(await seedDatabase(db)).toBe(SEED_FLAGS.length);
+    // The flags, plus the example people and team (F01, counted in seed-people.integration.test.ts).
+    expect(await seedDatabase(db)).toBeGreaterThan(SEED_FLAGS.length);
     expect(await seedDatabase(db)).toBe(0);
     for (const flag of SEED_FLAGS) {
       const rows = await flagRows(flag.key);
@@ -116,7 +117,7 @@ describe("TC-F00-91 [AC-F00-45] seed and clear", () => {
 
   it("TC-F00-91 [AC-F00-45] clearing removes only the sample records", SLOW, async () => {
     await db.insert(featureFlags).values({ key: OWN_FLAG, enabled: true, description: "Created by the test." });
-    expect(await clearSeed(db)).toBe(SEED_FLAGS.length);
+    expect(await clearSeed(db)).toBeGreaterThanOrEqual(SEED_FLAGS.length);
     for (const flag of SEED_FLAGS) expect(await flagRows(flag.key), flag.key).toHaveLength(0);
     expect(await flagRows(OWN_FLAG)).toHaveLength(1);
     expect(await clearSeed(db)).toBe(0);

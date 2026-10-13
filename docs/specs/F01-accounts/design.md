@@ -405,6 +405,10 @@ They are sent through the F00 email provider (Mailpit locally) by a **BullMQ** j
 - all of them have `@example.test` emails: an owner, an admin and a member of the company workspace "Example team", plus one user with a pending join request;
 - running it twice adds nothing; `pnpm seed:clear` removes only these;
 - it refuses to run unless `NODE_ENV` is `development` or `test` **and** the database is on this computer.
+- **Built in T17:**
+  - The example people are `owner@`, `admin@`, `member@` and `asker@example.test`. Each has a personal workspace; the asker's request (via the code) waits in "Example team".
+  - The seed lives in `packages/db/src/seed-people.ts`. The database package can't use Better Auth, so it stores the test password already hashed by Better Auth's hasher; a test signs in with it to prove it still matches.
+  - `seed:clear` deletes the example people and the workspaces they created; everything hanging on them goes with them. The local-only check (`tools/seed-guard.ts`) guards both commands. A `NODE_ENV` or `POSTGRES_HOST` set in the shell wins over `.env`.
 
 ## Security and privacy
 - **S1:** every `/api/v1` route needs a session except the public ones listed in section 8, which carry their own limits. The terms gate is in section 5. **Every route is listed in a test**, so a new route can't be left unprotected by mistake.

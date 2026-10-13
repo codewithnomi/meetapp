@@ -61,7 +61,7 @@ It runs every automated test (about 5 minutes) and ends with "All tests passed."
 | `pnpm test` | Every test |
 | `pnpm check` | Code-quality checks |
 | `pnpm monitoring` | Status page, dashboards and alerts (see [runbooks/monitoring.md](runbooks/monitoring.md)) |
-| `pnpm seed` / `pnpm seed:clear` | Add / remove sample data |
+| `pnpm seed` / `pnpm seed:clear` | Add / remove sample data (example accounts, password `meetapp-dev-password`: see `docs/runbooks/local-services.md`) |
 | `pnpm flag list` | Show the feature switches; `pnpm flag <key> on` or `off` changes one |
 | `pnpm email:test` | Sends a test email to the fake inbox (http://127.0.0.1:8025) |
 
