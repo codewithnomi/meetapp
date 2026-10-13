@@ -2,6 +2,8 @@
 // they can be tested: the container joins the local services' own network and reaches them by name on
 // their inside ports (the services listen on 127.0.0.1 only, which a container can't reach on Linux),
 // its port is published on 127.0.0.1 only, and the settings come from .env at run time, never the image.
+import { randomBytes } from "node:crypto";
+
 export const IMAGE = "meetapp-api:check";
 export const CONTAINER = "meetapp-api-check";
 /** The compose project "meetapp" (infra/docker-compose.yml) puts its services on this network. */
@@ -25,6 +27,17 @@ export function buildArgs(root: string): string[] {
   return ["build", "-f", `${root}/apps/api/Dockerfile`, "-t", IMAGE, root];
 }
 
+/**
+ * The container runs in production mode, which refuses the example secrets from .env.example (D050),
+ * so the check gives it throwaway ones of its own, new each run.
+ */
+function throwawaySecrets(): string[] {
+  return ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY"].flatMap((name) => [
+    "-e",
+    `${name}=${randomBytes(32).toString("hex")}`,
+  ]);
+}
+
 export function runArgs(envFile: string, hostPort: number): string[] {
   return [
     "run",
@@ -36,6 +49,7 @@ export function runArgs(envFile: string, hostPort: number): string[] {
     "--env-file",
     envFile,
     ...Object.entries(SERVICES).flatMap(([name, value]) => ["-e", `${name}=${value}`]),
+    ...throwawaySecrets(),
     "-e",
     "NODE_ENV=production",
     "-e",

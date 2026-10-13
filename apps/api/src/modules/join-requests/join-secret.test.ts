@@ -24,6 +24,10 @@ describe("TC-F01-49 [AC-F01-19] join link and code", () => {
     expect(secrets.encrypt(secret)).not.toBe(stored);
     expect(secrets.decrypt(stored, JOIN_KEY_VERSION)).toEqual(secret);
     expect(() => secrets.decrypt(stored, 99)).toThrow("unknown join key version");
+    // A shortened authentication tag is refused, not accepted as a weaker check.
+    const bytes = Buffer.from(stored, "base64");
+    const shortTag = Buffer.concat([bytes.subarray(0, 12 + 4), bytes.subarray(28)]).toString("base64");
+    expect(() => secrets.decrypt(shortTag, JOIN_KEY_VERSION)).toThrow();
     const other = createJoinSecrets("another-key", "http://127.0.0.1:3010");
     expect(() => other.decrypt(stored, JOIN_KEY_VERSION)).toThrow();
   });

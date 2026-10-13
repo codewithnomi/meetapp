@@ -98,6 +98,9 @@ export async function authRoutes(app: FastifyInstance, { auth, limiter }: AuthRo
       }
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));
+      // Better Auth's own answer, passed on with its own content type: JSON or a redirect from the
+      // allow-listed routes only, never an HTML page built from what the caller sent.
+      // nosemgrep: javascript.express.security.audit.xss.direct-response-write.direct-response-write
       return reply.send(response.body ? await response.text() : null);
     },
   });

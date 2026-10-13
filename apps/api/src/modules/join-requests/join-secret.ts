@@ -5,6 +5,9 @@
 // each with its own label.
 import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from "node:crypto";
 
+/** The full 16-byte GCM tag, stated when decrypting so a shortened tag is refused. */
+const TAG_BYTES = 16;
+
 /** 32 characters: A–Z without I and O, and 2–9. */
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const CODE_LENGTH = 10;
@@ -53,14 +56,16 @@ export function createJoinSecrets(dataKey: string, publicUrl: string) {
     },
     encrypt: (secret: JoinSecret): string => {
       const iv = randomBytes(12);
-      const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv);
+      const cipher = createCipheriv("aes-256-gcm", encryptionKey, iv, { authTagLength: TAG_BYTES });
       const sealed = Buffer.concat([cipher.update(JSON.stringify(secret), "utf8"), cipher.final()]);
       return Buffer.concat([iv, cipher.getAuthTag(), sealed]).toString("base64");
     },
     decrypt: (stored: string, keyVersion: number): JoinSecret => {
       if (keyVersion !== JOIN_KEY_VERSION) throw new Error(`unknown join key version ${String(keyVersion)}`);
       const bytes = Buffer.from(stored, "base64");
-      const decipher = createDecipheriv("aes-256-gcm", encryptionKey, bytes.subarray(0, 12));
+      const decipher = createDecipheriv("aes-256-gcm", encryptionKey, bytes.subarray(0, 12), {
+        authTagLength: TAG_BYTES,
+      });
       decipher.setAuthTag(bytes.subarray(12, 28));
       const plain = Buffer.concat([decipher.update(bytes.subarray(28)), decipher.final()]).toString("utf8");
       return JSON.parse(plain) as JoinSecret;
