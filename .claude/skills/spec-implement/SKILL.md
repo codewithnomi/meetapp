@@ -1,6 +1,6 @@
 ---
 name: spec-implement
-description: Build the next unchecked task of a feature whose tasks.md is approved, with its automated tests, run the whole test suite, tick it off, and automatically commit + push it to the feature branch. Use for "/spec-implement F05" or via /next.
+description: Build the next unchecked task of a feature whose tasks.md is approved, with its automated tests, run that task's tests (the full suite runs at spec-verify, D052), tick it off, and automatically commit + push it to the feature branch. Use for "/spec-implement F05" or via /next.
 argument-hint: <feature id, e.g. F05>
 ---
 
