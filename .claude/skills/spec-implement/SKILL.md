@@ -13,7 +13,7 @@ argument-hint: <feature id, e.g. F05>
 4. Pick the **first unchecked task**. Tell the owner in one line what you're about to build.
 5. **Tests first:** use the `test-writer` subagent (coding mode) to write the automated tests for this task's TC-… cases.
 6. Build the feature code until those tests pass. A hook lints every edited file; fix what it reports.
-7. Run the **whole project's** tests, typecheck and lint, not just the new ones. Start long-running processes (dev servers, Storybook, Electron) in the background and stop them when done, so ports don't stay busy. Fix failures. Never tick a task while any test fails, and never weaken or skip a test to make it pass.
+7. Run **this task's own tests** (the new and changed test files, with `pnpm exec vitest run <files>`; `VITEST_INTEGRATION=1` for integration tests), plus typecheck and lint of the changed packages. Do **not** run the whole suite, the desktop tests or the screenshots here: they run once, at `/spec-verify` (owner decision D052, to save time and tokens). Start long-running processes in the background and stop them when done. Fix failures. Never tick a task while its tests fail, and never weaken or skip a test to make it pass.
 8. For larger tasks, launch the `code-quality-reviewer` subagent and fix its "Must fix" items.
 9. If the code had to differ from the design, **update design.md (and tests.md) first** and tell the owner why.
 10. Tick the task `[x]` in tasks.md, set the status to `in-progress`, and update `docs/specs/INDEX.md` and `docs/progress.md`.

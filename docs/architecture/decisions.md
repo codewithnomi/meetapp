@@ -309,3 +309,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** nothing runs online yet (D017), so neither can harm anyone today; both are tracked in docs/progress.md.
 - **Cost:** none.
 
+### D052: Full test runs only at the end of a feature
+- **Date:** 2026-10-13. **Status:** accepted (owner).
+- **Decision:** while a feature's tasks are being built, each task runs only its own tests plus typecheck and lint. The whole suite (unit, integration, desktop windows) and the screenshot checks run once, at `/spec-verify`, before the Pull Request. Tests are still written with each task, and GitHub still checks every push.
+- **Why:** in F01 each full run took 15–25 minutes and many runs were made; the owner wants faster development and fewer tokens. A break is still caught before the feature is marked done, at most one feature late.
+- **Cost:** none (less time and fewer tokens).
+
