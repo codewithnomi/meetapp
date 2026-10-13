@@ -2,28 +2,11 @@
 // Personal and two company workspaces, fast, and reopening on the last one; TC-F01-62 a rename reaches
 // an open window of another member within a minute. Each test uses accounts of its own, because
 // switching changes the account's last-used workspace. Needs the backend, so it runs from `pnpm test`.
-import { request, expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { request, expect, test, type APIRequestContext } from "@playwright/test";
 import { closeApp, freshProfile, launch, launchNewAccount, storedToken } from "./desktop.ts";
+import { createWorkspace, switcher, switchTo, title } from "./workspace-steps.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"];
-const title = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
-const switcher = (page: Page, name: string) => page.getByRole("button", { name: `Switch workspace: ${name}` });
-
-/** Switcher, "Create a workspace", name, Create: the new workspace opens at once. */
-async function createWorkspace(page: Page, openName: string, name: string) {
-  await switcher(page, openName).click();
-  await page.getByRole("menuitem", { name: "Create a workspace" }).click();
-  const dialog = page.getByRole("dialog", { name: "Create a company workspace" });
-  await dialog.getByRole("textbox", { name: "Workspace name" }).fill(name);
-  await dialog.getByRole("button", { name: "Create workspace" }).click();
-  await expect(title(page, name)).toBeVisible();
-}
-
-async function switchTo(page: Page, from: string, to: string) {
-  await switcher(page, from).click();
-  await page.getByRole("menuitemradio", { name: new RegExp(to) }).click();
-  await expect(title(page, to)).toBeVisible();
-}
 
 test("TC-F01-41 [AC-F01-16] Personal first, three workspaces, each switch under 1 second, last-used reopens", async () => {
   test.setTimeout(120_000);

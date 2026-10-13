@@ -161,7 +161,15 @@
       "generic": "Something went wrong. Try again.",
       "cancelled": "Sign-in was cancelled.",
       "unverified": "Your Google/Microsoft email isn't verified; create an account with your email instead.",
-      "workspaceLimit": "You can own at most 20 workspaces."
+      "workspaceLimit": "You can own at most 20 workspaces.",
+      "forbidden": "Only the owner or an admin can do that.",
+      "ownerMustTransfer": "Hand the workspace over to someone else before you leave.",
+      "invitationGone": "This invitation is no longer valid; ask for a new one.",
+      "pendingRequest": "You've already asked to join. The owner or an admin will decide.",
+      "alreadyDecided": "Someone already answered this request.",
+      "requestExpired": "This request is older than 14 days and has expired.",
+      "personalWorkspace": "Your personal workspace is only for you.",
+      "notFound": "That is no longer here. The list has been updated."
     },
     "loading": "Loading",
     "providers": {
@@ -199,7 +207,9 @@
     "nav": {
       "label": "Main",
       "home": "Home",
-      "settings": "Settings"
+      "settings": "Settings",
+      "people": "People",
+      "requests": "Requests and invitations"
     },
     "create": {
       "title": "Create a company workspace",
@@ -215,6 +225,128 @@
       "submit": "Create workspace",
       "pending": "Creating workspace",
       "close": "Close"
+    },
+    "roleWords": {
+      "owner": "owner",
+      "admin": "admin",
+      "member": "member"
+    },
+    "notices": {
+      "removed": "You are no longer a member of {{name}}.",
+      "alreadyMember": "You're already a member of {{name}}.",
+      "dismiss": "Dismiss"
+    },
+    "people": {
+      "title": "People in {{name}}",
+      "summary_one": "{{count}} person · anyone here can invite others as members.",
+      "summary_other": "{{count}} people · anyone here can invite others as members.",
+      "loading": "Loading people",
+      "invite": {
+        "title": "Invite by email",
+        "emails": "Email addresses",
+        "placeholder": "sara@example.com, bilal@example.com",
+        "hint": "They join as soon as they accept. Invitations last 7 days.",
+        "role": "Role",
+        "roles": {
+          "member": "Member",
+          "admin": "Admin"
+        },
+        "submit": "Send invitations",
+        "pending": "Sending invitations",
+        "empty": "Type at least one email address.",
+        "tooMany": "Send at most {{max}} invitations at a time.",
+        "badEmail": "Check this address: {{email}}",
+        "alreadyMember": "{{email}} is already a member.",
+        "limit": "Invite limit reached, try again tomorrow.",
+        "sent_one": "Invitation sent to {{list}}.",
+        "sent_other": "Invitations sent to {{list}}."
+      },
+      "link": {
+        "title": "Join link and code",
+        "description": "Anyone signed in who has them can ask to join. You or an admin approves each request.",
+        "copyLink": "Copy link",
+        "copyCode": "Copy code",
+        "copied": "Copied",
+        "replace": "Replace link and code",
+        "off": "The join link is off. The owner or an admin can turn it on."
+      },
+      "everyone": "Everyone",
+      "find": "Find a person",
+      "noMatch": "Nobody matches “{{query}}”.",
+      "columns": {
+        "name": "Name",
+        "role": "Role",
+        "joined": "Joined",
+        "actions": "Actions"
+      },
+      "you": "You",
+      "actionsFor": "Actions for {{name}}",
+      "actions": {
+        "promote": "Make admin",
+        "demote": "Make member",
+        "transfer": "Hand over ownership",
+        "remove": "Remove from workspace",
+        "leave": "Leave workspace"
+      },
+      "confirm": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "removeTitle": "Remove {{name}}?",
+        "removeText": "{{name}} loses access to {{workspace}} at once. What they created stays in the workspace.",
+        "removeButton": "Remove",
+        "transferTitle": "Hand {{workspace}} over to {{name}}?",
+        "transferText": "{{name}} becomes the owner. You become an admin. Only the new owner can undo this.",
+        "transferButton": "Hand over",
+        "leaveTitle": "Leave {{workspace}}?",
+        "leaveText": "You lose access at once. What you created stays in the workspace.",
+        "leaveButton": "Leave workspace",
+        "pending": "Saving"
+      }
+    },
+    "requests": {
+      "title": "Requests and invitations",
+      "description": "People asking to join with the link or code, and invitations waiting for an answer.",
+      "asking": "Asking to join ({{count}})",
+      "noRequests": "Nobody is asking to join right now.",
+      "askedDetail": "{{email}} · asked {{when}} with the {{how}}",
+      "how": {
+        "link": "join link",
+        "code": "join code"
+      },
+      "removedEarlier": "Removed earlier",
+      "footnote": "Requests expire after 14 days. Approved people join as members.",
+      "approve": "Approve",
+      "reject": "Reject",
+      "sent": "Invitations sent ({{count}})",
+      "noInvitations": "No invitations are waiting for an answer.",
+      "sentDetail": "Invited as {{role}} by {{name}} · expires {{when}}",
+      "sentDetailNoSender": "Invited as {{role}} · expires {{when}}",
+      "cancel": "Cancel invitation",
+      "resend": "Send again",
+      "resent": "A new invitation was sent to {{email}}."
+    },
+    "join": {
+      "back": "Back",
+      "title": "Join a workspace",
+      "description": "Accept an invitation, or use a join link or code from a colleague.",
+      "invitationsFor": "Invitations for {{email}}",
+      "noInvitations": "No invitations for this email right now.",
+      "invitedBy": "{{name}} invited you as {{role}} · expires {{when}}",
+      "invited": "You were invited as {{role}} · expires {{when}}",
+      "decline": "Decline",
+      "accept": "Join",
+      "codeTitle": "Join with a link or code",
+      "codeHint": "The owner or an admin approves each request.",
+      "field": "Join link or code",
+      "find": "Find workspace",
+      "finding": "Finding workspace",
+      "notFound": "No workspace found. Check the link or code, or ask for a new one.",
+      "empty": "Paste a join link or type a code.",
+      "people_one": "{{count}} person · you'll join as a member",
+      "people_other": "{{count}} people · you'll join as a member",
+      "ask": "Ask to join",
+      "sentTitle": "Request sent",
+      "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days."
     }
   }
 }

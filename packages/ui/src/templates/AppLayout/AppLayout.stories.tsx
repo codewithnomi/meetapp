@@ -28,6 +28,8 @@ const meta = {
     ),
     items: [
       { id: "home", label: "Home", icon: "home", current: true, onSelect: fn() },
+      { id: "people", label: "People", icon: "users", current: false, onSelect: fn() },
+      { id: "requests", label: "Requests and invitations", icon: "send", current: false, onSelect: fn(), badge: 3 },
       { id: "settings", label: "Settings", icon: "sliders", current: false, onSelect: fn() },
     ],
     children: (

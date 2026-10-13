@@ -2,16 +2,19 @@
 // in but the terms not yet accepted, only Terms; signed in, the app. The desktop app has no address
 // bar, so the routes live in memory. After a screen change, focus moves to the new screen's title.
 import { Notice, Spinner } from "@meetapp/ui";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
 import { errorText, useSession } from "../features/auth/index.ts";
-import { CurrentWorkspaceProvider } from "../features/workspaces/index.ts";
+import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from "../features/workspaces/index.ts";
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
+import { JoinWorkspacePage } from "../pages/JoinWorkspacePage/index.ts";
 import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
+import { PeoplePage } from "../pages/PeoplePage/index.ts";
+import { RequestsPage } from "../pages/RequestsPage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
 import { SignInPage } from "../pages/SignInPage/index.ts";
 import { TermsPage } from "../pages/TermsPage/index.ts";
@@ -69,17 +72,55 @@ function SignedOutRoutes() {
   );
 }
 
-function SignedInRoutes() {
+const PATHS: Record<AppScreen, string> = {
+  home: "/",
+  people: "/people",
+  requests: "/requests",
+  settings: "/settings",
+  join: "/join",
+};
+
+/** People and Requests exist only in company workspaces; elsewhere (e.g. after removal) Home opens. */
+function CompanyOnly({ children }: { children: ReactNode }) {
+  const { current } = useCurrentWorkspace();
+  if (current && current.kind !== "company") return <Navigate to="/" replace />;
+  return children;
+}
+
+function SignedInScreens() {
   const navigate = useNavigate();
-  // "Join with a link or code" opens the Join screen (T15); until then it stays on Home.
-  const home = <HomePage onOpenSettings={() => void navigate("/settings")} onJoin={() => void navigate("/join")} />;
+  const go = (screen: AppScreen) => void navigate(PATHS[screen]);
+  const home = () => go("home");
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage onNavigate={go} />} />
+      <Route
+        path="/people"
+        element={
+          <CompanyOnly>
+            <PeoplePage onNavigate={go} />
+          </CompanyOnly>
+        }
+      />
+      <Route
+        path="/requests"
+        element={
+          <CompanyOnly>
+            <RequestsPage onNavigate={go} />
+          </CompanyOnly>
+        }
+      />
+      <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
+      <Route path="/settings" element={<SettingsPage onBack={home} />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function SignedInRoutes() {
   return (
     <CurrentWorkspaceProvider>
-      <Routes>
-        <Route path="/" element={home} />
-        <Route path="/settings" element={<SettingsPage onBack={() => void navigate("/")} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <SignedInScreens />
     </CurrentWorkspaceProvider>
   );
 }

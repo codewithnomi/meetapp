@@ -139,7 +139,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-41, 42, 62.
   - Check: switching shows the new workspace in under 1 second (measured).
 
-- [ ] **T15: People, invitations, join and requests screens. (milestone)**
+- [x] **T15: People, invitations, join and requests screens. (milestone)**
   - UI parts: MemberRow, InviteForm, JoinLinkCard, RequestRow.
   - Screens: People, Requests and invitations, Join a workspace.
   - "You are no longer a member of …" when removed while the app is open.

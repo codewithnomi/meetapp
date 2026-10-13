@@ -256,8 +256,18 @@ Better Auth's own email sign-up would create the account before the email is pro
   - Home's heading is the open workspace's name ("Personal" for the personal one).
   - `PUT /api/v1/me/last-workspace {workspaceId}` remembers the open workspace (404 if not a member); `GET /me` returns `currentWorkspaceId`: the last used while still a member, else Personal. Switching shows the new workspace at once; the backend is told in the background.
   - "Create a company workspace" is a `Dialog` molecule (Radix dialog) with the form; one Idempotency-Key per opening of the dialog. The new workspace is added to the list at once and opened.
-  - "Join with a link or code" opens the Join screen, built in T15; until then it stays on Home.
+  - "Join with a link or code" opens the Join screen (built in T15).
   - CORS now also allows `PUT`, `PATCH` and `DELETE` from the app's own origins (the default allowed only `GET`, `HEAD` and `POST`, which silently blocked the app's "remember the last workspace" call).
+
+- **Built in T15:**
+  - The side menu of a company workspace adds **People** and **Requests and invitations**. The latter shows the number of people asking to join (owner and admins). Both screens exist only in company workspaces; elsewhere the app opens Home.
+  - **Requests and invitations** is open to every member, not only the owner and admins: a member sees just the invitations they sent, so they can cancel or re-send them (AC-17). Requests to join show only for the owner and admins. Only waiting requests are listed. The badge reads "Removed earlier" (the date of the removal isn't kept).
+  - **Invite by email** takes several addresses at once, as on the canvas (commas, semicolons, spaces or new lines; at most 20). The app sends one invitation per address, one after another. Addresses that were refused stay in the field with the reason ("<email> is already a member", the daily limit). Over the limit or offline, the rest aren't tried.
+  - The join code shows as two groups of five (`ABCDE-FGHJK`); Copy puts the plain code on the clipboard.
+  - Each row's actions menu holds only what the viewer may do (from `yourActions`). **Leave workspace** is in your own row's menu. Remove, Hand over and Leave ask first in a window. After leaving, the app opens Personal.
+  - When the open workspace disappears from the 30-second `/me` check, the app opens Personal and shows "You are no longer a member of <name>" above the screen until dismissed. Leaving in this window switches first, so no message shows here. A 404 from a workspace list also asks `/me` again at once.
+  - On the Join screen, a link or code that belongs to a workspace you're already in opens it with "You're already a member of <name>" (AC-20).
+  - New UI parts: `MemberRow`, `InviteForm`, `JoinLinkCard` and `RequestRow` molecules. `Notice` gains a "success" tone with a title ("Request sent"); `AppLayout` menu items can carry a count.
 
 ## 6. Profile, photo and preferences (AC-25, 26)
 - **Name:** 1–60 characters, trimmed. Shown everywhere as plain text (React escapes it; emails escape it: AC-35).

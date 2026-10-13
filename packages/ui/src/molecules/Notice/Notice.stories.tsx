@@ -23,3 +23,11 @@ export const WithAction: Story = {
     action: { label: "Retry", onClick: fn() },
   },
 };
+export const Success: Story = {
+  args: {
+    tone: "success",
+    title: "Request sent",
+    children:
+      "We'll tell you when the owner or an admin of Northwind partners approves it. Requests expire after 14 days.",
+  },
+};

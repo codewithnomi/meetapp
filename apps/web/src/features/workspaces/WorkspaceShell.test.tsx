@@ -54,14 +54,14 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-async function openApp(onJoin = vi.fn()) {
+async function openApp(onNavigate = vi.fn()) {
   renderWithApp(
     <CurrentWorkspaceProvider>
-      <HomePage onOpenSettings={vi.fn()} onJoin={onJoin} />
+      <HomePage onNavigate={onNavigate} />
     </CurrentWorkspaceProvider>,
   );
   await screen.findByRole("button", { name: "Switch workspace: Personal" });
-  return onJoin;
+  return onNavigate;
 }
 const openMenu = (name = "Personal") =>
   userEvent.click(screen.getByRole("button", { name: `Switch workspace: ${name}` }));
@@ -104,7 +104,7 @@ describe("workspace switcher", () => {
     handlers["/api/v1/me"] = () => json({ ...ME, currentWorkspaceId: ID.aria });
     renderWithApp(
       <CurrentWorkspaceProvider>
-        <HomePage onOpenSettings={vi.fn()} onJoin={vi.fn()} />
+        <HomePage onNavigate={vi.fn()} />
       </CurrentWorkspaceProvider>,
     );
     expect(await screen.findByRole("button", { name: "Switch workspace: Aria" })).toBeInTheDocument();
@@ -121,10 +121,10 @@ describe("workspace switcher", () => {
   });
 
   it("TC-F01-41 [AC-F01-16] 'Join with a link or code' opens the join screen", async () => {
-    const onJoin = await openApp();
+    const onNavigate = await openApp();
     await openMenu();
     await userEvent.click(screen.getByRole("menuitem", { name: "Join with a link or code" }));
-    expect(onJoin).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith("join");
   });
 });
 

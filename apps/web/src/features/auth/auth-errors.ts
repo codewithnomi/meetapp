@@ -12,6 +12,14 @@ type ErrorName =
   | "cancelled"
   | "unverified"
   | "workspaceLimit"
+  | "forbidden"
+  | "ownerMustTransfer"
+  | "invitationGone"
+  | "pendingRequest"
+  | "alreadyDecided"
+  | "requestExpired"
+  | "personalWorkspace"
+  | "notFound"
   | "generic";
 
 /** Text key and values for t(): e.g. { key: "auth.errors.tooManyAttempts", values: { minutes: 3 } }. */
@@ -32,6 +40,14 @@ const KEYS: Record<string, ErrorName> = {
   SIGN_IN_CANCELLED: "cancelled",
   PROVIDER_EMAIL_UNVERIFIED: "unverified",
   WORKSPACE_LIMIT: "workspaceLimit",
+  FORBIDDEN: "forbidden",
+  OWNER_MUST_TRANSFER: "ownerMustTransfer",
+  INVITATION_GONE: "invitationGone",
+  PENDING_REQUEST: "pendingRequest",
+  ALREADY_DECIDED: "alreadyDecided",
+  REQUEST_EXPIRED: "requestExpired",
+  PERSONAL_WORKSPACE: "personalWorkspace",
+  NOT_FOUND: "notFound",
 };
 
 /** `retryAfterSeconds` comes with TOO_MANY_ATTEMPTS (our limits, AC-F01-13). */

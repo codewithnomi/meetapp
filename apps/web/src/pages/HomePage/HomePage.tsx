@@ -4,32 +4,26 @@
 import { Badge } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { useFlag, type FlagOptions } from "../../features/flags/index.ts";
-import { WorkspaceShell, useCurrentWorkspace, useWorkspaceName } from "../../features/workspaces/index.ts";
+import {
+  WorkspaceShell,
+  useCurrentWorkspace,
+  useWorkspaceName,
+  type AppScreen,
+} from "../../features/workspaces/index.ts";
 
 export interface HomePageProps {
-  onOpenSettings: () => void;
-  onJoin: () => void;
+  onNavigate: (screen: AppScreen) => void;
   /** Lets tests point the flag check at a fake backend. */
   flagOptions?: FlagOptions;
 }
 
-export function HomePage({ onOpenSettings, onJoin, flagOptions }: HomePageProps) {
+export function HomePage({ onNavigate, flagOptions }: HomePageProps) {
   const { t } = useTranslation();
   const demoOn = useFlag("demo", flagOptions);
   const { current } = useCurrentWorkspace();
   const nameOf = useWorkspaceName();
-  const items = [
-    { id: "home", label: t("workspaces.nav.home"), icon: "home" as const, current: true, onSelect: () => {} },
-    {
-      id: "settings",
-      label: t("workspaces.nav.settings"),
-      icon: "sliders" as const,
-      current: false,
-      onSelect: onOpenSettings,
-    },
-  ];
   return (
-    <WorkspaceShell items={items} onJoin={onJoin}>
+    <WorkspaceShell screen="home" onNavigate={onNavigate}>
       <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-10 sm:px-12">
         <h1 tabIndex={-1} className="m-0 text-title text-ink outline-none">
           {current ? nameOf(current) : t("home.wordmark")}

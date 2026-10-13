@@ -2,6 +2,7 @@
 // (the workspace switcher at the top, then the menu items) and the screen's content on the right. On a
 // narrow window the menu sits above the content. Slots only: the page fills them.
 import type { ReactNode } from "react";
+import { Badge } from "../../atoms/Badge/index.ts";
 import { Icon, type IconName } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 
@@ -12,6 +13,8 @@ export interface AppNavItem {
   icon: IconName;
   current: boolean;
   onSelect: () => void;
+  /** A count beside the label, e.g. pending requests (hidden when 0). Read as part of the item's name. */
+  badge?: number;
 }
 
 export interface AppLayoutProps {
@@ -35,6 +38,7 @@ export function AppLayout({ switcher, navLabel, items, children }: AppLayoutProp
             key={item.id}
             type="button"
             aria-current={item.current ? "page" : undefined}
+            aria-label={item.badge ? `${item.label} ${String(item.badge)}` : undefined}
             onClick={item.onSelect}
             className={cx(
               "flex h-10 items-center gap-3 rounded-full px-3 text-left",
@@ -45,7 +49,8 @@ export function AppLayout({ switcher, navLabel, items, children }: AppLayoutProp
             )}
           >
             <Icon name={item.icon} />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.badge ? <Badge tone="accent">{item.badge}</Badge> : null}
           </button>
         ))}
       </nav>

@@ -206,14 +206,24 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
  * Like launchSignedIn, but with an account of its own (for tests that change the account's state, such as
  * its last-used workspace). Returns the app, the page and the account's email.
  */
-export async function launchNewAccount(profile: string = freshProfile()) {
+export async function launchNewAccount(profile: string = freshProfile(), email = `e2e-${randomUUID()}@example.test`) {
   test.skip(!API_URL || !MAILPIT, "needs the backend and Mailpit; runs from `pnpm test`");
   const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
-  const email = `e2e-${randomUUID()}@example.test`;
   await signUpThroughBridge(running.page, email);
   await running.page.reload();
   await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
   return { ...running, email };
+}
+
+/** A second window for an existing account (made by launchNewAccount): signs in with its password. */
+export async function launchAs(email: string, profile: string = freshProfile()) {
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
+  await running.page.evaluate(
+    ([address, password]) => (window as unknown as WindowWithBridge).meetapp.auth.signInWithPassword(address, password),
+    [email, TEST_PASSWORD] as const,
+  );
+  await running.page.reload();
+  return running;
 }
 
 /** The token main keeps, read and decrypted inside main; undefined when it lives only in memory. */

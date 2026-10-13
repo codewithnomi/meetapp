@@ -29,4 +29,16 @@ describe("Notice", () => {
     await userEvent.keyboard("{Enter}");
     expect(onClick).toHaveBeenCalledOnce();
   });
+
+  it("TC-F01-53 [AC-F01-19] success is a quiet status with a check and a bold title", () => {
+    render(
+      <Notice tone="success" title="Request sent">
+        We'll tell you when it is approved.
+      </Notice>,
+    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Request sent");
+    expect(status).toHaveTextContent("We'll tell you when it is approved.");
+    expect(status.querySelector("svg")).not.toBeNull();
+  });
 });
