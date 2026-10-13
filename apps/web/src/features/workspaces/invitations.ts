@@ -85,8 +85,10 @@ export function useAnswerInvitation() {
   return useMutation<Accepted | undefined, ApiError, { kind: "accept" | "decline"; id: string }>({
     mutationFn: ({ kind, id }) =>
       apiRequest(`/api/v1/invitations/${encodeURIComponent(id)}/${kind}`, { method: "POST", body: {} }),
-    onSuccess: (accepted) => {
+    onSuccess: async (accepted) => {
       if (accepted) {
+        // An older /me still on its way must not replace the list that now has the new workspace.
+        await queryClient.cancelQueries({ queryKey: ME_KEY, exact: true });
         queryClient.setQueryData<MeResponse>(ME_KEY, (me) =>
           me && !me.workspaces.some((w) => w.id === accepted.workspace.id)
             ? { ...me, workspaces: [...me.workspaces, { ...accepted.workspace, pendingRequests: 0 }] }

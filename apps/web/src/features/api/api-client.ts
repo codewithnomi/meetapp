@@ -28,6 +28,8 @@ interface RequestOptions {
   headers?: Record<string, string>;
   apiUrl?: string;
   fetcher?: typeof fetch;
+  /** How long to wait for an answer; 10 s unless a call needs longer (a photo upload). */
+  timeoutMs?: number;
 }
 
 async function errorOf(response: Response): Promise<ApiError> {
@@ -52,13 +54,13 @@ export const apiFileUrl = (path: string | null | undefined, apiUrl: string = API
   path ? `${apiUrl}${path}` : undefined;
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, headers = {}, apiUrl = API_URL, fetcher = fetch } = options;
+  const { method = "GET", body, headers = {}, apiUrl = API_URL, fetcher = fetch, timeoutMs = TIME_LIMIT_MS } = options;
   let response: Response;
   try {
     response = await fetcher(`${apiUrl}${path}`, {
       method,
       ...bodyAndType(body, headers),
-      signal: AbortSignal.timeout(TIME_LIMIT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch {
     throw new ApiError("NETWORK_ERROR", 0);

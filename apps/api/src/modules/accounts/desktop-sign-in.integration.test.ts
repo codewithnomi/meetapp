@@ -377,4 +377,16 @@ describe("TC-F01-20 [AC-F01-07] provider buttons follow the settings", () => {
   it("TC-F01-20 [AC-F01-07] (c) both", async () => {
     expect((await t.app.inject({ url: "/api/v1/auth/providers" })).json()).toEqual({ google: true, microsoft: true });
   });
+
+  it("TC-F01-19 [AC-F01-34] a cancel with the wrong verifier changes nothing", async () => {
+    const handOff = await initHandOff(t.app, "google");
+    const cancelled = await t.app.inject({
+      method: "POST",
+      url: "/api/v1/auth/desktop/cancel",
+      payload: { requestId: handOff.requestId, verifier: "x".repeat(43) },
+      headers: { origin: "app://meetapp" },
+    });
+    expect(cancelled.statusCode).toBeLessThan(300);
+    expect((await exchange(t.app, handOff)).statusCode).toBe(202);
+  });
 });

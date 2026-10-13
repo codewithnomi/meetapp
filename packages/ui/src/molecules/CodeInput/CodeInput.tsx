@@ -102,7 +102,11 @@ export function CodeInput(props: CodeInputProps) {
         ))}
       </div>
       {error || hint ? (
-        <p id={messageId} className={cx("m-0 text-[13px]", error ? "font-medium text-danger" : "text-ink-muted")}>
+        <p
+          id={messageId}
+          role={error ? "alert" : undefined}
+          className={cx("m-0 text-[13px]", error ? "font-medium text-danger" : "text-ink-muted")}
+        >
           {error || hint}
         </p>
       ) : null}

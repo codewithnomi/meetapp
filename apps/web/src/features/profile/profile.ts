@@ -7,6 +7,7 @@ import { SESSION_KEY } from "../auth/index.ts";
 import { ME_KEY } from "../workspaces/index.ts";
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const UPLOAD_TIME_LIMIT_MS = 60_000;
 const PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /** The server's refusal of a photo, or the same refusal before sending (PHOTO_INVALID). */
@@ -36,7 +37,8 @@ export function useUploadPhoto() {
       if (file.size > MAX_PHOTO_BYTES || !PHOTO_TYPES.has(file.type)) {
         return Promise.reject(new ApiError("PHOTO_INVALID", 400));
       }
-      return apiRequest("/api/v1/me/avatar", { method: "PUT", body: file });
+      // Up to 5 MB on a slow connection takes longer than the usual 10 seconds.
+      return apiRequest("/api/v1/me/avatar", { method: "PUT", body: file, timeoutMs: UPLOAD_TIME_LIMIT_MS });
     },
     onSuccess: refresh,
   });

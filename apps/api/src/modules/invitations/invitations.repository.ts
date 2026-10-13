@@ -2,7 +2,7 @@
 // invitation's token is stored. Every read of a workspace's invitations filters by workspace id (S2);
 // "my invitations" match the signed-in person's verified email, never an email sent by the app.
 import { invitations, user, workspaceMembers, workspaces, type Executor } from "@meetapp/db";
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 const inviter = alias(user, "inviter");
@@ -50,6 +50,25 @@ async function insertReplacing(tx: Executor, data: NewInvitation) {
 }
 
 /** What the workspace's people do: invite, list, cancel. */
+type NewMember = { workspaceId: string; userId: string; role: "admin" | "member" };
+
+/** Marks it accepted and adds the membership (kept if they are already in); false if no longer pending. */
+function acceptInvitation(executor: Executor, invitationId: string, member: NewMember): Promise<boolean> {
+  return executor.transaction(async (tx) => {
+    const taken = await tx
+      .update(invitations)
+      .set({ status: "accepted" })
+      // Checked again here, so one crossing its 7 days between the check and the update isn't used.
+      .where(
+        and(eq(invitations.id, invitationId), eq(invitations.status, "pending"), gt(invitations.expiresAt, sql`now()`)),
+      )
+      .returning({ id: invitations.id });
+    if (taken.length === 0) return false;
+    await tx.insert(workspaceMembers).values(member).onConflictDoNothing();
+    return true;
+  });
+}
+
 function workspaceSide(executor: Executor) {
   return {
     isMemberByEmail: async (workspaceId: string, email: string): Promise<boolean> => {
@@ -144,18 +163,7 @@ function inviteeSide(executor: Executor) {
     /** Any invitation for the person's verified email, whatever its status (undefined for anyone else's). */
     findForUser: async (invitationId: string, userId: string) =>
       (await forPerson().where(and(eq(invitations.id, invitationId), eq(invitee.id, userId))))[0],
-    /** Marks it accepted and adds the membership (kept if they are already in); false if no longer pending. */
-    accept: (invitationId: string, member: { workspaceId: string; userId: string; role: "admin" | "member" }) =>
-      executor.transaction(async (tx) => {
-        const taken = await tx
-          .update(invitations)
-          .set({ status: "accepted" })
-          .where(and(eq(invitations.id, invitationId), eq(invitations.status, "pending")))
-          .returning({ id: invitations.id });
-        if (taken.length === 0) return false;
-        await tx.insert(workspaceMembers).values(member).onConflictDoNothing();
-        return true;
-      }),
+    accept: (invitationId: string, member: NewMember) => acceptInvitation(executor, invitationId, member),
     findByTokenHash: (tokenHash: string) => findByTokenHash(executor, tokenHash),
   };
 }

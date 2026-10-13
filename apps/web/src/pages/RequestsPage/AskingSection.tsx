@@ -1,6 +1,6 @@
 // "Asking to join" (AC-F01-19): people who used the join link or code, with Approve and Reject, and a
 // "Removed earlier" badge for someone removed from this workspace before. Owner and admins only.
-import { RequestRow } from "@meetapp/ui";
+import { RequestRow, Spinner } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import { relativeTime, useDecideRequest, useJoinRequests, type JoinRequest } from "../../features/workspaces/index.ts";
@@ -45,6 +45,7 @@ export function AskingSection({ workspaceId }: { workspaceId: string }) {
         {t("workspaces.requests.asking", { count: waiting.length })}
       </h2>
       <ActionErrorNotice error={requests.error ?? decide.error} onRetry={() => void requests.refetch()} />
+      {requests.isPending ? <Spinner label={t("workspaces.requests.loading")} /> : null}
       {waiting.length > 0 ? (
         <ul className="m-0 list-none rounded-lg border border-line bg-surface p-0">
           {waiting.map((request) => (
@@ -57,9 +58,10 @@ export function AskingSection({ workspaceId }: { workspaceId: string }) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : null}
+      {requests.isSuccess && waiting.length === 0 ? (
         <p className="m-0 text-ink-muted">{t("workspaces.requests.noRequests")}</p>
-      )}
+      ) : null}
       <p className="m-0 text-[13px] text-ink-muted">{t("workspaces.requests.footnote")}</p>
     </section>
   );

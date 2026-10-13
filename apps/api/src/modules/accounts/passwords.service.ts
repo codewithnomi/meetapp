@@ -40,10 +40,13 @@ async function changeWithCurrent(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  const wait = await limiter?.blocked(RATE_RULES.wrongPassword, user.email);
+  // Counted before the check and given back if right, so a burst can't slip past the limit.
+  const wait = await limiter?.take(RATE_RULES.wrongPassword, user.email);
   if (wait !== undefined) throw tooManyAttempts(wait);
-  if (await auth.changeWithCurrent(user.id, currentPassword, newPassword)) return;
-  await limiter?.hit(RATE_RULES.wrongPassword, user.email);
+  if (await auth.changeWithCurrent(user.id, currentPassword, newPassword)) {
+    await limiter?.refund(RATE_RULES.wrongPassword, user.email);
+    return;
+  }
   throw new AppError(400, "PASSWORD_WRONG", "That isn't your current password.");
 }
 

@@ -54,15 +54,18 @@ export function createIdempotency({ store, sleep = pause }: IdempotencyOptions) 
       if (first !== undefined) return first;
       return once(scope, key, work);
     }
+    let result: T;
     try {
-      const result = await work();
-      await store.put(storeKey, JSON.stringify(result), KEEP_MS);
-      return result;
+      result = await work();
     } catch (error) {
       // A refused or failed request can be tried again with the same key.
       await store.del(storeKey);
       throw error;
     }
+    // The work is done. If its result can't be stored, the key stays marked "running" until it expires,
+    // so a repeat is refused instead of doing the work a second time.
+    await store.put(storeKey, JSON.stringify(result), KEEP_MS);
+    return result;
   }
 
   return { once };

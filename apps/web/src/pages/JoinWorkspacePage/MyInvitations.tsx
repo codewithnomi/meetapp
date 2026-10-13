@@ -1,6 +1,6 @@
 // "Invitations for <email>" on the Join screen (AC-F01-18): Join adds the workspace at once with the
 // invited role and opens it; Decline removes the invitation.
-import { RequestRow } from "@meetapp/ui";
+import { RequestRow, Spinner } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice, useSession } from "../../features/auth/index.ts";
 import {
@@ -33,6 +33,7 @@ export function MyInvitations({ onJoined }: { onJoined: (workspaceId: string) =>
         {t("workspaces.join.invitationsFor", { email: user?.email ?? "" })}
       </h2>
       <ActionErrorNotice error={mine.error ?? answer.error} onRetry={() => void mine.refetch()} />
+      {mine.isPending ? <Spinner label={t("workspaces.join.loading")} /> : null}
       {invitations.length === 0 && mine.isSuccess ? (
         <p className="m-0 text-ink-muted">{t("workspaces.join.noInvitations")}</p>
       ) : null}

@@ -25,7 +25,7 @@ export function TermsCheckbox({ id, field, error }: TermsCheckboxProps) {
         <span>{t("auth.create.terms")}</span>
       </label>
       {error ? (
-        <p id={`${id}-error`} className="m-0 ps-8 text-[12px] font-medium text-danger">
+        <p id={`${id}-error`} role="alert" className="m-0 ps-8 text-[12px] font-medium text-danger">
           {error}
         </p>
       ) : null}

@@ -2,7 +2,8 @@
 // counted in Redis. Emails are counted under a keyed fingerprint (HMAC) of the trimmed, lower-cased
 // address, so Redis never holds the plain email, and every email is counted the same way whether or
 // not it has an account, so a refusal reveals nothing. If Redis can't be reached, requests are let
-// through and the problem is reported: Better Auth's own per-address limiter stays as a second layer.
+// through and the problem is reported. (Better Auth's own limiter is off: it needs the IP address,
+// which we don't track. Wrong sign-ins are therefore also limited per network address here.)
 import { createHmac, hkdfSync } from "node:crypto";
 
 export interface RateRule {
@@ -14,6 +15,8 @@ export interface RateRule {
 export const RATE_RULES = {
   /** Wrong passwords per email: 5 in 15 minutes (Google/Microsoft attempts count too). */
   wrongPassword: { name: "wrong-password", limit: 5, windowSeconds: 15 * 60 },
+  /** Wrong passwords per network address, across all emails: 100 in 15 minutes (against password spraying). */
+  wrongPasswordPerAddress: { name: "wrong-password-address", limit: 100, windowSeconds: 15 * 60 },
   /** Code emails per address, sign-up, sign-in and reset together: 5 an hour. */
   codeEmails: { name: "code-emails", limit: 5, windowSeconds: 60 * 60 },
   /** Sign-ups per network address: 50 an hour (an office shares one address). */
@@ -36,6 +39,8 @@ export interface CounterStore {
   incr: (key: string) => Promise<number>;
   get: (key: string) => Promise<string | null>;
   pexpire: (key: string, milliseconds: number) => Promise<number>;
+  decr: (key: string) => Promise<number>;
+  del: (key: string) => Promise<number>;
 }
 
 export interface RateLimiterOptions {
@@ -56,17 +61,20 @@ function windowAt(rule: RateRule, at: number) {
 /** Undefined: go ahead. A number: refused, try again after this many seconds. */
 type Verdict = number | undefined;
 
+/** The Redis key of a rule's counter for one subject (email or address, as a keyed hash) and window. */
+function counterKeys(secret: string) {
+  const hmacKey = Buffer.from(hkdfSync("sha256", secret, "meetapp", "rate-limit-v1", 32));
+  const subjectOf = (value: string) => createHmac("sha256", hmacKey).update(value.trim().toLowerCase()).digest("hex");
+  return (rule: RateRule, subject: string, index: number) => `rate:${rule.name}:${subjectOf(subject)}:${String(index)}`;
+}
+
 export function createRateLimiter({
   store,
   secret,
   now = () => Date.now(),
   onStoreError = () => {},
 }: RateLimiterOptions) {
-  const hmacKey = Buffer.from(hkdfSync("sha256", secret, "meetapp", "rate-limit-v1", 32));
-  const subjectOf = (value: string) => createHmac("sha256", hmacKey).update(value.trim().toLowerCase()).digest("hex");
-
-  const keyOf = (rule: RateRule, subject: string, index: number) =>
-    `rate:${rule.name}:${subjectOf(subject)}:${String(index)}`;
+  const keyOf = counterKeys(secret);
 
   async function safely(work: () => Promise<Verdict>): Promise<Verdict> {
     try {
@@ -85,12 +93,15 @@ export function createRateLimiter({
         const count = Number((await store.get(keyOf(rule, subject, index))) ?? 0);
         return count >= rule.limit ? retryAfter : undefined;
       }),
-    /** Counts one event (for example a failed sign-in). */
-    hit: async (rule: RateRule, subject: string): Promise<void> => {
+    /**
+     * Gives back one count taken by `take`, e.g. when the password turned out to be right. Counting
+     * first and giving back later means tries sent at the same moment can't slip past the limit.
+     */
+    refund: async (rule: RateRule, subject: string): Promise<void> => {
       await safely(async () => {
-        const { index, size } = windowAt(rule, now());
+        const { index } = windowAt(rule, now());
         const key = keyOf(rule, subject, index);
-        if ((await store.incr(key)) === 1) await store.pexpire(key, size);
+        if ((await store.decr(key)) < 0) await store.del(key);
         return undefined;
       });
     },

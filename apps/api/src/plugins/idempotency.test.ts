@@ -49,4 +49,25 @@ describe("TC-F01-40 [AC-F01-29] idempotency keys", () => {
     await expect(once("user-1", "fails-key", () => Promise.reject(new Error("refused")))).rejects.toThrow("refused");
     expect(await once("user-1", "fails-key", work)).toEqual({ run: 4 });
   });
+
+  it("TC-F01-40 [AC-F01-29] if the result can't be stored after the work is done, a repeat never does it again", async () => {
+    const store = memoryStore();
+    let failPut = true;
+    const flaky: IdempotencyStore = {
+      ...store,
+      put: async (key, value, ms) => {
+        if (failPut) {
+          failPut = false;
+          throw new Error("redis blip");
+        }
+        return store.put(key, value, ms);
+      },
+    };
+    const idempotency = createIdempotency({ store: flaky, sleep: async () => undefined });
+    let runs = 0;
+    const work = async () => ({ id: ++runs });
+    await expect(idempotency.once("u1", "key-12345678", work)).rejects.toThrow("redis blip");
+    await expect(idempotency.once("u1", "key-12345678", work)).rejects.toThrow();
+    expect(runs).toBe(1);
+  });
 });

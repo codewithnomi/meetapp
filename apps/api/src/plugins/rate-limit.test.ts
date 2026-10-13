@@ -19,6 +19,12 @@ function memoryStore() {
       return value === undefined ? null : String(value);
     },
     pexpire: async () => 1,
+    decr: async (key) => {
+      const next = (values.get(key) ?? 0) - 1;
+      values.set(key, next);
+      return next;
+    },
+    del: async (key) => Number(values.delete(key)),
   };
   return { values, store };
 }
@@ -33,11 +39,10 @@ describe("TC-F01-33 [AC-F01-13] wrong passwords per email", () => {
     const { store } = memoryStore();
     const limiter = limiterAt(clock, store);
     for (let attempt = 1; attempt <= 5; attempt++) {
-      expect(await limiter.blocked(RATE_RULES.wrongPassword, "a@example.test")).toBeUndefined();
-      await limiter.hit(RATE_RULES.wrongPassword, "a@example.test");
+      expect(await limiter.take(RATE_RULES.wrongPassword, "a@example.test")).toBeUndefined();
     }
-    const wait = await limiter.blocked(RATE_RULES.wrongPassword, "a@example.test");
-    expect(wait).toBe(15 * 60);
+    expect(await limiter.blocked(RATE_RULES.wrongPassword, "a@example.test")).toBe(15 * 60);
+    expect(await limiter.take(RATE_RULES.wrongPassword, "a@example.test")).toBe(15 * 60);
     clock.now += 15 * 60 * 1_000;
     expect(await limiter.blocked(RATE_RULES.wrongPassword, "a@example.test")).toBeUndefined();
   });
@@ -46,9 +51,30 @@ describe("TC-F01-33 [AC-F01-13] wrong passwords per email", () => {
     const clock = { now: Date.UTC(2026, 9, 11, 10, 0, 0) };
     const limiter = limiterAt(clock, memoryStore().store);
     for (const email of ["A@example.test", " a@example.test", "a@EXAMPLE.test", "a@example.test ", "a@example.test"]) {
-      await limiter.hit(RATE_RULES.wrongPassword, email);
+      await limiter.take(RATE_RULES.wrongPassword, email);
     }
     expect(await limiter.blocked(RATE_RULES.wrongPassword, "a@example.test")).toBeGreaterThan(0);
+  });
+});
+
+describe("TC-F01-33 [AC-F01-13] counted before the check, given back when right", () => {
+  it("TC-F01-33 [AC-F01-13] a right password gives its count back, so only wrong ones add up", async () => {
+    const clock = { now: Date.UTC(2026, 9, 11, 10, 0, 0) };
+    const limiter = limiterAt(clock, memoryStore().store);
+    for (let attempt = 1; attempt <= 20; attempt++) {
+      expect(await limiter.take(RATE_RULES.wrongPassword, "b@example.test")).toBeUndefined();
+      await limiter.refund(RATE_RULES.wrongPassword, "b@example.test");
+    }
+    expect(await limiter.blocked(RATE_RULES.wrongPassword, "b@example.test")).toBeUndefined();
+  });
+
+  it("TC-F01-33 [AC-F01-13] tries sent at the same moment are all counted: only 5 get through", async () => {
+    const clock = { now: Date.UTC(2026, 9, 11, 10, 0, 0) };
+    const limiter = limiterAt(clock, memoryStore().store);
+    const verdicts = await Promise.all(
+      Array.from({ length: 50 }, () => limiter.take(RATE_RULES.wrongPassword, "c@example.test")),
+    );
+    expect(verdicts.filter((wait) => wait === undefined)).toHaveLength(5);
   });
 });
 
@@ -106,6 +132,8 @@ describe("TC-F01-35 [AC-F01-13] limits reveal nothing", () => {
       incr: async () => Promise.reject(new Error("redis is down")),
       get: async () => Promise.reject(new Error("redis is down")),
       pexpire: async () => Promise.reject(new Error("redis is down")),
+      decr: async () => Promise.reject(new Error("redis is down")),
+      del: async () => Promise.reject(new Error("redis is down")),
     };
     const limiter = createRateLimiter({
       store: broken,

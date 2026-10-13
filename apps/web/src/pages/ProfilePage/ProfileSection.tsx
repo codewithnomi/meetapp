@@ -59,7 +59,11 @@ function NameForm({ name, update }: { name: string; update: NameUpdate }) {
         label={t("profile.name.label")}
         value={value}
         autoComplete="name"
-        onChange={(event) => setValue(event.target.value)}
+        onChange={(event) => {
+          setValue(event.target.value);
+          // "Name saved." is about the saved name, not one being typed.
+          if (update.isSuccess) update.reset();
+        }}
         {...(ruleBroken ? { error: t("profile.name.rule") } : {})}
       />
       <div className="flex flex-col gap-1.5">

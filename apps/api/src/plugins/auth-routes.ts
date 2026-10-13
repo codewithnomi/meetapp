@@ -38,13 +38,32 @@ function emailIn(body: unknown): string | undefined {
   return typeof email === "string" ? email : undefined;
 }
 
-/** Refuses the request when its email is over a limit (AC-F01-13); counts code emails. */
-async function enforceLimits(limiter: RateLimiter | undefined, path: string, email: string | undefined) {
+/**
+ * Refuses the request when its email or network address is over a limit (AC-F01-13). A password
+ * sign-in is counted as a wrong one before it is checked (so a burst can't slip past the limit) and
+ * given back if it was right; code emails are counted.
+ */
+async function enforceLimits(
+  limiter: RateLimiter | undefined,
+  path: string,
+  email: string | undefined,
+  address: string,
+) {
   if (limiter === undefined || email === undefined) return;
   let wait: number | undefined;
-  if (path === PASSWORD_SIGN_IN) wait = await limiter.blocked(RATE_RULES.wrongPassword, email);
-  else if (CODE_EMAIL_ROUTES.has(path)) wait = await limiter.take(RATE_RULES.codeEmails, email);
+  if (path === PASSWORD_SIGN_IN) {
+    wait =
+      (await limiter.take(RATE_RULES.wrongPasswordPerAddress, address)) ??
+      (await limiter.take(RATE_RULES.wrongPassword, email));
+  } else if (CODE_EMAIL_ROUTES.has(path)) wait = await limiter.take(RATE_RULES.codeEmails, email);
   if (wait !== undefined) throw tooManyAttempts(wait);
+}
+
+/** A sign-in that wasn't a wrong password gives back the counts taken for it. */
+async function settleSignIn(limiter: RateLimiter, email: string, address: string, status: number) {
+  if (status === 401) return;
+  await limiter.refund(RATE_RULES.wrongPassword, email);
+  await limiter.refund(RATE_RULES.wrongPasswordPerAddress, address);
 }
 
 export interface AuthRoutesOptions {
@@ -66,7 +85,7 @@ export async function authRoutes(app: FastifyInstance, { auth, limiter }: AuthRo
         return reply.status(404).send({ error: { code: "NOT_FOUND", message: "Not found.", requestId: request.id } });
       }
       const email = emailIn(request.body);
-      await enforceLimits(limiter, path, email);
+      await enforceLimits(limiter, path, email, request.ip);
       const response = await auth.handler(
         new Request(url, {
           method: request.method,
@@ -74,8 +93,8 @@ export async function authRoutes(app: FastifyInstance, { auth, limiter }: AuthRo
           ...(request.body === undefined ? {} : { body: JSON.stringify(request.body) }),
         }),
       );
-      if (limiter && email !== undefined && path === PASSWORD_SIGN_IN && response.status === 401) {
-        await limiter.hit(RATE_RULES.wrongPassword, email);
+      if (limiter && email !== undefined && path === PASSWORD_SIGN_IN) {
+        await settleSignIn(limiter, email, request.ip, response.status);
       }
       reply.status(response.status);
       response.headers.forEach((value, key) => reply.header(key, value));

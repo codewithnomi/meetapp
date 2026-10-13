@@ -44,7 +44,7 @@ function MembersTable({ members, rowFor }: { members: Member[]; rowFor: (member:
   const { t } = useTranslation();
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-surface">
-      <table className="w-full min-w-160 border-collapse text-[14px]">
+      <table aria-labelledby="people-title" className="w-full min-w-160 border-collapse text-[14px]">
         <thead>
           <tr className="text-left text-[12px] text-ink-muted">
             <th scope="col" className="px-5 py-3 font-semibold">
@@ -158,16 +158,20 @@ export function MembersSection({ workspace, data, myId, onLeft }: MembersSection
       <Heading query={query} onQuery={setQuery} />
       {pending ? null : <ActionErrorNotice error={change.error} onRetry={() => change.reset()} />}
       <MembersTable members={shown} rowFor={rowFor} />
-      {shown.length === 0 ? (
-        <p className="m-0 text-ink-muted">{t("workspaces.people.noMatch", { query: query.trim() })}</p>
-      ) : null}
+      {/* Always present, so screen readers hear when a search finds nobody. */}
+      <p role="status" className="m-0 text-ink-muted empty:hidden">
+        {shown.length === 0 ? t("workspaces.people.noMatch", { query: query.trim() }) : ""}
+      </p>
       <ConfirmDialog
         open={pending !== undefined}
         {...confirmText}
         pending={change.isPending}
         error={change.error}
         onConfirm={() => pending && run(pending)}
-        onCancel={() => setPending(undefined)}
+        onCancel={() => {
+          setPending(undefined);
+          change.reset();
+        }}
       />
     </section>
   );

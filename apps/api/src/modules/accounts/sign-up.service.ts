@@ -57,7 +57,7 @@ async function limit(deps: SignUpDependencies, rule: Rule, subject: string): Pro
   if (wait !== undefined) throw tooManyAttempts(wait);
 }
 
-type NewRecord = Omit<PendingSignUp, "codeHash" | "codeExpiresAt" | "attempts">;
+type NewRecord = Omit<PendingSignUp, "codeHash" | "codeExpiresAt">;
 
 /** A code for the record: emailed for a new email; for an existing one, nothing can ever match. */
 async function freshCode(deps: SignUpDependencies, now: Clock, signupId: string, record: NewRecord): Promise<void> {
@@ -65,7 +65,6 @@ async function freshCode(deps: SignUpDependencies, now: Clock, signupId: string,
   await deps.pending.save(signupId, {
     ...record,
     codeHash: codeHash(signupId, record.existing ? randomUUID() : code).toString("hex"),
-    attempts: 0,
     codeExpiresAt: now() + CODE_MS,
   });
   if (!record.existing) {
@@ -100,13 +99,12 @@ async function start(deps: SignUpDependencies, now: Clock, request: SignUpReques
 
 async function verify(deps: SignUpDependencies, now: Clock, signupId: string, code: string) {
   const record = await deps.pending.load(signupId);
-  if (!record || record.attempts >= MAX_TRIES) throw invalid();
+  if (!record) throw invalid();
   if (now() > record.codeExpiresAt)
     throw new AppError(400, "CODE_EXPIRED", "This code has expired. Ask for a new one.");
-  if (!sameHash(record.codeHash, signupId, code)) {
-    await deps.pending.save(signupId, { ...record, attempts: record.attempts + 1 });
-    throw invalid();
-  }
+  // Counted before the check, so a burst of guesses can't get more than MAX_TRIES at one code.
+  if ((await deps.pending.countTry(signupId, record.codeHash)) > MAX_TRIES) throw invalid();
+  if (!sameHash(record.codeHash, signupId, code)) throw invalid();
   let userId: string;
   try {
     userId = await deps.accounts.createAccount(record, new Date(now()));

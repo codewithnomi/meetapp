@@ -14,6 +14,8 @@ export interface JoinLinkCardLabels {
   copyLink: string;
   copyCode: string;
   copied: string;
+  /** Shown (and read out) when the clipboard can't be used. */
+  copyFailed: string;
   replace: string;
   /** What members see while the link is off. */
   off: string;
@@ -29,7 +31,7 @@ export interface JoinLinkCardProps {
   busy?: boolean;
   onToggle: (enabled: boolean) => void;
   onReplace: () => void;
-  /** Puts the text on the clipboard; the card shows "Copied" once it resolves. */
+  /** Puts the text on the clipboard; the card shows "Copied" once it resolves, `copyFailed` if it rejects. */
   onCopy: (text: string) => Promise<void>;
   labels: JoinLinkCardLabels;
 }
@@ -41,7 +43,7 @@ const PILL = "flex min-h-11 items-center gap-2.5 rounded-full bg-surface-sunken 
 const grouped = (code: string) => code.match(/.{1,5}/g)?.join("-") ?? code;
 
 function useCopied() {
-  const [copied, setCopied] = useState<"link" | "code" | null>(null);
+  const [copied, setCopied] = useState<"link" | "code" | "failed" | null>(null);
   useEffect(() => {
     if (!copied) return;
     const timer = setTimeout(() => setCopied(null), COPIED_MS);
@@ -57,7 +59,11 @@ function Secrets({
   labels,
 }: Pick<JoinLinkCardProps, "onCopy" | "labels"> & { link: string; code: string }) {
   const [copied, setCopied] = useCopied();
-  const copy = (what: "link" | "code", text: string) => void onCopy(text).then(() => setCopied(what));
+  const copy = (what: "link" | "code", text: string) =>
+    void onCopy(text).then(
+      () => setCopied(what),
+      () => setCopied("failed"),
+    );
   return (
     <>
       <div className={`${PILL} min-w-0 flex-[1_1_320px]`}>
@@ -72,9 +78,15 @@ function Secrets({
           {copied === "code" ? labels.copied : labels.copyCode}
         </Button>
       </div>
-      <span role="status" className="sr-only">
-        {copied ? labels.copied : ""}
-      </span>
+      {copied === "failed" ? (
+        <p role="alert" className="m-0 basis-full px-4 text-[13px] font-medium text-danger">
+          {labels.copyFailed}
+        </p>
+      ) : (
+        <span role="status" className="sr-only">
+          {copied ? labels.copied : ""}
+        </span>
+      )}
     </>
   );
 }

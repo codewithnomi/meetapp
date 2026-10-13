@@ -1,6 +1,6 @@
 // "Invitations sent" (AC-F01-17): invitations waiting for an answer, with Cancel and "Send again" (a
 // new link and email; the old link stops). The owner and admins see all; a member sees their own.
-import { Notice, RequestRow } from "@meetapp/ui";
+import { Notice, RequestRow, Spinner } from "@meetapp/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
@@ -58,6 +58,7 @@ export function SentSection({ workspaceId }: { workspaceId: string }) {
       </h2>
       <ActionErrorNotice error={sent.error ?? action.error} onRetry={() => void sent.refetch()} />
       {resentTo ? <Notice tone="success">{t("workspaces.requests.resent", { email: resentTo })}</Notice> : null}
+      {sent.isPending ? <Spinner label={t("workspaces.requests.loading")} /> : null}
       {invitations.length > 0 ? (
         <ul className="m-0 list-none rounded-lg border border-line bg-surface p-0">
           {invitations.map((invitation) => (
@@ -70,9 +71,10 @@ export function SentSection({ workspaceId }: { workspaceId: string }) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : null}
+      {sent.isSuccess && invitations.length === 0 ? (
         <p className="m-0 text-ink-muted">{t("workspaces.requests.noInvitations")}</p>
-      )}
+      ) : null}
     </section>
   );
 }

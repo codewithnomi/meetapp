@@ -3,20 +3,33 @@
 // allows only one per person, so creating it twice is harmless.
 import { joinRequests, memberRemovals, user, workspaceMembers, workspaces, type Executor } from "@meetapp/db";
 import type { MemberRole, WorkspaceSummary } from "@meetapp/contracts";
-import { and, asc, count, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import type { Membership } from "./workspaces.permissions.ts";
 
 /** Shown as "Personal" in the app; only its owner is ever in it. */
 const PERSONAL_NAME = "Personal";
 
-/** Creates the person's personal workspace unless it exists. Safe to call twice at the same time. */
+/**
+ * Creates the person's personal workspace and their owner membership, each unless it exists. Safe to
+ * call twice at the same time, and it repairs a workspace left without its membership (for example
+ * when a process stopped between the two steps).
+ */
 export async function insertPersonalWorkspace(executor: Executor, userId: string): Promise<void> {
-  const [created] = await executor
+  await executor
     .insert(workspaces)
     .values({ name: PERSONAL_NAME, kind: "personal", createdBy: userId })
-    .onConflictDoNothing()
-    .returning({ id: workspaces.id });
-  if (created) await executor.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
+    .onConflictDoNothing();
+  const [personal] = await executor
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(and(eq(workspaces.createdBy, userId), eq(workspaces.kind, "personal")))
+    .limit(1);
+  if (personal) {
+    await executor
+      .insert(workspaceMembers)
+      .values({ workspaceId: personal.id, userId, role: "owner" })
+      .onConflictDoNothing();
+  }
 }
 
 /** How many company workspaces the person owns now (AC-F01-15). */
@@ -49,11 +62,15 @@ export function createWorkspacesRepository(executor: Executor) {
 
 function personal(executor: Executor) {
   return {
+    /** True only when the personal workspace exists AND they are in it, so a half-made one gets repaired. */
     hasPersonalWorkspace: async (userId: string): Promise<boolean> => {
       const found = await executor
         .select({ id: workspaces.id })
         .from(workspaces)
-        .where(and(eq(workspaces.createdBy, userId), eq(workspaces.kind, "personal")))
+        .innerJoin(workspaceMembers, eq(workspaceMembers.workspaceId, workspaces.id))
+        .where(
+          and(eq(workspaces.createdBy, userId), eq(workspaces.kind, "personal"), eq(workspaceMembers.userId, userId)),
+        )
         .limit(1);
       return found.length > 0;
     },
@@ -223,7 +240,12 @@ class TransferRefused extends Error {
 }
 
 /** Requests to join waiting in each workspace where the person is the owner or an admin (the app's badge). */
+/** A request to join older than this has expired, even before the daily job marks it (join-requests.service.ts). */
+const REQUEST_LIFETIME_MS = 14 * 24 * 60 * 60 * 1_000;
+
+/** Waiting requests per workspace the person manages; old ones aren't counted, as the list hides them. */
 async function pendingRequestCounts(executor: Executor, userId: string): Promise<Map<string, number>> {
+  const cutoff = new Date(Date.now() - REQUEST_LIFETIME_MS);
   const rows = await executor
     .select({ workspaceId: joinRequests.workspaceId, n: count() })
     .from(joinRequests)
@@ -231,7 +253,13 @@ async function pendingRequestCounts(executor: Executor, userId: string): Promise
       workspaceMembers,
       and(eq(workspaceMembers.workspaceId, joinRequests.workspaceId), eq(workspaceMembers.userId, userId)),
     )
-    .where(and(eq(joinRequests.status, "pending"), inArray(workspaceMembers.role, ["owner", "admin"])))
+    .where(
+      and(
+        eq(joinRequests.status, "pending"),
+        gt(joinRequests.createdAt, cutoff),
+        inArray(workspaceMembers.role, ["owner", "admin"]),
+      ),
+    )
     .groupBy(joinRequests.workspaceId);
   return new Map(rows.map((row) => [row.workspaceId, row.n]));
 }

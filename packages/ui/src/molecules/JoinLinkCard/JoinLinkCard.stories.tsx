@@ -19,6 +19,7 @@ const meta = {
       copyLink: "Copy link",
       copyCode: "Copy code",
       copied: "Copied",
+      copyFailed: "Couldn't copy. Select the text and copy it yourself.",
       replace: "Replace link and code",
       off: "The join link is off. The owner or an admin can turn it on.",
     },

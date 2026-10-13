@@ -11,8 +11,6 @@ export interface PendingSignUp {
   accent: string | null;
   /** SHA-256 of "<signupId>:<code>"; the code itself is never stored. */
   codeHash: string;
-  /** Wrong codes so far; at 5 the record stops accepting codes. */
-  attempts: number;
   /** When the current code stops working (ms since 1970). */
   codeExpiresAt: number;
   /** The email already had an account: no code was sent and none can match. */
@@ -23,6 +21,8 @@ export interface KeyValueStore {
   set: (key: string, value: string, mode: "PX", milliseconds: number) => Promise<unknown>;
   get: (key: string) => Promise<string | null>;
   del: (key: string) => Promise<number>;
+  incr: (key: string) => Promise<number>;
+  pexpire: (key: string, milliseconds: number) => Promise<number>;
 }
 
 const KEEP_MS = 30 * 60 * 1_000;
@@ -36,6 +36,16 @@ export function createPendingSignUpsRepository(store: KeyValueStore) {
     load: async (signupId: string): Promise<PendingSignUp | undefined> => {
       const value = await store.get(keyOf(signupId));
       return value === null ? undefined : (JSON.parse(value) as PendingSignUp);
+    },
+    /**
+     * Counts one more try at the current code and answers the new count. One Redis INCR, so tries sent
+     * at the same moment are all counted (a read-then-write count could be raced past its limit).
+     */
+    countTry: async (signupId: string, codeHash: string): Promise<number> => {
+      const key = `${keyOf(signupId)}:tries:${codeHash.slice(0, 16)}`;
+      const tries = await store.incr(key);
+      if (tries === 1) await store.pexpire(key, KEEP_MS);
+      return tries;
     },
     remove: async (signupId: string) => {
       await store.del(keyOf(signupId));

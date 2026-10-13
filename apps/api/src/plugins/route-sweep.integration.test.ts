@@ -98,4 +98,11 @@ describe("TC-F01-76 route sweep", () => {
       }
     }
   });
+
+  it("TC-F01-76 [AC-F01-31] an address written with %-codes is checked like the plain one", async () => {
+    for (const url of ["/api/%761/me", "/%61pi/v1/me", "/api/v1/%6De"]) {
+      const answer = await t.app.inject({ method: "GET", url, headers: { origin: "app://meetapp" } });
+      expect(answer.statusCode, url).toBe(401);
+    }
+  });
 });

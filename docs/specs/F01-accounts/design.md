@@ -1,7 +1,7 @@
 ---
 feature: F01
 title: Accounts & workspaces
-status: approved
+status: done
 updated: 2026-10-11
 ---
 
@@ -44,7 +44,7 @@ apps/web/src/
 apps/desktop/src/main/
   auth-token.ts               keeps the sign-in token, encrypted with Electron safeStorage
   auth-bridge.ts              performs every sign-in call itself, so the token never reaches the page
-  api-auth.ts                 adds the token to requests to the API (data and photos)
+  auth-client.ts              the sign-in calls to the backend; auth-bridge.ts adds the token to the page's API requests (data and photos)
   provider-sign-in.ts         opens the browser for Google/Microsoft and collects the result
 packages/ui                   new molecules/organisms: CodeInput, Notice (T9), WorkspaceSwitcher, MemberRow, InviteForm,
                               JoinLinkCard, RequestRow, AvatarUpload; template AuthLayout (with AuthTiles and
@@ -332,6 +332,7 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `GET /api/v1/me` | signed in | profile, preferences, workspaces with role, counts of pending requests (the 30-second check) |
 | `POST /api/v1/me/terms` | signed in | accept terms + 16+ (first Google/Microsoft sign-in) |
 | `PATCH /api/v1/me` · `PATCH /api/v1/me/preferences` · `PUT/DELETE /api/v1/me/avatar` | signed in | profile, theme/accent, photo |
+| `PUT /api/v1/me/last-workspace` | signed in | remember the open workspace (204; 404 when not a member) |
 | `POST /api/v1/me/password` | signed in | `{ newPassword, currentPassword }` or `{ newPassword, code }`: change password; revokes other sessions, new token for this one |
 | `GET /api/v1/users/:id/avatar` | shares a workspace | photo |
 | `GET /api/v1/me/invitations` · `POST /api/v1/invitations/:id/accept` · `/decline` | invited email | invitations for me |
@@ -347,7 +348,14 @@ Better Auth's tables follow its core schema (checked against its docs in T2) and
 | `GET /api/v1/workspaces/:workspaceId/requests` · `POST …/:id/approve` · `/reject` | owner/admin | requests |
 | `GET /invite/:token` | public | invitation web page (HTML; `Cache-Control: no-store`, `Referrer-Policy: no-referrer`, `X-Robots-Tag: noindex`, strict CSP, limited per network address) |
 
-Errors use the F00 format: 400, 401, 403, 404, 409 (`ALREADY_MEMBER`, `PENDING_REQUEST`, `PERSONAL_WORKSPACE`, `OWNER_MUST_TRANSFER`, `WORKSPACE_LIMIT`), 410 (expired or cancelled invitation), and 429 `TOO_MANY_ATTEMPTS` with `retryAfterSeconds`.
+Errors use the F00 format (codes in `packages/contracts/src/errors.ts`):
+- 400: `BAD_REQUEST`, `CODE_INVALID`, `CODE_EXPIRED`, `PASSWORD_WEAK`, `PASSWORD_WRONG`, `PHOTO_INVALID`;
+- 401 `UNAUTHORIZED`; 403 `FORBIDDEN`, `TERMS_REQUIRED`; 404 `NOT_FOUND`;
+- 409: `ALREADY_MEMBER`, `PENDING_REQUEST`, `PERSONAL_WORKSPACE`, `OWNER_MUST_TRANSFER`, `WORKSPACE_LIMIT`, `ALREADY_DECIDED`;
+- 410: `INVITATION_GONE`, `REQUEST_EXPIRED`, and from the desktop exchange `SIGN_IN_CANCELLED`, `PROVIDER_EMAIL_UNVERIFIED`;
+- 413 for a photo over 5 MB; 429 `TOO_MANY_ATTEMPTS` with `retryAfterSeconds`.
+
+The API docs at `/docs` exist only in development. Not listed there on purpose: the invitation page `GET /invite/:token`, the desktop hand-off's browser pages (`start`, `done`) and Better Auth's `/api/auth/*`.
 
 ## 9. Rate limits (AC-13, S5)
 `plugins/rate-limit.ts` keeps fixed-window counters in Redis. Email-based counters are keyed by an HMAC of the lower-cased email and grow whether or not an account exists.
@@ -361,8 +369,10 @@ Errors use the F00 format: 400, 401, 403, 404, 409 (`ALREADY_MEMBER`, `PENDING_R
 | Join lookups and requests, per user / per network address | 20 / 60 | 1 hour |
 | Invitation page views per network address | 60 | 1 hour |
 | Desktop hand-off starts per network address | 20 | 1 hour |
+| "Someone tried to create an account with your email" notices per address | 1 | 1 hour |
+| Wrong passwords per network address, across all emails (added at verification, D050) | 100 | 15 minutes |
 
-Better Auth's own per-address limiter stays on as a second layer. A refused try answers `429 TOO_MANY_ATTEMPTS` with `retryAfterSeconds`, the same for unknown emails. Windows follow the clock (for example 10:00–10:15), so a lockout lasts until the current window ends, at most 15 minutes for passwords. The limits sit in our `/api/auth/*` route in front of Better Auth, which sees the email and the outcome. If Redis can't be reached, requests are let through and a warning is logged (Better Auth's own limiter still applies). Built in T4.
+Better Auth's own limiter is off (it needs IP tracking, which we disable), so wrong passwords are also limited per network address (D050). Every limit counts the try before checking it. A refused try answers `429 TOO_MANY_ATTEMPTS` with `retryAfterSeconds`, the same for unknown emails. Windows follow the clock (for example 10:00–10:15), so a lockout lasts until the current window ends, at most 15 minutes for passwords. The limits sit in our `/api/auth/*` route in front of Better Auth, which sees the email and the outcome. If Redis can't be reached, requests are let through and a warning is logged (Better Auth's own limiter still applies). Built in T4.
 
 ## 10. Emails
 Templates live in `apps/api/src/emails/`, with text from the translation files; each has an HTML version and a plain-text version (AC-27):
@@ -447,6 +457,10 @@ None.
 - **The invitation and hand-off pages** wrap their content in a `<main>` landmark; the new accessibility check of the invitation page found it missing.
 - **The desktop tests** start their backend with a key of their own per run, so the attempt counters (e.g. 50 sign-ups an hour from this computer) start fresh and runs in the same hour don't block each other.
 
+## Decided at verification (owner, D051)
+- **Hand-off phishing:** the desktop Google/Microsoft step can be phished with a start link the attacker made; to be fixed before going online (loopback return to the app, or typing the app's code in the browser).
+- **Terms links:** "Terms" and "Privacy Policy" on Create account are plain text until the documents are written.
+
 ## Test approach
 Levels:
 - **unit:** services, permissions table, rate limits, password rules, email templates;
@@ -506,12 +520,12 @@ Each item is checked against the current docs and source before the task that us
 **Checked in T6:** Better Auth's emailOTP reset revokes every session but does not sign in, and creates a password login for a Google/Microsoft-only account. `forget-password/email-otp` is deprecated in 1.7; `email-otp/request-password-reset` behaves the same (no email for unknown addresses, same answer).
 
 ## Decisions made here
-- **D048 (proposed):**
+- **D048 (accepted):**
   - Better Auth for identity only, with workspaces as our own module;
   - the desktop app's token kept in main with safeStorage and sent as a bearer token;
   - a browser hand-off with a secret verifier for Google/Microsoft;
   - our own sign-up wrapper, so accounts exist only after the code.
-- **D049 (proposed):** new libraries for F01, each to be vetted with `/add-dependency` before use:
+- **D049 (accepted):** new libraries for F01, each to be vetted with `/add-dependency` before use:
   - `better-auth`;
   - `react-router`;
   - `@tanstack/react-query` and `react-hook-form` (already planned in frontend.md);

@@ -20,7 +20,9 @@ export function useCreateWorkspace() {
         body: { name },
         headers: { "idempotency-key": key },
       }),
-    onSuccess: ({ workspace }) => {
+    onSuccess: async ({ workspace }) => {
+      // An older /me still on its way must not replace the list that now has the new workspace.
+      await queryClient.cancelQueries({ queryKey: ME_KEY, exact: true });
       queryClient.setQueryData<MeResponse>(ME_KEY, (me) =>
         me ? { ...me, workspaces: [...me.workspaces, { ...workspace, pendingRequests: 0 }] } : me,
       );

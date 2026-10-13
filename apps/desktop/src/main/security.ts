@@ -88,7 +88,13 @@ export function isTokenRoute(url: string, apiUrl: string): boolean {
     return false;
   }
   if (api === undefined || parsed.origin !== api) return false;
-  const path = parsed.pathname.toLowerCase();
+  // Decoded first: the backend treats "/api/v1/me/p%61ssword" as "/api/v1/me/password".
+  let path: string;
+  try {
+    path = decodeURIComponent(parsed.pathname).toLowerCase();
+  } catch {
+    return true;
+  }
   if (path === "/api/v1/auth/providers") return false;
   return path.startsWith("/api/auth/") || path.startsWith("/api/v1/auth/") || path === "/api/v1/me/password";
 }

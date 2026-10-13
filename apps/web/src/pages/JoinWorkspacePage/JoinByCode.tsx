@@ -15,7 +15,7 @@ function lookupError(t: Translate, code: string | undefined) {
   return undefined;
 }
 
-function FindForm({ onFound }: { onFound: (text: string, found: JoinLookup) => void }) {
+function FindForm({ onStart, onFound }: { onStart: () => void; onFound: (text: string, found: JoinLookup) => void }) {
   const { t } = useTranslation();
   const lookup = useJoinLookup();
   const [text, setText] = useState("");
@@ -24,7 +24,9 @@ function FindForm({ onFound }: { onFound: (text: string, found: JoinLookup) => v
     event.preventDefault();
     const value = text.trim();
     setEmpty(value === "");
-    if (value) lookup.mutate(value, { onSuccess: (found) => onFound(value, found) });
+    if (!value) return;
+    onStart();
+    lookup.mutate(value, { onSuccess: (found) => onFound(value, found) });
   };
   const fieldError = empty ? t("workspaces.join.empty") : lookupError(t, lookup.error?.code);
   return (
@@ -80,7 +82,14 @@ export function JoinByCode({ onAlreadyMember }: { onAlreadyMember: (workspaceId:
         </h2>
         <p className="m-0 text-[14px] text-ink-muted">{t("workspaces.join.codeHint")}</p>
       </div>
-      <FindForm onFound={onFound} />
+      <FindForm
+        onStart={() => {
+          // A new search hides the previous workspace, so "Ask to join" can't go to the wrong one.
+          setFound(undefined);
+          ask.reset();
+        }}
+        onFound={onFound}
+      />
       {found ? (
         <RequestRow
           size="lg"

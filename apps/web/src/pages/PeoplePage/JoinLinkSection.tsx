@@ -1,6 +1,6 @@
 // The join link and code on the People screen (AC-F01-19): the owner and admins switch it on or off and
 // replace it; every member can copy it while it is on.
-import { JoinLinkCard } from "@meetapp/ui";
+import { JoinLinkCard, Spinner } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import { useJoinLink, useJoinLinkChange } from "../../features/workspaces/index.ts";
@@ -19,6 +19,7 @@ function useLabels() {
     copyLink: t("workspaces.people.link.copyLink"),
     copyCode: t("workspaces.people.link.copyCode"),
     copied: t("workspaces.people.link.copied"),
+    copyFailed: t("workspaces.people.link.copyFailed"),
     replace: t("workspaces.people.link.replace"),
     off: t("workspaces.people.link.off"),
   };
@@ -29,7 +30,13 @@ export function JoinLinkSection({ workspaceId, canManage }: { workspaceId: strin
   const labels = useLabels();
   const link = useJoinLink(workspaceId);
   const change = useJoinLinkChange(workspaceId);
-  if (!link.data) return null;
+  if (!link.data) {
+    return link.isPending ? (
+      <Spinner label={t("workspaces.people.link.loading")} />
+    ) : (
+      <ActionErrorNotice error={link.error} onRetry={() => void link.refetch()} />
+    );
+  }
   return (
     <section
       aria-label={t("workspaces.people.link.title")}

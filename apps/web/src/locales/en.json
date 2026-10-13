@@ -274,7 +274,9 @@
         "copyCode": "Copy code",
         "copied": "Copied",
         "replace": "Replace link and code",
-        "off": "The join link is off. The owner or an admin can turn it on."
+        "off": "The join link is off. The owner or an admin can turn it on.",
+        "copyFailed": "Couldn't copy. Select the text and copy it yourself.",
+        "loading": "Loading the join link"
       },
       "everyone": "Everyone",
       "find": "Find a person",
@@ -329,7 +331,8 @@
       "sentDetailNoSender": "Invited as {{role}} · expires {{when}}",
       "cancel": "Cancel invitation",
       "resend": "Send again",
-      "resent": "A new invitation was sent to {{email}}."
+      "resent": "A new invitation was sent to {{email}}.",
+      "loading": "Loading requests and invitations"
     },
     "join": {
       "back": "Back",
@@ -352,7 +355,8 @@
       "people_other": "{{count}} people · you'll join as a member",
       "ask": "Ask to join",
       "sentTitle": "Request sent",
-      "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days."
+      "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days.",
+      "loading": "Loading your invitations"
     }
   },
   "profile": {

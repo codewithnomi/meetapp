@@ -121,6 +121,11 @@ describe("isTokenRoute (F01)", () => {
       `${API}/api/v1/auth/reset-password`,
       `${API}/api/v1/me/password`,
       `${API}/API/V1/AUTH/SIGN-UP/VERIFY`,
+      // Written with %-codes, which the backend decodes before matching its routes.
+      `${API}/api/v1/me/p%61ssword`,
+      `${API}/api/v1/auth/sign-out-%65verywhere`,
+      `${API}/api/v1/%61uth/desktop/exchange`,
+      `${API}/api/v1/me/%E0%A4%A`,
     ];
     for (const url of blocked) expect(isTokenRoute(url, API), url).toBe(true);
     const open = [

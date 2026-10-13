@@ -57,8 +57,11 @@ test("TC-F01-01 [AC-F01-01] [AC-F01-04] TC-F01-14 [AC-F01-05] [AC-F01-06] create
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("alert")).toContainText("Email or password is wrong");
   await page.getByLabel("Password").fill(PASSWORD);
+  // AC-F01-05: the right password reaches the home screen within 3 seconds.
+  const started = Date.now();
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(title(page, "Personal")).toBeVisible();
+  expect(Date.now() - started).toBeLessThan(3_000);
 
   // Code sign-in (TC-F01-14).
   await signOut(page);

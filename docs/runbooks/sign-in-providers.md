@@ -6,8 +6,8 @@ Both keys are **free** (D017). You need a Google account and a free Microsoft ac
 
 ## Before you start: the backend's address
 Google and Microsoft send people back to the backend after they sign in, so they need its exact address. It is the `APP_PUBLIC_URL` setting in `.env`:
-- it must use the same port as `API_PORT` (on this Mac that is `http://127.0.0.1:3010`, because the backend moved to port 3010);
-- Google and Microsoft accept plain `http` only for `localhost`. So for these keys set `APP_PUBLIC_URL=http://localhost:3010` (same port, the name `localhost` instead of the numbers).
+- it must use the same port as `API_PORT` (3000 by default; the owner's Mac uses 3010 because port 3000 was taken);
+- Google and Microsoft accept plain `http` only for `localhost`. So for these keys set `APP_PUBLIC_URL=http://localhost:<API_PORT>`, e.g. `http://localhost:3010` (same port, the name `localhost` instead of the numbers).
 
 The return addresses below use that value. Replace `localhost:3010` if yours differs.
 

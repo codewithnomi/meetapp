@@ -63,7 +63,13 @@ const EXCHANGE = {
 
 const CANCEL = {
   config,
-  schema: { summary: "Cancel a Google/Microsoft sign-in", tags, body: desktopExchangeBodySchema },
+  schema: {
+    summary: "Cancel a Google/Microsoft sign-in",
+    description:
+      "The app gave up (Cancel, or 5 minutes passed). Only with the right verifier; otherwise nothing changes.",
+    tags,
+    body: desktopExchangeBodySchema,
+  },
 };
 
 const browserQuery = z.object({ request: z.uuid(), error: z.string().max(100).optional() });
@@ -116,7 +122,16 @@ export const desktopSignInRoutes: FastifyPluginAsyncZod<DesktopSignInRoutesOptio
   const { desktopSignIn, accounts, enabled } = options;
   app.get(
     "/api/v1/auth/providers",
-    { config, schema: { summary: "Which sign-in providers are on", tags, response: { 200: providersResponseSchema } } },
+    {
+      config,
+      schema: {
+        summary: "Which sign-in providers are on",
+        description:
+          "Which of Google and Microsoft are switched on, so the app shows only those buttons. Anyone may ask.",
+        tags,
+        response: { 200: providersResponseSchema },
+      },
+    },
     () => enabled,
   );
 

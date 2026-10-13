@@ -73,4 +73,18 @@ describe("TC-F01-23 [AC-F01-07] MICROSOFT_AUTHORITY (national clouds, the deskto
     const remote = { ...fakeEnv(), NODE_ENV: "test", MICROSOFT_AUTHORITY: "http://login.example.test" };
     expect(problemsFor(remote)).toContainEqual(expect.stringContaining("MICROSOFT_AUTHORITY"));
   });
+
+  it("TC-F01-83 [AC-F01-33] in production the example secrets from .env.example are refused, without their values", () => {
+    const example = "local_dev_auth_secret_change_before_going_online";
+    const problems = problemsFor({
+      ...fakeEnv(),
+      NODE_ENV: "production",
+      BETTER_AUTH_SECRET: example,
+      DATA_ENCRYPTION_KEY: example,
+    });
+    expect(problems).toContainEqual(expect.stringContaining("BETTER_AUTH_SECRET"));
+    expect(problems).toContainEqual(expect.stringContaining("DATA_ENCRYPTION_KEY"));
+    expect(problems.join("\n")).not.toContain(example);
+    expect(problemsFor({ ...fakeEnv(), BETTER_AUTH_SECRET: example, DATA_ENCRYPTION_KEY: example })).toEqual([]);
+  });
 });

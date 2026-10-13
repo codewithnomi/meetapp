@@ -287,3 +287,25 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Vetted (T1, 2026-10-11):** better-auth 1.7.7 (MIT; design written against 1.6 docs, re-checked in T3), bullmq 6.3.12 (MIT), sharp 0.35.5 (Apache-2.0), react-router 8.4.0 (MIT), @tanstack/react-query 5.104.1 (MIT), react-hook-form 7.89.0 + @hookform/resolvers 5.9.1 (MIT; Zod forms, frontend.md), oauth2-mock-server 9.2.0 (MIT, dev only); common passwords from **@zxcvbn-ts/language-common** 4.1.3 (MIT, its password dictionary, first 10,000 used). All released within the last 2 months. Each is installed in the task that first uses it (unused libraries fail `pnpm check`).
 - **License note (T7, 2026-10-11):** sharp itself is Apache-2.0, but its image engine (`@img/sharp-libvips-*`, libvips) is LGPL-3.0-or-later, which the license check blocks by default. Allowed in `tools/license-allowlist.json`: it is an unchanged, separate library file that runs only on the backend server and is never shipped to users; the LGPL only asks to share changes to libvips itself. Owner informed.
 - **Cost:** none.
+- **Added in T14 (2026-10-12):** `@radix-ui/react-dropdown-menu` 2.1.24 and `@radix-ui/react-dialog` 1.1.23 (MIT, actively maintained, the same family as the switch and tooltip already in use), pinned to exact versions at least two weeks old; used by WorkspaceSwitcher, MemberRow and Dialog.
+
+### D050: Choices made while building F01
+- **Date:** 2026-10-13. **Status:** accepted (recorded during `/spec-verify F01`; details in the F01 design's "Built in Tn" notes).
+- **Rate limits when Redis is down:** requests are let through and a warning is logged (availability over the limit, which S5 allows only as a short outage). Better Auth's own limiter turned out to be off (it needs IP tracking, which we disable), so wrong passwords are now also limited per network address in our code: 100 per 15 minutes. Every limit is counted *before* the check (and given back when the password was right), so tries sent at the same moment can't slip past it; sign-up code tries use one Redis INCR for the same reason.
+- **`MICROSOFT_AUTHORITY`** may be plain http only on 127.0.0.1/localhost and never in production: the desktop tests point Microsoft sign-in at a local fake.
+- **Join link and code:** AES-256-GCM with keys from `DATA_ENCRYPTION_KEY` via HKDF and a key version, looked up through two HMAC columns (one for the link, one for the code; migration 0002).
+- **Waiting sign-ups** keep the name, email and password *hash* in Redis for at most 30 minutes, until the code is confirmed; the code itself only as a hash.
+- **Better Auth's deprecated** `forget-password/email-otp` is replaced by `email-otp/request-password-reset`.
+- **CORS** allows PUT, PATCH and DELETE from the app's own origins (the default blocked the app's own calls).
+- **Photo upload** sends the file as the request body (no multipart library); the content decides the type.
+- **Desktop test runs** start their backend with a key of their own, so attempt counters start fresh each run.
+- **Production refuses** the example secrets from `.env.example` (`local_dev…`) for `BETTER_AUTH_SECRET` and `DATA_ENCRYPTION_KEY`.
+- **Cost:** none.
+
+### D051: Two F01 items left for later, by the owner
+- **Date:** 2026-10-13. **Status:** accepted (owner, during `/spec-verify F01`).
+- **Desktop Google/Microsoft hand-off phishing (security review, Medium):** someone could send a person a start link of their own; if that person signs in and presses Continue in the browser, the attacker's app receives the session. Left as it is for now and **must be fixed before anything goes online**. The planned fix: the browser hands the result straight back to the app on the same computer (a loopback address, RFC 8252), or at least the person types the app's code into the page.
+- **"Terms" and "Privacy Policy" on Create account** stay plain text, not links as on the approved canvas, until the real documents exist (privacy-legal.md, "Documents needed before launch").
+- **Why:** nothing runs online yet (D017), so neither can harm anyone today; both are tracked in docs/progress.md.
+- **Cost:** none.
+

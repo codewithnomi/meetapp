@@ -94,4 +94,18 @@ describe("Join a workspace screen", () => {
     await waitFor(() => expect(onBack).toHaveBeenCalled());
     expect(api.callsTo("POST", "/api/v1/join/request")).toHaveLength(0);
   });
+
+  it("TC-F01-53 [AC-F01-19] a second search that finds nothing removes the first workspace's card", async () => {
+    let calls = 0;
+    setUp({
+      "POST /api/v1/join/lookup": () =>
+        ++calls === 1 ? json({ name: "Northwind", memberCount: 12, alreadyMember: false }) : refuse("NOT_FOUND", 404),
+    });
+    open();
+    await typeCode("NW7KQ2PXAB");
+    expect(await screen.findByRole("button", { name: "Ask to join" })).toBeInTheDocument();
+    await userEvent.clear(screen.getByRole("textbox", { name: "Join link or code" }));
+    await typeCode("WRONGCODE1");
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Ask to join" })).not.toBeInTheDocument());
+  });
 });

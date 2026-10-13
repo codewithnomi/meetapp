@@ -9,7 +9,11 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | `src/main/security.ts` | Page settings (sandbox, isolation, no Node.js), which addresses count as "inside the app", which links may open in the browser, the Content Security Policy |
 | `src/main/guards.ts` | Applies those rules: permissions refused, navigation and new windows blocked, CSP on every response |
 | `src/main/app-protocol.ts`, `serve-files.ts` | Serves the built screens from `app://meetapp`, never anything outside their folder |
-| `src/preload/preload.ts` | The only bridge to the screens: `window.meetapp.platform` |
+| `src/main/auth-token.ts` | Keeps the sign-in token, encrypted with the system keychain (safeStorage), or in memory only when that isn't available (F01) |
+| `src/main/auth-client.ts`, `auth-actions.ts` | The sign-in calls main makes for the screens, and the list of actions the screens may ask for (F01) |
+| `src/main/auth-bridge.ts` | Adds the token to the screens' requests to the backend, and cancels their requests to routes that hand out a token (F01) |
+| `src/main/provider-sign-in.ts` | Google/Microsoft: opens the browser and collects the result (F01) |
+| `src/preload/preload.ts` | The only bridge to the screens: `window.meetapp.platform` and `window.meetapp.auth` (sign-in actions; the token never reaches the screens) |
 | `scripts/build.ts`, `scripts/dev.ts`, `scripts/electron.ts` | Build with Vite (D039); development start-up; starting Electron (removes VS Code's ELECTRON_RUN_AS_NODE) |
 
 **Settings (environment)**

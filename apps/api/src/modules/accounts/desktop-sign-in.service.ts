@@ -214,13 +214,14 @@ export function createDesktopSignInService(deps: DesktopSignInDependencies) {
     confirmed: (visit: Parameters<typeof confirmed>[2]) => confirmed(deps, steps, visit),
     exchange: (requestId: string, verifier: string) => exchange(deps, steps, requestId, verifier),
 
-    /** The app gave up (Cancel or 5 minutes): the request is gone, and so is an account it created. */
+    /**
+     * The app gave up (Cancel or 5 minutes): the request is gone, and so is an account it created.
+     * Only with the right verifier, so nobody else can end someone's sign-in.
+     */
     async cancel(requestId: string, verifier: string) {
       const record = await deps.repository.load(requestId);
-      if (!record) return;
-      if (sameDigest(verifier, record.challenge) && record.status !== "cancelled") {
-        await steps.cancel(requestId, record, "SIGN_IN_CANCELLED");
-      }
+      if (!record || !sameDigest(verifier, record.challenge)) return;
+      if (record.status !== "cancelled") await steps.cancel(requestId, record, "SIGN_IN_CANCELLED");
       await deps.repository.remove(requestId);
     },
   };

@@ -89,7 +89,8 @@ function peopleRules(repository: WorkspacesRepository) {
         throw new AppError(409, "OWNER_MUST_TRANSFER", "Hand the workspace over to someone else before leaving.");
       }
       ensureAllowed(membership, "leave");
-      await repository.leave(membership.workspaceId, membership.userId);
+      // Nothing removed: they were removed meanwhile, or made the owner by a hand-over just now.
+      if (!(await repository.leave(membership.workspaceId, membership.userId))) throw notFound();
     },
     async transfer(membership: Membership, userId: string): Promise<void> {
       ensureAllowed(membership, "transfer");

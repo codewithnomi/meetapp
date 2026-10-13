@@ -29,6 +29,10 @@ const PROVIDER_KEYS = [
   ["MICROSOFT_CLIENT_ID", "MICROSOFT_CLIENT_SECRET"],
 ] as const;
 
+/** The shared local values from .env.example: fine on a Mac, never online (anyone can read them). */
+const LOCAL_ONLY_SECRET = /local_dev/i;
+const SECRETS = ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY"] as const;
+
 /** https anywhere; plain http only on this computer and only outside production (desktop tests). */
 function isAllowedAuthority(value: string, environment: string): boolean {
   if (!URL.canParse(value)) return false;
@@ -88,6 +92,11 @@ export const configSchema = z
         path: ["MICROSOFT_AUTHORITY"],
         message: "must be https (http only on this computer, and never in production)",
       });
+    }
+    for (const name of SECRETS) {
+      if (config.NODE_ENV === "production" && LOCAL_ONLY_SECRET.test(config[name])) {
+        context.addIssue({ code: "custom", path: [name], message: "is the local example value; set a real secret" });
+      }
     }
     for (const [id, secretKey] of PROVIDER_KEYS) {
       if ((config[id] === undefined) !== (config[secretKey] === undefined)) {

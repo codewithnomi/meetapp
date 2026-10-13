@@ -239,6 +239,23 @@ describe("TC-F01-09 [AC-F01-04] [AC-F01-29] double submits make one account", ()
   );
 });
 
+describe("TC-F01-06 [AC-F01-04, AC-F01-13] code tries can't be raced, security", () => {
+  it(
+    "TC-F01-06 [AC-F01-04, AC-F01-13] 20 wrong guesses sent at once all count: the right code is refused after",
+    SLOW,
+    async () => {
+      const email = testEmail("race");
+      const { signupId, code } = await started(email);
+      const wrong = code === "000000" ? "111111" : "000000";
+      const guesses = await Promise.all(Array.from({ length: 20 }, () => verify(signupId, wrong)));
+      expect(guesses.every((answer) => answer.statusCode === 400)).toBe(true);
+      const right = await verify(signupId, code);
+      expect(right.statusCode).toBe(400);
+      expect(right.json()).toMatchObject({ error: { code: "CODE_INVALID" } });
+    },
+  );
+});
+
 describe("TC-F01-37 [AC-F01-14] every new account has exactly one personal workspace", () => {
   it(
     "TC-F01-37 [AC-F01-14] GET /me repairs a missing personal workspace once, even when called twice at once",
@@ -259,6 +276,23 @@ describe("TC-F01-37 [AC-F01-14] every new account has exactly one personal works
       select count(*)::int as n from workspaces w join "user" u on u.id = w.created_by
       where u.email = ${email} and w.kind = 'personal'`);
       expect(personal[0]?.["n"]).toBe(1);
+    },
+  );
+
+  it(
+    "TC-F01-37 [AC-F01-14] a personal workspace left without its membership is repaired by GET /me",
+    SLOW,
+    async () => {
+      const email = testEmail("half-made");
+      const { signupId, code } = await started(email);
+      const token = String((await verify(signupId, code)).headers["set-auth-token"]);
+      await t.database.db.execute(sql`
+      delete from workspace_members where workspace_id in (
+        select w.id from workspaces w join "user" u on u.id = w.created_by where u.email = ${email} and w.kind = 'personal')`);
+      const me = await t.app.inject({ url: "/api/v1/me", headers: { authorization: `Bearer ${token}` } });
+      expect(me.json<{ workspaces: { kind: string; role: string }[] }>().workspaces).toEqual([
+        expect.objectContaining({ kind: "personal", role: "owner" }),
+      ]);
     },
   );
 });

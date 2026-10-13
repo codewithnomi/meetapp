@@ -41,7 +41,8 @@ export function registerSessionCheck(app: FastifyInstance, reader: SessionReader
     const access = request.routeOptions.config.access;
     // Unknown addresses keep answering 404, and browsers' CORS "preflight" checks carry no sign-in.
     if (request.is404 || request.method === "OPTIONS") return;
-    if (!request.url.startsWith(API_PREFIX) || access === "public") return;
+    // The route's registered address, not the raw one: "/api/%761/me" reaches /api/v1/me too.
+    if (!(request.routeOptions.url ?? "").startsWith(API_PREFIX) || access === "public") return;
     const user = await reader.read(request);
     if (!user) throw new AppError(401, "UNAUTHORIZED", "Sign in to continue.");
     request.user = user;
