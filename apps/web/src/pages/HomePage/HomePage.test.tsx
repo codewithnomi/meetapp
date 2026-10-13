@@ -15,9 +15,9 @@ function flagsReply(enabled: boolean | "fail") {
   });
 }
 
-function renderHome(fetcher: typeof fetch, onOpenSettings = vi.fn()) {
-  render(<HomePage onOpenSettings={onOpenSettings} flagOptions={{ apiUrl: API, fetcher }} />);
-  return onOpenSettings;
+function renderHome(fetcher: typeof fetch, onNavigate = vi.fn()) {
+  render(<HomePage onNavigate={onNavigate} flagOptions={{ apiUrl: API, fetcher }} />);
+  return onNavigate;
 }
 
 /** Waits until the flag reply has been handled. */
@@ -38,9 +38,9 @@ describe("HomePage", () => {
   });
 
   it("TC-F00-16 [AC-F00-08] the Settings button opens Settings", async () => {
-    const onOpenSettings = renderHome(flagsReply(false));
+    const onNavigate = renderHome(flagsReply(false));
     await userEvent.click(screen.getByRole("button", { name: "Settings" }));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(onNavigate).toHaveBeenCalledWith("settings");
   });
 
   it("TC-F00-72 [AC-F00-34] the demo element shows when the demo flag is on", async () => {

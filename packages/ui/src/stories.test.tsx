@@ -12,6 +12,7 @@ import * as SpinnerStories from "./atoms/Spinner/Spinner.stories.tsx";
 import * as ToggleStories from "./atoms/Toggle/Toggle.stories.tsx";
 import * as TooltipStories from "./atoms/Tooltip/Tooltip.stories.tsx";
 import * as AccentPickerStories from "./molecules/AccentPicker/AccentPicker.stories.tsx";
+import * as CodeInputStories from "./molecules/CodeInput/CodeInput.stories.tsx";
 import * as SegmentedControlStories from "./molecules/SegmentedControl/SegmentedControl.stories.tsx";
 
 interface StoryModule {
@@ -46,6 +47,7 @@ const INTERACTIVE: [string, StoryModule][] = [
   ["IconButton", ICON_BUTTON],
   ["Input", INPUT],
   ["Toggle", TOGGLE],
+  ["CodeInput", CodeInputStories as unknown as StoryModule],
 ];
 const MOLECULES: [string, StoryModule][] = [
   ["SegmentedControl", SegmentedControlStories as unknown as StoryModule],

@@ -7,7 +7,7 @@ argument-hint: <feature id, e.g. F05>
 # Verify feature $ARGUMENTS
 
 1. Open `docs/specs/$ARGUMENTS-*/tasks.md`. If any task is unticked, list them and stop.
-2. **Run every test in the project**, not only this feature's, so we catch anything that broke in earlier features. Also run the typecheck, lint (including the Atomic Design and layer rules), the code-quality tools (complexity, duplication, unused code; see docs/engineering/code-quality.md) and the Storybook build. (Commands are listed in CLAUDE.md.) Record the pass/fail counts and test coverage.
+2. **Run every test in the project**, not only this feature's, so we catch anything that broke in earlier features. Also run the typecheck, lint (including the Atomic Design and layer rules), the code-quality tools (complexity, duplication, unused code; see docs/engineering/code-quality.md) the Storybook build, the screenshots (`pnpm test:visual`) and the backend container (`pnpm check:container`: it catches a package the backend needs but its image leaves out). (Commands are listed in CLAUDE.md.) Record the pass/fail counts and test coverage.
 3. **Security scans:** run `pnpm audit --prod` (and `pip-audit` if Python code exists) and a secrets scan (e.g. `gitleaks` if installed). If a tool isn't installed, say so in the report; don't install it without asking.
 4. **Check quality targets:** for any target in `docs/product/quality-targets.md` this feature affects (e.g. join time, caption delay), state whether it was measured and the result.
 5. **Launch these helpers in parallel** (one message, several Agent calls):

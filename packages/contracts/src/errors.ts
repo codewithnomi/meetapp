@@ -1,7 +1,34 @@
 // The one error format every endpoint uses (docs/engineering/backend.md, AC-F00-20).
 import { z } from "zod";
 
-export const ERROR_CODES = ["BAD_REQUEST", "NOT_FOUND", "INTERNAL_ERROR"] as const;
+export const ERROR_CODES = [
+  "BAD_REQUEST",
+  "NOT_FOUND",
+  "INTERNAL_ERROR",
+  // F01: signing in and terms.
+  "UNAUTHORIZED",
+  "FORBIDDEN",
+  "TERMS_REQUIRED",
+  "PASSWORD_WEAK",
+  "TOO_MANY_ATTEMPTS",
+  "CODE_INVALID",
+  "CODE_EXPIRED",
+  "PASSWORD_WRONG",
+  "SIGN_IN_CANCELLED",
+  "PROVIDER_EMAIL_UNVERIFIED",
+  // F01: workspaces.
+  "PERSONAL_WORKSPACE",
+  "OWNER_MUST_TRANSFER",
+  "WORKSPACE_LIMIT",
+  "ALREADY_MEMBER",
+  "INVITATION_GONE",
+  "PENDING_REQUEST",
+  "ALREADY_DECIDED",
+  "REQUEST_EXPIRED",
+  "PHOTO_INVALID",
+] as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[number];
 
 export const errorResponseSchema = z
   .object({
@@ -10,6 +37,8 @@ export const errorResponseSchema = z
       message: z.string(),
       requestId: z.string(),
       details: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+      /** With TOO_MANY_ATTEMPTS: seconds until trying again works (also in the Retry-After header). */
+      retryAfterSeconds: z.number().int().positive().optional(),
     }),
   })
   .meta({ id: "ErrorResponse", description: "Standard error body. Quote the requestId when reporting a problem." });

@@ -8,6 +8,20 @@
       "when": 1791604964363,
       "tag": "0000_feature_flags",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791720464445,
+      "tag": "0001_accounts_workspaces",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791805102616,
+      "tag": "0002_join_link_lookup",
+      "breakpoints": true
     }
   ]
 }

@@ -7,6 +7,8 @@ export const flagsRoutes: FastifyPluginAsyncZod<{ flags: FlagsService }> = async
   app.get(
     "/api/v1/flags",
     {
+      // Before sign-in too: the apps check health and flags on the sign-in screen.
+      config: { access: "public" },
       schema: {
         summary: "Which features are switched on? Keys not listed are off.",
         description:

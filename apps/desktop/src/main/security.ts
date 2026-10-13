@@ -64,11 +64,57 @@ export function contentSecurityPolicy({ apiUrl, devServerUrl }: CspOptions): str
     // Development only: Vite injects the page's styles at run time as inline <style> tags.
     dev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
     "font-src 'self'",
-    "img-src 'self' data:",
+    // Profile photos come from the backend, with the token main adds (F01, AC-F01-25).
+    `img-src 'self' data: ${api}`,
     `connect-src ${connect}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'none'",
     "frame-ancestors 'none'",
   ].join("; ");
+}
+
+/**
+ * Backend routes that hand out or replace a session token (F01 design.md section 4). The page may not
+ * call them; main calls them itself through `window.meetapp.auth`, so the token never reaches the page.
+ * Only `GET /api/v1/auth/providers` (which buttons to show) stays open to the page.
+ */
+export function isTokenRoute(url: string, apiUrl: string): boolean {
+  const api = originOf(apiUrl);
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (api === undefined || parsed.origin !== api) return false;
+  // Decoded first: the backend treats "/api/v1/me/p%61ssword" as "/api/v1/me/password".
+  let path: string;
+  try {
+    path = decodeURIComponent(parsed.pathname).toLowerCase();
+  } catch {
+    return true;
+  }
+  if (path === "/api/v1/auth/providers") return false;
+  return path.startsWith("/api/auth/") || path.startsWith("/api/v1/auth/") || path === "/api/v1/me/password";
+}
+
+const HAND_OFF_START = /^\/api\/v1\/auth\/desktop\/start$/;
+const REQUEST_ID = /^request=[0-9a-f-]{36}$/;
+
+/**
+ * Google/Microsoft sign-in opens the backend's start link in the user's browser (F01 design.md section 4).
+ * Besides any https link, development also allows exactly that link on this computer (D040 extended);
+ * never in the packaged app.
+ */
+export function canOpenHandOffStart(url: string, packaged: boolean): boolean {
+  if (canOpenExternally(url)) return true;
+  if (packaged) return false;
+  try {
+    const { protocol, hostname, pathname, search, hash } = new URL(url);
+    const local = protocol === "http:" && (hostname === "127.0.0.1" || hostname === "localhost");
+    return local && HAND_OFF_START.test(pathname) && REQUEST_ID.test(search.slice(1)) && hash === "";
+  } catch {
+    return false;
+  }
 }

@@ -27,6 +27,11 @@ export const OPTIONAL_KEYS: readonly string[] = [
   "EMAIL_FROM",
   "SENTRY_DSN",
   "OTEL_EXPORTER_OTLP_ENDPOINT",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "MICROSOFT_CLIENT_ID",
+  "MICROSOFT_CLIENT_SECRET",
+  "MICROSOFT_AUTHORITY",
 ];
 
 /**
@@ -45,6 +50,19 @@ export function fakeEnv(nodeEnv: NodeEnv = "test"): Record<string, string> {
   env["POSTGRES_HOST"] = "127.0.0.1";
   env["SENTRY_DSN"] = "";
   env["OTEL_EXPORTER_OTLP_ENDPOINT"] = "";
+  for (const key of [
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "MICROSOFT_CLIENT_ID",
+    "MICROSOFT_CLIENT_SECRET",
+    "MICROSOFT_AUTHORITY",
+  ]) {
+    env[key] = "";
+  }
+  env["BETTER_AUTH_SECRET"] = "val-BETTER_AUTH_SECRET-0123456789abcdef";
+  env["DATA_ENCRYPTION_KEY"] = "val-DATA_ENCRYPTION_KEY-0123456789abcdef";
+  env["SUPPORT_EMAIL"] = "support@example.test";
+  env["APP_PUBLIC_URL"] = "http://127.0.0.1:3000";
   return env;
 }
 

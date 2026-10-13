@@ -1,0 +1,51 @@
+{
+  "brand": "MeetApp",
+  "footer": "This email was sent by MeetApp. If you didn't expect it, you can ignore it.",
+  "ignoreIfNotYou": "If you didn't ask for this, ignore this email. Nobody can sign in without this code.",
+  "code": {
+    "subject": {
+      "sign-up": "Your MeetApp code: {{code}}",
+      "sign-in": "Your MeetApp sign-in code: {{code}}",
+      "reset": "Your MeetApp password reset code: {{code}}"
+    },
+    "intro": {
+      "sign-up": "Type this code in MeetApp to confirm your email address.",
+      "sign-in": "Type this code in MeetApp to sign in.",
+      "reset": "Type this code in MeetApp to choose a new password."
+    },
+    "validity": "The code works for 15 minutes, once."
+  },
+  "invitation": {
+    "subject": "{{inviter}} invited you to {{workspace}} on MeetApp",
+    "intro": "{{inviter}} invited you to join {{workspace}} on MeetApp as {{role}}.",
+    "howTo": "Open MeetApp and sign in or create an account with {{email}}. Your invitation is waiting there.",
+    "button": "See the invitation",
+    "validity": "This invitation works for 7 days."
+  },
+  "joinRequest": {
+    "subject": "{{person}} asked to join {{workspace}}",
+    "intro": "{{person}} ({{email}}) asked to join {{workspace}} with the join link or code.",
+    "howTo": "Open MeetApp, go to Requests and invitations, and approve or reject the request.",
+    "validity": "The request expires after 14 days."
+  },
+  "requestDecided": {
+    "subject": {
+      "approved": "You're in: {{workspace}} on MeetApp",
+      "rejected": "Your request to join {{workspace}} was not approved"
+    },
+    "intro": {
+      "approved": "Your request to join {{workspace}} was approved. Open MeetApp to find it in your workspace list.",
+      "rejected": "Your request to join {{workspace}} was not approved. You can ask an admin of {{workspace}} for an invitation."
+    }
+  },
+  "someoneTried": {
+    "subject": "Someone tried to create a MeetApp account with your email",
+    "intro": "Someone tried to create a new MeetApp account with this email address. You already have an account, so nothing was changed.",
+    "howTo": "To sign in, open MeetApp. Forgot your password? Choose Forgot password on the sign-in screen.",
+    "notYou": "If it wasn't you, you don't need to do anything."
+  },
+  "roles": {
+    "admin": "an admin",
+    "member": "a member"
+  }
+}

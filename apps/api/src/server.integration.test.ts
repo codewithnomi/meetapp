@@ -6,7 +6,7 @@
 import { randomBytes } from "node:crypto";
 import { createConnection } from "node:net";
 import { networkInterfaces } from "node:os";
-import { createDatabase, databaseUrl, type DatabaseSettings } from "@meetapp/db";
+import { createDatabase, databaseUrl, migrationCount, type DatabaseSettings } from "@meetapp/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   freePort,
@@ -109,7 +109,7 @@ describe("TC-F00-10 [AC-F00-04] starting the API migrates an empty database", ()
         "select table_name as name from information_schema.tables where table_schema = 'public' and table_name = 'feature_flags'",
       );
       expect(tables).toHaveLength(1);
-      expect(await journalRows()).toBe(1);
+      expect(await journalRows()).toBe(migrationCount());
     },
   );
 
@@ -122,7 +122,7 @@ describe("TC-F00-10 [AC-F00-04] starting the API migrates an empty database", ()
   it("TC-F00-10 [AC-F00-04] the second start applies nothing, does not fail and is healthy", SLOW, async () => {
     api = startApi();
     await waitUntilHealthy(api);
-    expect(await journalRows()).toBe(1);
+    expect(await journalRows()).toBe(migrationCount());
   });
 });
 

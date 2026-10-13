@@ -39,7 +39,7 @@ Setup on a new Mac: `docs/getting-started.md`. Run from the project root:
 - **Start:** `pnpm dev` (services + backend + desktop app), `pnpm dev:stop` (stop services, data kept), `pnpm desktop` (only the window).
 - **Test:** `pnpm test` (everything, needs Docker), `pnpm test:unit` (quick, no Docker), `pnpm test:integration`, `pnpm test:e2e` (desktop windows), `pnpm test:visual` (component screenshots, needs Docker; `pnpm test:visual:update` after an intended look change), `pnpm test:monitoring` (about 12 minutes; close `pnpm dev` first).
 - **Check:** `pnpm check` (lint, formatting, types, architecture, unused code, duplication, structure, licenses), `pnpm check:container` (backend container).
-- **Data:** `pnpm seed`, `pnpm seed:clear`, `pnpm flag list`, `pnpm flag <key> on|off`, `pnpm email:test`, `pnpm storage:test`.
+- **Data:** `pnpm seed` (example accounts, password in `docs/runbooks/local-services.md`), `pnpm seed:clear`, `pnpm flag list`, `pnpm flag <key> on|off`, `pnpm email:test`, `pnpm storage:test`.
 - **Monitoring:** `pnpm monitoring` (status page, dashboards, alerts), `pnpm monitoring:stop`.
 - **Gallery:** `pnpm --filter @meetapp/ui storybook`.
 
@@ -73,7 +73,7 @@ Setup on a new Mac: `docs/getting-started.md`. Run from the project root:
 ## Conventions (apply once coding starts)
 - Main language: TypeScript. Python only for the AI worker. See the decisions log.
 - Every acceptance criterion has an ID like `AC-F05-03`, every test case one like `TC-F05-07`. Tests and tasks reference these IDs.
-- Tests are written before or with the code, never after. The whole test suite must pass before any task is ticked. Never weaken a test to make it pass.
+- Tests are written before or with the code, never after. While building a feature, run only the task's own tests plus typecheck and lint before ticking it; the whole suite (with desktop tests and screenshots) runs once, at `/spec-verify` (D052). Never weaken a test to make it pass.
 - A feature is `done` only after `/spec-verify` gives PASS (all tests green, every AC met, no Critical/High security issues).
 - Production grade from day one: follow `docs/engineering/*` and `docs/architecture/security.md`. If a rule is in the way, propose changing the doc. Don't silently ignore it.
 - Documentation is part of "done": code without updated docs is not finished.

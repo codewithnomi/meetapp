@@ -55,6 +55,18 @@ describe("TC-F00-57 [AC-F00-23] CORS allows only the app's own origins (security
     expect(response.headers["access-control-allow-origin"]).toBe(origin);
   });
 
+  it.each(["PUT", "PATCH", "DELETE"])(
+    "TC-F01-42 [AC-F01-16] the app's own screens may send %s (preflight allows it)",
+    async (method) => {
+      const response = await app.inject({
+        method: "OPTIONS",
+        url: HEALTH,
+        headers: { origin: "app://meetapp", "access-control-request-method": method },
+      });
+      expect(response.headers["access-control-allow-methods"]).toContain(method);
+    },
+  );
+
   it("TC-F00-57 [AC-F00-23] CORS never answers with a wildcard", async () => {
     const response = await app.inject({ method: "GET", url: HEALTH, headers: { origin: "https://evil.example" } });
     expect(response.headers["access-control-allow-origin"]).not.toBe("*");

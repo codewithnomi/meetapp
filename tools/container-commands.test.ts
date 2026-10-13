@@ -19,6 +19,10 @@ describe("TC-F00-81 [AC-F00-39] container check commands", () => {
       expect(args).toContain(`-e ${pair}`);
     expect(args).toContain("-p 127.0.0.1:4321:3000");
     expect(args).toContain("-e NODE_ENV=production");
+    // Production refuses the example secrets (D050): the check passes fresh ones each run.
+    expect(args).toMatch(/-e BETTER_AUTH_SECRET=[0-9a-f]{64} /);
+    expect(args).toMatch(/-e DATA_ENCRYPTION_KEY=[0-9a-f]{64} /);
+    expect(runArgs("/repo/.env", 4321).join(" ")).not.toBe(args);
   });
 
   it("TC-F00-81 [AC-F00-39] scans the image's files read-only and offline", () => {

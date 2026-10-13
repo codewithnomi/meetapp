@@ -26,6 +26,8 @@ COPY --from=install /app/package.json ./package.json
 COPY --from=install /app/node_modules ./node_modules
 COPY --from=install /app/packages/db ./packages/db
 COPY --from=install /app/packages/contracts ./packages/contracts
+# The email colors are read from the design tokens (F01 emails/colors.ts).
+COPY --from=install /app/packages/design-tokens ./packages/design-tokens
 COPY --from=install /app/apps/api ./apps/api
 # The image's built-in non-root user; the files stay owned by root, so the app can't change itself.
 USER node

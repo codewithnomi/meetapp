@@ -2,62 +2,22 @@
 // the running local Postgres. Each run creates its own empty database `meetapp_test_<random>` and drops
 // it afterwards, so the real development data is never touched. Run with `pnpm test:integration`.
 // Settings come from .env (or .env.example); the shell environment wins, e.g. POSTGRES_PORT=5433.
-import { randomBytes } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import { eq, sql, type SQL } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDatabase, databaseUrl, type Database, type DatabaseSettings } from "./connection.ts";
+import type { Database } from "./connection.ts";
 import { setFlag } from "./flags.ts";
-import { runMigrations } from "./migrate.ts";
+import { migrationCount, runMigrations } from "./migrate.ts";
 import { featureFlags } from "./schema.ts";
 import { SEED_FLAGS, clearSeed, seedDatabase } from "./seed.ts";
+import { createTestDatabase, rowsOf, type TestDatabase } from "./test-database.ts";
 
-/** Runs a raw query and returns its rows (node-postgres puts them under `.rows`). */
-async function rowsOf<T extends Record<string, unknown>>(db: Database, query: SQL): Promise<T[]> {
-  const result = await db.execute(query);
-  return result.rows as T[];
-}
-
-const ROOT = fileURLToPath(new URL("../../..", import.meta.url));
-const ENV_FILE = existsSync(join(ROOT, ".env")) ? join(ROOT, ".env") : join(ROOT, ".env.example");
 const SLOW = { timeout: 60_000 };
 const INJECTION_KEY = "x'; drop table feature_flags;--";
 const OWN_FLAG = "test.own_flag";
 
-/** A setting: the shell environment wins over the env file. Values are never printed. */
-function setting(name: keyof DatabaseSettings): string {
-  const fromShell = process.env[name];
-  if (fromShell !== undefined && fromShell !== "") return fromShell;
-  for (const line of readFileSync(ENV_FILE, "utf8").split("\n")) {
-    const match = /^([A-Z][A-Z0-9_]*)=(.*)$/.exec(line.trim());
-    if (match?.[1] === name) return match[2] ?? "";
-  }
-  throw new Error(`${name} is not set in ${ENV_FILE}`);
-}
-
-const settings: DatabaseSettings = {
-  POSTGRES_USER: setting("POSTGRES_USER"),
-  POSTGRES_PASSWORD: setting("POSTGRES_PASSWORD"),
-  POSTGRES_DB: setting("POSTGRES_DB"),
-  POSTGRES_PORT: setting("POSTGRES_PORT"),
-};
-const TEST_DB = `meetapp_test_${randomBytes(6).toString("hex")}`;
-const adminUrl = databaseUrl(settings);
-const testUrl = databaseUrl({ ...settings, POSTGRES_DB: TEST_DB });
-
 let db: Database;
-let closeDb: (() => Promise<void>) | undefined;
-
-async function asAdmin(statement: string) {
-  const admin = createDatabase(adminUrl, { max: 1 });
-  try {
-    await admin.db.execute(sql.raw(statement));
-  } finally {
-    await admin.close();
-  }
-}
+let testDb: TestDatabase | undefined;
+let testUrl: string;
 
 async function journalRows(): Promise<number> {
   const rows = await rowsOf<{ count: number }>(
@@ -72,16 +32,13 @@ async function flagRows(key: string) {
 }
 
 beforeAll(async () => {
-  // TEST_DB is generated above from hex characters only, so building the statement from text is safe.
-  await asAdmin(`create database "${TEST_DB}"`);
-  const connection = createDatabase(testUrl, { max: 1 });
-  db = connection.db;
-  closeDb = connection.close;
+  testDb = await createTestDatabase();
+  db = testDb.db;
+  testUrl = testDb.url;
 }, 60_000);
 
 afterAll(async () => {
-  await closeDb?.();
-  await asAdmin(`drop database if exists "${TEST_DB}" with (force)`);
+  await testDb?.drop();
 }, 60_000);
 
 describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
@@ -129,7 +86,7 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
       ["UNIQUE", "key"],
     ]);
 
-    expect(await journalRows()).toBe(1);
+    expect(await journalRows()).toBe(migrationCount());
   });
 
   it("TC-F00-10 [AC-F00-04] the unique key really refuses a duplicate", SLOW, async () => {
@@ -140,7 +97,7 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
 
   it("TC-F00-10 [AC-F00-04] running the migrations a second time applies nothing and does not fail", SLOW, async () => {
     await expect(runMigrations(testUrl)).resolves.toBeUndefined();
-    expect(await journalRows()).toBe(1);
+    expect(await journalRows()).toBe(migrationCount());
   });
 
   // TC-F00-10 starting the API migrates the empty database: tested in apps/api/src/server.integration.test.ts.
@@ -148,7 +105,8 @@ describe("TC-F00-10 [AC-F00-04] empty database is migrated", () => {
 
 describe("TC-F00-91 [AC-F00-45] seed and clear", () => {
   it("TC-F00-91 [AC-F00-45] seeding twice adds every sample record exactly once", SLOW, async () => {
-    expect(await seedDatabase(db)).toBe(SEED_FLAGS.length);
+    // The flags, plus the example people and team (F01, counted in seed-people.integration.test.ts).
+    expect(await seedDatabase(db)).toBeGreaterThan(SEED_FLAGS.length);
     expect(await seedDatabase(db)).toBe(0);
     for (const flag of SEED_FLAGS) {
       const rows = await flagRows(flag.key);
@@ -159,7 +117,7 @@ describe("TC-F00-91 [AC-F00-45] seed and clear", () => {
 
   it("TC-F00-91 [AC-F00-45] clearing removes only the sample records", SLOW, async () => {
     await db.insert(featureFlags).values({ key: OWN_FLAG, enabled: true, description: "Created by the test." });
-    expect(await clearSeed(db)).toBe(SEED_FLAGS.length);
+    expect(await clearSeed(db)).toBeGreaterThanOrEqual(SEED_FLAGS.length);
     for (const flag of SEED_FLAGS) expect(await flagRows(flag.key), flag.key).toHaveLength(0);
     expect(await flagRows(OWN_FLAG)).toHaveLength(1);
     expect(await clearSeed(db)).toBe(0);
@@ -211,5 +169,27 @@ describe("TC-F00-75 [AC-F00-34] switching flags is safe against injection", () =
   it("TC-F00-75 [AC-F00-34] switching an unknown flag creates nothing", SLOW, async () => {
     expect(await setFlag(db, "test.does_not_exist", true)).toBe(false);
     expect(await flagRows("test.does_not_exist")).toHaveLength(0);
+  });
+});
+
+describe("TC-F01-78 [AC-F01-19] join link lookup column", () => {
+  it("TC-F01-78 [AC-F01-19] workspaces.join_link_hmac exists and is unique", SLOW, async () => {
+    const column = await rowsOf<{ name: string }>(
+      db,
+      sql`select column_name as name from information_schema.columns where table_name = 'workspaces' and column_name = 'join_link_hmac'`,
+    );
+    expect(column).toHaveLength(1);
+    const owner = await rowsOf<{ id: string }>(
+      db,
+      sql`insert into "user" (id, name, email) values (gen_random_uuid(), 'T', ${`hmac-${Date.now()}@example.test`}) returning id`,
+    );
+    const ownerId = owner[0]?.id;
+    const add = (hmac: string) =>
+      db.execute(
+        sql`insert into workspaces (name, kind, created_by, join_link_hmac) values ('W', 'company', ${ownerId}, ${hmac})`,
+      );
+    await add("a".repeat(64));
+    await expect(add("a".repeat(64))).rejects.toThrow();
+    await expect(add("b".repeat(64))).resolves.toBeDefined();
   });
 });

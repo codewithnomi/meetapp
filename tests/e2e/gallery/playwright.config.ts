@@ -24,7 +24,7 @@ export default defineConfig({
     deviceScaleFactor: 1,
     trace: "retain-on-failure",
   },
-  projects: [{ name: "light" }, { name: "dark", testIgnore: "checks.spec.ts" }],
+  projects: [{ name: "light" }, { name: "dark", testIgnore: ["checks.spec.ts", "pages.spec.ts"] }],
   webServer: {
     command: "node serve-storybook.ts",
     cwd: import.meta.dirname,

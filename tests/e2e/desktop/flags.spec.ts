@@ -4,7 +4,7 @@
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
-import { closeApp, freshProfile, launch } from "./desktop.ts";
+import { closeApp, freshProfile, launchSignedIn } from "./desktop.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const API_PID = Number(process.env["MEETAPP_E2E_API_PID"]);
@@ -28,7 +28,7 @@ test("TC-F00-72 [AC-F00-34] switching the demo flag off hides it within 30 s, an
   test.skip(!API_URL, "needs the backend; runs from `pnpm test`");
   test.setTimeout(3 * WITHIN_MS);
   flag("on");
-  const { app, page } = await launch(freshProfile(), { VITE_API_URL: API_URL ?? "" });
+  const { app, page } = await launchSignedIn(freshProfile());
   const demo = page.getByText("Demo feature is on");
   try {
     await expect(demo).toBeVisible({ timeout: WITHIN_MS });

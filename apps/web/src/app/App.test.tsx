@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fakeColorScheme, resetAppearanceDom } from "../test-utils/fakeColorScheme.ts";
+import { PAT, installFakeAuth } from "../features/auth/fake-auth.tsx";
 import { App } from "./App.tsx";
 
 beforeEach(() => {
@@ -15,6 +16,7 @@ beforeEach(() => {
       throw new TypeError("Failed to fetch");
     }),
   );
+  installFakeAuth(PAT);
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -22,10 +24,12 @@ describe("App", () => {
   it("TC-F00-16 [AC-F00-08] starts on the home screen, opens Settings and goes back", async () => {
     const user = userEvent.setup();
     render(<App />);
-    expect(screen.getByRole("heading", { level: 1, name: "MeetApp" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { level: 1, name: "MeetApp" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    // Settings opens on Profile and account; the look is under Appearance (F01 T16).
+    await user.click(screen.getByRole("button", { name: "Appearance" }));
     expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Back" }));
@@ -38,7 +42,7 @@ describe("App", () => {
     render(<App />);
     expect(document.body).toHaveFocus();
 
-    await user.click(screen.getByRole("button", { name: "Settings" }));
+    await user.click(await screen.findByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toHaveFocus();
 
     await user.click(screen.getByRole("button", { name: "Back" }));

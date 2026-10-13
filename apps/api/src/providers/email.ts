@@ -7,6 +7,8 @@ export interface EmailMessage {
   to: string;
   subject: string;
   text: string;
+  /** Optional HTML version; mail apps that can't show it use `text`. */
+  html?: string;
 }
 
 export function createEmailProvider(config: Config) {

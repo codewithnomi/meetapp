@@ -88,4 +88,19 @@ describe("TC-F00-54 [AC-F00-22] Sentry receives no personal data (security)", ()
   });
 
   it.todo("TC-F00-54 [AC-F00-22] desktop (Electron main) Sentry init options collect no personal data (T15)");
+
+  it("TC-F01-82 [AC-F01-33] invitation and join secrets in addresses and breadcrumbs are hidden", () => {
+    const secret = "zzInvite7f3a97tokenAAAAAAAAAAAAAAAAAAAA";
+    const event = {
+      request: { url: `https://api.example.test/invite/${secret}?request=7f3a&lang=en` },
+      breadcrumbs: [
+        { category: "http", data: { url: `https://api.example.test/join/${secret}` } },
+        { message: `GET /invite/${secret} answered 404` },
+      ],
+    } as unknown as ErrorEvent;
+    const sent = stripPersonalData(event);
+    expect(JSON.stringify(sent)).not.toContain(secret);
+    expect(sent.request?.url).toBe("https://api.example.test/invite/REDACTED?request=REDACTED&lang=en");
+    expect(sent.breadcrumbs?.[1]?.message).toBe("GET /invite/REDACTED answered 404");
+  });
 });

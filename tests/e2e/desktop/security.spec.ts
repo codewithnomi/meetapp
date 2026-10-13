@@ -1,14 +1,19 @@
 // The desktop app's security settings in the real app (AC-F00-24): TC-F00-58, 59, 60, 61.
 import { expect, test } from "@playwright/test";
-import { closeApp, launch, type RunningApp } from "./desktop.ts";
+import { BRIDGE, bridgeKeys, closeApp, launch, type RunningApp } from "./desktop.ts";
 
 const DESIGN_CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; " +
+  "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000; " +
   "connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 let running: RunningApp;
+// False until this test's app has started, so a failed start is reported as itself, not as a crash
+// while closing the previous test's app.
+let launched = false;
 test.beforeEach(async () => {
+  launched = false;
   running = await launch();
+  launched = true;
   // No test may open the real browser: "open in browser" is recorded instead.
   await running.app.evaluate(({ shell }) => {
     const opened: string[] = [];
@@ -16,7 +21,9 @@ test.beforeEach(async () => {
     shell.openExternal = async (url: string) => void opened.push(url);
   });
 });
-test.afterEach(async () => closeApp(running.app));
+test.afterEach(async () => {
+  if (launched) await closeApp(running.app);
+});
 
 test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the page", async () => {
   const { app, page } = running;
@@ -37,9 +44,9 @@ test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the pag
   const inPage = await page.evaluate(() => ({
     require: typeof (window as { require?: unknown }).require,
     process: typeof (window as { process?: unknown }).process,
-    bridge: Object.keys((window as { meetapp?: object }).meetapp ?? {}),
   }));
-  expect(inPage).toEqual({ require: "undefined", process: "undefined", bridge: ["platform"] });
+  expect(inPage).toEqual({ require: "undefined", process: "undefined" });
+  expect(await bridgeKeys(page)).toEqual(BRIDGE);
 });
 
 test("TC-F00-59 [AC-F00-24] outside addresses and new windows are blocked; only https goes to the browser", async () => {

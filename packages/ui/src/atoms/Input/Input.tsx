@@ -31,7 +31,11 @@ function FieldMessage({
   const text = error || hint;
   if (!text) return null;
   return (
-    <p id={id} className={cx("m-0 px-4 text-[12px] leading-4", error ? "font-medium text-danger" : "text-ink-muted")}>
+    <p
+      id={id}
+      role={error ? "alert" : undefined}
+      className={cx("m-0 px-4 text-[12px] leading-4", error ? "font-medium text-danger" : "text-ink-muted")}
+    >
       {text}
     </p>
   );

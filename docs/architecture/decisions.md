@@ -157,6 +157,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** Before coding, the look is designed with Claude's design tools and approved by the owner:
   1. **Design system** (colors in light/dark with 8 accents, fonts, spacing, Atomic components): https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ
   2. **Screen designs** on a design canvas (sign in, home, pre-join, meeting room, minutes, Ask AI, settings): https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
+     - F01 "Accounts and workspaces" section (11 screens: password step, create account, code entry, new password, workspace switcher, create workspace, join a workspace, people, requests and invitations, profile and account, invitation web page) approved by the owner on 2026-10-11.
   F00 then builds `packages/design-tokens` and the atoms **exactly** from the approved design system; each feature's design.md links its screens. `ui-reviewer` checks built screens against them.
 - **Fonts:** Figtree (interface) + JetBrains Mono (codes, timestamps), both free (Google Fonts).
 - **Why:** changing a design takes minutes; changing built code takes hours.
@@ -244,7 +245,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D043: Libraries chosen while building F00
 - **Status:** accepted (2026-10-11, recorded after the F00 documentation review; each was vetted when added).
 - **Backend and data:** Fastify (web server), Drizzle ORM with the `pg` driver (database), ioredis (cache), Pino (logs), Zod (input and output checks, shared through packages/contracts), nodemailer (email), the AWS S3 client (files, works with RustFS and Cloudflare R2), livekit-server-sdk (call server), OpenTelemetry (traces and logs, with its http, pg, ioredis and pino instrumentation packages), prom-client (metrics), @sentry/node (optional crash reports), @fastify/cors, @fastify/swagger + @fastify/swagger-ui (API docs, development only), @fastify/type-provider-zod (Zod checks on routes).
-- **App screens and desktop:** React 19 with Vite 8 (D039), Tailwind CSS v4 (styles from the design tokens), i18next + react-i18next (translations), Zustand (small app state), Radix UI (switch, tooltip: accessible building blocks), Lucide (icons), Fontsource (fonts bundled, nothing fetched from Google), Electron with @sentry/electron (optional crash reports).
+- **App screens and desktop:** React 19 with Vite 8 (D039), Tailwind CSS v4 (styles from the design tokens), i18next + react-i18next (translations), Zustand (small app state), Radix UI (switch, tooltip, dropdown menu and dialog since F01 T14: accessible building blocks; MIT, versions pinned at least two weeks old), Lucide (icons), Fontsource (fonts bundled, nothing fetched from Google), Electron with @sentry/electron (optional crash reports).
 - **Building and checking:** pnpm workspaces + Turborepo (one repository, tasks in order), Vitest (unit and integration tests), Playwright (desktop and gallery tests, pinned image for screenshots), Storybook (component gallery), axe-core (accessibility), ESLint + Prettier, dependency-cruiser (layer rules), knip (unused code), jscpd (duplication), gitleaks and Semgrep (security, via Docker), osascript (macOS's own tool for the Mac notifications).
 - **Why:** free, widely used and maintained, permissive licenses (checked by `pnpm check:licenses`), and each does one job. New libraries still go through `/add-dependency`.
 - **Cost:** none.
@@ -253,3 +254,64 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Status:** accepted (2026-10-11, owner: "make it pending for later and move to the next phase").
 - **Decision:** TC-F00-83 (data survives a real Mac restart) and TC-F00-90 (a Mac notification really appears when a service is down for over a minute, and on recovery) are deferred; F00 can be verified and merged without them. Their behaviour is covered automatically: TC-F00-82 (services stopped and started keep their data) and TC-F00-88 (the notifier receives the "down" and "recovered" calls).
 - **Follow-up:** the owner does them when convenient (instructions and the data snapshot are in progress.md); any problem becomes a fix on the next feature branch.
+
+### D045: F01 account and workspace choices
+- **Status:** accepted (2026-10-11, owner)
+- **Decision:** anyone can sign up (email, Google, Microsoft); people join a company workspace by email invitation or by an invite link that the owner and admins can turn on, off or replace; **any member can invite** (members invite as member only, the owner and admins can also invite admins); two-step sign-in (authenticator codes) comes later with the admin console (F10).
+- **Why:** open sign-up matches the vision (individuals and teams); invite links make onboarding quick while staying under the admins' control; letting members invite helps teams grow without waiting for an admin; Google and Microsoft sign-in already offer their own two-step protection, so F01 stays smaller.
+- **Cost:** none (Google and Microsoft sign-in are free to set up).
+
+### D046: F01 email links, invitations and member visibility
+- **Status:** accepted (2026-10-11, owner)
+- **Decision:** ~~links in emails (verify, reset password) open small MeetApp web pages~~ (replaced by D047: codes typed into the app; only the invitation email keeps a small web page); an **email invitation works only for the invited email address**; **every member sees the member list** with names, photos, emails, roles and join dates; ~~a removed person can rejoin through the invite link~~ (replaced by D047: using the join link or code sends a request that the owner or an admin approves, so a removed person can ask again and an admin decides).
+- **Why:** the web pages work on any device (even a phone) without waiting for the web app (F10) or `meetapp://` links (F04); a forwarded invitation can't let a stranger in; coworkers can see who's in the workspace, like Teams and Slack; admins keep control by replacing the invite link.
+- **Cost:** none.
+
+### D047: F01 follows how Microsoft Teams handles accounts and joining
+- **Status:** accepted (2026-10-11, owner: "update according to how Teams actually handles it")
+- **Decision:** sign-in asks for the email first, then the password; confirming an email, resetting a password and (optionally) signing in without a password use a **6-digit code sent by email and typed into the app**, as Microsoft accounts do; a workspace's **join link and join code** (like a Teams team code) send a **request to join** that the owner or an admin approves or rejects, as for a private team in Teams; email invitations need no further approval. Replaces parts of D046 (email web pages for verify/reset; rejoining without approval).
+- **Why:** people coming from Teams find the same steps; codes work in the desktop app without a web app (F10) or `meetapp://` links (F04); accounts exist only after the email is proven, which removes the risk of someone registering another person's email; approval keeps admins in control of who joins.
+- **Sources:** Microsoft support, "Use a link or code to join a team"; Microsoft 365 message MC1437678 (join by code needs owner approval for private teams, rolled out Aug–Sep 2026).
+- **Cost:** none.
+
+### D048: How sign-in and workspaces are built (F01)
+- **Status:** accepted (2026-10-11, owner approved F01 design.md; proposed, with F01 design.md)
+- **Decision:** Better Auth (D020) is used for **identity only**: passwords (scrypt), email codes (emailOTP plugin), Google/Microsoft, sessions, sign out everywhere. **Workspaces, roles, invitations and join requests are our own module** (routes → service → repository) so our rules hold (one owner, any member can invite, approval for join requests) and every query filters by workspace (S2). The desktop app's sign-in token is kept **only in the Electron main process, encrypted with safeStorage** (Keychain), added to API requests as a bearer token and hidden from the page. Google/Microsoft use a **browser hand-off with a secret verifier** (the PKCE idea) that the app collects by polling, so no `meetapp://` link or local web server is needed. Sign-up is our own wrapper so an account exists only after the email code. Sign-in calls are made by the main process (the page never receives a token), and the browser hand-off shows a 4-digit match code the user confirms. **Remaining risk:** a user who is tricked into opening someone else's sign-in link *and* confirms a code without comparing it could sign the attacker's app in; the 60-second start window, the browser cookie and the code make this hard. Revisit with `meetapp://` links in F04. **Session tokens (T3):** Better Auth 1.7 stores session tokens readable, so a small wrapper around its database adapter stores only their SHA-256 fingerprint (AC-33).
+- **Why:** Better Auth's organization plugin has different rules (several owners, only admins invite, no join requests) and bypasses our layers; keeping the token out of the page protects it from any script injected into a page.
+- **Cost:** none.
+
+### D049: New libraries for F01
+- **Status:** accepted (2026-10-11, owner approved F01 design.md; proposed, with F01 design.md); each vetted with `/add-dependency` before it is added.
+- **Decision:** `better-auth` (sign-in), `react-router` (screens), `@tanstack/react-query` and `react-hook-form` (already planned in frontend.md), `sharp` (photo resizing and removing location data), `oauth2-mock-server` (dev only: a fake Google/Microsoft for tests), **BullMQ** (background jobs: emails and the daily join-request expiry; already named in overview.md, worker inside the API for now), and a list of the 10,000 most common passwords (offline check).
+- **Why:** widely used, maintained, free, permissive licenses; each does one job.
+- **Vetted (T1, 2026-10-11):** better-auth 1.7.7 (MIT; design written against 1.6 docs, re-checked in T3), bullmq 6.3.12 (MIT), sharp 0.35.5 (Apache-2.0), react-router 8.4.0 (MIT), @tanstack/react-query 5.104.1 (MIT), react-hook-form 7.89.0 + @hookform/resolvers 5.9.1 (MIT; Zod forms, frontend.md), oauth2-mock-server 9.2.0 (MIT, dev only); common passwords from **@zxcvbn-ts/language-common** 4.1.3 (MIT, its password dictionary, first 10,000 used). All released within the last 2 months. Each is installed in the task that first uses it (unused libraries fail `pnpm check`).
+- **License note (T7, 2026-10-11):** sharp itself is Apache-2.0, but its image engine (`@img/sharp-libvips-*`, libvips) is LGPL-3.0-or-later, which the license check blocks by default. Allowed in `tools/license-allowlist.json`: it is an unchanged, separate library file that runs only on the backend server and is never shipped to users; the LGPL only asks to share changes to libvips itself. Owner informed.
+- **Cost:** none.
+- **Added in T14 (2026-10-12):** `@radix-ui/react-dropdown-menu` 2.1.24 and `@radix-ui/react-dialog` 1.1.23 (MIT, actively maintained, the same family as the switch and tooltip already in use), pinned to exact versions at least two weeks old; used by WorkspaceSwitcher, MemberRow and Dialog.
+
+### D050: Choices made while building F01
+- **Date:** 2026-10-13. **Status:** accepted (recorded during `/spec-verify F01`; details in the F01 design's "Built in Tn" notes).
+- **Rate limits when Redis is down:** requests are let through and a warning is logged (availability over the limit, which S5 allows only as a short outage). Better Auth's own limiter turned out to be off (it needs IP tracking, which we disable), so wrong passwords are now also limited per network address in our code: 100 per 15 minutes. Every limit is counted *before* the check (and given back when the password was right), so tries sent at the same moment can't slip past it; sign-up code tries use one Redis INCR for the same reason.
+- **`MICROSOFT_AUTHORITY`** may be plain http only on 127.0.0.1/localhost and never in production: the desktop tests point Microsoft sign-in at a local fake.
+- **Join link and code:** AES-256-GCM with keys from `DATA_ENCRYPTION_KEY` via HKDF and a key version, looked up through two HMAC columns (one for the link, one for the code; migration 0002).
+- **Waiting sign-ups** keep the name, email and password *hash* in Redis for at most 30 minutes, until the code is confirmed; the code itself only as a hash.
+- **Better Auth's deprecated** `forget-password/email-otp` is replaced by `email-otp/request-password-reset`.
+- **CORS** allows PUT, PATCH and DELETE from the app's own origins (the default blocked the app's own calls).
+- **Photo upload** sends the file as the request body (no multipart library); the content decides the type.
+- **Desktop test runs** start their backend with a key of their own, so attempt counters start fresh each run.
+- **Production refuses** the example secrets from `.env.example` (`local_dev…`) for `BETTER_AUTH_SECRET` and `DATA_ENCRYPTION_KEY`.
+- **Cost:** none.
+
+### D051: Two F01 items left for later, by the owner
+- **Date:** 2026-10-13. **Status:** accepted (owner, during `/spec-verify F01`).
+- **Desktop Google/Microsoft hand-off phishing (security review, Medium):** someone could send a person a start link of their own; if that person signs in and presses Continue in the browser, the attacker's app receives the session. Left as it is for now and **must be fixed before anything goes online**. The planned fix: the browser hands the result straight back to the app on the same computer (a loopback address, RFC 8252), or at least the person types the app's code into the page.
+- **"Terms" and "Privacy Policy" on Create account** stay plain text, not links as on the approved canvas, until the real documents exist (privacy-legal.md, "Documents needed before launch").
+- **Why:** nothing runs online yet (D017), so neither can harm anyone today; both are tracked in docs/progress.md.
+- **Cost:** none.
+
+### D052: Full test runs only at the end of a feature
+- **Date:** 2026-10-13. **Status:** accepted (owner).
+- **Decision:** while a feature's tasks are being built, each task runs only its own tests plus typecheck and lint. The whole suite (unit, integration, desktop windows) and the screenshot checks run once, at `/spec-verify`, before the Pull Request. Tests are still written with each task, and GitHub still checks every push.
+- **Why:** in F01 each full run took 15–25 minutes and many runs were made; the owner wants faster development and fewer tokens. A break is still caught before the feature is marked done, at most one feature late.
+- **Cost:** none (less time and fewer tokens).
+

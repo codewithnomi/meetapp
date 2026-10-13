@@ -10,7 +10,7 @@ A meeting app like Microsoft Teams or Zoom (audio, video and screen sharing for 
 **Platforms:** desktop (Mac, Windows) first, then web, then mobile (Flutter).
 
 ## Status
-🏗️ **Foundation (F00) built:** local services, backend, desktop app shell with the design system, tests and GitHub checks, monitoring. Meetings and the AI features come next, each specified and approved before it's built.
+🏗️ **Foundation (F00) built:** local services, backend, desktop app shell with the design system, tests and GitHub checks, monitoring. **Accounts & workspaces (F01) being finished:** sign-in (email and code, Google/Microsoft), workspaces with roles, invitations, join link and code, profile and photo. Meetings and the AI features come next, each specified and approved before it's built.
 See [docs/progress.md](docs/progress.md) for the current state.
 
 ## Run it
