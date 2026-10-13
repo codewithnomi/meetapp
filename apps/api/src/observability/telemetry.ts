@@ -10,7 +10,7 @@ import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchLogRecordProcessor } from "@opentelemetry/sdk-logs";
 import { NodeSDK } from "@opentelemetry/sdk-node";
 import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
-import { SENSITIVE_QUERY_PARAMS } from "../plugins/logging.ts";
+import { SENSITIVE_QUERY_PARAMS, redactUrl } from "../plugins/logging.ts";
 
 /** The library's own list (cloud-storage signatures); setting ours replaces it, so it is kept here. */
 const CLOUD_SIGNATURES = [
@@ -23,6 +23,9 @@ const CLOUD_SIGNATURES = [
   "X-Amz-Security-Token",
 ];
 
+/** Span attributes that hold the incoming address; rewritten when it contains a secret part (F01). */
+const URL_ATTRIBUTES = ["http.target", "url.path", "http.url", "url.full"] as const;
+
 /** Which requests are traced, and which address parts are hidden in traces (security review, F00). */
 export function httpInstrumentationConfig(): HttpInstrumentationConfig & {
   redactedQueryParams: string[];
@@ -34,6 +37,13 @@ export function httpInstrumentationConfig(): HttpInstrumentationConfig & {
     ignoreIncomingRequestHook: (request) => /^\/(metrics|api\/v1\/health)/.test(request.url ?? ""),
     redactedQueryParams: redacted,
     redactedQueryParamsServer: redacted,
+    // Invitation and join links carry their secret in the path, which the options above don't cover.
+    requestHook: (span, request) => {
+      const url = "url" in request ? (request.url ?? "") : "";
+      if (redactUrl(url) === url) return;
+      for (const name of URL_ATTRIBUTES)
+        span.setAttribute(name, name.endsWith("path") ? (redactUrl(url).split("?")[0] ?? "") : redactUrl(url));
+    },
   };
 }
 

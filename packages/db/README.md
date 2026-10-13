@@ -5,11 +5,11 @@ The database: table definitions (Drizzle), migrations, feature flags and sample 
 
 | File | What it is |
 |---|---|
-| `src/schema.ts` | The tables. Today: `feature_flags`. |
+| `src/schema.ts` | The tables: `feature_flags`; Better Auth's `user`, `session`, `account`, `verification`; `workspaces`, `workspace_members`, `invitations`, `join_requests`, `member_removals`. |
 | `migrations/` | SQL files that build the database step by step. Never edit an existing one. |
 | `src/migrate.ts` | `runMigrations(url)`: applies new migrations, skips ones already applied. |
 | `src/flags.ts` | Read and switch feature flags; `isValidFlagKey`. |
-| `src/seed.ts` | Sample data for local development (no real personal data). |
+| `src/seed.ts`, `src/seed-people.ts` | Sample data for local development (no real personal data): flags, four example accounts and "Example team". |
 
 ## Run it
 From the project root:

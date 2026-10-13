@@ -21,6 +21,23 @@ updated: 2026-10-11
 - **Retention:** workspace admins choose how long transcripts/minutes are kept (e.g. 30 days, 1 year, forever). Expired data is deleted automatically, including AI search data.
 - **Data location:** record which country each provider stores data in. EU data residency is a later option for business customers.
 
+### What accounts and workspaces store (F01)
+| Data | Kept as | How long |
+|---|---|---|
+| Name, email, terms version and date, "16 or older" confirmation, theme, accent, last-used workspace | plain fields | while the account exists |
+| Password | scrypt hash only | while the account exists |
+| Profile photo | re-encoded 512×512 WebP in private storage, location and camera details removed; seen only by people who share a workspace | until replaced or removed (the old file is deleted) |
+| Sign-in sessions | SHA-256 fingerprint of the token | 30 days, extended by use |
+| Email codes (sign-up, sign-in, reset) | hash only | 15 minutes |
+| Google/Microsoft sign-in tokens | encrypted | while the login is linked |
+| Workspace memberships and roles; removal history (for the "removed earlier" badge) | plain fields | while the workspace exists |
+| Invitations (invited email, role, who invited) | the link's token only as a SHA-256 hash | pending 7 days; the record stays as history |
+| Join link and code | encrypted (AES-256-GCM), found through a keyed hash | until switched off or replaced |
+| Requests to join | plain fields | waiting up to 14 days, then expired |
+| Attempt counters (wrong passwords, codes sent, sign-ups) | in Redis under a keyed hash of the email or address | 15 minutes to 24 hours |
+
+Until export and deletion are built into the app, people ask through `SUPPORT_EMAIL` (shown in Settings → Profile and account → "Your data"), and we reply within 30 days. Logs never contain passwords, codes, tokens, invitation or join links, or request bodies (tested: TC-F01-81, 82).
+
 ## 3. Third-party services ("sub-processors")
 A public list of every service that touches user data, and why:
 LiveKit Cloud (development only; self-hosted in production), Deepgram (speech-to-text), Anthropic (AI), embedding provider, Sentry (errors), cloud hosting, email provider, payment provider.

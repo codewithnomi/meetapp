@@ -3,7 +3,15 @@
 ## What it is
 The backend (Fastify). It listens on 127.0.0.1 only, checks its settings at startup, updates the database structure automatically, and answers in one standard error format. It exposes `/api/v1/health`, `/api/v1/flags` and `/metrics`, and sends traces and logs to the monitoring when `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
-- **Layout:** `src/config` (settings), `src/plugins` (logging, errors, docs, metrics), `src/modules/<area>/` (routes → service → repository), `src/providers` (database, cache, call server, storage, email), `src/observability` (tracing, Sentry, shutdown), `src/app.ts` (assembly), `src/server.ts` (start).
+Since F01 it also handles accounts and workspaces (`docs/specs/F01-accounts/design.md`):
+- sign-in through Better Auth (`/api/auth/*`, only an allow-list of its routes) and our own sign-up, desktop hand-off and password routes;
+- `/api/v1/me` (profile, look, photo), workspaces, members, invitations, the join link and requests;
+- the invitation web page at `/invite/<link>`;
+- emails through a BullMQ queue, and the daily expiry of old join requests.
+
+Every route except a short public list needs a session (checked by `src/plugins/route-sweep.integration.test.ts`); every `:workspaceId` route answers 404 to non-members (`src/plugins/workspace-access.ts`).
+
+- **Layout:** `src/config` (settings), `src/plugins` (logging, errors, docs, metrics, auth, session, rate limits, workspace access, idempotency), `src/emails` (templates and outbox), `src/modules/<area>/` (routes → service → repository), `src/providers` (database, cache, call server, storage, email), `src/observability` (tracing, Sentry, shutdown), `src/app.ts` (assembly), `src/server.ts` (start).
 - **API docs (development only):** http://127.0.0.1:3000/docs and the OpenAPI file at `/docs/json` (port = `API_PORT` in `.env`).
 
 ## Run it

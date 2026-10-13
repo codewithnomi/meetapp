@@ -46,6 +46,15 @@ On the first run `pnpm dev` creates your settings file `.env` from `.env.example
 
 **Stop:** close the window and press Ctrl+C in the terminal. `pnpm dev:stop` stops the services; your data is kept.
 
+## Signing in for the first time
+The app opens on **Sign in**. Choose **Create an account**: the 6-digit code arrives in the fake inbox at http://127.0.0.1:8025 (nothing is really sent). Or run `pnpm seed` and sign in as `owner@example.test` with the password `meetapp-dev-password`: the example accounts are listed in [runbooks/local-services.md](runbooks/local-services.md).
+
+The sign-in settings in `.env` work as they are on your Mac:
+- `BETTER_AUTH_SECRET` and `DATA_ENCRYPTION_KEY` (at least 32 characters each) protect sessions and stored secrets; they must be changed before anything runs online.
+- `SUPPORT_EMAIL` is the address shown under "Your data" in Settings.
+- `APP_PUBLIC_URL` is where invitation and join links point.
+- `GOOGLE_*` and `MICROSOFT_*` stay empty unless you want the Google/Microsoft buttons; how to get the keys is in [runbooks/sign-in-providers.md](runbooks/sign-in-providers.md).
+
 ## 5. Check that everything works
 ```sh
 pnpm test

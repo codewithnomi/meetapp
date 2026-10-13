@@ -166,7 +166,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-74, 75.
   - Check: running it twice adds nothing.
 
-- [ ] **T18: Security sweeps, accessibility and documentation.**
+- [x] **T18: Security sweeps, accessibility and documentation.**
   - Security sweeps: S1 route sweep, S2 outsider sweep, member sweep, secrets in logs/traces/Sentry, storage at rest, HTML in names.
   - Accessibility: Storybook + axe for every new part, and a keyboard-only pass.
   - Optional manual check with real Google/Microsoft keys (owner, TC-F01-24).

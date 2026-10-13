@@ -147,7 +147,7 @@ interface AuthBridgeForTests {
 }
 type WindowWithBridge = Window & { meetapp: { auth: AuthBridgeForTests } };
 
-const TEST_PASSWORD = "correct horse battery";
+export const TEST_PASSWORD = "correct horse battery";
 
 /** One account per test run, kept next to the run's profile folders (the backend allows 50 sign-ups an hour). */
 function accountFile(): string {

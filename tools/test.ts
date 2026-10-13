@@ -4,6 +4,7 @@
 // backend. Prints a short summary and fails if any part failed. CI runs the two parts as separate jobs:
 // `--only vitest` and `--only desktop`.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { createServer, type AddressInfo } from "node:net";
 import { join } from "node:path";
 import { ROOT, fail } from "./cli.ts";
@@ -83,7 +84,10 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
   if (!run("node", ["tools/seed.ts", "add"])) return false;
   const apiUrl = `http://127.0.0.1:${env["API_PORT"] ?? "3000"}`;
   const providerPort = await freePort();
-  const api = startApi(fakeMicrosoft(apiUrl, providerPort));
+  // A key of its own for this run: the attempt counters (e.g. 50 sign-ups an hour from this computer)
+  // are kept under it, so counts left by earlier runs in the same hour can't block this one. The same
+  // trick as the backend's own tests (test-support/auth-app.ts).
+  const api = startApi({ ...fakeMicrosoft(apiUrl, providerPort), DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}` });
   try {
     if (!(await waitForApi(apiUrl))) {
       process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);

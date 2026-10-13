@@ -4,11 +4,12 @@ import { randomUUID } from "node:crypto";
 import { runMigrations } from "@meetapp/db";
 import { createTestDatabase, type TestDatabase } from "@meetapp/db/testing";
 import type { FastifyInstance } from "fastify";
-import { pino } from "pino";
+import { pino, type DestinationStream } from "pino";
 import { createAccounts } from "../accounts.ts";
 import { ALLOWED_ORIGINS, buildApp } from "../app.ts";
 import { createEmailOutbox } from "../emails/outbox.ts";
 import type { Auth } from "../plugins/auth.ts";
+import { loggerOptions } from "../plugins/logging.ts";
 import { createCacheProvider } from "../providers/cache.ts";
 import { createEmailProvider } from "../providers/email.ts";
 import { createStorageProvider } from "../providers/storage.ts";
@@ -30,19 +31,29 @@ const PROVIDER_KEYS = {
   microsoft: { MICROSOFT_CLIENT_ID: "test-microsoft-client", MICROSOFT_CLIENT_SECRET: "test-microsoft-secret" },
 };
 
-export async function startAuthTestApp(
-  options: { providers?: (keyof typeof PROVIDER_KEYS)[] } = {},
-): Promise<AuthTestApp> {
-  // Its own key for the attempt counters, so counts left in Redis by earlier runs (all from
-  // 127.0.0.1, within the same hour) can't use up this run's limits.
-  const config = {
+interface TestAppOptions {
+  providers?: (keyof typeof PROVIDER_KEYS)[];
+  /** Where the log lines go (every level); without it nothing is logged. */
+  logs?: DestinationStream;
+}
+
+/**
+ * The local settings with its own key for the attempt counters, so counts left in Redis by earlier
+ * runs (all from 127.0.0.1, within the same hour) can't use up this run's limits.
+ */
+function testConfig(options: TestAppOptions): ReturnType<typeof localConfig> {
+  return {
     ...localConfig(),
     DATA_ENCRYPTION_KEY: `test-${randomUUID()}`,
     ...Object.assign({}, ...(options.providers ?? []).map((provider) => PROVIDER_KEYS[provider])),
   } as ReturnType<typeof localConfig>;
+}
+
+export async function startAuthTestApp(options: TestAppOptions = {}): Promise<AuthTestApp> {
+  const config = testConfig(options);
   const database = await createTestDatabase();
   await runMigrations(database.url);
-  const log = pino({ level: "silent" });
+  const log = options.logs ? pino(loggerOptions("debug"), options.logs) : pino({ level: "silent" });
   const email = createEmailProvider(config);
   const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
   const cache = createCacheProvider(config, log);
@@ -59,7 +70,11 @@ export async function startAuthTestApp(
     storage,
   });
   const { auth } = accounts;
-  const app = await buildApp(config, { logLevel: "silent", accounts });
+  const app = await buildApp(config, {
+    logLevel: options.logs ? "debug" : "silent",
+    accounts,
+    ...(options.logs ? { logDestination: options.logs } : {}),
+  });
   return {
     app,
     accounts,

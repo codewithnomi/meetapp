@@ -47,6 +47,9 @@ export const SENSITIVE_QUERY_PARAMS = [
   "key",
   "api_key",
   "email",
+  // The desktop sign-in's request id (desktop/start and desktop/done, F01): with it a browser could
+  // finish someone else's sign-in, so it is treated like a secret.
+  "request",
 ];
 
 const SENSITIVE_NAMES = new Set(SENSITIVE_QUERY_PARAMS);
@@ -58,6 +61,19 @@ function readableName(name: string): string {
   } catch {
     return name.toLowerCase();
   }
+}
+
+/** Addresses whose last part is itself a secret: invitation links and join links (F01). */
+const SECRET_PATHS = /^(\/(?:invite|join)\/)[^/?#]+/;
+
+/** "/invite/abc?x=1" → "/invite/REDACTED?x=1"; other addresses are unchanged. */
+export function redactPath(url: string): string {
+  return url.replace(SECRET_PATHS, "$1REDACTED");
+}
+
+/** Both: secret path parts and secret query values. Used for logs and traces. */
+export function redactUrl(url: string): string {
+  return redactQuery(redactPath(url));
 }
 
 /** "/reset?token=abc&lang=en" → "/reset?token=REDACTED&lang=en" (names compared without regard to case). */
@@ -86,7 +102,7 @@ interface LoggedRequest {
 function serializeRequest(request: LoggedRequest): Record<string, unknown> {
   return {
     method: request.method,
-    url: redactQuery(request.url),
+    url: redactUrl(request.url),
     host: request.host,
     remoteAddress: request.ip,
     remotePort: request.socket?.remotePort,

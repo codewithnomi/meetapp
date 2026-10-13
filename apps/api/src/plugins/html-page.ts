@@ -33,6 +33,6 @@ export function htmlPages({ style, formAction }: HtmlPage) {
     },
     /** `title` and `heading` are escaped here; `body` is HTML the caller has already escaped. */
     layout: (title: string, heading: string, body: string) =>
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>${css}</style></head><body><h1>${escapeHtml(heading)}</h1>${body}</body></html>`,
+      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>${css}</style></head><body><main><h1>${escapeHtml(heading)}</h1>${body}</main></body></html>`,
   };
 }

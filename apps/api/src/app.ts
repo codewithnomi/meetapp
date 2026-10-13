@@ -45,6 +45,30 @@ export interface BuildOptions {
 
 const NO_FLAGS: FlagsSource = { list: async () => [] };
 
+/** One registered route, as the security sweeps read them (TC-F01-76, 77). */
+export interface RouteSummary {
+  method: string;
+  url: string;
+  access: "public" | "signed-in" | undefined;
+}
+
+const ROUTES = new WeakMap<FastifyInstance, RouteSummary[]>();
+
+/** Every route the app answers, read from Fastify itself, so a new route can't be missed. */
+export function listRoutes(app: FastifyInstance): RouteSummary[] {
+  return ROUTES.get(app) ?? [];
+}
+
+function recordRoutes(app: FastifyInstance): void {
+  const routes: RouteSummary[] = [];
+  ROUTES.set(app, routes);
+  app.addHook("onRoute", (route) => {
+    const methods = Array.isArray(route.method) ? route.method : [route.method];
+    const access = (route.config as { access?: RouteSummary["access"] } | undefined)?.access;
+    for (const method of methods) routes.push({ method, url: route.url, access });
+  });
+}
+
 export async function buildApp(config: Config, options: BuildOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { ...loggerOptions(options.logLevel ?? "info"), stream: options.logDestination ?? process.stdout },
@@ -53,6 +77,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     requestIdHeader: false,
   });
 
+  recordRoutes(app);
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
   app.addHook("onSend", async (request, reply) => {

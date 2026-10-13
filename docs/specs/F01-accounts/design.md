@@ -441,6 +441,12 @@ None.
 - Google and Microsoft sign-in are free to set up. The owner creates the keys only when they want to try real Google/Microsoft sign-in, using a step-by-step note in `docs/runbooks/sign-in-providers.md`.
 - Tests use a local fake sign-in provider and never need real keys.
 
+## Built in T18 (security sweeps)
+- **The route sweep** reads every route from the running server (`listRoutes` in `app.ts`). A route must be on the test's public list or need a session, so a new route can't be left open by accident.
+- **Secret addresses:** logs, traces and Sentry reports now also hide the secret part of invitation and join links (`/invite/REDACTED`) and the desktop sign-in's `request` id. Before, only secrets after `?` were hidden; the new log test found this.
+- **The invitation and hand-off pages** wrap their content in a `<main>` landmark; the new accessibility check of the invitation page found it missing.
+- **The desktop tests** start their backend with a key of their own per run, so the attempt counters (e.g. 50 sign-ups an hour from this computer) start fresh and runs in the same hour don't block each other.
+
 ## Test approach
 Levels:
 - **unit:** services, permissions table, rate limits, password rules, email templates;
