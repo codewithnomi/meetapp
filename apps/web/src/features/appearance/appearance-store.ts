@@ -14,6 +14,8 @@ import {
 interface AppearanceState extends Appearance {
   setTheme: (theme: ThemeChoice) => void;
   setAccent: (accent: Accent) => void;
+  /** Takes both at once, e.g. the account's look at sign-in (AC-F01-26). */
+  setAppearance: (value: Appearance) => void;
 }
 
 function current({ theme, accent }: Appearance): Appearance {
@@ -31,6 +33,7 @@ export const useAppearance = create<AppearanceState>()((set, get) => {
     ...loadAppearance(),
     setTheme: (theme) => update({ theme }),
     setAccent: (accent) => update({ accent }),
+    setAppearance: (value) => update(current(value)),
   };
 });
 

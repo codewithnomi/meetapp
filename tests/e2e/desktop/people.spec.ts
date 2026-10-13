@@ -5,24 +5,20 @@
 import { randomUUID } from "node:crypto";
 import { expect, request, test, type Page } from "@playwright/test";
 import { freshProfile, launchAs, launchNewAccount } from "./desktop.ts";
-import { createWorkspace, emailText, inviteByEmail, openScreen, switcher, title } from "./workspace-steps.ts";
+import {
+  acceptInvitation,
+  createWorkspace,
+  emailText,
+  inviteByEmail,
+  openJoinScreen,
+  openScreen,
+  switcher,
+  title,
+} from "./workspace-steps.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"] ?? "";
 /** The app checks /me and open lists every 30 seconds; a change must show within a minute. */
 const WITHIN_A_MINUTE = { timeout: 65_000 };
-
-async function openJoinScreen(page: Page, openName: string) {
-  await switcher(page, openName).click();
-  await page.getByRole("menuitem", { name: "Join with a link or code" }).click();
-  await expect(title(page, "Join a workspace")).toBeVisible();
-}
-
-/** Join screen: presses Join on the invitation; the workspace opens. */
-async function acceptInvitation(page: Page, from: string, workspace: string) {
-  await openJoinScreen(page, from);
-  await page.getByRole("button", { name: "Join", exact: true }).click();
-  await expect(title(page, workspace)).toBeVisible();
-}
 
 /** The invitation email's button leads to a small web page that names the workspace. */
 async function checkInvitationPage(email: string, since: Date, workspace: string) {

@@ -20,7 +20,7 @@ export {
   type JoinLookup,
   type JoinRequest,
 } from "./join.ts";
-export type { MyWorkspace } from "./me.ts";
+export { ME_KEY, useMe, type MyWorkspace } from "./me.ts";
 export { useMemberChange, useMembers, type MemberChange } from "./people.ts";
 export { useWorkspaceName } from "./workspace-name.ts";
 export { WorkspaceShell, type AppScreen } from "./WorkspaceShell.tsx";

@@ -512,7 +512,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F01-08 [AC-F01-04] wrong cod
 - **Level:** security
 - **Given** user U with a photo, V who shares a workspace with U, W who shares none, and a signed-out caller
 - **When** each requests `GET /api/v1/users/U/avatar?v=<key>`; and V requests it after leaving the shared workspace
-- **Then** U and V get the image with `Cache-Control: private, max-age=60`; W, the signed-out caller and V-after-leaving get 404 (same as for a user without a photo or an id that does not exist); the photo of a user whose id is guessed is not distinguishable from a missing one
+- **Then** U and V get the image with `Cache-Control: private, max-age=60`; W and V-after-leaving get 404 (same as for a user without a photo or an id that does not exist); the signed-out caller gets 401 like on every signed-in route (it reveals nothing about the photo; changed in T16); the photo of a user whose id is guessed is not distinguishable from a missing one
 
 ### TC-F01-68: Name and photo reach others, and other computers
 - **Covers:** AC-F01-25

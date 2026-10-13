@@ -1,11 +1,13 @@
 // Accounts: business rules for the signed-in person (F01 design.md sections 3 and 8).
-import type { MeResponse } from "@meetapp/contracts";
+import { SIGN_IN_METHODS, type MeResponse } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { WorkspacesRepository } from "../workspaces/workspaces.repository.ts";
 import type { AccountsRepository } from "./accounts.repository.ts";
 import { TERMS_VERSION } from "./sign-up.service.ts";
 
 const THEMES = new Set(["light", "dark", "system"]);
+type SignInMethod = (typeof SIGN_IN_METHODS)[number];
+const isMethod = (value: string): value is SignInMethod => (SIGN_IN_METHODS as readonly string[]).includes(value);
 
 /** Their workspaces, each with the requests to join waiting for them (0 where they can't decide). */
 async function workspacesWithCounts(workspaces: WorkspacesRepository, userId: string) {
@@ -24,6 +26,7 @@ async function workspacesToOpen(workspaces: WorkspacesRepository, userId: string
 export function createAccountsService(
   repository: AccountsRepository,
   workspaces: WorkspacesRepository,
+  settings: { supportEmail: string },
   now: () => Date = () => new Date(),
 ) {
   return {
@@ -41,8 +44,11 @@ export function createAccountsService(
           termsAccepted: row.termsAcceptedAt !== null,
           theme,
           accent: row.accent,
+          photoUrl: row.avatarKey ? `/api/v1/users/${row.id}/avatar?v=${row.avatarKey}` : null,
+          signInMethods: (await repository.signInMethods(row.id)).filter(isMethod),
         },
         ...(await workspacesToOpen(workspaces, row.id, row.lastWorkspaceId)),
+        supportEmail: settings.supportEmail,
       };
     },
     /** Remembers the workspace the app shows, for the next start (AC-F01-16); 404 if they aren't in it. */

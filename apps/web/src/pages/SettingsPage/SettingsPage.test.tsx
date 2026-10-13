@@ -26,7 +26,7 @@ async function startApp(onBack = vi.fn()) {
   await import("../../features/appearance/apply-saved.ts");
   const { SettingsPage } = await import("./SettingsPage.tsx");
   const { renderWithApp } = await import("../../features/auth/fake-auth.tsx");
-  const view = renderWithApp(<SettingsPage onBack={onBack} />);
+  const view = renderWithApp(<SettingsPage onNavigate={vi.fn()} onBack={onBack} />);
   return { ...view, onBack, user: userEvent.setup() };
 }
 

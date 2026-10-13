@@ -14,6 +14,8 @@ export const PAT: SignedInUser = {
   termsAccepted: true,
   theme: null,
   accent: null,
+  photoUrl: null,
+  signInMethods: ["password"],
 };
 
 export type FakeAuth = { [K in keyof AuthBridge]: ReturnType<typeof vi.fn<AuthBridge[K]>> };

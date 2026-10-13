@@ -1,7 +1,7 @@
 // TC-F01-73 (AC-F01-29), the screens' part: backend errors keep their code; a backend that can't be
 // reached, or answers too late, gives NETWORK_ERROR (and never hangs).
 import { describe, expect, it } from "vitest";
-import { ApiError, apiRequest } from "./api-client.ts";
+import { ApiError, apiFileUrl, apiRequest } from "./api-client.ts";
 
 const API = "http://api.test";
 
@@ -45,4 +45,18 @@ describe("apiRequest", () => {
     await expect(apiRequest("/x", { apiUrl: API, fetcher: silent })).rejects.toMatchObject({ code: "NETWORK_ERROR" });
     expect(Date.now() - started).toBeLessThan(11_000);
   }, 15_000);
+
+  it("TC-F01-66 [AC-F01-25] a file is sent as it is, with its own type; photo paths become full addresses", async () => {
+    const seen: RequestInit[] = [];
+    const ok = (async (_url: string, init: RequestInit) => {
+      seen.push(init);
+      return Response.json({ photoUrl: "/p" });
+    }) as unknown as typeof fetch;
+    const file = new Blob(["png bytes"], { type: "image/png" });
+    await apiRequest("/api/v1/me/avatar", { method: "PUT", body: file, apiUrl: API, fetcher: ok });
+    expect(seen[0]?.body).toBe(file);
+    expect(seen[0]?.headers).toEqual({ "content-type": "image/png" });
+    expect(apiFileUrl("/api/v1/users/u/avatar?v=1", API)).toBe("http://api.test/api/v1/users/u/avatar?v=1");
+    expect(apiFileUrl(null, API)).toBeUndefined();
+  });
 });

@@ -25,6 +25,7 @@ export const ERROR_CODES = [
   "PENDING_REQUEST",
   "ALREADY_DECIDED",
   "REQUEST_EXPIRED",
+  "PHOTO_INVALID",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

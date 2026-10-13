@@ -5,6 +5,7 @@ import type { MembersResponse } from "@meetapp/contracts";
 import { Input, MemberRow } from "@meetapp/ui";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { apiFileUrl } from "../../features/api/index.ts";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import { formatDate, useMemberChange, type MemberChange } from "../../features/workspaces/index.ts";
 import { ConfirmDialog } from "./ConfirmDialog.tsx";
@@ -98,7 +99,7 @@ function Row({ member, kinds, isMe, onChoose }: RowProps) {
     <MemberRow
       name={member.name}
       email={member.email}
-      photoUrl={member.photoUrl}
+      photoUrl={apiFileUrl(member.photoUrl)}
       roleLabel={t(`workspaces.roles.${member.role}`)}
       owner={member.role === "owner"}
       joined={formatDate(member.joinedAt, i18n.language)}

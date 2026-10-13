@@ -5,7 +5,9 @@ import { Notice, Spinner } from "@meetapp/ui";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router";
+import { useAccountLook } from "../features/appearance/index.ts";
 import { errorText, useSession } from "../features/auth/index.ts";
+import type { SettingsScreen } from "../features/profile/index.ts";
 import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from "../features/workspaces/index.ts";
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
@@ -14,6 +16,7 @@ import { HomePage } from "../pages/HomePage/index.ts";
 import { JoinWorkspacePage } from "../pages/JoinWorkspacePage/index.ts";
 import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
+import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
 import { SignInPage } from "../pages/SignInPage/index.ts";
@@ -91,6 +94,8 @@ function SignedInScreens() {
   const navigate = useNavigate();
   const go = (screen: AppScreen) => void navigate(PATHS[screen]);
   const home = () => go("home");
+  const settings = (screen: SettingsScreen) =>
+    void navigate(screen === "profile" ? "/settings" : "/settings/appearance");
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
@@ -111,13 +116,16 @@ function SignedInScreens() {
         }
       />
       <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
-      <Route path="/settings" element={<SettingsPage onBack={home} />} />
+      <Route path="/settings" element={<ProfilePage onNavigate={settings} onBack={home} />} />
+      <Route path="/settings/appearance" element={<SettingsPage onNavigate={settings} onBack={home} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
 
 function SignedInRoutes() {
+  const { data: user } = useSession();
+  useAccountLook(user);
   return (
     <CurrentWorkspaceProvider>
       <SignedInScreens />

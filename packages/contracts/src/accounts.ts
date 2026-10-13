@@ -2,6 +2,8 @@
 import { z } from "zod";
 import { workspaceSchema } from "./workspaces.ts";
 
+export const SIGN_IN_METHODS = ["password", "google", "microsoft"] as const;
+
 export const meResponseSchema = z
   .object({
     user: z.object({
@@ -12,6 +14,10 @@ export const meResponseSchema = z
       termsAccepted: z.boolean(),
       theme: z.enum(["light", "dark", "system"]).nullable(),
       accent: z.string().nullable(),
+      /** Their photo (`/api/v1/users/<id>/avatar?v=<key>`), or null for initials (AC-F01-25). */
+      photoUrl: z.string().nullable(),
+      /** How they can sign in: a password, Google, Microsoft. A code by email always works. */
+      signInMethods: z.array(z.enum(SIGN_IN_METHODS)),
     }),
     /**
      * Every workspace they are in, with their role; Personal first (AC-F01-14, 23). `pendingRequests`
@@ -20,6 +26,8 @@ export const meResponseSchema = z
     workspaces: z.array(workspaceSchema.extend({ pendingRequests: z.number().int() })),
     /** The workspace to open: the last used while they are still in it, else Personal (AC-F01-16). */
     currentWorkspaceId: z.uuid().nullable(),
+    /** Where to ask for a copy of one's data or to delete the account (privacy-legal.md). */
+    supportEmail: z.string(),
   })
   .meta({ id: "Me", description: "The signed-in person and their workspaces." });
 
@@ -87,3 +95,16 @@ export const changePasswordBodySchema = z
 
 /** The workspace the app shows now; opened first at the next start (AC-F01-16). */
 export const lastWorkspaceBodySchema = z.object({ workspaceId: z.uuid() }).meta({ id: "LastWorkspace" });
+
+/** A display name of 1–60 characters after trimming (AC-F01-25). Other fields are ignored. */
+export const updateProfileBodySchema = z
+  .object({ name: z.string().trim().min(1).max(60) })
+  .meta({ id: "UpdateProfile" });
+
+/** The look saved to the account (AC-F01-26); either may be left out. */
+export const preferencesBodySchema = z
+  .object({ theme: z.enum(THEME_CHOICES).optional(), accent: z.enum(ACCENT_CHOICES).optional() })
+  .meta({ id: "Preferences" });
+
+export const userParamsSchema = z.object({ userId: z.string() });
+export const avatarQuerySchema = z.object({ v: z.string().max(100).optional() });

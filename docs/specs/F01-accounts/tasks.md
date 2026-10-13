@@ -147,7 +147,7 @@ Before a step uses Better Auth or a Microsoft detail, the matching item in desig
   - Tests: TC-F01-48, 53, 61.
   - Check: **the owner can create a workspace, invite a second (seeded) user by email and approve a join request, all in the app.**
 
-- [ ] **T16: Profile, photo and appearance.**
+- [x] **T16: Profile, photo and appearance.**
   - Name; photo upload (reuses T7's photo step: content check, sharp re-encode, pixel limit, location data removed, private storage), visibility, caching.
   - Theme and accent saved to the account.
   - Profile and account screen with the support email.

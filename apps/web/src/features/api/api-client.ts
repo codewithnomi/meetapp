@@ -22,6 +22,7 @@ export class ApiError extends Error {
 
 interface RequestOptions {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** Sent as JSON; a Blob (e.g. a chosen photo file) is sent as it is. */
   body?: unknown;
   /** Extra headers, e.g. an Idempotency-Key when creating something (AC-F01-29). */
   headers?: Record<string, string>;
@@ -38,14 +39,25 @@ async function errorOf(response: Response): Promise<ApiError> {
   return new ApiError(code, response.status, typeof retry === "number" ? retry : undefined);
 }
 
+function bodyAndType(body: unknown, headers: Record<string, string>): RequestInit {
+  if (body === undefined) return { headers };
+  if (body instanceof Blob) {
+    return { body, headers: { ...headers, "content-type": body.type || "application/octet-stream" } };
+  }
+  return { body: JSON.stringify(body), headers: { ...headers, "content-type": "application/json" } };
+}
+
+/** The full address of a file the API serves, e.g. a photo's `/api/v1/users/<id>/avatar?v=…`. */
+export const apiFileUrl = (path: string | null | undefined, apiUrl: string = API_URL): string | undefined =>
+  path ? `${apiUrl}${path}` : undefined;
+
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {}, apiUrl = API_URL, fetcher = fetch } = options;
   let response: Response;
   try {
     response = await fetcher(`${apiUrl}${path}`, {
       method,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-      headers: body === undefined ? headers : { ...headers, "content-type": "application/json" },
+      ...bodyAndType(body, headers),
       signal: AbortSignal.timeout(TIME_LIMIT_MS),
     });
   } catch {

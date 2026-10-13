@@ -28,6 +28,8 @@ describe("App", () => {
 
     await user.click(screen.getByRole("button", { name: "Settings" }));
     expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    // Settings opens on Profile and account; the look is under Appearance (F01 T16).
+    await user.click(screen.getByRole("button", { name: "Appearance" }));
     expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Back" }));

@@ -1,15 +1,16 @@
 // SettingsPage (page): the Appearance section of the approved Settings design — theme, accent color
-// and a small preview. Choices apply to the whole app at once and are remembered (AC-F00-08, 10).
-// Below it, Account: who is signed in, and Sign out (F01).
+// and a small preview. Choices apply to the whole app at once, are remembered on this computer and are
+// saved to the account (AC-F00-08, 10; AC-F01-26). Part of the Settings frame since F01 T16.
 import { ACCENTS, type Accent } from "@meetapp/design-tokens";
 import { AccentPicker, Badge, Button, SegmentedControl, type IconName } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
-import { THEME_CHOICES, useAppearance, type ThemeChoice } from "../../features/appearance/index.ts";
-import { useSession, useSignOut, useSignOutEverywhere } from "../../features/auth/index.ts";
+import { THEME_CHOICES, useAppearance, useSaveLook, type ThemeChoice } from "../../features/appearance/index.ts";
+import { SettingsShell, type SettingsScreen } from "../../features/profile/index.ts";
 
 const THEME_ICONS: Record<ThemeChoice, IconName> = { light: "sun", dark: "moon", system: "monitor" };
 
 export interface SettingsPageProps {
+  onNavigate: (screen: SettingsScreen) => void;
   onBack: () => void;
 }
 
@@ -34,7 +35,8 @@ function AppearancePreview() {
 
 function AppearanceSection() {
   const { t } = useTranslation();
-  const { theme, accent, setTheme, setAccent } = useAppearance();
+  const { theme, accent } = useAppearance();
+  const { setTheme, setAccent } = useSaveLook();
   const themes = THEME_CHOICES.map((value) => ({
     value,
     label: t(`settings.appearance.themes.${value}`),
@@ -81,60 +83,10 @@ function AppearanceSection() {
   );
 }
 
-/** Sign out (this computer) or Sign out everywhere (every device), as in AC-F01-12. */
-function SignOutButtons() {
-  const { t } = useTranslation();
-  const signOut = useSignOut();
-  const everywhere = useSignOutEverywhere();
-  const busy = signOut.isPending || everywhere.isPending;
+export function SettingsPage({ onNavigate, onBack }: SettingsPageProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap gap-3">
-        <Button variant="secondary" disabled={busy} onClick={() => signOut.mutate()}>
-          {t("settings.account.signOut")}
-        </Button>
-        <Button variant="danger" disabled={busy} onClick={() => everywhere.mutate()}>
-          {t("settings.account.signOutEverywhere")}
-        </Button>
-      </div>
-      <p className="m-0 text-caption text-ink-muted">{t("settings.account.everywhereHint")}</p>
-    </div>
-  );
-}
-
-/** Who is signed in, and the sign-out buttons (AC-F01-12). The full Profile screen arrives in F01 T16. */
-function AccountSection() {
-  const { t } = useTranslation();
-  const { data: user } = useSession();
-  return (
-    <section aria-labelledby="account-title" className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <h2 id="account-title" className="m-0 text-heading text-ink">
-          {t("settings.account.title")}
-        </h2>
-        {user ? (
-          <p className="m-0 text-body text-ink-muted">{t("settings.account.signedInAs", { email: user.email })}</p>
-        ) : null}
-      </div>
-      <SignOutButtons />
-    </section>
-  );
-}
-
-export function SettingsPage({ onBack }: SettingsPageProps) {
-  const { t } = useTranslation();
-  return (
-    <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-10 px-6 py-10">
-      <header className="flex flex-wrap items-center gap-4">
-        <Button variant="ghost" onClick={onBack}>
-          {t("settings.back")}
-        </Button>
-        <h1 tabIndex={-1} className="m-0 text-title text-ink outline-none">
-          {t("settings.title")}
-        </h1>
-      </header>
+    <SettingsShell screen="appearance" onNavigate={onNavigate} onBack={onBack}>
       <AppearanceSection />
-      <AccountSection />
-    </main>
+    </SettingsShell>
   );
 }

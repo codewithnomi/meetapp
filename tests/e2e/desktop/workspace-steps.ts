@@ -37,6 +37,20 @@ export async function inviteByEmail(page: Page, email: string) {
   await expect(page.getByText(`Invitation sent to ${email}.`)).toBeVisible();
 }
 
+/** Switcher → "Join with a link or code". */
+export async function openJoinScreen(page: Page, openName: string) {
+  await switcher(page, openName).click();
+  await page.getByRole("menuitem", { name: "Join with a link or code" }).click();
+  await expect(title(page, "Join a workspace")).toBeVisible();
+}
+
+/** Join screen: presses Join on the invitation; the workspace opens. */
+export async function acceptInvitation(page: Page, from: string, workspace: string) {
+  await openJoinScreen(page, from);
+  await page.getByRole("button", { name: "Join", exact: true }).click();
+  await expect(title(page, workspace)).toBeVisible();
+}
+
 /** The plain text of the newest email to `email` sent after `since`. */
 export async function emailText(email: string, since: Date): Promise<string> {
   const mailpit = process.env["MEETAPP_E2E_MAILPIT_URL"];

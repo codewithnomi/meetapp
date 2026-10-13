@@ -20,6 +20,7 @@ type ErrorName =
   | "requestExpired"
   | "personalWorkspace"
   | "notFound"
+  | "passwordWrong"
   | "generic";
 
 /** Text key and values for t(): e.g. { key: "auth.errors.tooManyAttempts", values: { minutes: 3 } }. */
@@ -48,6 +49,7 @@ const KEYS: Record<string, ErrorName> = {
   REQUEST_EXPIRED: "requestExpired",
   PERSONAL_WORKSPACE: "personalWorkspace",
   NOT_FOUND: "notFound",
+  PASSWORD_WRONG: "passwordWrong",
 };
 
 /** `retryAfterSeconds` comes with TOO_MANY_ATTEMPTS (our limits, AC-F01-13). */

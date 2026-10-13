@@ -1,5 +1,6 @@
 // File storage over the S3 protocol: RustFS locally, Cloudflare R2 later with the same code (D035).
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   NoSuchKey,
@@ -42,6 +43,10 @@ export function createStorageProvider(config: Config) {
         if (isNotFound(error)) throw new StorageNotFoundError(key);
         throw error;
       }
+    },
+    /** Removes a file; a file that is already gone is fine. */
+    async delete(key: string): Promise<void> {
+      await client.send(new DeleteObjectCommand({ Bucket, Key: key }));
     },
     ping: async () => {
       await client.send(new HeadBucketCommand({ Bucket }));

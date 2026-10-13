@@ -1,6 +1,7 @@
 // Theme and accent in the real window (AC-F00-08, 09, 10): TC-F00-16, 17, 19, 20, 21.
+// Each test has an account of its own: since F01 T16 the look is saved to the account and applied at sign-in.
 import { expect, test, type Page } from "@playwright/test";
-import { closeApp, freshProfile, htmlData, launch, launchSignedIn, resolvedColor } from "./desktop.ts";
+import { closeApp, freshProfile, htmlData, launch, launchNewAccount, resolvedColor } from "./desktop.ts";
 
 const SWITCH_MS = 1000;
 /** The 8 accents (design tokens) with the names the Settings screen shows. */
@@ -15,9 +16,11 @@ const ACCENTS = [
   ["teal", "Teal"],
 ] as const;
 
+/** Settings → Appearance (since F01 T16 Settings opens on Profile and account). */
 async function openSettings(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+  await page.getByRole("button", { name: "Appearance" }).click();
 }
 
 /** Waits until the choice is saved in the profile, so closing the app right after can't lose it. */
@@ -31,7 +34,7 @@ const background = (page: Page) => page.evaluate(() => getComputedStyle(document
 
 test("TC-F00-16 [AC-F00-08] Dark applies at once without a reload and is remembered after a restart", async () => {
   const profile = freshProfile();
-  const first = await launchSignedIn(profile);
+  const first = await launchNewAccount(profile);
   await openSettings(first.page);
   await first.page.evaluate(() => ((window as { marker?: number }).marker = 1));
   const lightBackground = await background(first.page);
@@ -51,7 +54,7 @@ test("TC-F00-16 [AC-F00-08] Dark applies at once without a reload and is remembe
 
 test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn", async () => {
   const profile = freshProfile();
-  const first = await launchSignedIn(profile);
+  const first = await launchNewAccount(profile);
   await openSettings(first.page);
   await first.page.getByRole("radio", { name: "Dark" }).click();
   await saved(first.page, "theme", "dark");
@@ -78,7 +81,7 @@ test("TC-F00-17 [AC-F00-08] a saved dark theme is set before the screen is drawn
 });
 
 test("TC-F00-19 [AC-F00-09] 'Same as my computer' follows the computer; 'Light' does not", async () => {
-  const { app, page } = await launchSignedIn();
+  const { app, page } = await launchNewAccount();
   await expect(page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
   await page.emulateMedia({ colorScheme: "dark" });
   await expect.poll(() => htmlData(page), { timeout: SWITCH_MS }).toMatchObject({ theme: "dark" });
@@ -96,7 +99,7 @@ test("TC-F00-19 [AC-F00-09] 'Same as my computer' follows the computer; 'Light' 
 
 test("TC-F00-20 [AC-F00-10] each of the 8 accents applies at once and the last one is remembered", async () => {
   const profile = freshProfile();
-  const first = await launchSignedIn(profile);
+  const first = await launchNewAccount(profile);
   await openSettings(first.page);
   // A fixed theme: if the Mac switched light/dark mid-test, the expected colors would go stale.
   await first.page.getByRole("radio", { name: "Light" }).click();
@@ -121,7 +124,7 @@ test("TC-F00-20 [AC-F00-10] each of the 8 accents applies at once and the last o
 });
 
 test("TC-F00-21 [AC-F00-10] a new user gets sky blue, with dark text on the main button", async () => {
-  const { app, page } = await launchSignedIn();
+  const { app, page } = await launchNewAccount();
   expect(await htmlData(page)).toMatchObject({ accent: "sky" });
   await openSettings(page);
   const onAccent = await resolvedColor(page, "var(--on-accent)");

@@ -1,1 +1,1 @@
-export { ApiError, apiRequest } from "./api-client.ts";
+export { ApiError, apiFileUrl, apiRequest } from "./api-client.ts";

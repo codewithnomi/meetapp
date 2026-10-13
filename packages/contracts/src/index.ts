@@ -4,17 +4,22 @@ export { healthCheckStateSchema, healthResponseSchema, type HealthResponse } fro
 export { flagSchema, flagsResponseSchema, type Flag } from "./flags.ts";
 export {
   ACCENT_CHOICES,
+  SIGN_IN_METHODS,
   THEME_CHOICES,
   acceptTermsBodySchema,
+  avatarQuerySchema,
   changePasswordBodySchema,
   lastWorkspaceBodySchema,
   meResponseSchema,
+  preferencesBodySchema,
   resetPasswordBodySchema,
   signUpBodySchema,
   signUpResendBodySchema,
   signUpResentSchema,
   signUpStartedSchema,
   signUpVerifyBodySchema,
+  updateProfileBodySchema,
+  userParamsSchema,
   type MeResponse,
 } from "./accounts.ts";
 export {

@@ -283,6 +283,20 @@ Better Auth's own email sign-up would create the account before the email is pro
   - At sign-up the computer's current values are sent along.
   - After sign-out the local store keeps the last values.
 
+- **Built in T16:**
+  - **Photo upload:** the file is sent as the request body itself, not as a multipart form. This needs no extra library, and the content type is ignored anyway because the bytes decide. Fastify refuses a body over 5 MB with `413` before reading further. A refused file answers `400 PHOTO_INVALID` ("Use a JPEG, PNG or WebP image up to 5 MB."). The app checks size and type before sending and shows the same words.
+  - A new photo gets a new key; the old file is deleted from storage, and so is the file when the photo is removed. The photo route answers `401` to someone signed out (like every signed-in route) and `404` to anyone else who may not see it. A malformed id is also 404.
+  - `GET /me` also returns `user.photoUrl`, `user.signInMethods` (password, google, microsoft) and `supportEmail`.
+  - **Settings** now has its own side menu (approved canvas), with Back, **Profile and account** (opens first) and **Appearance**. Profile and account holds:
+    - photo (`AvatarUpload` molecule) and name, with a **Save name** button;
+    - email with "Confirmed";
+    - **Change password**, or **Set a password** with an emailed code when the account has none, in a window, through the desktop bridge;
+    - linked sign-in methods;
+    - Sign out and Sign out everywhere;
+    - "Your data" with the support email.
+  - Not built from the canvas: "Link Microsoft" (linking another sign-in method isn't in the requirements) and "Changed 3 days ago" (the date isn't kept).
+  - **Look:** at sign-in the account's theme and accent replace this computer's, once per person, so a later 30-second check doesn't undo a change. An account without a saved look gets this computer's. Each change in Appearance is saved to the account and on this computer, and the computer keeps the last look after sign-out.
+
 ## 7. Data stored (migrations in `packages/db`)
 | Table | Main columns | Why |
 |---|---|---|

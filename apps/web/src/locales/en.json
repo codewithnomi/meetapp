@@ -41,6 +41,11 @@
       "signOutEverywhere": "Sign out everywhere",
       "signingOutEverywhere": "Signing out everywhere",
       "everywhereHint": "Signs out every computer and phone signed in to your account, this one included."
+    },
+    "nav": {
+      "label": "Settings",
+      "profile": "Profile and account",
+      "appearance": "Appearance"
     }
   },
   "auth": {
@@ -169,7 +174,8 @@
       "alreadyDecided": "Someone already answered this request.",
       "requestExpired": "This request is older than 14 days and has expired.",
       "personalWorkspace": "Your personal workspace is only for you.",
-      "notFound": "That is no longer here. The list has been updated."
+      "notFound": "That is no longer here. The list has been updated.",
+      "passwordWrong": "That isn't your current password. Try again, or use a code instead."
     },
     "loading": "Loading",
     "providers": {
@@ -347,6 +353,67 @@
       "ask": "Ask to join",
       "sentTitle": "Request sent",
       "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "description": "Seen by people who share a workspace with you.",
+    "loading": "Loading your profile",
+    "photo": {
+      "upload": "Upload a photo",
+      "remove": "Remove",
+      "hint": "JPEG, PNG or WebP, up to 5 MB. Location details are removed.",
+      "uploading": "Uploading photo",
+      "rule": "Use a JPEG, PNG or WebP image up to 5 MB."
+    },
+    "name": {
+      "label": "Your name",
+      "rule": "Use 1 to 60 characters.",
+      "save": "Save name",
+      "saving": "Saving name",
+      "saved": "Name saved."
+    },
+    "account": {
+      "title": "Account and sign-in",
+      "email": "Email",
+      "confirmed": "Confirmed",
+      "password": "Password",
+      "passwordHint": "Changing it signs out your other devices.",
+      "noPassword": "No password yet. You can set one with a code sent to your email.",
+      "changePassword": "Change password",
+      "setPassword": "Set a password",
+      "methods": "Other ways to sign in",
+      "methodsLinked": "{{list}} linked. A code by email always works.",
+      "methodsNone": "A code by email always works.",
+      "providers": {
+        "google": "Google",
+        "microsoft": "Microsoft"
+      }
+    },
+    "password": {
+      "title": "Change password",
+      "description": "Your other devices will be signed out. This one stays signed in.",
+      "current": "Current password",
+      "new": "New password",
+      "newHint": "At least 8 characters.",
+      "code": "Code from the email",
+      "useCode": "Email me a code instead",
+      "codeSent": "We sent a 6-digit code to {{email}}.",
+      "sendCode": "Send the code",
+      "save": "Change password",
+      "saving": "Changing password",
+      "cancel": "Cancel",
+      "close": "Close",
+      "done": "Password changed. Your other devices were signed out.",
+      "required": "Fill in both fields."
+    },
+    "signOut": {
+      "title": "Sign out",
+      "description": "Lost a laptop or used a shared computer? Sign out everywhere ends every session, including this one."
+    },
+    "data": {
+      "title": "Your data",
+      "text": "To get a copy of your data or delete your account, email {{email}}. We reply within 30 days."
     }
   }
 }

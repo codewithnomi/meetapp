@@ -18,6 +18,7 @@ export const ME = {
     { ...base, id: IDS.personal, name: "x", kind: "personal", role: "owner" },
     { ...base, id: IDS.aria, name: "Aria", kind: "company", role: "owner", pendingRequests: 2 },
   ],
+  supportEmail: "privacy@meetapp.test",
 } as unknown as MeResponse;
 
 export type Handler = (body: unknown) => Response | Promise<Response>;
@@ -25,6 +26,8 @@ interface ApiCall {
   method: string;
   path: string;
   body: unknown;
+  /** What was sent, as sent (e.g. a photo file). */
+  raw: BodyInit | null | undefined;
 }
 
 export const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status });
@@ -45,7 +48,7 @@ export function fakeApi(initial: Record<string, Handler> = {}) {
       const path = new URL(String(input)).pathname;
       const method = init.method ?? "GET";
       const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : undefined;
-      calls.push({ method, path, body });
+      calls.push({ method, path, body, raw: init.body });
       const handler = handlers[`${method} ${path}`] ?? handlers[path];
       return handler ? handler(body) : json({ error: { code: "NOT_FOUND" } }, 404);
     }),

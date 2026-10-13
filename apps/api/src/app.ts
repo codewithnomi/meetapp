@@ -9,6 +9,7 @@ import type { Accounts } from "./accounts.ts";
 import { accountsRoutes } from "./modules/accounts/accounts.routes.ts";
 import { desktopSignInRoutes } from "./modules/accounts/desktop-sign-in.routes.ts";
 import { passwordsRoutes } from "./modules/accounts/passwords.routes.ts";
+import { profileRoutes } from "./modules/accounts/profile.routes.ts";
 import { signUpRoutes } from "./modules/accounts/sign-up.routes.ts";
 import { flagsRoutes } from "./modules/flags/flags.routes.ts";
 import { createFlagsService, type FlagsSource } from "./modules/flags/flags.service.ts";
@@ -77,6 +78,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     const { workspaces, invitations, joinLink, joinRequests, membershipLookup, idempotency } = options.accounts;
     await app.register(authRoutes, { auth, limiter });
     await app.register(accountsRoutes, { accounts: service });
+    await app.register(profileRoutes, { profile: options.accounts.profile });
     await app.register(signUpRoutes, { signUp, accounts: service });
     await app.register(passwordsRoutes, { passwords, accounts: service });
     await app.register(desktopSignInRoutes, {

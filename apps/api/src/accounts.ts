@@ -11,7 +11,9 @@ import { createAccountsService } from "./modules/accounts/accounts.service.ts";
 import { createDesktopSignInsRepository } from "./modules/accounts/desktop-sign-ins.repository.ts";
 import { createDesktopSignInService } from "./modules/accounts/desktop-sign-in.service.ts";
 import { createPasswordsService } from "./modules/accounts/passwords.service.ts";
-import { createProviderPhotoImporter, type ProviderPhotoDependencies } from "./modules/accounts/provider-photo.ts";
+import { createProfileRepository } from "./modules/accounts/profile.repository.ts";
+import { createProfileService, type PhotoStorage } from "./modules/accounts/profile.service.ts";
+import { createProviderPhotoImporter } from "./modules/accounts/provider-photo.ts";
 import { createPendingSignUpsRepository } from "./modules/accounts/pending-sign-ups.repository.ts";
 import { createSignUpService } from "./modules/accounts/sign-up.service.ts";
 import { createWorkspacesRepository } from "./modules/workspaces/workspaces.repository.ts";
@@ -36,7 +38,7 @@ export interface AccountsWiring {
   log: FastifyBaseLogger;
   trustedOrigins: string[];
   /** Where profile photos are kept (F00 storage). */
-  storage: ProviderPhotoDependencies["storage"];
+  storage: PhotoStorage;
 }
 
 export function createAccounts({ config, db, redis, outbox, log, trustedOrigins, storage }: AccountsWiring) {
@@ -48,7 +50,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
   });
   const accountsRepository = createAccountsRepository(db);
   const workspaces = createWorkspacesRepository(db);
-  const service = createAccountsService(accountsRepository, workspaces);
+  const service = createAccountsService(accountsRepository, workspaces, { supportEmail: config.SUPPORT_EMAIL });
   const signUp = createSignUpService({
     accounts: accountsRepository,
     pending: createPendingSignUpsRepository(redis),
@@ -83,6 +85,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     passwords,
     desktopSignIn,
     providers,
+    profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
   };
 }
