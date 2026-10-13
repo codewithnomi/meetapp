@@ -14,6 +14,11 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 | An accent-color test fails once, with the dark-mode color where the light one was expected (F01 T5) | The Mac switched light→dark during the test while the window followed the computer | Tests that compare colors pick a theme first (TC-F00-20 clicks "Light") |
 | A sign-up test gets 429 "too many attempts" only on a second run within an hour (F01 T5) | Attempt counters stay in the shared Redis, and every test comes from 127.0.0.1 | Each test backend gets its own random counter key (`startAuthTestApp`) |
 
+## Traps found in F01
+- **The backend container didn't start on GitHub** ("/api/v1/health did not answer 200 within 90 s"), while every local test passed. The backend had started importing `@meetapp/design-tokens` (email colors) and `apps/api/Dockerfile` copied only `db` and `contracts`. Local tests never build the image. Fix: copy every `@meetapp/*` package the API depends on; `/spec-verify` now runs `pnpm check:container`. To see why a container won't start, run it by hand and read `docker logs`.
+- **Production refuses the example secrets** (D050), so the container check passes throwaway ones of its own.
+- **Semgrep:** state `authTagLength` for AES-GCM; a safe pass-through gets `// nosemgrep: <rule>` with the reason on the line above.
+
 ## Rules
 - Never skip, delete or loosen a test, rule, threshold or scan to make CI pass.
 - A check that is only red on GitHub is still a real failure: reproduce it (same command, same versions; Linux-only problems in a matching Docker image).
