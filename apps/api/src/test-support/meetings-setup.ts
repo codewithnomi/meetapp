@@ -115,7 +115,7 @@ export function withTicket(
 
 export const statusOf = async (t: AuthTestApp, person: Joined) =>
   (await withTicket(t, person.ticket, { method: "GET", url: `/api/v1/attendances/${person.attendanceId}` })).json<
-    Joined & { actedByName?: string }
+    Joined & { actedByName?: string; leftReason?: string }
   >();
 
 /**

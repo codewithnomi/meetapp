@@ -17,6 +17,7 @@ import { healthRoutes } from "./modules/health/health.routes.ts";
 import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
 import { joinRequestsRoutes } from "./modules/join-requests/join-requests.routes.ts";
 import { callsRoutes } from "./modules/calls/calls.routes.ts";
+import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { liveKitWebhookRoutes } from "./modules/calls/livekit-webhook.routes.ts";
 import { meetingsRoutes } from "./modules/meetings/meetings.routes.ts";
 import { invitationsRoutes } from "./modules/invitations/invitations.routes.ts";
@@ -125,8 +126,9 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
   await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
   await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
-  const { meetings, lookups, join, lobby, rejoin, record, webhooks } = accounts;
+  const { meetings, lookups, join, lobby, rejoin, record, webhooks, controls } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
   await app.register(liveKitWebhookRoutes, { webhooks });
+  await app.register(controlsRoutes, { controls });
 }

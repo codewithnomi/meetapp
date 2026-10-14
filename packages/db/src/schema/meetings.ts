@@ -34,7 +34,7 @@ export const attendanceStatus = pgEnum("attendance_status", [
   "timed_out",
   "turned_away",
 ]);
-export const leftReason = pgEnum("left_reason", ["leave", "dropped", "removed", "ended"]);
+export const leftReason = pgEnum("left_reason", ["leave", "dropped", "removed", "ended", "locked", "guests_off"]);
 
 const workspaceRef = () =>
   uuid("workspace_id")

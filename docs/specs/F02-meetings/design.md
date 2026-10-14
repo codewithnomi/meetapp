@@ -349,7 +349,8 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 | Endpoint | Who | Purpose |
 |---|---|---|
 | `POST /workspaces/:workspaceId/meetings` | member | create (AC-01, 02, 05) |
-| `GET /meetings/:id` | organizer, co-organizer, someone in its current call (ticket) | title, link, ID, passcode, organizer, options (Meeting info) |
+| `GET /meetings/:id` | organizer, co-organizer | title, link, ID, passcode, organizer, options |
+| `GET /calls/:callId/meeting` | ticket of anyone in this call | Meeting info: title, link, ID, passcode, organizer (AC-F02-01) |
 | `PATCH /meetings/:id/options` | organizer, co-organizer (co-organizers: organizer only) | title and options (AC-16, 34, 36) |
 | `GET /meetings/:id/calls` | people who took part, organizer, co-organizers | the record (AC-41) |
 | `POST /meeting-lookups` | anyone (rate limited) | find by link or ID+passcode (AC-08, 48) |

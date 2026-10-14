@@ -72,7 +72,7 @@ describe("migration 0003 on an F01 database with data", () => {
       cpSync(MIGRATIONS_FOLDER, folder, { recursive: true });
       const journalFile = join(folder, "meta/_journal.json");
       const journal = JSON.parse(readFileSync(journalFile, "utf8")) as { entries: { tag: string }[] };
-      journal.entries = journal.entries.filter((entry) => !entry.tag.startsWith("0003"));
+      journal.entries = journal.entries.filter((entry) => entry.tag < "0003");
       writeFileSync(journalFile, JSON.stringify(journal));
       const { db: early, close } = createDatabase(older.url, { max: 1 });
       await migrate(early, { migrationsFolder: folder });

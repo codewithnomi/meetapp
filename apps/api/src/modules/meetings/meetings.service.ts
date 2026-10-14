@@ -24,6 +24,8 @@ export interface MeetingsServiceDeps {
   lookupTokens: LookupTokens;
   limiter: RateLimiter;
   now?: () => Date;
+  /** Told after a change of the options or co-organizers, so a running call gets the new rights (F02 T8). */
+  onChange?: (meetingId: string) => Promise<void>;
 }
 
 interface Caller {
@@ -40,7 +42,7 @@ const forbidden = () => new AppError(403, "FORBIDDEN", "Only the organizer can n
 const badCoOrganizers = () =>
   new AppError(400, "BAD_REQUEST", "Co-organizers must be other people in the meeting's workspace.");
 
-function detailsOf(row: MeetingRow, secrets: MeetingSecretBox): MeetingDetails {
+export function detailsOf(row: MeetingRow, secrets: MeetingSecretBox): MeetingDetails {
   const { meeting } = row;
   return {
     id: meeting.id,
@@ -72,7 +74,7 @@ interface NewMeetingRequest {
   title: string | undefined;
 }
 
-async function createMeeting(deps: Required<MeetingsServiceDeps>, request: NewMeetingRequest) {
+async function createMeeting(deps: Required<Omit<MeetingsServiceDeps, "onChange">>, request: NewMeetingRequest) {
   const { repository, secrets, lookupTokens, limiter, now } = deps;
   const { caller, membership, kind, title } = request;
   const wait = await limiter.take(RATE_RULES.meetingCreates, caller.id);
@@ -108,6 +110,7 @@ export function createMeetingsService({
   lookupTokens,
   limiter,
   now = () => new Date(),
+  onChange = async () => {},
 }: MeetingsServiceDeps) {
   /** The meeting, for its organizer or a co-organizer who is still in the workspace; else 404. */
   async function managed(caller: Caller, meetingId: string): Promise<MeetingRow & { isOrganizer: boolean }> {
@@ -144,6 +147,7 @@ export function createMeetingsService({
       }
       const expiresAt = extendedExpiry(row.meeting.kind, row.meeting.expiresAt, now());
       await repository.update(meetingId, { ...options, expiresAt });
+      await onChange(meetingId);
       return detailsOf(await managed(caller, meetingId), secrets);
     },
   };

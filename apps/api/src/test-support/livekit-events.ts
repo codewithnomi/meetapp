@@ -1,7 +1,7 @@
 // Test helpers for the call server's reports (F02 T7): signed webhook bodies as LiveKit sends them, and
 // a call server stand-in that records what the backend asked it to do.
 import { createHash, randomUUID } from "node:crypto";
-import { AccessToken } from "livekit-server-sdk";
+import { AccessToken, TrackSource } from "livekit-server-sdk";
 import type { Config } from "../config/config.ts";
 import type { LiveKitProvider } from "../providers/livekit.ts";
 
@@ -37,6 +37,9 @@ export interface Recorded {
   removed: string[];
   messages: { room: string; message: object; to?: string[] }[];
   deleted: string[];
+  attributes: { identity: string; attributes: Record<string, string> }[];
+  rights: { identity: string; sources: string[] }[];
+  muted: string[];
 }
 
 export interface RoomsSeen {
@@ -44,11 +47,13 @@ export interface RoomsSeen {
   rooms?: () => string[];
   /** Who is in a room, by attendance id. */
   people?: (room: string) => string[];
+  /** The screen tracks each person sends (for the share rule). */
+  screens?: (identity: string) => { sid: string }[];
 }
 
 /** The real provider for everything else, with removals, messages and room deletions recorded. */
 export function recordingLiveKit(real: LiveKitProvider, seen: RoomsSeen = {}) {
-  const recorded: Recorded = { removed: [], messages: [], deleted: [] };
+  const recorded: Recorded = { removed: [], messages: [], deleted: [], attributes: [], rights: [], muted: [] };
   const livekit: LiveKitProvider = {
     ...real,
     remove: async (_room, identity) => {
@@ -61,7 +66,32 @@ export function recordingLiveKit(real: LiveKitProvider, seen: RoomsSeen = {}) {
     deleteRoom: async (room) => {
       recorded.deleted.push(room);
     },
-    participants: async (room) => (seen.people?.(room) ?? []).map((identity) => ({ identity, tracks: [] })) as never,
+    participants: async (room) =>
+      (seen.people?.(room) ?? []).map((identity) => ({
+        identity,
+        tracks: (seen.screens?.(identity) ?? []).map((track) => ({
+          ...track,
+          source: TrackSource.SCREEN_SHARE,
+          muted: false,
+        })),
+      })) as never,
+    setAttributes: async (_room, identity, attributes) => {
+      recorded.attributes.push({ identity, attributes });
+      return undefined as never;
+    },
+    setRights: async (_room, identity, sources) => {
+      recorded.rights.push({ identity, sources });
+      return undefined as never;
+    },
+    muteMicrophone: async (_room, identity) => {
+      recorded.muted.push(identity);
+      return true;
+    },
+    muteTrack: async (_room, _identity, trackSid) => {
+      recorded.muted.push(trackSid);
+      return undefined as never;
+    },
+    setRoomMetadata: async () => undefined as never,
     runningRooms: async () => seen.rooms?.() ?? [],
   };
   return { livekit, recorded };

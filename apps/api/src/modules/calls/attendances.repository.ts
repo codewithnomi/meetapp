@@ -99,6 +99,15 @@ export function createAttendancesRepository(executor: Executor) {
         .returning({ id: callAttendances.id });
       return changed.length === 1;
     },
+    /** Everyone with a place in the call: let in, or inside. */
+    presentIn: (callId: string): Promise<CallAttendance[]> =>
+      executor
+        .select()
+        .from(callAttendances)
+        .where(and(eq(callAttendances.callId, callId), inArray(callAttendances.status, ["admitted", "in_call"]))),
+    setRoleOverride: async (id: string, roleOverride: "presenter" | "attendee"): Promise<void> => {
+      await executor.update(callAttendances).set({ roleOverride }).where(eq(callAttendances.id, id));
+    },
     /** People marked inside one call (compared with the call server by the clean-up). */
     inCallOf: (callId: string): Promise<CallAttendance[]> =>
       executor

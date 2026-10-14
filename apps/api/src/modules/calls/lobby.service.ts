@@ -17,6 +17,7 @@ import {
   type CallsDeps,
 } from "./admission.ts";
 import { admitWaiting, waitingInOrder, type AttendanceStatus } from "./attendances.repository.ts";
+import type { MeetingRow } from "../meetings/meetings.repository.ts";
 import { can, type CallAction } from "./calls.permissions.ts";
 import { reenter } from "./rejoin.service.ts";
 import { IN_CALL_STATUSES, placesTaken, runningCall } from "./calls.repository.ts";
@@ -52,7 +53,22 @@ export async function actor(deps: CallsDeps, callId: string, ticketHash: string,
 }
 
 /** A waiting person's ask: still here, or timed out after 15 minutes (AC-F02-18). */
-async function stillWaiting(deps: CallsDeps, attendance: CallAttendance): Promise<CallAttendance> {
+/** Why a waiting person can no longer wait: guests switched off, or the meeting locked (AC-F02-37, 40). */
+async function turnAwayReason(deps: CallsDeps, attendance: CallAttendance, row: MeetingRow) {
+  if (attendance.participantGroup === "guest" && !row.allowGuests) return "guests_off" as const;
+  const role = roleOf(attendance, row);
+  if (role === "organizer" || role === "co_organizer") return undefined;
+  return (await deps.calls.runningFor(row.meeting.id))?.locked ? ("locked" as const) : undefined;
+}
+
+async function stillWaiting(deps: CallsDeps, attendance: CallAttendance, row: MeetingRow): Promise<CallAttendance> {
+  const reason = await turnAwayReason(deps, attendance, row);
+  if (
+    reason &&
+    (await deps.attendances.move(attendance.id, ["waiting"], { status: "turned_away", leftReason: reason }))
+  ) {
+    return { ...attendance, status: "turned_away", leftReason: reason };
+  }
   // Let in before, but the room closed before they connected: the join decision again (TC-F02-40).
   if (attendance.admittedAt) return reenter(deps, attendance);
   const now = deps.now();
@@ -68,7 +84,7 @@ async function status(deps: CallsDeps, attendanceId: string, ticketHash: string)
   let attendance = await own(deps, attendanceId, ticketHash);
   const row = await deps.meetings.find(attendance.meetingId);
   if (!row) throw notFound();
-  if (attendance.status === "waiting") attendance = await stillWaiting(deps, attendance);
+  if (attendance.status === "waiting") attendance = await stillWaiting(deps, attendance, row);
   const answer = {
     attendanceId: attendance.id,
     status: attendance.status,

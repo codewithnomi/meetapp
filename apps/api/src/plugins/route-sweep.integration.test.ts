@@ -42,6 +42,15 @@ const OPTIONAL = new Set([
   "GET /api/v1/calls/:callId/lobby",
   "POST /api/v1/calls/:callId/lobby/admit",
   "POST /api/v1/calls/:callId/lobby/deny",
+  "GET /api/v1/calls/:callId/meeting",
+  "POST /api/v1/calls/:callId/hand",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/lower-hand",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/mute",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/remove",
+  "PATCH /api/v1/calls/:callId/participants/:attendanceId/role",
+  "POST /api/v1/calls/:callId/mute-all",
+  "PATCH /api/v1/calls/:callId",
+  "POST /api/v1/calls/:callId/end",
 ]);
 /** Routes that exist only while testing (modules/test-support). */
 const TEST_ONLY = new Set(["GET /api/v1/__test__/whoami", "POST /__test__/error"]);

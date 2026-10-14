@@ -4,7 +4,7 @@
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
 import type { Redis } from "ioredis";
-import { callServerUrl, signInProviders, type Config } from "./config/config.ts";
+import { signInProviders, type Config } from "./config/config.ts";
 import type { Outbox } from "./emails/outbox.ts";
 import { createAccountsRepository } from "./modules/accounts/accounts.repository.ts";
 import { createAccountsService } from "./modules/accounts/accounts.service.ts";
@@ -25,27 +25,12 @@ import { createJoinRequestsRepository } from "./modules/join-requests/join-reque
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
-import type { CallsDeps } from "./modules/calls/admission.ts";
-import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
-import { createCallEventsRepository } from "./modules/calls/call-events.repository.ts";
-import { createCallJobs, startCallJobs } from "./modules/calls/calls.jobs.ts";
-import { createRecordRepository } from "./modules/calls/record.repository.ts";
-import { createRecordService } from "./modules/calls/record.service.ts";
-import { createRejoinService } from "./modules/calls/rejoin.service.ts";
-import { createWebhookService } from "./modules/calls/webhook.service.ts";
-import { createCallsRepository } from "./modules/calls/calls.repository.ts";
-import { createJoinService } from "./modules/calls/join.service.ts";
-import { createLobbyService } from "./modules/calls/lobby.service.ts";
-import { createLookupService } from "./modules/meetings/lookup.service.ts";
-import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
-import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
-import { createMeetingsRepository } from "./modules/meetings/meetings.repository.ts";
-import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
 import { createRateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
+import { createMeetingPieces } from "./meetings.ts";
 
 export interface AccountsWiring {
   config: Config;
@@ -106,50 +91,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
-    ...meetingPieces({ config, db, livekit }, limiter),
-  };
-}
-
-/** Meetings (F02): making them, their secrets and the lookup tokens. */
-function meetingPieces(
-  { config, db, livekit }: Pick<AccountsWiring, "config" | "db" | "livekit">,
-  limiter: ReturnType<typeof createRateLimiter>,
-) {
-  const shared = {
-    repository: createMeetingsRepository(db),
-    secrets: createMeetingSecrets(config.DATA_ENCRYPTION_KEY, config.APP_PUBLIC_URL),
-    lookupTokens: createLookupTokens(config.DATA_ENCRYPTION_KEY),
-    limiter,
-  };
-  const callsDeps = {
-    ...shared,
-    meetings: shared.repository,
-    calls: createCallsRepository(db),
-    attendances: createAttendancesRepository(db),
-    events: createCallEventsRepository(db),
-    scheduler: { schedule: async () => {} } as CallsDeps["scheduler"],
-    livekit,
-    serverUrl: callServerUrl(config),
-    now: () => new Date(),
-  };
-  const callJobs = createCallJobs(callsDeps);
-  return {
-    meetings: createMeetingsService(shared),
-    lookups: createLookupService(shared),
-    join: createJoinService(callsDeps),
-    lobby: createLobbyService(callsDeps),
-    rejoin: createRejoinService(callsDeps),
-    record: createRecordService(shared.repository, createRecordRepository(db)),
-    webhooks: createWebhookService(callsDeps),
-    callJobs,
-    /** The call services' shared pieces (tests build services with their own clock or call server). */
-    callsDeps,
-    /** Starts the call jobs (server.ts); from then on new calls get their 30-hour jobs. */
-    startCallJobs: async () => {
-      const started = await startCallJobs({ host: config.REDIS_HOST, port: config.REDIS_PORT }, callJobs);
-      callsDeps.scheduler.schedule = started.schedule;
-      return started;
-    },
+    ...createMeetingPieces({ config, db, livekit }, limiter),
   };
 }
 

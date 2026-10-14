@@ -112,12 +112,19 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - also the screen-share rule ("the newest share wins"), tested in T8.
     - Integration tests record the call server's side (removals, messages) where a real participant would be needed. The desktop tests (T14–T16) use real participants.
 
-- [ ] **T8: In-call controls.**
+- [x] **T8: In-call controls.**
   - Hands, mute, Mute all, remove, roles, options (who can present, attendee mic/camera), lock, End meeting, share replacement, the 30-a-minute limit.
   - Guests switched off while waiting or inside; what outsiders may see (no emails; photos only with a shared workspace).
   - Covers: AC-F02-23, 24 (rules), 25 (server part), 27, 33, 34, 35, 36, 37, 38, 40, 50.
-  - Tests: TC-F02-46, 48, 50, 51, 53, 66, 67, 68, 70, 72, 75, 76, 78, 82, 98, 103.
+  - Tests: TC-F02-46, 50, 53, 66, 67, 68, 70, 72, 75, 76, 78, 82, 103 (and the backend parts of 51 and 98).
   - Check: every control route refuses people without the right, and a removed person is disconnected within 5 seconds.
+  - **Built in T8:**
+    - controls.service and controls.routes: hands, mute, Mute all, remove, roles, lock, End meeting, Meeting info at `GET /calls/:id/meeting`;
+    - option changes reach the running call through `refreshCall`;
+    - migration `0004_lobby_reasons` gives a lobby turn-away its reason (`locked`, `guests_off`), shown on the waiting person's next ask;
+    - the meeting wiring moved to `apps/api/src/meetings.ts`.
+    - **Moved to T14 (they need the app):** the reaction rules (TC-F02-48), and the real-client parts of TC-F02-51 and TC-F02-98.
+    - TC-F02-53's photo part is F01's photo rule (shared workspace), already tested there.
 
 - [ ] **T9: Backend security sweeps.**
   - Every new route goes into the outsider and member sweeps.
@@ -164,7 +171,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - `useMeetingRoom` (livekit-client: adaptive stream, dynacast, simulcast, reconnect policy).
   - Gallery of 16 with pages, speaker view, pin, speaking highlight, mic and camera with shortcuts, hands, reactions, announcements.
   - Covers: AC-F02-12 (path), 13, 20 (layout), 21, 22, 23, 24, 44.
-  - Tests: TC-F02-24, 42, 43, 44, 45, 47, 89, 110 (DTLS-SRTP part).
+  - Tests: TC-F02-24, 42, 43, 44, 45, 47, 48, 89, 110 (DTLS-SRTP part), and the parts of 51 (a real client can't publish a screen as an attendee) and 98 (disconnect within 5 s, measured) that need a real participant.
   - Check: two app windows see and hear each other; the owner can try a call on the Mac.
 
 - [ ] **T15: Panels and organizer controls in the app.**

@@ -91,4 +91,29 @@ async function endCall(tx: Executor, callId: string, reason: EndReason, at: Date
   return true;
 }
 
+/** End meeting (AC-F02-38): the call ends, and everyone, the lobby included, leaves at once. */
+export function endForEveryone(
+  executor: Executor,
+  call: { id: string; meetingId: string },
+  at: Date,
+): Promise<boolean> {
+  return executor.transaction(async (tx) => {
+    const ended = await tx
+      .update(calls)
+      .set({ endedAt: at, endReason: "ended" })
+      .where(and(eq(calls.id, call.id), isNull(calls.endedAt)))
+      .returning({ id: calls.id });
+    if (ended.length === 0) return false;
+    await tx
+      .update(callAttendances)
+      .set({ status: "left", leftReason: "ended", leftAt: at })
+      .where(and(eq(callAttendances.callId, call.id), inArray(callAttendances.status, ["admitted", "in_call"])));
+    await tx
+      .update(callAttendances)
+      .set({ status: "left", leftReason: "ended", leftAt: at })
+      .where(and(eq(callAttendances.meetingId, call.meetingId), eq(callAttendances.status, "waiting")));
+    return true;
+  });
+}
+
 export type CallEventsRepository = ReturnType<typeof createCallEventsRepository>;

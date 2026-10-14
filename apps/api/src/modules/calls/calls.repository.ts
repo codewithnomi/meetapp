@@ -79,6 +79,9 @@ export function createCallsRepository(executor: Executor) {
         await tx.select({ id: meetings.id }).from(meetings).where(eq(meetings.id, meetingId)).for("update");
         return work(tx);
       }),
+    setLocked: async (callId: string, locked: boolean): Promise<void> => {
+      await executor.update(calls).set({ locked }).where(eq(calls.id, callId));
+    },
     byId: async (callId: string): Promise<Call | undefined> => {
       const [row] = await executor.select().from(calls).where(eq(calls.id, callId));
       return row;

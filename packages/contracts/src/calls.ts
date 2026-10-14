@@ -44,7 +44,7 @@ export const attendanceSchema = z
     /** Who removed the person (AC-F02-35), shown in "You were removed". */
     actedByName: z.string().optional(),
     /** Why a person left: their own Leave, a dropped connection, removal, or the end of the meeting. */
-    leftReason: z.enum(["leave", "dropped", "removed", "ended"]).optional(),
+    leftReason: z.enum(["leave", "dropped", "removed", "ended", "locked", "guests_off"]).optional(),
   })
   .meta({ id: "Attendance" });
 
@@ -101,3 +101,8 @@ export const meetingRecordSchema = z
     ),
   })
   .meta({ id: "MeetingRecord" });
+
+export const participantParamsSchema = z.object({ callId: z.string(), attendanceId: z.string() });
+export const handBodySchema = z.object({ raised: z.boolean() }).meta({ id: "Hand" });
+export const roleBodySchema = z.object({ role: z.enum(["presenter", "attendee"]) }).meta({ id: "ParticipantRole" });
+export const lockBodySchema = z.object({ locked: z.boolean() }).meta({ id: "CallLock" });
