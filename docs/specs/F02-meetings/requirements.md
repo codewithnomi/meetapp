@@ -81,7 +81,7 @@ Times are measured locally (`pnpm dev`) on the reference computer: the owner's M
 - **AC-F02-07:** WHEN the organizer leaves the meeting's workspace (or is removed from it), THEN their meetings in that workspace stop working, like expired ones.
 
 ### Joining
-- **AC-F02-08:** WHEN anyone pastes a meeting link, or types a meeting ID and passcode, under **Join a meeting**, THEN they reach the pre-join screen showing the meeting's title. This works signed in, or as a guest from the sign-in screen. A wrong, expired or unknown link, ID or passcode shows "We couldn't find that meeting. Check the link, or the ID and passcode." with no further detail.
+- **AC-F02-08:** WHEN anyone pastes a meeting link, or types a meeting ID and passcode, under **Join a meeting**, THEN they reach the pre-join screen showing the meeting's title. This works signed in, or as a guest from the sign-in screen. A wrong or unknown link, ID or passcode shows "We couldn't find that meeting. Check the link, or the ID and passcode." with no further detail. The right link, or the right ID and passcode, of an expired meeting shows "This meeting has expired" (AC-04); only someone who already has them learns that.
 - **AC-F02-09:** WHEN someone is on the pre-join screen, THEN they:
   - see their own camera preview, a microphone level meter and a **Test speakers** sound;
   - can choose the camera, microphone and speakers;

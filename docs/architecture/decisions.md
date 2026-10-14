@@ -327,3 +327,24 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** the owner wants people coming from Teams to find nothing new, as for accounts (D047).
 - **Cost:** none.
 
+
+### D054: How meetings are built (F02)
+- **Date:** 2026-10-14. **Status:** proposed (with F02 design.md).
+- **Decision:**
+  - **The backend decides who gets in; LiveKit enforces it.** Every join goes through our API: link or ID+passcode, lobby, lock, guests, the 100 limit and expiry. Only then does the API issue a one-room LiveKit pass (10 minutes for the first use) whose rights come from the meeting role (`canPublishSources`). Rooms are made only by the backend (`auto_create: false`).
+  - **The lobby is polling, not a call connection:** waiting apps ask the API every 2 seconds. People in the lobby never touch the call server and never see who is inside.
+  - **A meeting ticket per join** (random, stored only as a fingerprint) authenticates every in-call action, so members and guests use the same rules. Same account twice = two attendances.
+  - **Shared state** is set only by the backend: participant attributes (role, group, hand), room metadata (options, lock, end time) and server data messages. Apps trust control messages only from the server. Reactions are the one thing apps send to each other.
+  - **LiveKit webhooks** fill the meeting record (joins, leaves, end) and refuse reused passes. A cleanup job every minute repairs anything a lost webhook missed.
+  - **Link and passcode** are stored encrypted, with HMAC columns for lookups (as D050).
+- **Why:** a changed or hacked app can't skip the rules (S1, S4). Polling for the lobby keeps it simple and works without a second real-time channel. Server-only state means one source of truth.
+- **Cost:** none.
+
+### D055: New libraries for F02
+- **Date:** 2026-10-14. **Status:** proposed (with F02 design.md); each is vetted with `/add-dependency` before it's added.
+- **Decision:**
+  - `livekit-client`: the calling engine in the app;
+  - `@livekit/components-react`: its React hooks only, already named in frontend.md, with all visuals from our own components;
+  - the `livekit/livekit-cli` Docker image (pinned): simulated participants for the 100-person load test, development only.
+- **Why:** they come from the makers of the call server we use (D004), are free and Apache-2.0, and are widely used.
+- **Cost:** none.
