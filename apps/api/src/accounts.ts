@@ -25,6 +25,7 @@ import { createJoinRequestsRepository } from "./modules/join-requests/join-reque
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
+import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
 import { createMeetingsRepository } from "./modules/meetings/meetings.repository.ts";
@@ -100,14 +101,13 @@ function meetingPieces(
   { config, db }: Pick<AccountsWiring, "config" | "db">,
   limiter: ReturnType<typeof createRateLimiter>,
 ) {
-  return {
-    meetings: createMeetingsService({
-      repository: createMeetingsRepository(db),
-      secrets: createMeetingSecrets(config.DATA_ENCRYPTION_KEY, config.APP_PUBLIC_URL),
-      lookupTokens: createLookupTokens(config.DATA_ENCRYPTION_KEY),
-      limiter,
-    }),
+  const shared = {
+    repository: createMeetingsRepository(db),
+    secrets: createMeetingSecrets(config.DATA_ENCRYPTION_KEY, config.APP_PUBLIC_URL),
+    lookupTokens: createLookupTokens(config.DATA_ENCRYPTION_KEY),
+    limiter,
   };
+  return { meetings: createMeetingsService(shared), lookups: createLookupService(shared) };
 }
 
 /** Workspaces, invitations, joining, the membership check and repeat-safe creates. */

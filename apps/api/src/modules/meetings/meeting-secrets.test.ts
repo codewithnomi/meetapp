@@ -83,11 +83,17 @@ describe("TC-F02-105 [AC-F02-48] lookup tokens", () => {
   it("TC-F02-105 [AC-F02-48] name one meeting for 15 minutes; forged or damaged ones are refused", () => {
     let clock = new Date("2026-10-01T10:00:00Z");
     const tokens = createLookupTokens(KEY, () => clock);
-    const token = tokens.issue("meeting-1");
-    expect(tokens.read(token)).toBe("meeting-1");
+    const token = tokens.issue({ meetingId: "meeting-1", userId: "user-1" });
+    expect(tokens.read(token)).toEqual({ meetingId: "meeting-1", userId: "user-1" });
+    expect(tokens.read(tokens.issue({ meetingId: "meeting-1", userId: null }))).toEqual({
+      meetingId: "meeting-1",
+      userId: null,
+    });
     expect(createLookupTokens(`${KEY}-other`, () => clock).read(token)).toBeUndefined();
     const [body = "", signature = ""] = token.split(".");
-    const forged = Buffer.from(JSON.stringify({ meetingId: "meeting-2", expiresAt: 9e15 })).toString("base64url");
+    const forged = Buffer.from(JSON.stringify({ meetingId: "meeting-2", userId: null, expiresAt: 9e15 })).toString(
+      "base64url",
+    );
     expect(tokens.read(`${forged}.${signature}`)).toBeUndefined();
     expect(tokens.read(`${body}.${signature}x`)).toBeUndefined();
     expect(tokens.read("nonsense")).toBeUndefined();

@@ -99,7 +99,7 @@ async function createMeeting(deps: Required<MeetingsServiceDeps>, request: NewMe
   });
   const row = await repository.find(meeting.id);
   if (!row) throw notFound();
-  return { ...detailsOf(row, secrets), lookupToken: lookupTokens.issue(meeting.id) };
+  return { ...detailsOf(row, secrets), lookupToken: lookupTokens.issue({ meetingId: meeting.id, userId: caller.id }) };
 }
 
 export function createMeetingsService({

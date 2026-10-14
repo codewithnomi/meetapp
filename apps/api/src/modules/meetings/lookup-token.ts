@@ -7,7 +7,14 @@ export const LOOKUP_TOKEN_MS = 15 * 60 * 1000;
 
 interface LookupPayload {
   meetingId: string;
+  /** Who looked it up: their account, or empty for a guest. A token works only for the same person. */
+  userId: string | null;
   expiresAt: number;
+}
+
+export interface LookupGrant {
+  meetingId: string;
+  userId: string | null;
 }
 
 export function createLookupTokens(dataKey: string, now: () => Date = () => new Date()) {
@@ -15,13 +22,13 @@ export function createLookupTokens(dataKey: string, now: () => Date = () => new 
   const sign = (body: string) => createHmac("sha256", key).update(body).digest("base64url");
 
   return {
-    issue: (meetingId: string): string => {
-      const payload: LookupPayload = { meetingId, expiresAt: now().getTime() + LOOKUP_TOKEN_MS };
+    issue: ({ meetingId, userId }: LookupGrant): string => {
+      const payload: LookupPayload = { meetingId, userId, expiresAt: now().getTime() + LOOKUP_TOKEN_MS };
       const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
       return `${body}.${sign(body)}`;
     },
-    /** The meeting it names, or undefined when it is forged, damaged or older than 15 minutes. */
-    read: (token: string): string | undefined => {
+    /** The meeting and person it names, or undefined when it is forged, damaged or older than 15 minutes. */
+    read: (token: string): LookupGrant | undefined => {
       const [body, signature, extra] = token.split(".");
       if (!body || !signature || extra !== undefined) return undefined;
       const expected = Buffer.from(sign(body));
@@ -29,8 +36,10 @@ export function createLookupTokens(dataKey: string, now: () => Date = () => new 
       if (expected.length !== given.length || !timingSafeEqual(expected, given)) return undefined;
       try {
         const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as Partial<LookupPayload>;
-        if (typeof payload.meetingId !== "string" || typeof payload.expiresAt !== "number") return undefined;
-        return payload.expiresAt > now().getTime() ? payload.meetingId : undefined;
+        const { meetingId, userId, expiresAt } = payload;
+        if (typeof meetingId !== "string" || typeof expiresAt !== "number") return undefined;
+        if (userId !== null && typeof userId !== "string") return undefined;
+        return expiresAt > now().getTime() ? { meetingId, userId } : undefined;
       } catch {
         return undefined;
       }

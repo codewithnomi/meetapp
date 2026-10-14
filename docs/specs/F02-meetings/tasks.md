@@ -55,12 +55,18 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - the 50-an-hour limit; the F02 error codes. The limit answer uses F01's existing code `TOO_MANY_ATTEMPTS` (the design said `RATE_LIMITED`; design.md and tests.md updated).
     - **Parts of these test cases that need joining are tested with T6/T7:** TC-F02-07 (joins extend expiry), TC-F02-10 (lobby for external people and guests) and TC-F02-11 (organizer gone → lookups and joins).
 
-- [ ] **T4: Finding a meeting.**
+- [x] **T4: Finding a meeting.**
   - `POST /meeting-lookups`: link or ID+passcode, lookup tokens, the same miss answer and timing, the expired message only with the right secret.
   - Wrong-try limits per person, per address and per meeting ID (RATE_LIMITED).
   - Covers: AC-F02-04, 08, 48.
   - Tests: TC-F02-04, 08, 15, 16, 17, 93, 94, 105.
   - Check: a wrong passcode and an unknown ID can't be told apart by answer or by timing.
+  - **Built in T4:**
+    - `lookup.service.ts` and `POST /meeting-lookups`;
+    - a new sign-in level `access: "optional"` (guests and signed-in people use the same route; the route sweep lists such routes);
+    - the minimum answer time of 300 ms; `410 MEETING_EXPIRED` only after the right secret;
+    - lookup tokens name the meeting **and** the person (or "guest"), so a token can't be passed on.
+    - The parts of TC-F02-105 that use a token for joining are tested in T6.
 
 - [ ] **T5: The call server's passes and rooms.**
   - `providers/livekit.ts`:

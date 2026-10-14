@@ -94,6 +94,22 @@ export function createMeetingsRepository(executor: Executor) {
   return {
     insert: (build: () => NewMeeting) => insertMeeting(executor, build),
     find: (meetingId: string) => findMeeting(executor, meetingId),
+    /** The meeting whose link has this lookup hash. */
+    idByLinkLookup: async (linkLookup: string): Promise<string | undefined> => {
+      const [row] = await executor
+        .select({ id: meetings.id })
+        .from(meetings)
+        .where(eq(meetings.linkLookup, linkLookup));
+      return row?.id;
+    },
+    /** The meeting with this ID, with its passcode check (compared by the service). */
+    byNumber: async (meetingNumber: string): Promise<{ id: string; passcodeCheck: string } | undefined> => {
+      const [row] = await executor
+        .select({ id: meetings.id, passcodeCheck: meetings.passcodeCheck })
+        .from(meetings)
+        .where(eq(meetings.meetingNumber, meetingNumber));
+      return row;
+    },
     update: async (meetingId: string, change: MeetingOptionsChange): Promise<void> => {
       if (Object.keys(change).length === 0) return;
       await executor.update(meetings).set(change).where(eq(meetings.id, meetingId));

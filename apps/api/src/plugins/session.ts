@@ -19,8 +19,12 @@ export interface SessionReader {
 
 declare module "fastify" {
   interface FastifyContextConfig {
-    /** Default: signed in and terms accepted. "signed-in": terms not needed. "public": anyone. */
-    access?: "public" | "signed-in";
+    /**
+     * Default: signed in and terms accepted. "signed-in": terms not needed. "public": anyone.
+     * "optional": anyone, and the person when signed in with the terms accepted (F02: guests and
+     * members find and join meetings through the same routes).
+     */
+    access?: "public" | "signed-in" | "optional";
   }
   interface FastifyRequest {
     user?: SignedInUser;
@@ -44,6 +48,10 @@ export function registerSessionCheck(app: FastifyInstance, reader: SessionReader
     // The route's registered address, not the raw one: "/api/%761/me" reaches /api/v1/me too.
     if (!(request.routeOptions.url ?? "").startsWith(API_PREFIX) || access === "public") return;
     const user = await reader.read(request);
+    if (access === "optional") {
+      if (user?.termsAccepted) request.user = user;
+      return;
+    }
     if (!user) throw new AppError(401, "UNAUTHORIZED", "Sign in to continue.");
     request.user = user;
     if (!user.termsAccepted && access !== "signed-in") {

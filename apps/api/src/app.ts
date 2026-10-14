@@ -50,7 +50,7 @@ const NO_FLAGS: FlagsSource = { list: async () => [] };
 export interface RouteSummary {
   method: string;
   url: string;
-  access: "public" | "signed-in" | undefined;
+  access: "public" | "signed-in" | "optional" | undefined;
 }
 
 const ROUTES = new WeakMap<FastifyInstance, RouteSummary[]>();
@@ -123,5 +123,6 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
   await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
   await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
-  await app.register(meetingsRoutes, { meetings: accounts.meetings, lookup: membershipLookup, idempotency });
+  const { meetings, lookups } = accounts;
+  await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
 }

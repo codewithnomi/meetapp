@@ -34,6 +34,11 @@ export const RATE_RULES = {
   handOffStarts: { name: "hand-off-starts", limit: 20, windowSeconds: 60 * 60 },
   /** New meetings per person: 50 an hour (F02, AC-F02-05). */
   meetingCreates: { name: "meeting-creates", limit: 50, windowSeconds: 60 * 60 },
+  /** Wrong meeting links or IDs+passcodes: 20 a minute per person (or app) and per address (AC-F02-48). */
+  meetingLookupPerPerson: { name: "meeting-lookup-person", limit: 20, windowSeconds: 60 },
+  meetingLookupPerAddress: { name: "meeting-lookup-address", limit: 20, windowSeconds: 60 },
+  /** Wrong passcodes for one meeting ID, from anyone: 20 a minute, then that ID waits (design section 3.2). */
+  meetingIdWrongPasscodes: { name: "meeting-id-wrong", limit: 20, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

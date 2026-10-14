@@ -57,3 +57,26 @@ export const updateMeetingBodySchema = meetingOptionsSchema
 
 /** The workspace's guest switch (AC-F02-40): owner and admins. */
 export const workspaceSettingsBodySchema = z.object({ allowGuests: z.boolean() }).meta({ id: "WorkspaceSettings" });
+
+/** The app's device key (32 random bytes, base64url): guests' "same app" (design section 5). */
+export const deviceKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+
+/**
+ * Find a meeting by its link, or by its ID and passcode (AC-F02-08). Anything that isn't a match,
+ * malformed input included, gets the same 404 MEETING_NOT_FOUND, so the fields are only length-checked.
+ */
+export const meetingLookupBodySchema = z
+  .object({
+    link: z.string().max(2048).optional(),
+    meetingNumber: z.string().max(64).optional(),
+    passcode: z.string().max(64).optional(),
+    deviceKey: deviceKeySchema.optional(),
+  })
+  .meta({ id: "MeetingLookup" });
+
+export const PARTICIPANT_GROUPS = ["member", "external", "guest"] as const;
+
+/** Only the title, the joiner's group and a 15-minute token for joining: nothing about who is inside. */
+export const meetingLookupResponseSchema = z
+  .object({ title: z.string(), group: z.enum(PARTICIPANT_GROUPS), lookupToken: z.string() })
+  .meta({ id: "MeetingFound" });
