@@ -4,7 +4,7 @@
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
 import type { Redis } from "ioredis";
-import { signInProviders, type Config } from "./config/config.ts";
+import { callServerUrl, signInProviders, type Config } from "./config/config.ts";
 import type { Outbox } from "./emails/outbox.ts";
 import { createAccountsRepository } from "./modules/accounts/accounts.repository.ts";
 import { createAccountsService } from "./modules/accounts/accounts.service.ts";
@@ -25,6 +25,10 @@ import { createJoinRequestsRepository } from "./modules/join-requests/join-reque
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
+import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
+import { createCallsRepository } from "./modules/calls/calls.repository.ts";
+import { createJoinService } from "./modules/calls/join.service.ts";
+import { createLobbyService } from "./modules/calls/lobby.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
@@ -34,6 +38,7 @@ import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
 import { createRateLimiter } from "./plugins/rate-limit.ts";
+import type { LiveKitProvider } from "./providers/livekit.ts";
 
 export interface AccountsWiring {
   config: Config;
@@ -44,9 +49,11 @@ export interface AccountsWiring {
   trustedOrigins: string[];
   /** Where profile photos are kept (F00 storage). */
   storage: PhotoStorage;
+  /** The call server (F02). */
+  livekit: LiveKitProvider;
 }
 
-export function createAccounts({ config, db, redis, outbox, log, trustedOrigins, storage }: AccountsWiring) {
+export function createAccounts({ config, db, redis, outbox, log, trustedOrigins, storage, livekit }: AccountsWiring) {
   const auth = createAuth({ config, db, outbox, log, trustedOrigins });
   const limiter = createRateLimiter({
     store: redis,
@@ -92,13 +99,13 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
-    ...meetingPieces({ config, db }, limiter),
+    ...meetingPieces({ config, db, livekit }, limiter),
   };
 }
 
 /** Meetings (F02): making them, their secrets and the lookup tokens. */
 function meetingPieces(
-  { config, db }: Pick<AccountsWiring, "config" | "db">,
+  { config, db, livekit }: Pick<AccountsWiring, "config" | "db" | "livekit">,
   limiter: ReturnType<typeof createRateLimiter>,
 ) {
   const shared = {
@@ -107,7 +114,21 @@ function meetingPieces(
     lookupTokens: createLookupTokens(config.DATA_ENCRYPTION_KEY),
     limiter,
   };
-  return { meetings: createMeetingsService(shared), lookups: createLookupService(shared) };
+  const callsDeps = {
+    ...shared,
+    meetings: shared.repository,
+    calls: createCallsRepository(db),
+    attendances: createAttendancesRepository(db),
+    livekit,
+    serverUrl: callServerUrl(config),
+    now: () => new Date(),
+  };
+  return {
+    meetings: createMeetingsService(shared),
+    lookups: createLookupService(shared),
+    join: createJoinService(callsDeps),
+    lobby: createLobbyService(callsDeps),
+  };
 }
 
 /** Workspaces, invitations, joining, the membership check and repeat-safe creates. */

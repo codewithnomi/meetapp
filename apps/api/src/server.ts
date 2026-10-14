@@ -43,6 +43,7 @@ const accounts = createAccounts({
   log,
   trustedOrigins: ALLOWED_ORIGINS,
   storage,
+  livekit,
 });
 
 const expiryJob = await accounts.startExpiryJob();

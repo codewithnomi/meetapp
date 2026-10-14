@@ -29,6 +29,8 @@ export interface MeetingRow {
   meeting: Meeting;
   organizerName: string;
   workspaceKind: "personal" | "company";
+  /** The workspace lets guests join its meetings (AC-F02-40). */
+  allowGuests: boolean;
   /** False when the organizer left (or was removed from) the meeting's workspace (AC-F02-07). */
   organizerIsMember: boolean;
   coOrganizerIds: string[];
@@ -70,6 +72,7 @@ async function findMeeting(executor: Executor, meetingId: string): Promise<Meeti
       meeting: meetings,
       organizerName: user.name,
       workspaceKind: workspaces.kind,
+      allowGuests: workspaces.allowGuests,
       membership: workspaceMembers.id,
     })
     .from(meetings)
@@ -85,6 +88,7 @@ async function findMeeting(executor: Executor, meetingId: string): Promise<Meeti
     meeting: row.meeting,
     organizerName: row.organizerName,
     workspaceKind: row.workspaceKind,
+    allowGuests: row.allowGuests,
     organizerIsMember: row.membership !== null,
     coOrganizerIds: await coOrganizersOf(executor, meetingId),
   };

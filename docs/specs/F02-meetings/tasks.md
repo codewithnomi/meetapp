@@ -84,12 +84,18 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - LiveKit's one-minute clock allowance is noted in design.md 3.5.
     - The route part of TC-F02-106 ("nothing stored") comes with the webhook route in T7.
 
-- [ ] **T6: Joining and the lobby.**
+- [x] **T6: Joining and the lobby.**
   - `POST /meetings/join`, the meeting ticket (`X-Meeting-Ticket` plugin and its status rules), `GET`/`DELETE /attendances/:id`.
   - Lobby rules, admit / deny / Admit all, the call lock and the capacity counts, the 15-minute wait, the join limits, and the guest device-key HMAC.
   - Covers: AC-F02-11 (server checks), 13, 14, 15, 16, 17, 18, 19, 35 (lobby part), 37 (joining part), 40 (joining part), 42.
   - Tests: TC-F02-22, 23, 26, 27, 28, 29, 30, 31, 33, 34, 35, 36, 37, 38, 39, 73, 95, 100, 101.
   - Check: the races (two Admits, two first joins, 99/100/101, Admit all overfill) give the right result every time.
+  - **Built in T6:**
+    - `modules/calls`: join.service, lobby.service, admission.ts, and the calls and attendances repositories;
+    - `plugins/meeting-ticket.ts` and the routes;
+    - joins and admissions hold the meeting's row while they decide;
+    - guests waiting only because nobody with an account was in are let in when one arrives (if the lobby rule is "Everyone").
+    - **Left for T7:** the clean-up job of TC-F02-33, the "room finished" part of TC-F02-34 and Rejoin in TC-F02-101.
 
 - [ ] **T7: Webhooks, reconnects, ending and the record.**
   - `livekit-webhook.routes.ts` (joins, leaves, room finished, screen published; repeated and out-of-order events).

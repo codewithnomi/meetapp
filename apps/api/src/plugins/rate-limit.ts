@@ -39,6 +39,11 @@ export const RATE_RULES = {
   meetingLookupPerAddress: { name: "meeting-lookup-address", limit: 20, windowSeconds: 60 },
   /** Wrong passcodes for one meeting ID, from anyone: 20 a minute, then that ID waits (design section 3.2). */
   meetingIdWrongPasscodes: { name: "meeting-id-wrong", limit: 20, windowSeconds: 60 },
+  /** Joins per network address and per lookup token: 10 a minute, so one person can't fill a lobby (S5). */
+  meetingJoinsPerAddress: { name: "meeting-joins-address", limit: 10, windowSeconds: 60 },
+  meetingJoinsPerToken: { name: "meeting-joins-token", limit: 10, windowSeconds: 60 },
+  /** Actions in a call (admit, mute, remove, hand…) per meeting ticket: 30 a minute; status asks don't count. */
+  callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

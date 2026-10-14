@@ -31,7 +31,16 @@ const PUBLIC = new Set([
   "OPTIONS *", // CORS preflight
 ]);
 /** Open to guests, and to signed-in people as themselves (F02: finding and joining meetings). */
-const OPTIONAL = new Set(["POST /api/v1/meeting-lookups"]);
+const OPTIONAL = new Set([
+  "POST /api/v1/meeting-lookups",
+  "POST /api/v1/meetings/join",
+  // The meeting ticket authenticates these (X-Meeting-Ticket); the ticket sweep checks them (TC-F02-100).
+  "GET /api/v1/attendances/:attendanceId",
+  "DELETE /api/v1/attendances/:attendanceId",
+  "GET /api/v1/calls/:callId/lobby",
+  "POST /api/v1/calls/:callId/lobby/admit",
+  "POST /api/v1/calls/:callId/lobby/deny",
+]);
 /** Routes that exist only while testing (modules/test-support). */
 const TEST_ONLY = new Set(["GET /api/v1/__test__/whoami", "POST /__test__/error"]);
 
