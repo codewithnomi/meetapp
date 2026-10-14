@@ -21,7 +21,7 @@
 - **F02 Meetings & calling:** requirements **approved** by the owner (2026-10-14) on branch `feat/F02-meetings`:
   - `docs/specs/F02-meetings/requirements.md`, 54 ACs, following Microsoft Teams at the owner's request (D053);
   - reviewed by spec-reviewer, and its findings fixed.
-- **Next step:** F02 screen designs on the canvas, for the owner to approve (D029), then design.md. **Watch:** in the first full run after T1, TC-F00-72 (flag shown again within 30 s) failed once and the next full run passed; if it fails again, investigate before continuing. Offered earlier: make F02's first build step a bare two-person call demo (owner to decide when F02 starts).
+- **Next step:** owner reviews the 12 F02 screen designs on the canvas (row "Meetings and calling (F02)", drawn 2026-10-14) and approves or asks for changes (D029); then design.md. **Watch:** in the first full run after T1, TC-F00-72 (flag shown again within 30 s) failed once and the next full run passed; if it fails again, investigate before continuing. Offered earlier: make F02's first build step a bare two-person call demo (owner to decide when F02 starts).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
