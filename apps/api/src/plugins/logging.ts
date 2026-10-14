@@ -15,8 +15,15 @@ const SECRET_FIELDS = [
   "authorization",
   "cookie",
   "email",
+  // F02: meeting passcodes, meeting tickets, call-server passes, lookup tokens, links and guest device keys.
+  "passcode",
+  "ticket",
+  "pass",
+  "lookupToken",
+  "link",
+  "deviceKey",
 ];
-const NAME_FIELDS = ["name", "firstName", "lastName", "displayName"];
+const NAME_FIELDS = ["name", "firstName", "lastName", "displayName", "guestName"];
 const SENSITIVE = [...SECRET_FIELDS, ...NAME_FIELDS];
 
 /** Fields removed wherever they appear (top level and up to two levels deep), plus request bodies. */
@@ -24,6 +31,7 @@ const REDACT_PATHS = [
   "req.headers.authorization",
   "req.headers.cookie",
   'req.headers["set-cookie"]',
+  'req.headers["x-meeting-ticket"]',
   'res.headers["set-auth-token"]',
   "req.body",
   "body",
@@ -31,6 +39,10 @@ const REDACT_PATHS = [
 ];
 
 const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g;
+/** Signed passes (JWTs) such as the call server's: three base64url parts, the first starting "eyJ". */
+const JWT = /\beyJ[\w-]+\.[\w-]+\.[\w-]+/g;
+/** A meeting link's secret part quoted inside text (e.g. "…/m/AbC…"). */
+const MEETING_LINK_PART = /(\/m\/)[\w-]{10,}/g;
 const SECRET_ASSIGNMENT =
   /\b(password|passwd|pwd|secret|token|api[_-]?key|authorization)("?\s*[=:]\s*)("[^"]*"|'[^']*'|\S+)/gi;
 
@@ -63,10 +75,10 @@ function readableName(name: string): string {
   }
 }
 
-/** Addresses whose last part is itself a secret: invitation links and join links (F01). */
-const SECRET_PATHS = /^(\/(?:invite|join)\/)[^/?#]+/;
+/** Addresses whose last part is itself a secret: invitation and join links (F01), meeting links (F02). */
+const SECRET_PATHS = /^((?:https?:\/\/[^/]+)?\/(?:invite|join|m)\/)[^/?#]+/;
 
-/** "/invite/abc?x=1" → "/invite/REDACTED?x=1"; other addresses are unchanged. */
+/** "/invite/abc?x=1" → "/invite/REDACTED?x=1", also with the site in front; other addresses are unchanged. */
 export function redactPath(url: string): string {
   return url.replace(SECRET_PATHS, "$1REDACTED");
 }
@@ -109,9 +121,13 @@ function serializeRequest(request: LoggedRequest): Record<string, unknown> {
   };
 }
 
-/** Hides email addresses and "password=…"-style values inside free text such as error messages. */
+/** Hides email addresses, signed passes and "password=…"-style values inside free text such as error messages. */
 export function maskSensitiveText(text: string): string {
-  return text.replace(EMAIL, "[email]").replace(SECRET_ASSIGNMENT, "$1$2[redacted]");
+  return text
+    .replace(EMAIL, "[email]")
+    .replace(JWT, "[pass]")
+    .replace(MEETING_LINK_PART, "$1REDACTED")
+    .replace(SECRET_ASSIGNMENT, "$1$2[redacted]");
 }
 
 /** Error serializer: keeps type and code; message and stack are masked (database errors can quote data). */

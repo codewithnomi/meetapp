@@ -126,13 +126,19 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - **Moved to T14 (they need the app):** the reaction rules (TC-F02-48), and the real-client parts of TC-F02-51 and TC-F02-98.
     - TC-F02-53's photo part is F01's photo rule (shared workspace), already tested there.
 
-- [ ] **T9: Backend security sweeps.**
+- [x] **T9: Backend security sweeps.**
   - Every new route goes into the outsider and member sweeps.
   - HTML in names and titles.
   - Log cleaning: the ticket header, `/m/` link parts, passcodes and passes.
   - Covers: AC-F02-50, 51, 52.
   - Tests: TC-F02-102, 107, 108, 109.
   - Check: no new route answers an outsider; no secret appears in logs or traces.
+  - **Built in T9:**
+    - `meeting-sweep.integration.test.ts`: every meeting route, read from the server, against four strangers (signed out, another workspace, a member not in the meeting, a guest of another meeting); the member sweep gains the Allow guests switch;
+    - log cleaning (`plugins/logging.ts`) hides `/m/<part>` (also with the site in front and inside error text), the `X-Meeting-Ticket` header, signed passes (JWTs) in error text, and the fields `passcode`, `ticket`, `pass`, `lookupToken`, `link`, `deviceKey`, `guestName`; traces hide `/m/` too and record no headers or bodies;
+    - `meeting-logs.integration.test.ts` runs a whole meeting, with forced errors and webhooks, and finds no secret in the logs;
+    - `html-text.integration.test.ts`: HTML-looking titles and names come back as typed, as JSON text (lookup, lobby, status, Meeting info, "muted by", record).
+    - **Moved to the screen tasks (T12–T15):** TC-F02-107's screen part; each screen adds its places to `apps/web/src/app/html-names.test.tsx` as it is built.
 
 ## Desktop app and screens
 

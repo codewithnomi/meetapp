@@ -432,7 +432,7 @@ Anything else is answered with 404 (S1, S2, AC-50).
 - **S4, AC-49:** passes for one room, 10 minutes for the first use, rights from the role, no admin rights. Removal and ending disconnect people, and reuse is refused through the webhook check and the minute-by-minute participant check (a window of about 1 second, measured). Joins are limited to 10 a minute per address and per lookup token; in-call actions to 30 a minute per ticket.
 - **S6, AC-53:** WebRTC media is always encrypted (DTLS-SRTP), and signalling uses `wss://` online. End-to-end encryption isn't part of F02.
 - **S10, AC-52:**
-  - the existing log cleaning (`redactPath`/`redactUrl`) gains `/m/<link part>`, the `X-Meeting-Ticket` header, passcodes in bodies, and LiveKit tokens;
+  - the existing log cleaning (`redactPath`/`redactUrl`) gains `/m/<link part>` (also with the site in front, and inside error text), the `X-Meeting-Ticket` header, signed passes (JWTs) inside error text, and the fields `passcode`, `ticket`, `pass`, `lookupToken`, `link`, `deviceKey` and `guestName` wherever they appear;
   - the webhook body is never logged;
   - traces drop request bodies for meeting routes.
 - **S11, AC-51:** Zod limits plus text-only rendering.
