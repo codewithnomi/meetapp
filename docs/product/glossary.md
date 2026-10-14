@@ -6,9 +6,16 @@ Words used in MeetApp's documents and code, in plain English.
 |---|---|
 | **Workspace** | A company or team space. Members, meetings and data belong to it. Every user also has a personal workspace. |
 | **Member / Owner / Admin** | Roles inside a workspace. The owner created it; admins manage it; members use it. |
-| **Guest** | Someone who joins a meeting by link without an account. |
+| **Guest** | Someone who joins a meeting by link, or meeting ID and passcode, without an account. Shown as "(Guest)". |
+| **External person** | Someone signed in to MeetApp who isn't in the meeting's workspace. Shown as "(External)". |
 | **Meeting** | One call (scheduled or instant), with its participants, chat, transcript and minutes. |
-| **Host** | The person running a meeting; has host controls (admit, mute others, remove, end). |
+| **Host** | Old word for the people running a meeting; since F02 see Organizer and Co-organizer. |
+| **Organizer** | The person who created a meeting; has all its controls. |
+| **Co-organizer** | A workspace member the organizer gave almost all the organizer's controls (up to 10 per meeting). |
+| **Presenter** | Can share their screen and help run a meeting (let people in, mute, remove). By default everyone joins as a presenter. |
+| **Attendee** | Can talk, show video, raise a hand and react, but not share or manage others. |
+| **Lobby** | Where people wait until someone in the meeting lets them in (the "waiting room"). |
+| **Meeting ID and passcode** | A 12-digit number and a 6-character code that lead to a meeting, as an alternative to its link. |
 | **Participant** | Anyone in a meeting. |
 | **Track** | One stream of audio or video from one participant (e.g. "Ali's microphone"). |
 | **Transcript** | The written text of everything said in a meeting. |

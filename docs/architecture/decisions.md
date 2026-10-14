@@ -315,3 +315,15 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** in F01 each full run took 15–25 minutes and many runs were made; the owner wants faster development and fewer tokens. A break is still caught before the feature is marked done, at most one feature late.
 - **Cost:** none (less time and fewer tokens).
 
+### D053: F02 meetings follow Microsoft Teams
+- **Date:** 2026-10-14. **Status:** accepted (owner: "same as Microsoft Teams" for the lobby, guests, link expiry and host roles).
+- **Decision:** a Teams organization is a MeetApp workspace. Meetings follow Teams' documented behaviour:
+  - **Ways in:** Meet now and meeting links; join by link or by meeting ID and passcode.
+  - **Lobby:** workspace members skip it by default; external people and guests wait. Guests can't start a meeting alone, and the workspace's owner or admins can switch guests off.
+  - **Roles:** organizer, co-organizers (up to 10, named by the organizer, workspace members only), presenters (everyone by default) and attendees.
+  - **Lifetimes:** Meet now expires 60 days after creation; link meetings 60 days after the last join or change. A meeting lasts at most 30 hours, and the lobby wait is 15 minutes.
+  - **Records:** a meeting's record is visible to its participants.
+- **Sources:** Microsoft Learn "Limits and specifications for Microsoft Teams" (meeting expiration, 30 hours), "Roles in Microsoft Teams meetings", "Add co-organizers", "Manage lobby options" (checked 2026-10-14).
+- **Why:** the owner wants people coming from Teams to find nothing new, as for accounts (D047).
+- **Cost:** none.
+
