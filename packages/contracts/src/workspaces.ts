@@ -56,6 +56,8 @@ export const WORKSPACE_ACTIONS = [
   "removeAdmin",
   "transfer",
   "leave",
+  // F02: switch guests on or off for the workspace's meetings (AC-F02-40).
+  "manageGuests",
 ] as const;
 export type WorkspaceAction = (typeof WORKSPACE_ACTIONS)[number];
 

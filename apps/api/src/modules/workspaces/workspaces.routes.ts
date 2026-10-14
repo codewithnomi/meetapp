@@ -8,6 +8,7 @@ import {
   membersResponseSchema,
   renameWorkspaceBodySchema,
   transferBodySchema,
+  workspaceSettingsBodySchema,
   workspaceCreatedSchema,
   workspaceParamsSchema,
 } from "@meetapp/contracts";
@@ -29,6 +30,16 @@ const CREATE = {
     headers: idempotencyHeadersSchema,
     body: createWorkspaceBodySchema,
     response: { 201: workspaceCreatedSchema },
+  },
+};
+
+const SETTINGS = {
+  schema: {
+    summary: "Workspace settings: Allow guests",
+    description: `Owner and admins (in a personal workspace, its user). Off: guests can't join the workspace's meetings (F02). ${NOT_A_MEMBER}`,
+    tags,
+    params: workspaceParamsSchema,
+    body: workspaceSettingsBodySchema,
   },
 };
 
@@ -103,6 +114,11 @@ export const workspacesRoutes: FastifyPluginAsyncZod<{
       workspaces.create(id, request.body.name),
     );
     return reply.status(201).send(created);
+  });
+
+  app.patch("/api/v1/workspaces/:workspaceId/settings", SETTINGS, async (request, reply) => {
+    await workspaces.setAllowGuests(memberOf(request), request.body.allowGuests);
+    return reply.status(204).send();
   });
 
   app.patch("/api/v1/workspaces/:workspaceId", RENAME, async (request, reply) => {

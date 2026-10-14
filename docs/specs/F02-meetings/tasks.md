@@ -41,13 +41,19 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - tests: the migration on an F01 database with data (guests allowed by default), one running call, 10 co-organizers even at the same moment, one attendance per ticket.
     - The Postgres MCP inspection was skipped: that server doesn't connect in this session. The integration test reads the tables instead.
 
-- [ ] **T3: Making meetings.**
+- [x] **T3: Making meetings.**
   - `modules/meetings`: create (Meet now / link), secrets (link, ID, passcode; encrypted and HMAC), expiry, options, co-organizers.
   - Plus the personal workspace rule, the organizer-gone rule, 50 an hour, the Idempotency-Key, and `PATCH /workspaces/:id/settings` (allowGuests).
   - The Zod contracts in `packages/contracts/src/meetings.ts`.
   - Covers: AC-F02-01, 02, 03, 04, 05, 06, 07, 46 (double click).
   - Tests: TC-F02-01, 02, 03, 05, 06, 07, 09, 10, 11, 12, 104.
   - Check: the tests pass against the real database with a moved clock.
+  - **Built in T3:**
+    - the `modules/meetings` service, repository and routes (`POST /workspaces/:id/meetings`, `GET /meetings/:id`, `PATCH /meetings/:id/options`);
+    - meeting-secrets.ts, expiry.ts and lookup-token.ts;
+    - `PATCH /workspaces/:id/settings` (action `manageGuests`: owner and admins; in a personal workspace its user);
+    - the 50-an-hour limit; the F02 error codes. The limit answer uses F01's existing code `TOO_MANY_ATTEMPTS` (the design said `RATE_LIMITED`; design.md and tests.md updated).
+    - **Parts of these test cases that need joining are tested with T6/T7:** TC-F02-07 (joins extend expiry), TC-F02-10 (lobby for external people and guests) and TC-F02-11 (organizer gone → lookups and joins).
 
 - [ ] **T4: Finding a meeting.**
   - `POST /meeting-lookups`: link or ID+passcode, lookup tokens, the same miss answer and timing, the expired message only with the right secret.

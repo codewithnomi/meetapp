@@ -1,6 +1,6 @@
 // Puts the accounts pieces together (F01): Better Auth, the rate limiter, and the accounts, sign-up,
-// passwords, desktop sign-in, workspaces, invitations and join services. Used by server.ts and by the integration tests,
-// so both run the same wiring.
+// passwords, desktop sign-in, workspaces, invitations and join services, plus meetings (F02). Used by
+// server.ts and by the integration tests, so both run the same wiring.
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
 import type { Redis } from "ioredis";
@@ -25,6 +25,10 @@ import { createJoinRequestsRepository } from "./modules/join-requests/join-reque
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
+import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
+import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
+import { createMeetingsRepository } from "./modules/meetings/meetings.repository.ts";
+import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
@@ -87,6 +91,22 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
+    ...meetingPieces({ config, db }, limiter),
+  };
+}
+
+/** Meetings (F02): making them, their secrets and the lookup tokens. */
+function meetingPieces(
+  { config, db }: Pick<AccountsWiring, "config" | "db">,
+  limiter: ReturnType<typeof createRateLimiter>,
+) {
+  return {
+    meetings: createMeetingsService({
+      repository: createMeetingsRepository(db),
+      secrets: createMeetingSecrets(config.DATA_ENCRYPTION_KEY, config.APP_PUBLIC_URL),
+      lookupTokens: createLookupTokens(config.DATA_ENCRYPTION_KEY),
+      limiter,
+    }),
   };
 }
 

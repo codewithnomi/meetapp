@@ -137,6 +137,9 @@ function changes(executor: Executor) {
         await tx.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
         return { id: created.id, name: created.name, kind: "company", role: "owner" };
       }),
+    setAllowGuests: async (workspaceId: string, allowGuests: boolean): Promise<void> => {
+      await executor.update(workspaces).set({ allowGuests }).where(eq(workspaces.id, workspaceId));
+    },
     rename: async (workspaceId: string, name: string): Promise<void> => {
       await executor.update(workspaces).set({ name }).where(eq(workspaces.id, workspaceId));
     },

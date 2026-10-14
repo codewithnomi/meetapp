@@ -119,7 +119,7 @@ Screen readers hear these through one polite live region, at most one message ev
 - **Wrong tries** (AC-48):
   - At most 20 a minute, per user (or per device key for guests) **and** per network address.
   - Counted before the check and given back on a hit, as in D050, so only wrong tries count.
-  - A third counter per meeting ID: after 20 wrong passcodes in a minute for one ID, that ID answers `RATE_LIMITED` ("Too many tries for this meeting ID. Wait a minute or use the link") for the rest of the minute. Unknown IDs answer the same way, so nothing is revealed. Joining by link is never affected, so nobody can lock others out of a meeting.
+  - A third counter per meeting ID: after 20 wrong passcodes in a minute for one ID, that ID answers `TOO_MANY_ATTEMPTS` ("Too many tries for this meeting ID. Wait a minute or use the link") for the rest of the minute. Unknown IDs answer the same way, so nothing is revealed. Joining by link is never affected, so nobody can lock others out of a meeting.
 - **Same answer every time:** any miss gives the same 404 `MEETING_NOT_FOUND`, with the same wording and timing (a fixed minimum response time). A miss is a wrong secret or an unknown meeting. With the right secret, a meeting whose organizer left the workspace counts as expired (AC-07). An HMAC is always computed, so a miss takes as long as a hit.
 - **A hit** returns:
   - the meeting title;
@@ -374,7 +374,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 - `LOBBY_FULL`;
 - `GUESTS_NOT_ALLOWED`;
 - `NOT_ALLOWED`;
-- `RATE_LIMITED` (with the wait time).
+- `TOO_MANY_ATTEMPTS` (with the wait time).
 
 **Ticket routes:** the meeting ticket goes in its own header, `X-Meeting-Ticket`, because the desktop app replaces `Authorization` with the sign-in token (F01). CORS allows the header, and the log cleaning hides it. The `meeting-ticket` plugin looks the ticket up by fingerprint and loads the attendance, its call and its current role.
 

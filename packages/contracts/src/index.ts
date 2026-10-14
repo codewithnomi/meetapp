@@ -69,3 +69,17 @@ export {
   linkOrCodeBodySchema,
   setJoinLinkBodySchema,
 } from "./join.ts";
+export {
+  MAX_CO_ORGANIZERS,
+  MEETING_AUDIENCES,
+  MEETING_KINDS,
+  createMeetingBodySchema,
+  meetingCreatedSchema,
+  meetingDetailsSchema,
+  meetingOptionsSchema,
+  meetingParamsSchema,
+  meetingTitleSchema,
+  updateMeetingBodySchema,
+  workspaceSettingsBodySchema,
+  type MeetingDetails,
+} from "./meetings.ts";

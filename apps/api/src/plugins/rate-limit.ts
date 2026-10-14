@@ -32,6 +32,8 @@ export const RATE_RULES = {
   invitationPage: { name: "invitation-page", limit: 60, windowSeconds: 60 * 60 },
   /** Google/Microsoft desktop hand-off starts per network address: 20 an hour. */
   handOffStarts: { name: "hand-off-starts", limit: 20, windowSeconds: 60 * 60 },
+  /** New meetings per person: 50 an hour (F02, AC-F02-05). */
+  meetingCreates: { name: "meeting-creates", limit: 50, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

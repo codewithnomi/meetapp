@@ -4,7 +4,12 @@ export { FLAG_KEY_MAX_LENGTH, isValidFlagKey, listFlags, setFlag } from "./flags
 export { MIGRATIONS_FOLDER, migrationCount, runMigrations } from "./migrate.ts";
 export {
   account,
+  callAttendances,
+  calls,
   featureFlags,
+  livekitEvents,
+  meetingCoOrganizers,
+  meetings,
   invitations,
   joinRequests,
   memberRemovals,
@@ -13,7 +18,10 @@ export {
   verification,
   workspaceMembers,
   workspaces,
+  type Call,
+  type CallAttendance,
   type FeatureFlag,
+  type Meeting,
   type User,
 } from "./schema.ts";
 export { SEED_FLAGS, clearSeed, seedDatabase } from "./seed.ts";

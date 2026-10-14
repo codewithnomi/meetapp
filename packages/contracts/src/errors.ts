@@ -26,6 +26,13 @@ export const ERROR_CODES = [
   "ALREADY_DECIDED",
   "REQUEST_EXPIRED",
   "PHOTO_INVALID",
+  // F02: meetings.
+  "MEETING_NOT_FOUND",
+  "MEETING_EXPIRED",
+  "MEETING_LOCKED",
+  "MEETING_FULL",
+  "LOBBY_FULL",
+  "GUESTS_NOT_ALLOWED",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

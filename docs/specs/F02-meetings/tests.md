@@ -86,7 +86,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** integration
 - **Given** a member who has created 50 meetings in the last hour
 - **When** they create the 51st, then time moves on until the oldest is an hour old
-- **Then** the 51st is refused 429 `RATE_LIMITED` with the wait time; afterwards creating works again; another user is not affected
+- **Then** the 51st is refused 429 `TOO_MANY_ATTEMPTS` with the wait time; afterwards creating works again; another user is not affected
 
 ### TC-F02-10: Personal workspace meetings
 - **Covers:** AC-F02-06
@@ -686,14 +686,14 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** security
 - **Given** a user, a guest device key and a network address
 - **When** 20 wrong tries, then the 21st, are sent in one minute from one user, one device key, and one address (with different users); and a right try after wrong ones
-- **Then** the 21st is refused 429 `RATE_LIMITED` per person and per address; a hit gives its try back; the counter resets after a minute; the limit applies equally signed in and signed out
+- **Then** the 21st is refused 429 `TOO_MANY_ATTEMPTS` per person and per address; a hit gives its try back; the counter resets after a minute; the limit applies equally signed in and signed out
 
 ### TC-F02-94: Per-meeting-ID lockout
 - **Covers:** AC-F02-48, AC-F02-08
 - **Level:** security
 - **Given** a real meeting ID and an unknown ID
 - **When** 20 wrong passcodes are sent for each from many addresses within a minute; then the right passcode, and the link, are tried
-- **Then** both IDs answer `RATE_LIMITED` ("Too many tries for this meeting ID. Wait a minute or use the link") for the rest of the minute, identically; joining by link still works; after the minute the right passcode works again
+- **Then** both IDs answer `TOO_MANY_ATTEMPTS` ("Too many tries for this meeting ID. Wait a minute or use the link") for the rest of the minute, identically; joining by link still works; after the minute the right passcode works again
 
 ### TC-F02-95: Join and lobby flood limits
 - **Covers:** AC-F02-48, AC-F02-19
