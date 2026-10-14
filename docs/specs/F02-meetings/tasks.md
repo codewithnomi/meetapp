@@ -1,7 +1,7 @@
 ---
 feature: F02
 title: Meetings & calling
-status: draft
+status: approved
 updated: 2026-10-14
 ---
 
