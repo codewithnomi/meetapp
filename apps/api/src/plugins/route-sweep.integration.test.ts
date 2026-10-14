@@ -28,6 +28,7 @@ const PUBLIC = new Set([
   "GET /api/v1/flags",
   "GET /invite/:token",
   "GET /metrics", // F00: scraped by local monitoring only (operations.md)
+  "POST /api/v1/livekit/webhook", // F02: the call server's reports, checked by signature (TC-F02-106)
   "OPTIONS *", // CORS preflight
 ]);
 /** Open to guests, and to signed-in people as themselves (F02: finding and joining meetings). */
@@ -37,6 +38,7 @@ const OPTIONAL = new Set([
   // The meeting ticket authenticates these (X-Meeting-Ticket); the ticket sweep checks them (TC-F02-100).
   "GET /api/v1/attendances/:attendanceId",
   "DELETE /api/v1/attendances/:attendanceId",
+  "POST /api/v1/attendances/:attendanceId/rejoin",
   "GET /api/v1/calls/:callId/lobby",
   "POST /api/v1/calls/:callId/lobby/admit",
   "POST /api/v1/calls/:callId/lobby/deny",

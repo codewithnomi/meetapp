@@ -1,7 +1,7 @@
 // Joining a meeting (F02 design.md section 3.3; AC-F02-11, 13–19, 35, 37, 40, 42). The lookup token
 // names the meeting and the person; everything is checked again here. The decision and the place it
 // takes are made while holding the meeting's row, so the 100-person limits hold under any timing.
-import type { CallAttendance, Executor } from "@meetapp/db";
+import type { Call, CallAttendance, Executor } from "@meetapp/db";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
@@ -43,7 +43,7 @@ export function cleanGuestName(name: string | undefined): string {
   return cleaned;
 }
 
-interface Joiner {
+export interface Joiner {
   row: MeetingRow;
   group: Group;
   base: Omit<CallAttendance, "id" | "createdAt" | "updatedAt" | "status" | "callId">;
@@ -104,66 +104,89 @@ async function admitWaitingGuests(deps: CallsDeps, tx: Executor, row: MeetingRow
   await admitWaiting(tx, ids, { callId, actedBy: null, at: deps.now() });
 }
 
-/** The decision, made while holding the meeting's row. */
-function decide(deps: CallsDeps, joiner: Joiner) {
-  const { row, group, base } = joiner;
+type PersonFacts = Pick<CallAttendance, "userId" | "guestDeviceHash" | "participantGroup" | "roleOverride">;
+
+/**
+ * Whether this person may enter the running call now, or must wait (design.md 3.3): the lock, a removal
+ * during this call, and the lobby rules. Runs while holding the meeting's row.
+ */
+export async function entryFor(deps: CallsDeps, tx: Executor, row: MeetingRow, person: PersonFacts) {
+  const now = deps.now();
+  const running = await runningCall(tx, row.meeting.id);
+  const probe = { ...person, id: "", status: "waiting" as const } as CallAttendance;
+  const role = roleOf(probe, row);
+  if (running?.locked && role !== "organizer" && role !== "co_organizer") {
+    throw new AppError(403, "MEETING_LOCKED", "This meeting is locked.");
+  }
+  const who = {
+    ...(person.userId ? { userId: person.userId } : {}),
+    ...(person.guestDeviceHash ? { deviceHash: person.guestDeviceHash } : {}),
+  };
+  const removed = running ? await removedFrom(tx, running.id, who) : false;
+  const group = person.participantGroup;
+  const someoneInside = group !== "guest" || (running ? await accountInCall(tx, running.id) : false);
+  const enters =
+    !removed && skipsLobby({ role, group, lobbyBypass: row.meeting.lobbyBypass, accountInCall: someoneInside });
+  if (enters && running && (await placesTaken(tx, running.id)) >= MAX_IN_CALL) {
+    throw new AppError(409, "MEETING_FULL", "This meeting is full (100 people).");
+  }
+  return { running, enters, now };
+}
+
+/** The decision for a new attendance, made while holding the meeting's row. */
+export function decide(deps: CallsDeps, joiner: Joiner) {
+  const { row, base } = joiner;
   return deps.calls.locked(row.meeting.id, async (tx) => {
-    const now = deps.now();
-    const running = await runningCall(tx, row.meeting.id);
-    const probe = { ...base, status: "waiting" as const, callId: null, id: "", createdAt: now, updatedAt: now };
-    const role = roleOf(probe, row);
-    const manages = role === "organizer" || role === "co_organizer";
-    if (running?.locked && !manages) throw new AppError(403, "MEETING_LOCKED", "This meeting is locked.");
-    const who = {
-      ...(base.userId ? { userId: base.userId } : {}),
-      ...(base.guestDeviceHash ? { deviceHash: base.guestDeviceHash } : {}),
-    };
-    const removed = running ? await removedFrom(tx, running.id, who) : false;
-    const someoneInside = group !== "guest" || (running ? await accountInCall(tx, running.id) : false);
-    const enters =
-      !removed && skipsLobby({ role, group, lobbyBypass: row.meeting.lobbyBypass, accountInCall: someoneInside });
+    const { running, enters, now } = await entryFor(deps, tx, row, base);
     if (!enters) {
       if ((await waitingCount(tx, row.meeting.id, new Date(now.getTime() - LOBBY_PRESENCE_MS))) >= MAX_WAITING) {
         throw new AppError(409, "LOBBY_FULL", "This meeting is full.");
       }
-      return {
-        attendance: await insertAttendance(tx, { ...base, status: "waiting", lobbyEnteredAt: now }),
-        call: running,
-      };
-    }
-    if (running && (await placesTaken(tx, running.id)) >= MAX_IN_CALL) {
-      throw new AppError(409, "MEETING_FULL", "This meeting is full (100 people).");
+      const attendance = await insertAttendance(tx, { ...base, status: "waiting", lobbyEnteredAt: now });
+      return { attendance, call: running, started: false };
     }
     const call = running ?? (await startCall(tx, row.meeting));
     const attendance = await insertAttendance(tx, { ...base, status: "admitted", callId: call.id, admittedAt: now });
     if (base.userId) await admitWaitingGuests(deps, tx, row, call.id);
-    return { attendance, call };
+    return { attendance, call, started: !running };
   });
+}
+
+/**
+ * After someone got into a call: a new call gets its 30-hour jobs, a link meeting another 60 days
+ * (getting in counts as joining, AC-F02-04), the lobby is told, and the person gets their pass.
+ */
+export async function afterEntry(
+  deps: CallsDeps,
+  row: MeetingRow,
+  entry: { attendance: CallAttendance; call: Call; started: boolean },
+) {
+  if (entry.started) await deps.scheduler.schedule(entry.call);
+  await deps.meetings.update(row.meeting.id, {
+    expiresAt: extendedExpiry(row.meeting.kind, row.meeting.expiresAt, deps.now()),
+  });
+  await lobbyChanged(deps, entry.call.id);
+  return callAccess(deps, entry.attendance, row, entry.call);
 }
 
 export function createJoinService(deps: CallsDeps) {
   return {
     join: async (request: JoinRequest) => {
       const joiner = await prepare(deps, request);
-      const { attendance, call } = await decide(deps, joiner);
-      const { row } = joiner;
+      const entry = await decide(deps, joiner);
+      const { attendance, call } = entry;
       const answer = {
         attendanceId: attendance.id,
         ticket: joiner.ticket,
         status: attendance.status,
-        title: row.meeting.title,
+        title: joiner.row.meeting.title,
         group: joiner.group,
       };
       if (attendance.status !== "admitted" || !call) {
         await lobbyChanged(deps, call?.id);
         return answer;
       }
-      // Getting into the call counts as joining: a link meeting gets another 60 days (AC-F02-04).
-      await deps.meetings.update(row.meeting.id, {
-        expiresAt: extendedExpiry(row.meeting.kind, row.meeting.expiresAt, deps.now()),
-      });
-      await lobbyChanged(deps, call.id);
-      return { ...answer, call: await callAccess(deps, attendance, row, call) };
+      return { ...answer, call: await afterEntry(deps, joiner.row, { attendance, call, started: entry.started }) };
     },
   };
 }

@@ -18,6 +18,7 @@ import {
 } from "./admission.ts";
 import { admitWaiting, waitingInOrder, type AttendanceStatus } from "./attendances.repository.ts";
 import { can, type CallAction } from "./calls.permissions.ts";
+import { reenter } from "./rejoin.service.ts";
 import { IN_CALL_STATUSES, placesTaken, runningCall } from "./calls.repository.ts";
 
 const FINAL: readonly AttendanceStatus[] = ["left", "denied", "removed", "timed_out", "turned_away"];
@@ -52,6 +53,8 @@ export async function actor(deps: CallsDeps, callId: string, ticketHash: string,
 
 /** A waiting person's ask: still here, or timed out after 15 minutes (AC-F02-18). */
 async function stillWaiting(deps: CallsDeps, attendance: CallAttendance): Promise<CallAttendance> {
+  // Let in before, but the room closed before they connected: the join decision again (TC-F02-40).
+  if (attendance.admittedAt) return reenter(deps, attendance);
   const now = deps.now();
   const waited = now.getTime() - (attendance.lobbyEnteredAt ?? now).getTime();
   if (waited >= LOBBY_WAIT_MS && (await deps.attendances.move(attendance.id, ["waiting"], { status: "timed_out" }))) {
@@ -76,6 +79,7 @@ async function status(deps: CallsDeps, attendanceId: string, ticketHash: string)
     const call = await deps.calls.byId(attendance.callId);
     if (call && !call.endedAt) return { ...answer, call: await callAccess(deps, attendance, row, call) };
   }
+  if (attendance.leftReason) Object.assign(answer, { leftReason: attendance.leftReason });
   if (attendance.status === "removed" && attendance.actedBy) {
     const remover = await deps.attendances.byId(attendance.actedBy);
     if (remover) return { ...answer, actedByName: remover.displayName };

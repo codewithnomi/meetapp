@@ -178,7 +178,7 @@ Screen readers hear these through one polite live region, at most one message ev
 - **Timeouts:**
   - After 15 minutes of waiting, the person gets `timed_out` ("Nobody let you in", AC-18). Each ask checks `lobby_entered_at + 15 min`, so it is exact. A cleanup job every minute catches people who stopped asking.
   - After 60 seconds without an ask, the person is counted as gone.
-- **Room closed after admission:** when LiveKit reports `room_finished`, people `admitted` to that call who never connected get the join decision again: those who may skip the lobby start or enter the next call; the others wait.
+- **Room closed after admission:** when LiveKit reports `room_finished`, people `admitted` to that call who never connected get the join decision again: those who may skip the lobby start or enter the next call; the others wait. (Built in T7: they become `waiting` with `admitted_at` kept as the sign; their next ask runs the decision once.)
 - **When the call ends:**
   - after the last person leaves, people in the lobby keep waiting, and the next person to enter starts a new call;
   - **End meeting** sends everyone in the lobby away (AC-38).

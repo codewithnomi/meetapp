@@ -99,5 +99,6 @@ export {
   lobbyDecisionBodySchema,
   lobbyDecisionResponseSchema,
   lobbyResponseSchema,
+  meetingRecordSchema,
   meetingTicketHeadersSchema,
 } from "./calls.ts";

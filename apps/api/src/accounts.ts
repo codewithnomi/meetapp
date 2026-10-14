@@ -25,7 +25,14 @@ import { createJoinRequestsRepository } from "./modules/join-requests/join-reque
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
 import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
+import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
+import { createCallEventsRepository } from "./modules/calls/call-events.repository.ts";
+import { createCallJobs, startCallJobs } from "./modules/calls/calls.jobs.ts";
+import { createRecordRepository } from "./modules/calls/record.repository.ts";
+import { createRecordService } from "./modules/calls/record.service.ts";
+import { createRejoinService } from "./modules/calls/rejoin.service.ts";
+import { createWebhookService } from "./modules/calls/webhook.service.ts";
 import { createCallsRepository } from "./modules/calls/calls.repository.ts";
 import { createJoinService } from "./modules/calls/join.service.ts";
 import { createLobbyService } from "./modules/calls/lobby.service.ts";
@@ -119,15 +126,30 @@ function meetingPieces(
     meetings: shared.repository,
     calls: createCallsRepository(db),
     attendances: createAttendancesRepository(db),
+    events: createCallEventsRepository(db),
+    scheduler: { schedule: async () => {} } as CallsDeps["scheduler"],
     livekit,
     serverUrl: callServerUrl(config),
     now: () => new Date(),
   };
+  const callJobs = createCallJobs(callsDeps);
   return {
     meetings: createMeetingsService(shared),
     lookups: createLookupService(shared),
     join: createJoinService(callsDeps),
     lobby: createLobbyService(callsDeps),
+    rejoin: createRejoinService(callsDeps),
+    record: createRecordService(shared.repository, createRecordRepository(db)),
+    webhooks: createWebhookService(callsDeps),
+    callJobs,
+    /** The call services' shared pieces (tests build services with their own clock or call server). */
+    callsDeps,
+    /** Starts the call jobs (server.ts); from then on new calls get their 30-hour jobs. */
+    startCallJobs: async () => {
+      const started = await startCallJobs({ host: config.REDIS_HOST, port: config.REDIS_PORT }, callJobs);
+      callsDeps.scheduler.schedule = started.schedule;
+      return started;
+    },
   };
 }
 

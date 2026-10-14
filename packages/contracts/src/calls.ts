@@ -43,6 +43,8 @@ export const attendanceSchema = z
     call: callAccessSchema.optional(),
     /** Who removed the person (AC-F02-35), shown in "You were removed". */
     actedByName: z.string().optional(),
+    /** Why a person left: their own Leave, a dropped connection, removal, or the end of the meeting. */
+    leftReason: z.enum(["leave", "dropped", "removed", "ended"]).optional(),
   })
   .meta({ id: "Attendance" });
 
@@ -74,3 +76,28 @@ export const lobbyDecisionBodySchema = z
 export const lobbyDecisionResponseSchema = z
   .object({ decided: z.number().int(), didNotFit: z.number().int() })
   .meta({ id: "LobbyDecisionResult" });
+
+/** A meeting's record (AC-F02-41): for the people who took part, the organizer and co-organizers. */
+export const meetingRecordSchema = z
+  .object({
+    title: z.string(),
+    workspaceId: z.uuid(),
+    organizer: z.object({ id: z.uuid(), name: z.string() }),
+    calls: z.array(
+      z.object({
+        callId: z.uuid(),
+        startedAt: z.iso.datetime(),
+        endedAt: z.iso.datetime().nullable(),
+        endReason: z.enum(["last_left", "ended", "time_limit"]).nullable(),
+        participants: z.array(
+          z.object({
+            name: z.string(),
+            group: z.enum(PARTICIPANT_GROUPS),
+            joinedAt: z.iso.datetime().nullable(),
+            leftAt: z.iso.datetime().nullable(),
+          }),
+        ),
+      }),
+    ),
+  })
+  .meta({ id: "MeetingRecord" });

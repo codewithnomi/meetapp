@@ -9,6 +9,7 @@ import type { LookupTokens } from "../meetings/lookup-token.ts";
 import type { MeetingSecretBox } from "../meetings/meeting-secrets.ts";
 import type { MeetingRow, MeetingsRepository } from "../meetings/meetings.repository.ts";
 import type { AttendancesRepository } from "./attendances.repository.ts";
+import type { CallEventsRepository } from "./call-events.repository.ts";
 import { publishSources, resolveRole, type MeetingRole } from "./calls.permissions.ts";
 import type { CallsRepository } from "./calls.repository.ts";
 
@@ -30,6 +31,9 @@ export interface CallsDeps {
   secrets: MeetingSecretBox;
   lookupTokens: LookupTokens;
   limiter: RateLimiter;
+  events: CallEventsRepository;
+  /** Gives a new call its 30-hour jobs; set once the jobs run (server.ts), a no-op until then. */
+  scheduler: { schedule: (call: Call) => Promise<void> };
   /** Where the app connects to the call server (config: callServerUrl). */
   serverUrl: string;
   now: () => Date;

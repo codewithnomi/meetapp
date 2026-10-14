@@ -97,13 +97,20 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - guests waiting only because nobody with an account was in are let in when one arrives (if the lobby rule is "Everyone").
     - **Left for T7:** the clean-up job of TC-F02-33, the "room finished" part of TC-F02-34 and Rejoin in TC-F02-101.
 
-- [ ] **T7: Webhooks, reconnects, ending and the record.**
+- [x] **T7: Webhooks, reconnects, ending and the record.**
   - `livekit-webhook.routes.ts` (joins, leaves, room finished, screen published; repeated and out-of-order events).
   - Reuse refused; reconnect after a reported leave; Rejoin only after a dropped connection.
   - The room closed after admission; the cleanup job (rooms and participants each minute); the 30-hour jobs; the record (`GET /meetings/:id/calls`).
   - Covers: AC-F02-04 (extended by joins), 29, 38, 39, 41, 49 (reuse).
   - Tests: TC-F02-40, 57, 58, 64, 80, 84, 85, 99.
   - Check: a lost or late webhook never lets a removed person stay, and never throws out a reconnecting one.
+  - **Built in T7:**
+    - webhook.service, livekit-webhook.routes, call-events.repository;
+    - rejoin.service (`POST /attendances/:id/rejoin`, and re-entering after a room closed);
+    - calls.jobs (the minute clean-up, and the 29 h 50 min and 30 h jobs on BullMQ, started by server.ts);
+    - the record (`GET /meetings/:id/calls`) and `leftReason` in the status answer;
+    - also the screen-share rule ("the newest share wins"), tested in T8.
+    - Integration tests record the call server's side (removals, messages) where a real participant would be needed. The desktop tests (T14–T16) use real participants.
 
 - [ ] **T8: In-call controls.**
   - Hands, mute, Mute all, remove, roles, options (who can present, attendee mic/camera), lock, End meeting, share replacement, the 30-a-minute limit.

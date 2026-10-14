@@ -10,6 +10,8 @@ import {
   lobbyDecisionBodySchema,
   lobbyDecisionResponseSchema,
   lobbyResponseSchema,
+  meetingParamsSchema,
+  meetingRecordSchema,
   meetingTicketHeadersSchema,
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
@@ -17,6 +19,9 @@ import { ticketOf } from "../../plugins/meeting-ticket.ts";
 import { idParam } from "../../plugins/workspace-access.ts";
 import type { JoinService } from "./join.service.ts";
 import type { LobbyService } from "./lobby.service.ts";
+import type { RecordService } from "./record.service.ts";
+import type { RejoinService } from "./rejoin.service.ts";
+import { signedInUser } from "../../plugins/session.ts";
 
 const tags = ["calls"];
 const config = { access: "optional" as const };
@@ -78,10 +83,35 @@ const decision = (verb: string) => ({
   },
 });
 
-export const callsRoutes: FastifyPluginAsyncZod<{ join: JoinService; lobby: LobbyService }> = async (
-  app,
-  { join, lobby },
-) => {
+const REJOIN = {
+  config,
+  schema: {
+    summary: "Rejoin after a lost connection",
+    description: `Only after a dropped connection, once, within 30 minutes; a new attendance under the normal rules (lock, removal, lobby) with the old role. ${TICKET}`,
+    tags,
+    headers: meetingTicketHeadersSchema,
+    params: attendanceParamsSchema,
+    response: { 200: joinedSchema },
+  },
+};
+const RECORD = {
+  schema: {
+    summary: "A meeting's record: its calls and who took part",
+    description: "The people who took part, the organizer and co-organizers; anyone else gets 404.",
+    tags,
+    params: meetingParamsSchema,
+    response: { 200: meetingRecordSchema },
+  },
+};
+
+export interface CallsRouteServices {
+  join: JoinService;
+  lobby: LobbyService;
+  rejoin: RejoinService;
+  record: RecordService;
+}
+
+export const callsRoutes: FastifyPluginAsyncZod<CallsRouteServices> = async (app, { join, lobby, rejoin, record }) => {
   app.post("/api/v1/meetings/join", JOIN, async (request) =>
     join.join({ ...request.body, user: request.user, address: request.ip }),
   );
@@ -93,6 +123,12 @@ export const callsRoutes: FastifyPluginAsyncZod<{ join: JoinService; lobby: Lobb
     await lobby.leave(idParam(request.params.attendanceId), ticketOf(request));
     return reply.status(204).send();
   });
+  app.post("/api/v1/attendances/:attendanceId/rejoin", REJOIN, async (request) =>
+    rejoin.rejoin(idParam(request.params.attendanceId), ticketOf(request), request.ip),
+  );
+  app.get("/api/v1/meetings/:meetingId/calls", RECORD, async (request) =>
+    record.read(signedInUser(request).id, idParam(request.params.meetingId)),
+  );
   app.get("/api/v1/calls/:callId/lobby", LOBBY, async (request) =>
     lobby.lobby(idParam(request.params.callId), ticketOf(request)),
   );
