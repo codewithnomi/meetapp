@@ -329,7 +329,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 
 ### D054: How meetings are built (F02)
-- **Date:** 2026-10-14. **Status:** proposed (with F02 design.md).
+- **Date:** 2026-10-14. **Status:** accepted (owner approved F02 design.md, 2026-10-14).
 - **Decision:**
   - **The backend decides who gets in; LiveKit enforces it.** Every join goes through our API: link or ID+passcode, lobby, lock, guests, the 100 limit and expiry. Only then does the API issue a one-room LiveKit pass (10 minutes for the first use) whose rights come from the meeting role (`canPublishSources`). Rooms are made only by the backend (`auto_create: false`).
   - **The lobby is polling, not a call connection:** waiting apps ask the API every 2 seconds. People in the lobby never touch the call server and never see who is inside.
@@ -341,7 +341,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none.
 
 ### D055: New libraries for F02
-- **Date:** 2026-10-14. **Status:** proposed (with F02 design.md); each is vetted with `/add-dependency` before it's added.
+- **Date:** 2026-10-14. **Status:** accepted (owner approved F02 design.md, 2026-10-14); each is vetted with `/add-dependency` before it's added.
 - **Decision:**
   - `livekit-client`: the calling engine in the app;
   - `@livekit/components-react`: its React hooks only, already named in frontend.md, with all visuals from our own components;
