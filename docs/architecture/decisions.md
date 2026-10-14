@@ -348,3 +348,4 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   - the `livekit/livekit-cli` Docker image (pinned): simulated participants for the 100-person load test, development only.
 - **Why:** they come from the makers of the call server we use (D004), are free and Apache-2.0, and are widely used.
 - **Cost:** none.
+- **Vetted (T1, 2026-10-14):** livekit-client 2.22.3 (Apache-2.0; the newer 2.22.4 is under two weeks old), @livekit/components-react 2.9.24 (Apache-2.0), livekit/livekit-cli image v2.18.8 (Apache-2.0, 22 Sep 2026, pinned by digest when added in T18). The backend's livekit-server-sdk (2.19.1) is already in use since F00. Each is installed in the task that first uses it.

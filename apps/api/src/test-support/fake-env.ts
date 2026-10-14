@@ -32,6 +32,7 @@ export const OPTIONAL_KEYS: readonly string[] = [
   "MICROSOFT_CLIENT_ID",
   "MICROSOFT_CLIENT_SECRET",
   "MICROSOFT_AUTHORITY",
+  "LIVEKIT_PUBLIC_URL",
 ];
 
 /**
@@ -56,6 +57,7 @@ export function fakeEnv(nodeEnv: NodeEnv = "test"): Record<string, string> {
     "MICROSOFT_CLIENT_ID",
     "MICROSOFT_CLIENT_SECRET",
     "MICROSOFT_AUTHORITY",
+    "LIVEKIT_PUBLIC_URL",
   ]) {
     env[key] = "";
   }
@@ -63,6 +65,8 @@ export function fakeEnv(nodeEnv: NodeEnv = "test"): Record<string, string> {
   env["DATA_ENCRYPTION_KEY"] = "val-DATA_ENCRYPTION_KEY-0123456789abcdef";
   env["SUPPORT_EMAIL"] = "support@example.test";
   env["APP_PUBLIC_URL"] = "http://127.0.0.1:3000";
+  // Production needs a wss:// call-server address (F02 design section 5).
+  if (nodeEnv === "production") env["LIVEKIT_PUBLIC_URL"] = "wss://call.example.test";
   return env;
 }
 

@@ -1,7 +1,7 @@
 ---
 feature: F02
 title: Meetings & calling
-status: approved
+status: in-progress
 updated: 2026-10-14
 ---
 
@@ -13,7 +13,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
 
 ## Backend
 
-- [ ] **T1: Libraries, settings and the call server's setup.**
+- [x] **T1: Libraries, settings and the call server's setup.**
   - Vet the D055 libraries with `/add-dependency`: `livekit-client`, `@livekit/components-react`, and the pinned `livekit/livekit-cli` image. Each is installed in the task that first uses it.
   - `infra/livekit.yaml` and `docker-compose.yml`:
     - `room.auto_create: false`, the 100 cap and the 30 s empty-room time;
@@ -22,8 +22,13 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - New settings in `config.ts`/`.env.example`, if needed: the webhook address, and the call-server address given to the app.
   - The new folders go into `docs/engineering/project-structure.md`.
   - Covers: AC-F02-53 (settings part).
-  - Tests: TC-F02-110.
+  - Tests: TC-F02-110 (settings part; the DTLS-SRTP part needs a real call and runs in T14).
   - Check: a client can't create a room by itself, and a test webhook from LiveKit reaches the API on the Mac.
+  - **Built in T1:**
+    - `LIVEKIT_PUBLIC_URL` (wss online, ws only on this computer) and `callServerUrl()`;
+    - the example `LIVEKIT_API_SECRET` refused in production;
+    - the webhook address filled in at container start;
+    - on the Mac: a pass for a room the backend didn't make is refused (404), and room_started/room_finished webhooks arrived on API_PORT.
 
 - [ ] **T2: Database tables (migration `0003_meetings`).**
   - `meetings`, `meeting_co_organizers`, `calls`, `call_attendances`, `livekit_events`, and `workspaces.allow_guests`, with the indexes, the one-running-call-per-meeting rule and the 10 co-organizer limit.
@@ -125,7 +130,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - `useMeetingRoom` (livekit-client: adaptive stream, dynacast, simulcast, reconnect policy).
   - Gallery of 16 with pages, speaker view, pin, speaking highlight, mic and camera with shortcuts, hands, reactions, announcements.
   - Covers: AC-F02-12 (path), 13, 20 (layout), 21, 22, 23, 24, 44.
-  - Tests: TC-F02-24, 42, 43, 44, 45, 47, 89.
+  - Tests: TC-F02-24, 42, 43, 44, 45, 47, 89, 110 (DTLS-SRTP part).
   - Check: two app windows see and hear each other; the owner can try a call on the Mac.
 
 - [ ] **T15: Panels and organizer controls in the app.**

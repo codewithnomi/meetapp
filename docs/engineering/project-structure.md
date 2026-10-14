@@ -46,15 +46,16 @@ meetapp/
 │   │   └── src/
 │   │       ├── server.ts          Starts the server
 │   │       ├── config/            Settings from .env, validated at start
-│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, auth-adapter.ts stores session tokens as SHA-256 fingerprints (D048), session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01)
+│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, auth-adapter.ts stores session tokens as SHA-256 fingerprints (D048), session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01); meeting-ticket.ts (the X-Meeting-Ticket header, F02)
 │   │       ├── modules/           One folder per business area:
 │   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; invitations/page/ is the invitation web page, accounts/page/ the Google/Microsoft hand-off page)
-│   │       │   └── meetings/
-│   │       │       ├── meetings.routes.ts       HTTP endpoints only
-│   │       │       ├── meetings.service.ts      Business rules
-│   │       │       ├── meetings.repository.ts   Database access only
-│   │       │       ├── meetings.schemas.ts      Zod input/output (or from packages/contracts)
-│   │       │       └── meetings.test.ts
+│   │       │   ├── meetings/  Making meetings, options, lookups by link or ID+passcode, expiry, the record (F02)
+│   │       │   │   ├── meetings.routes.ts       HTTP endpoints only
+│   │       │   │   ├── meetings.service.ts      Business rules
+│   │       │   │   ├── meetings.repository.ts   Database access only
+│   │       │   │   └── meetings.*.test.ts
+│   │       │   └── calls/     Joining, the lobby, in-call controls, ending (F02): calls.permissions.ts (the role table),
+│   │       │                  livekit-webhook.routes.ts (joins and leaves from the call server), calls.jobs.ts (timeouts, the 30-hour limit)
 │   │       ├── test-support/      Test-only helpers: the test backend (auth-app.ts), fake Google/Microsoft, Mailpit, photos, workspace/invitation/join/sweep set-ups. modules/test-support/ holds test-only routes, registered only when NODE_ENV is "test"
 │   │       ├── emails/            Email templates (HTML + text, words in emails/locales/) and the email outbox queue (F01)
 │   │       ├── jobs/              Background jobs (BullMQ)

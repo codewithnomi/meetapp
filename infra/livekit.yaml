@@ -1,11 +1,26 @@
-# LiveKit call server settings for local development (docs/specs/F00-foundation/design.md section 3).
-# API key and secret come from .env (LIVEKIT_KEYS), never from this file.
+# LiveKit call server settings for local development (F00 design section 3, F02 design section 7).
+# API key and secret come from .env (LIVEKIT_KEYS), never from this file. The webhook address is
+# filled in when the container starts (docker-compose.yml), because it depends on API_PORT.
 port: 7880
 rtc:
   tcp_port: 7881
   # One UDP port for all media keeps the Docker port list short.
   udp_port: 7882
   use_external_ip: false
+room:
+  # Only the backend makes rooms, after its own checks (S4, D054): a pass for a room that doesn't
+  # exist can't open one.
+  auto_create: false
+  # The 100-person cap (AC-F02-42) as a last guard; the backend checks it first.
+  max_participants: 100
+  # How long an empty room stays open before the call counts as ended.
+  empty_timeout: 30
+  departure_timeout: 30
+# Joins, leaves and the end of a call are reported to the backend (the meeting record, AC-F02-41).
+# The signing key is LIVEKIT_WEBHOOK_API_KEY, set from .env in docker-compose.yml.
+webhook:
+  urls:
+    - "__MEETAPP_WEBHOOK_URL__"
 # Metrics for the monitoring profile (scraped inside the Docker network, not published).
 prometheus_port: 6789
 logging:

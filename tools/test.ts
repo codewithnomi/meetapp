@@ -30,6 +30,15 @@ function startApi(extraEnv: Record<string, string>): ChildProcess {
   );
 }
 
+/**
+ * On Linux (CI) the call server reaches the backend through Docker's bridge, not 127.0.0.1, so the
+ * backend listens on every address there; that machine is thrown away after the run. On the Mac
+ * Docker Desktop forwards to 127.0.0.1 and nothing changes (AC-F00-23, F02 design section 7).
+ */
+function callServerReach(): Record<string, string> {
+  return process.platform === "linux" && process.env["CI"] === "true" ? { API_HOST: "0.0.0.0" } : {};
+}
+
 /** A port nothing listens on right now (for the desktop tests' fake Microsoft sign-in). */
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -87,7 +96,11 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
   // A key of its own for this run: the attempt counters (e.g. 50 sign-ups an hour from this computer)
   // are kept under it, so counts left by earlier runs in the same hour can't block this one. The same
   // trick as the backend's own tests (test-support/auth-app.ts).
-  const api = startApi({ ...fakeMicrosoft(apiUrl, providerPort), DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}` });
+  const api = startApi({
+    ...fakeMicrosoft(apiUrl, providerPort),
+    ...callServerReach(),
+    DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}`,
+  });
   try {
     if (!(await waitForApi(apiUrl))) {
       process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);

@@ -391,11 +391,11 @@ Anything else is answered with 404 (S1, S2, AC-50).
 - `room.max_participants: 100`; `room.empty_timeout` and `room.departure_timeout`: 30 (how long an empty room stays open).
 - **Webhooks:**
   - `webhook.urls: [http://host.docker.internal:<API_PORT>/api/v1/livekit/webhook]`, signed with the existing API key.
-  - The yaml file can't read `.env`, and keys never go in it. So the `webhook` section (key name and address) is passed when the container starts, through LiveKit's `--config-body` setting built from `.env` in `docker-compose.yml`.
-  - The exact way is checked against LiveKit's current docs in the first task.
+  - The signing key comes from `.env` through LiveKit's `LIVEKIT_WEBHOOK_API_KEY` setting.
+  - The address depends on `API_PORT`, and neither a yaml file nor LiveKit's environment settings can hold it (`--config-body` would replace the whole file). So the container starts with a small `sed` step that copies `livekit.yaml` with the address filled in, then starts the server on the copy. Checked in T1, 2026-10-14.
 - **Reaching the API:**
   - On the Mac (Docker Desktop), `host.docker.internal` reaches the API, which stays on 127.0.0.1 (AC-F00-23).
-  - Linux CI has no such bridge to 127.0.0.1. There, `docker-compose.yml` adds `extra_hosts: host.docker.internal:host-gateway`, and the CI's API listens on the Docker bridge address (a CI-only `API_HOST` setting).
+  - Linux CI has no such bridge to 127.0.0.1. There, `docker-compose.yml` adds `extra_hosts: host.docker.internal:host-gateway`, and the CI's API listens on the Docker bridge address (in CI only, `tools/test.ts` starts it with `API_HOST=0.0.0.0` on a throw-away machine).
 - **Load-test bots:** the `lk` container runs with `network_mode: "service:livekit"`, so "127.0.0.1" means the call server for it too.
 - **Speaker updates:** LiveKit's `audio.update_interval` is lowered if the test for AC-21 (highlight within half a second) needs it.
 - In development the signalling runs over `ws://127.0.0.1` (this computer only). Media is always encrypted between app and call server (DTLS-SRTP, part of WebRTC) (AC-53). Online it will be `wss://` behind HTTPS (infrastructure.md stage 3).
