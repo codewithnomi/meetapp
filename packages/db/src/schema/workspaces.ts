@@ -40,6 +40,8 @@ export const workspaces = pgTable(
     joinLookupHmac: text("join_lookup_hmac").unique(),
     /** The same for the join link (the column above is the code's). */
     joinLinkHmac: text("join_link_hmac").unique(),
+    /** Guests (no account) may join this workspace's meetings (F02, AC-F02-40); owner and admins decide. */
+    allowGuests: boolean("allow_guests").notNull().default(true),
     ...timestamps(),
   },
   (table) => [

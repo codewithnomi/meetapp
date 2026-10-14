@@ -22,6 +22,13 @@
       "when": 1791805102616,
       "tag": "0002_join_link_lookup",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791998821169,
+      "tag": "0003_meetings",
+      "breakpoints": true
     }
   ]
 }

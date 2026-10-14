@@ -30,12 +30,16 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - the webhook address filled in at container start;
     - on the Mac: a pass for a room the backend didn't make is refused (404), and room_started/room_finished webhooks arrived on API_PORT.
 
-- [ ] **T2: Database tables (migration `0003_meetings`).**
+- [x] **T2: Database tables (migration `0003_meetings`).**
   - `meetings`, `meeting_co_organizers`, `calls`, `call_attendances`, `livekit_events`, and `workspaces.allow_guests`, with the indexes, the one-running-call-per-meeting rule and the 10 co-organizer limit.
   - Done with `/db-migration`.
   - Covers: AC-F02-03, 41 (storage part).
   - Tests: TC-F02-05 (database part).
   - Check: the migration runs on an empty database and on the F01 database; a second running call for one meeting is refused by the database.
+  - **Built in T2:**
+    - `packages/db/src/schema/meetings.ts`, migration `0003_meetings`, and the co-organizer limit trigger;
+    - tests: the migration on an F01 database with data (guests allowed by default), one running call, 10 co-organizers even at the same moment, one attendance per ticket.
+    - The Postgres MCP inspection was skipped: that server doesn't connect in this session. The integration test reads the tables instead.
 
 - [ ] **T3: Making meetings.**
   - `modules/meetings`: create (Meet now / link), secrets (link, ID, passcode; encrypted and HMAC), expiry, options, co-organizers.
