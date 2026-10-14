@@ -198,6 +198,8 @@ Screen readers hear these through one polite live region, at most one message ev
 - **After connecting:** LiveKit renews the pass by itself while the person stays connected. That is how a short drop reconnects without the lobby (AC-29). The app's `reconnectPolicy` keeps retrying for 30 seconds in total.
 - **Rights change** (role, options): the backend calls `UpdateParticipant` with the new permission at once. LiveKit stops any track the person may no longer send, which also ends a screen share (AC-34, AC-36).
 - **Remove or end:** `RemoveParticipant`, or deleting the room, disconnects people within 5 seconds.
+  - Removing also passes `revokeTokenTs` = now: LiveKit then refuses every pass of that person issued before the removal, so a removed person's renewed pass can't be used to come back (found in T5).
+- **Clock allowance:** LiveKit accepts a pass up to about one minute after it ends, to allow for clock differences between computers. A pass that is never used therefore stops working after 10–11 minutes (found in T5).
 - **Reused passes:** when LiveKit reports `participant_joined`, the backend checks the attendance:
   - **Allowed:** it is `admitted` or `in_call`, or it is `left` for under 30 seconds because of a dropped connection (not the app's own Leave, which also calls `DELETE /attendances/:id`). That last case is a reconnect (AC-29).
   - **Otherwise** (removed, ended, or a call that is over): the backend removes the participant immediately.

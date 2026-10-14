@@ -68,7 +68,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - lookup tokens name the meeting **and** the person (or "guest"), so a token can't be passed on.
     - The parts of TC-F02-105 that use a token for joining are tested in T6.
 
-- [ ] **T5: The call server's passes and rooms.**
+- [x] **T5: The call server's passes and rooms.**
   - `providers/livekit.ts`:
     - creating rooms under the call lock;
     - passes with the role's rights, 10 minutes, one room;
@@ -78,6 +78,11 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - Covers: AC-F02-36 (rights part), 49.
   - Tests: TC-F02-65, 96, 97, 106.
   - Check: a decoded pass has exactly the rights of its role; a forged webhook is refused.
+  - **Built in T5:**
+    - `providers/livekit.ts`: rooms, passes, rights, attributes, metadata, remove (with `revokeTokenTs`), mute, server messages, webhook reading;
+    - `calls.permissions.ts`: the role table, role resolution, what each role may send, who skips the lobby.
+    - LiveKit's one-minute clock allowance is noted in design.md 3.5.
+    - The route part of TC-F02-106 ("nothing stored") comes with the webhook route in T7.
 
 - [ ] **T6: Joining and the lobby.**
   - `POST /meetings/join`, the meeting ticket (`X-Meeting-Ticket` plugin and its status rules), `GET`/`DELETE /attendances/:id`.
