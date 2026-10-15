@@ -2,7 +2,7 @@
 // leaves fill the meeting record; a join that isn't allowed (removed, ended, an old pass) is removed at
 // once; a reconnect within 30 seconds of a dropped connection is allowed back; the newest screen share
 // wins. Each report is handled once, and an older report never undoes a newer one.
-import type { CallAttendance } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
 import { TrackSource, type WebhookEvent } from "livekit-server-sdk";
 import type { CallsDeps } from "./admission.ts";
 

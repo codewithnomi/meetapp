@@ -1,0 +1,111 @@
+// Gallery (organism): the meeting stage, as in the approved "Meeting: gallery" and "Meeting: speaker
+// view" screens. Gallery: up to 16 tiles on a page (the page gives this page's tiles), in 1 to 4
+// columns, with page arrows under them. Speaker: the first tile large, the next four in a strip, and
+// "+ 18 more" for the rest. The tiles are VideoTiles the page makes. All words arrive as props.
+import type { ReactNode } from "react";
+import { IconButton } from "../../atoms/IconButton/index.ts";
+import { cx } from "../../lib/cx.ts";
+
+export interface GalleryTile {
+  /** Stable per person (their attendance id). */
+  id: string;
+  tile: ReactNode;
+}
+
+export interface GalleryPages {
+  /** "Page 1 of 2 · 23 people". */
+  text: string;
+  /** Names the arrows' group: "Gallery pages". */
+  label: string;
+  previousLabel: string;
+  nextLabel: string;
+  onPrevious?: (() => void) | undefined;
+  onNext?: (() => void) | undefined;
+}
+
+export interface GalleryProps {
+  /** "Participants' video, page 1 of 2" or "Speaker view". */
+  label: string;
+  layout: "gallery" | "speaker";
+  tiles: GalleryTile[];
+  /** Gallery only, when there is more than one page. */
+  pages?: GalleryPages | undefined;
+  /** Speaker only, when not everyone fits in the strip: "+ 18 more". */
+  moreText?: string | undefined;
+}
+
+/** Four tiles in the strip, plus the "+ N more" box: the strip's 5 columns (grid-cols-5). */
+const STRIP = 4;
+
+/** 1 tile: 1 column; up to 4: 2; up to 9: 3; more: 4. */
+function columns(count: number): string {
+  if (count <= 1) return "grid-cols-1";
+  if (count <= 4) return "grid-cols-2";
+  if (count <= 9) return "grid-cols-3";
+  return "grid-cols-4";
+}
+
+function PageArrows({ pages }: { pages: GalleryPages }) {
+  return (
+    <nav aria-label={pages.label} className="flex items-center justify-center gap-3 text-[13px] text-stage-ink">
+      <IconButton
+        icon="chevron-left"
+        variant="ghost"
+        size="sm"
+        label={pages.previousLabel}
+        disabled={!pages.onPrevious}
+        onClick={pages.onPrevious}
+        className="text-stage-ink"
+      />
+      <span>{pages.text}</span>
+      <IconButton
+        icon="chevron"
+        variant="ghost"
+        size="sm"
+        label={pages.nextLabel}
+        disabled={!pages.onNext}
+        onClick={pages.onNext}
+        className="text-stage-ink"
+      />
+    </nav>
+  );
+}
+
+function SpeakerView({ tiles, moreText }: Pick<GalleryProps, "tiles" | "moreText">) {
+  const [main, ...others] = tiles;
+  const strip = others.slice(0, STRIP);
+  return (
+    <>
+      {main ? <div key={main.id}>{main.tile}</div> : null}
+      {strip.length > 0 || moreText ? (
+        <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
+          {strip.map(({ id, tile }) => (
+            <li key={id}>{tile}</li>
+          ))}
+          {moreText ? (
+            <li className="grid min-h-20 place-items-center rounded-lg bg-stage-tile text-[14px] font-semibold text-stage-ink">
+              {moreText}
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+export function Gallery({ label, layout, tiles, pages, moreText }: GalleryProps) {
+  return (
+    <section aria-label={label} className="flex min-w-0 flex-col gap-3">
+      {layout === "speaker" ? (
+        <SpeakerView tiles={tiles} moreText={moreText} />
+      ) : (
+        <ul className={cx("m-0 grid list-none gap-2.5 p-0", columns(tiles.length))}>
+          {tiles.map(({ id, tile }) => (
+            <li key={id}>{tile}</li>
+          ))}
+        </ul>
+      )}
+      {layout === "gallery" && pages ? <PageArrows pages={pages} /> : null}
+    </section>
+  );
+}

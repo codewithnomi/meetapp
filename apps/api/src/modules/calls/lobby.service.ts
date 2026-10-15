@@ -2,7 +2,7 @@
 // seconds; the answer carries the pass once they are let in. People with lobby rights see who waits and
 // admit or deny them. A ticket works only for its own attendance and status (design.md section 6);
 // anything else gets the same 404 as a call that doesn't exist (S1, S2, AC-F02-50).
-import type { CallAttendance } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import {

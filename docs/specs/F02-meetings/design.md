@@ -50,10 +50,12 @@ apps/desktop/src/main/
   media-permissions.ts             camera and mic for MeetApp's own screens only; screen sharing through our picker
   device-key.ts                    a random key for this app on this computer (guests' "same app" for AC-35)
   media-actions.ts, media-bridge.ts  the page bridge behind `meetapp.media` and `meetapp.deviceKey` (rules / Electron wiring)
-packages/ui                        atoms: LevelMeter; molecules: DeviceSelect, ParticipantRow (reworked), LobbyRow,
-                                   MessageCard; organisms: VideoTile (reworked), ControlBar (reworked), Gallery,
-                                   ParticipantPanel, MeetingInfoPanel, MeetingOptionsForm, DevicePanel, SharePicker;
-                                   template MeetingLayout
+packages/ui                        atoms: LevelMeter, ActionMenu (the ⋯ menu, moved out of MemberRow so rows share it);
+                                   molecules: DeviceSelect, ParticipantRow (reworked), LobbyRow, MessageCard,
+                                   SidePanel (the panels' frame); organisms: VideoTile (reworked), ControlBar (reworked),
+                                   Gallery, ParticipantPanel, MeetingInfoPanel, MeetingOptionsForm, DevicePanel,
+                                   SharePicker; template MeetingLayout. Icons added from the approved screens: info,
+                                   smile, chevron-left, chevron-down, pin. Dialog gains widths (lg 620px, xl 720px).
 ```
 `docs/engineering/project-structure.md` gains these folders in the same change. LiveKit code stays in `features/meetings` hooks and the meeting organisms, never in atoms (frontend.md rule 4).
 

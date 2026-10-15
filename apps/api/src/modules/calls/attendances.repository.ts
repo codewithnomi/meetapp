@@ -2,6 +2,9 @@
 // Status changes are conditional ("only if still waiting"), so two people pressing Admit at the same
 // moment change the row once (TC-F02-36).
 import { callAttendances, type CallAttendance, type Executor } from "@meetapp/db";
+
+/** Services take the row type from here, not from the database package (layering rule). */
+export type { CallAttendance } from "@meetapp/db";
 import { and, asc, eq, gt, inArray, isNull } from "drizzle-orm";
 
 export type AttendanceStatus = CallAttendance["status"];

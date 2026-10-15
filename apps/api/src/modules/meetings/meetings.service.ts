@@ -3,7 +3,6 @@
 // in the meeting's workspace (none in a personal workspace). Anyone else gets the same 404 as for a
 // meeting that doesn't exist (S1, S2).
 import type { MeetingDetails } from "@meetapp/contracts";
-import type { Meeting } from "@meetapp/db";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
@@ -16,7 +15,7 @@ import {
   newPasscode,
   type MeetingSecretBox,
 } from "./meeting-secrets.ts";
-import type { MeetingOptionsChange, MeetingRow, MeetingsRepository } from "./meetings.repository.ts";
+import type { Meeting, MeetingOptionsChange, MeetingRow, MeetingsRepository } from "./meetings.repository.ts";
 
 export interface MeetingsServiceDeps {
   repository: MeetingsRepository;

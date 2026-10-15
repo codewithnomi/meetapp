@@ -1,7 +1,8 @@
 // Joining a meeting (F02 design.md section 3.3; AC-F02-11, 13–19, 35, 37, 40, 42). The lookup token
 // names the meeting and the person; everything is checked again here. The decision and the place it
 // takes are made while holding the meeting's row, so the 100-person limits hold under any timing.
-import type { Call, CallAttendance, Executor } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
+import type { Call, Executor } from "./calls.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";

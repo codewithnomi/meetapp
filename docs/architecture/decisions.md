@@ -314,6 +314,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** while a feature's tasks are being built, each task runs only its own tests plus typecheck and lint. The whole suite (unit, integration, desktop windows) and the screenshot checks run once, at `/spec-verify`, before the Pull Request. Tests are still written with each task, and GitHub still checks every push.
 - **Why:** in F01 each full run took 15–25 minutes and many runs were made; the owner wants faster development and fewer tokens. A break is still caught before the feature is marked done, at most one feature late.
 - **Cost:** none (less time and fewer tokens).
+- **Extended 2026-10-15 (owner):** during a feature, focus on finishing tasks. A task writes and runs only the tests it needs to move on (its main logic, plus typecheck and lint). Small UI tests (component tests for looks and states, story checks, screenshots, accessibility scans) are written and run at the end of the feature, at `/spec-verify`, since the screens aren't required for the MVP yet.
 
 ### D053: F02 meetings follow Microsoft Teams
 - **Date:** 2026-10-14. **Status:** accepted (owner: "same as Microsoft Teams" for the lobby, guests, link expiry and host roles).

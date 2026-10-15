@@ -2,7 +2,7 @@
 // new attendance with the old role, under the normal rules (lock, removal, lobby): once, within 30
 // minutes, and counted against the join limit. Someone let in whose room closed before they connected
 // gets the join decision again on their next ask.
-import type { CallAttendance } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";

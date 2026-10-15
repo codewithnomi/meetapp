@@ -157,7 +157,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - fixed in the shared desktop test helper: closing an app twice crashed the clean-up (it already failed before T10).
     - **Moved to the screen tasks:** the "Allow screen recording" card (TC-F02-112, with the picker in T15) and the meeting ticket never on disk (TC-F02-114, with the pre-join and lobby in T13).
 
-- [ ] **T11: Building blocks in the gallery.**
+- [x] **T11: Building blocks in the gallery.**
   - In packages/ui, with stories, tests and screenshots, styled from the approved canvas:
     - atom: LevelMeter;
     - molecules: DeviceSelect, ParticipantRow (reworked), LobbyRow, MessageCard;
@@ -166,6 +166,12 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - Covers: AC-F02-21 (tile part), 43, 44 (components).
   - Tests: TC-F02-86.
   - Check: every component works with the keyboard and passes axe in light and dark.
+  - **Built in T11:**
+    - all listed components, plus the ActionMenu atom (the ⋯ menu, now shared with MemberRow) and the SidePanel molecule (the panels' frame); five icons from the approved screens; Dialog widths;
+    - stories for every state, unit and keyboard tests, the F02 block in `stories.test.tsx`; the gallery run (screenshots + axe, light and dark) passes with zero accessibility problems;
+    - the control bar is a labelled group (each control its own Tab stop), not a toolbar, so it promises no arrow-key moves;
+    - also fixed: six backend services imported database types directly (layering rule); they now take them from their repositories.
+    - The screenshot baselines are made now; they are remade if the owner's look check changes anything (TC-F02-87).
 
 - [ ] **T12: Meetings page, link dialog and Join.**
   - MeetingsPage (Meet now, Get a meeting link with the link-ready dialog, Join by ID or link) and the main-menu item.

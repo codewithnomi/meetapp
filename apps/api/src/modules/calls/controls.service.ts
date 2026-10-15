@@ -1,7 +1,7 @@
 // Controls inside a call (F02 design.md section 3.6; AC-F02-23, 33–38). Every control checks the caller's
 // meeting role (calls.permissions.ts) and the target's; the backend then tells the call server, so a
 // changed app can't skip the rules. Changes to roles or options reach everyone's rights at once.
-import type { CallAttendance } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
 import { detailsOf } from "../meetings/meetings.service.ts";
 import { notFound, roleOf, roomMetadata, type CallsDeps } from "./admission.ts";
 import { endForEveryone } from "./call-events.repository.ts";

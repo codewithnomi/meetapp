@@ -3,6 +3,9 @@
 // at the same moment can't both take the last place (AC-F02-42, TC-F02-36–39). The reads below take the
 // transaction they run in.
 import { callAttendances, calls, meetings, type Call, type Executor } from "@meetapp/db";
+
+/** Services take these types from here, not from the database package (layering rule). */
+export type { Call, Executor } from "@meetapp/db";
 import { and, count, eq, gt, inArray, isNotNull, isNull, or, type SQL } from "drizzle-orm";
 
 /** In the call, or let in and about to connect: both take a place. */

@@ -12,6 +12,9 @@ import {
 } from "@meetapp/db";
 import { and, eq, inArray } from "drizzle-orm";
 
+/** Services take the row type from here, not from the database package (layering rule). */
+export type { Meeting } from "@meetapp/db";
+
 export type NewMeeting = Omit<typeof meetings.$inferInsert, "id" | "createdAt" | "updatedAt">;
 
 /** Fields left out (or undefined) stay as they are. */
