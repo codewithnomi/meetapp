@@ -13,9 +13,13 @@ import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
+import type { PreJoinState } from "../features/meetings/index.ts";
+import { JoinMeetingPage } from "../pages/JoinMeetingPage/index.ts";
 import { JoinWorkspacePage } from "../pages/JoinWorkspacePage/index.ts";
+import { MeetingsPage } from "../pages/MeetingsPage/index.ts";
 import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
+import { PreJoinPage } from "../pages/PreJoinPage/index.ts";
 import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
@@ -62,9 +66,23 @@ function Unreachable({ code, onRetry }: { code: string; onRetry: () => void }) {
   );
 }
 
+/** The pre-join screen, with the meeting handed over by the screen that found or made it (F02). */
+function PreJoinRoute({ back }: { back: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  return <PreJoinPage meeting={location.state as PreJoinState | undefined} onCancel={() => void navigate(back)} />;
+}
+
 function SignedOutRoutes() {
+  const navigate = useNavigate();
+  const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
   return (
     <Routes>
+      <Route
+        path="/join-meeting"
+        element={<JoinMeetingPage onFound={preJoin} onBack={() => void navigate("/sign-in")} />}
+      />
+      <Route path="/meeting/pre-join" element={<PreJoinRoute back="/join-meeting" />} />
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/create-account" element={<CreateAccountPage />} />
       <Route path="/code" element={<CodePage />} />
@@ -77,6 +95,7 @@ function SignedOutRoutes() {
 
 const PATHS: Record<AppScreen, string> = {
   home: "/",
+  meetings: "/meetings",
   people: "/people",
   requests: "/requests",
   settings: "/settings",
@@ -96,9 +115,12 @@ function SignedInScreens() {
   const home = () => go("home");
   const settings = (screen: SettingsScreen) =>
     void navigate(screen === "profile" ? "/settings" : "/settings/appearance");
+  const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
+      <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
+      <Route path="/meeting/pre-join" element={<PreJoinRoute back="/meetings" />} />
       <Route
         path="/people"
         element={

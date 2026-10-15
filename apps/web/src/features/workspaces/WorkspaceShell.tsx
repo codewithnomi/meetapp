@@ -12,7 +12,7 @@ import type { MyWorkspace } from "./me.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
-export type AppScreen = "home" | "people" | "requests" | "settings" | "join";
+export type AppScreen = "home" | "meetings" | "people" | "requests" | "settings" | "join";
 
 export interface WorkspaceShellProps {
   screen: AppScreen;
@@ -22,6 +22,7 @@ export interface WorkspaceShellProps {
 
 const ICONS: Record<Exclude<AppScreen, "join">, IconName> = {
   home: "home",
+  meetings: "camera",
   people: "users",
   requests: "send",
   settings: "sliders",
@@ -31,8 +32,8 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
   const { t } = useTranslation();
   const company = current?.kind === "company";
   const screens: Exclude<AppScreen, "join">[] = company
-    ? ["home", "people", "requests", "settings"]
-    : ["home", "settings"];
+    ? ["home", "meetings", "people", "requests", "settings"]
+    : ["home", "meetings", "settings"];
   return screens.map((id): AppNavItem => ({
     id,
     label: t(`workspaces.nav.${id}`),

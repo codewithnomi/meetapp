@@ -173,12 +173,17 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - also fixed: six backend services imported database types directly (layering rule); they now take them from their repositories.
     - The screenshot baselines are made now; they are remade if the owner's look check changes anything (TC-F02-87).
 
-- [ ] **T12: Meetings page, link dialog and Join.**
+- [x] **T12: Meetings page, link dialog and Join.**
   - MeetingsPage (Meet now, Get a meeting link with the link-ready dialog, Join by ID or link) and the main-menu item.
   - **Join a meeting** on the sign-in screen for guests.
   - Covers: AC-F02-01, 02, 08.
   - Tests: TC-F02-13, 14, 18.
   - Check: Meet now reaches the pre-join; the link dialog copies the link, ID and passcode.
+  - **Built in T12:**
+    - `features/meetings` (make, find, read and save options; Join a meeting form; Meeting options dialog), `pages/MeetingsPage` with the link-ready dialog, `pages/JoinMeetingPage` (guests, from the sign-in screen), the Meetings menu item;
+    - the pre-join route shows the meeting's title for now; T13 fills it in;
+    - the Meeting options dialog outside a call has no Lock switch (locking belongs to a running call; the meeting screen adds it, T15).
+    - **Tests at the end (D052, extended):** TC-F02-13, 14 and 18 run as desktop tests at `/spec-verify`; only the address clean-up has a unit test now.
 
 - [ ] **T13: Pre-join and lobby screens.**
   - PreJoinPage (preview, level meter, Test speakers, devices remembered, device-problem messages, guest name and Terms text) and LobbyPage (2-second status asks, every ending message).

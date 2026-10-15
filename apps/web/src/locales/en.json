@@ -63,7 +63,9 @@
       "createAccount": "Create an account",
       "legal": "By continuing you agree to the Terms and the Privacy Policy. Meetings with AI notes show a notice to everyone.",
       "placeholder": "aisha@aria.com",
-      "subtitleProviders": "Use your work account, or your email."
+      "subtitleProviders": "Use your work account, or your email.",
+      "noAccountMeeting": "Got a meeting link or ID?",
+      "joinMeeting": "Join a meeting"
     },
     "password": {
       "title": "Enter your password",
@@ -215,7 +217,8 @@
       "home": "Home",
       "settings": "Settings",
       "people": "People",
-      "requests": "Requests and invitations"
+      "requests": "Requests and invitations",
+      "meetings": "Meetings"
     },
     "create": {
       "title": "Create a company workspace",
@@ -418,6 +421,100 @@
     "data": {
       "title": "Your data",
       "text": "To get a copy of your data or delete your account, email {{email}}. We reply within 30 days."
+    }
+  },
+  "meetings": {
+    "title": "Meetings",
+    "subtitle": "Start a meeting now, make a link for later, or join one. Meetings you make belong to {{workspace}}.",
+    "start": {
+      "label": "Start a meeting",
+      "meetNow": "Meet now",
+      "meetNowText": "Start a meeting right away. Share its link from inside.",
+      "starting": "Starting the meeting",
+      "getLink": "Get a meeting link",
+      "getLinkText": "Make a link to share for later. Nobody joins until it's used.",
+      "titleLabel": "Title (optional)",
+      "getLinkButton": "Get link",
+      "making": "Making the link"
+    },
+    "join": {
+      "title": "Join a meeting",
+      "with": "Join with",
+      "byId": "Meeting ID",
+      "byLink": "Link",
+      "meetingId": "Meeting ID",
+      "meetingIdHint": "12 digits",
+      "passcode": "Passcode",
+      "passcodeHint": "6 letters and digits",
+      "link": "Meeting link",
+      "linkPlaceholder": "Paste the link here",
+      "join": "Join",
+      "finding": "Finding the meeting",
+      "guestNote": "No account? Guests can join from the sign-in screen with the link, or the ID and passcode.",
+      "meetingIdExample": "284 615 903 172",
+      "passcodeExample": "h3Tq9z"
+    },
+    "guest": {
+      "title": "Join a meeting",
+      "subtitle": "Use the link, or the meeting ID and passcode, that the organizer sent you.",
+      "back": "Back to sign-in"
+    },
+    "ready": {
+      "title": "Your meeting link is ready",
+      "close": "Close",
+      "link": "Link",
+      "copyLink": "Copy link",
+      "meetingId": "Meeting ID",
+      "copyId": "Copy ID",
+      "passcode": "Passcode",
+      "copyPasscode": "Copy passcode",
+      "details": "All details",
+      "copyAll": "Copy all details",
+      "copied": "{{what}} copied",
+      "copyFailed": "Couldn't copy. Select the text and copy it yourself.",
+      "note": "People in {{workspace}} join directly. Others wait in the lobby until someone lets them in. The link stops working 60 days after it was last used or changed.",
+      "options": "Meeting options",
+      "done": "Done",
+      "allDetails": "{{title}}\nLink: {{link}}\nMeeting ID: {{id}}\nPasscode: {{passcode}}"
+    },
+    "options": {
+      "title": "Meeting options",
+      "close": "Close",
+      "lobby": "Who can skip the lobby?",
+      "lobbyHint": "Guests always wait until someone with an account is in the meeting.",
+      "present": "Who can present?",
+      "presentHint": "Presenters can share their screen, let people in, mute and remove others.",
+      "audience": {
+        "everyone": "Everyone",
+        "workspace": "People in my workspace",
+        "organizers": "Only me and co-organizers"
+      },
+      "coOrganizers": "Co-organizers",
+      "coHint": "Only you, the organizer, can change this. Up to 10 people from this workspace.",
+      "coHintOthers": "Only the organizer can change this.",
+      "addCo": "Add a person from this workspace",
+      "addCoNamed": "Add {{name}} as co-organizer",
+      "removeCo": "Remove {{name}} as co-organizer",
+      "someone": "Someone",
+      "allowMic": "Allow mic for attendees",
+      "allowMicHint": "When off, attendees stay muted until you turn it back on or make them presenters.",
+      "allowCamera": "Allow camera for attendees",
+      "allowCameraHint": "When off, attendees can't turn their camera on.",
+      "guestsNote": "Whether guests can join is set for the whole workspace by its owner and admins.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving"
+    },
+    "preJoin": {
+      "missing": "Join a meeting",
+      "cancel": "Cancel"
+    },
+    "errors": {
+      "notFound": "We couldn't find that meeting. Check the link, or the ID and passcode.",
+      "expired": "This meeting has expired. Ask the organizer for a new one.",
+      "locked": "This meeting is locked. Ask the organizer to unlock it.",
+      "full": "This meeting is full (100 people). Try again when someone leaves.",
+      "noGuests": "This meeting doesn't allow guests. Sign in with an account to join, or ask the organizer."
     }
   }
 }

@@ -47,7 +47,8 @@ export interface MeetingOptionsFormProps {
   coOrganizers: CoOrganizers;
   allowMic: Switch;
   allowCamera: Switch;
-  lock: Switch;
+  /** Only while the meeting's call is running (locking is per call). */
+  lock?: Switch | undefined;
   /** "Guests can join: Aria's owner and admins decide this …". */
   guestsNote: string;
   /** Says what went wrong and how to fix it. */
@@ -133,7 +134,7 @@ function Switches({ allowMic, allowCamera, lock }: Pick<MeetingOptionsFormProps,
     <div className="flex flex-col gap-3.5 border-t border-line pt-1">
       <Toggle id="option-allow-mic" {...allowMic} />
       <Toggle id="option-allow-camera" {...allowCamera} />
-      <Toggle id="option-lock" {...lock} />
+      {lock ? <Toggle id="option-lock" {...lock} /> : null}
     </div>
   );
 }
