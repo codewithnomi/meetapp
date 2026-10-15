@@ -5,7 +5,7 @@
 import { ConnectionQuality, Track, type Participant, type VideoTrack } from "livekit-client";
 
 export type CallRole = "organizer" | "co_organizer" | "presenter" | "attendee";
-export type CallGroup = "member" | "external" | "guest";
+type CallGroup = "member" | "external" | "guest";
 
 export interface CallPerson {
   id: string;

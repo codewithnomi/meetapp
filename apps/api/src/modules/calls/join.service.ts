@@ -35,7 +35,7 @@ const notFound = () =>
   new AppError(404, "MEETING_NOT_FOUND", "We couldn't find that meeting. Check the link, or the ID and passcode.");
 
 /** 1–60 characters after removing control characters and trimming (AC-F02-11, 51). */
-export function cleanGuestName(name: string | undefined): string {
+function cleanGuestName(name: string | undefined): string {
   // eslint-disable-next-line no-control-regex -- removing control characters is the point
   const cleaned = (name ?? "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "").trim();
   if (cleaned.length < 1 || cleaned.length > 60) {

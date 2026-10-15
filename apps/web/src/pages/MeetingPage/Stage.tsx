@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { EMOJI, TrackVideo, type CallPerson, type Reaction } from "../../features/meetings/index.ts";
 import { roleName, shownName } from "./names.ts";
 
-export const PAGE_SIZE = 16;
+const PAGE_SIZE = 16;
 
 export interface StageProps {
   people: CallPerson[];

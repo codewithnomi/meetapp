@@ -1,1 +1,1 @@
-export { PreJoinPage, type PreJoinPageProps } from "./PreJoinPage.tsx";
+export { PreJoinPage } from "./PreJoinPage.tsx";

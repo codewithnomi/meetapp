@@ -7,7 +7,7 @@ import { TrackSource, type WebhookEvent } from "livekit-server-sdk";
 import type { CallsDeps } from "./admission.ts";
 
 /** A dropped connection may come back within this time without the lobby (AC-F02-29). */
-export const RECONNECT_MS = 30 * 1000;
+const RECONNECT_MS = 30 * 1000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

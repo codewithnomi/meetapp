@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { FastifyRequest } from "fastify";
 import { AppError } from "./errors.ts";
 
-export const TICKET_HEADER = "x-meeting-ticket";
+const TICKET_HEADER = "x-meeting-ticket";
 
 export const newTicket = () => randomBytes(32).toString("base64url");
 export const ticketFingerprint = (ticket: string) => createHash("sha256").update(ticket).digest("hex");

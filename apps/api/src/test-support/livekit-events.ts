@@ -33,7 +33,7 @@ export async function webhookSignature(config: Config, body: string, secret = co
   return token.toJwt();
 }
 
-export interface Recorded {
+interface Recorded {
   removed: string[];
   messages: { room: string; message: object; to?: string[] }[];
   deleted: string[];

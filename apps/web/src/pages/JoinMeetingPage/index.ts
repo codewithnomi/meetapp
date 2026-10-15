@@ -1,1 +1,1 @@
-export { JoinMeetingPage, type JoinMeetingPageProps } from "./JoinMeetingPage.tsx";
+export { JoinMeetingPage } from "./JoinMeetingPage.tsx";

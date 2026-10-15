@@ -257,7 +257,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - Built in T18: `tools/load.ts`, `infra/load/` (a test call server on port 7890 without reports to the backend, and the pinned `lk` image), `tests/load/`. Targets changed with the owner (D056): tiles show ≥ 90% of received frames; memory < 700 MB.
   - Results on the owner's MacBook (2026-10-15), idle run: sound delay 63 ms; joins 1.2 s (95th percentile of 20); tiles 14.5–15 frames a second from 15 received; 25-person memory 470–650 MB. A run while the Mac was busy: memory 430–628 MB (pass) but tiles 1–15 frames a second and sound 472 ms. The simulated people share the Mac, so the gallery numbers need an idle Mac; re-run at /spec-verify. Also fixed during T18 (owner's report): the meeting screen fits the window, the control bar always shows, and tiles shrink to fit.
 
-- [ ] **T19: Keyboard, screen reader, states and documentation.**
+- [x] **T19: Keyboard, screen reader, states and documentation.**
   - A keyboard-only run through every F02 screen; loading and error states; translation keys.
   - Docs:
     - privacy-legal.md (what F02 stores);
@@ -267,6 +267,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
   - Covers: AC-F02-43, 44, 45.
   - Tests: TC-F02-87 (prepared; the owner does it at verify), 88, 90.
   - Check: everything works without a mouse; every text comes from the translation file.
+  - Built in T19: privacy-legal.md "What meetings and calls store (F02)"; `docs/runbooks/calls.md` (call server, two windows, the load test); glossary terms; getting-started commands; the canvas link in TC-F02-87; unused exports from earlier F02 tasks removed (`pnpm check:unused` clean). Every visible text already comes from en.json (lint rule i18next/no-literal-string, en.test.ts). Written and run at /spec-verify (D052, extended): TC-F02-88 (keyboard-only desktop run) and TC-F02-90 (loading and error states of each new page); TC-F02-87 is the owner's look check there. Open: add the F02 components and icons to the design system artifact (D029).
 
 ## Check: every test case belongs to a step
 TC-F02-01–03, 05–07, 09–12, 104 → T3 · 04, 08, 15–17, 93, 94, 105 → T4 · 65, 96, 97, 106 → T5 · 22, 23, 26–31, 33–39, 73, 95, 100, 101 → T6 · 40, 57, 58, 64, 80, 84, 85, 99 → T7 · 46, 48, 50, 51, 53, 66–68, 70, 72, 75, 76, 78, 82, 98, 103 → T8 · 102, 107–109 → T9 · 110 → T1 · 05 (database part) → T2 · 111–114 → T10 · 86 → T11 · 13, 14, 18 → T12 · 19–21, 32 → T13 · 24, 42–45, 47, 89 → T14 · 49, 52, 69, 71, 74, 77, 79, 81 → T15 · 54–56, 59–63, 91 → T16 · 83 → T17 · 25, 41, 92 → T18 · 87, 88, 90 → T19.

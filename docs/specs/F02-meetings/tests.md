@@ -641,7 +641,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Covers:** AC-F02-43
 - **Level:** manual
 - **Given** the finished screens running in the app
-- **When** the owner compares each with the approved canvas section "Meetings and calling (F02)" at `/spec-verify`
+- **When** the owner compares each with the approved canvas section "Meetings and calling (F02)" (https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ) at `/spec-verify`
 - **Then** the owner confirms they match; recorded in `verification.md`
 
 ### TC-F02-88: Keyboard-only run

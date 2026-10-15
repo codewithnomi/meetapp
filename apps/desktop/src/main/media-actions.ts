@@ -7,7 +7,7 @@ export const MEDIA_CHANNEL = "meetapp:media";
 
 export type AccessKind = "camera" | "microphone";
 /** As the system reports it: "granted", "denied", "restricted", "not-determined" or "unknown". */
-export type AccessStatus = string;
+type AccessStatus = string;
 
 export interface ShareSourceInfo {
   id: string;

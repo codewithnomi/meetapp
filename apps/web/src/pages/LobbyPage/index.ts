@@ -1,1 +1,1 @@
-export { LobbyPage, type LobbyPageProps } from "./LobbyPage.tsx";
+export { LobbyPage } from "./LobbyPage.tsx";

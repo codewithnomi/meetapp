@@ -17,6 +17,11 @@ Words used in MeetApp's documents and code, in plain English.
 | **Lobby** | Where people wait until someone in the meeting lets them in (the "waiting room"). |
 | **Meeting ID and passcode** | A 12-digit number and a 6-character code that lead to a meeting, as an alternative to its link. |
 | **Participant** | Anyone in a meeting. |
+| **Meet now** | Starting a meeting straight away, without planning it. |
+| **Meeting link** | A web address that leads to one meeting; anyone with it can ask to join (people outside the workspace wait in the lobby). |
+| **Allow guests** | A workspace setting (owner and admins, in Workspace settings): when off, people without an account can't join the workspace's meetings. |
+| **Pin** | Keeping one person large on your own screen; others don't see it. |
+| **Load test** | A test that fills a meeting with simulated people to check speed and memory (`pnpm test:load`). |
 | **Track** | One stream of audio or video from one participant (e.g. "Ali's microphone"). |
 | **Transcript** | The written text of everything said in a meeting. |
 | **Segment** | One line of the transcript: who spoke, when, and what they said. |

@@ -7,12 +7,12 @@ import { Room, RoomEvent, Track, type DisconnectReason, type Participant, type R
 import { useEffect, useMemo, useState } from "react";
 import type { DevicePrefs } from "../device-prefs.ts";
 import type { Joined } from "../visit.ts";
-import { inOrder, personOf, type CallPerson } from "./people.ts";
+import { inOrder, personOf } from "./people.ts";
 import { REACTION_TOPIC, createGate, decodeReaction, encodeReaction, type Reaction } from "./reactions.ts";
 import { roomStateOf } from "./room-state.ts";
 import { startShare, stopShare } from "./share.ts";
 
-export const CONTROL_TOPIC = "meetapp.control";
+const CONTROL_TOPIC = "meetapp.control";
 const RECONNECT_FOR_MS = 30_000;
 
 export type Connection = "connecting" | "connected" | "reconnecting" | "failed";
@@ -148,6 +148,3 @@ export function useMeetingRoom(visit: Joined, prefs: DevicePrefs, handlers: Room
       room?.localParticipant.publishData(encodeReaction(reaction), { reliable: true, topic: REACTION_TOPIC }),
   };
 }
-
-export type MeetingRoom = ReturnType<typeof useMeetingRoom>;
-export type { CallPerson };

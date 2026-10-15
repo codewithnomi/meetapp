@@ -20,7 +20,7 @@ import type { Lobby } from "./lobby.ts";
 import { roleName, shownName } from "./names.ts";
 import { personActions, type ActionContext } from "./person-actions.ts";
 
-export interface PeopleContext {
+interface PeopleContext {
   people: CallPerson[];
   lobby: Lobby;
   canAdmit: boolean;

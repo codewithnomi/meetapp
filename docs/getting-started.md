@@ -67,8 +67,10 @@ It runs every automated test (about 5 minutes) and ends with "All tests passed."
 | `pnpm dev` | Starts the services, the backend and the desktop app |
 | `pnpm dev:stop` | Stops the services (data kept) |
 | `pnpm desktop` | Opens only the app window, without the services |
+| `pnpm dev:window` | One more app window with its own sign-in, to be two people in a meeting (while `pnpm dev` runs; see [runbooks/calls.md](runbooks/calls.md)) |
 | `pnpm test` | Every test |
 | `pnpm check` | Code-quality checks |
+| `pnpm test:load` | A 100-person meeting with simulated people, measuring speed and memory (about 15 minutes; close `pnpm dev`, leave the Mac idle; see [runbooks/calls.md](runbooks/calls.md)) |
 | `pnpm monitoring` | Status page, dashboards and alerts (see [runbooks/monitoring.md](runbooks/monitoring.md)) |
 | `pnpm seed` / `pnpm seed:clear` | Add / remove sample data (example accounts, password `meetapp-dev-password`: see `docs/runbooks/local-services.md`) |
 | `pnpm flag list` | Show the feature switches; `pnpm flag <key> on` or `off` changes one |

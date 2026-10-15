@@ -10,7 +10,7 @@ import { allowedIn } from "./webhook.service.ts";
 
 const QUEUE = "calls";
 const CLEAN_UP = "clean-up";
-export const WARNING_BEFORE_MS = 10 * 60 * 1000;
+const WARNING_BEFORE_MS = 10 * 60 * 1000;
 const START_GRACE_MS = 60 * 1000;
 const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
 

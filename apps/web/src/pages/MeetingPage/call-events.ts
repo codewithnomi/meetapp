@@ -12,7 +12,7 @@ import {
   type Reaction,
 } from "../../features/meetings/index.ts";
 
-export function useReactions() {
+function useReactions() {
   const [reactions, setReactions] = useState<Record<string, Reaction>>({});
   const show = (personId: string, reaction: Reaction) => {
     setReactions((old) => ({ ...old, [personId]: reaction }));

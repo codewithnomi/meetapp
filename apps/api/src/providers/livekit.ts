@@ -13,12 +13,12 @@ import {
 } from "livekit-server-sdk";
 import type { Config } from "../config/config.ts";
 
-export const PASS_TTL = "10m";
+const PASS_TTL = "10m";
 /** How long an empty room stays open (also set in infra/livekit.yaml). */
-export const EMPTY_ROOM_SECONDS = 30;
-export const MAX_PARTICIPANTS = 100;
+const EMPTY_ROOM_SECONDS = 30;
+const MAX_PARTICIPANTS = 100;
 /** Server messages the apps trust (design.md 3.6): only ones sent here, never by a participant. */
-export const CONTROL_TOPIC = "meetapp.control";
+const CONTROL_TOPIC = "meetapp.control";
 
 export type MediaSource = "camera" | "microphone" | "screen_share";
 

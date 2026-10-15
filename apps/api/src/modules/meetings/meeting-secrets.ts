@@ -12,15 +12,9 @@ const PASSCODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz2345
 const PASSCODE_LENGTH = 6;
 const LINK_PATH = "/m/";
 
-export interface MeetingSecrets {
-  /** The link's random part: 16 bytes in base64url (22 characters). */
-  linkPart: string;
-  /** 12 digits, the first not 0. */
-  meetingNumber: string;
-  passcode: string;
-}
-
+/** The link's random part: 16 bytes in base64url (22 characters). */
 export const newLinkPart = () => randomBytes(16).toString("base64url");
+/** 12 digits, the first not 0. */
 export const newMeetingNumber = () =>
   String(randomInt(1, 10)) + String(randomInt(0, 100_000_000_000)).padStart(11, "0");
 export const newPasscode = () =>

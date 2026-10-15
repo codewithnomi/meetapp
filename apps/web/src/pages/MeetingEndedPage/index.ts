@@ -1,1 +1,1 @@
-export { MeetingEndedPage, type MeetingEndedPageProps } from "./MeetingEndedPage.tsx";
+export { MeetingEndedPage } from "./MeetingEndedPage.tsx";
