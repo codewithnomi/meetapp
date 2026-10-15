@@ -185,11 +185,17 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - the Meeting options dialog outside a call has no Lock switch (locking belongs to a running call; the meeting screen adds it, T15).
     - **Tests at the end (D052, extended):** TC-F02-13, 14 and 18 run as desktop tests at `/spec-verify`; only the address clean-up has a unit test now.
 
-- [ ] **T13: Pre-join and lobby screens.**
+- [x] **T13: Pre-join and lobby screens.**
   - PreJoinPage (preview, level meter, Test speakers, devices remembered, device-problem messages, guest name and Terms text) and LobbyPage (2-second status asks, every ending message).
   - Covers: AC-F02-09, 10, 11, 14, 15, 18.
   - Tests: TC-F02-19, 20, 21, 32.
   - Check: a guest waits in the lobby and enters when another window admits them.
+  - **Built in T13:**
+    - PreJoinPage: own camera preview, microphone level, Test speakers (a short tone through the chosen speakers), the three device lists (remembered in local storage), camera and microphone switches, device problems named with the fix (missing, busy, not allowed; on macOS the app asks the computer first), guest name 1–60 and the Terms sentence as plain text;
+    - joining keeps the visit (with the meeting ticket) in memory only (`features/meetings/visit.ts`);
+    - LobbyPage asks for its status every 2 seconds and moves on when let in or turned away; MeetingEndedPage shows the ending (denied, nobody let you in, removed by whom, ended, locked, guests not allowed);
+    - `/meeting/call` shows "You're in the meeting" with Leave until T14 builds the call;
+    - **at the end (D052, extended):** the desktop tests TC-F02-19, 20, 21 and 32, and the meeting-ticket-never-on-disk part of TC-F02-114. Admitting from another window needs the participants panel inside the call (T14–T15), so the task's check runs then.
 
 - [ ] **T14: The meeting: a first real call (milestone).**
   - `useMeetingRoom` (livekit-client: adaptive stream, dynacast, simulcast, reconnect policy).

@@ -507,7 +507,17 @@
     },
     "preJoin": {
       "missing": "Join a meeting",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "join": "Join now",
+      "joining": "Joining",
+      "straightIn": "You're in this workspace, so you'll go straight in.",
+      "lobby": "You'll wait in the lobby until someone in the meeting lets you in.",
+      "yourName": "Your name",
+      "nameRule": "Type a name of 1 to 60 characters.",
+      "terms": "By joining, you agree to the Terms and the Privacy Policy.",
+      "signedInAs": "Signed in as {{name}}",
+      "asGuest": "Joining as a guest",
+      "you": "You"
     },
     "errors": {
       "notFound": "We couldn't find that meeting. Check the link, or the ID and passcode.",
@@ -515,6 +525,76 @@
       "locked": "This meeting is locked. Ask the organizer to unlock it.",
       "full": "This meeting is full (100 people). Try again when someone leaves.",
       "noGuests": "This meeting doesn't allow guests. Sign in with an account to join, or ask the organizer."
+    },
+    "devices": {
+      "label": "Your camera and sound",
+      "camera": "Camera",
+      "microphone": "Microphone",
+      "speakers": "Speakers",
+      "noCamera": "No camera found",
+      "noMicrophone": "No microphone found",
+      "defaultSpeakers": "Your computer's speakers",
+      "micOff": "Turn microphone off",
+      "micOn": "Turn microphone on",
+      "cameraOff": "Turn camera off",
+      "cameraOn": "Turn camera on",
+      "muted": "Muted",
+      "level": "Microphone level",
+      "testSpeakers": "Test speakers",
+      "remembered": "These choices are remembered on this computer.",
+      "problems": {
+        "camera": {
+          "missing": "No camera found. Plug one in, or join without video.",
+          "busy": "Your camera is in use by another app. Close that app, or join without video.",
+          "denied": "MeetApp isn't allowed to use the camera: open System Settings → Privacy & Security → Camera and turn on MeetApp."
+        },
+        "microphone": {
+          "missing": "No microphone found. Plug one in, or join without sound.",
+          "busy": "Your microphone is in use by another app. Close that app, or join muted.",
+          "denied": "MeetApp isn't allowed to use the microphone: open System Settings → Privacy & Security → Microphone and turn on MeetApp."
+        }
+      }
+    },
+    "lobby": {
+      "joiningAs": "Joining as {{name}}",
+      "waiting": "Someone in the meeting will let you in soon.",
+      "leave": "Leave"
+    },
+    "call": {
+      "inside": "You're in the meeting."
+    },
+    "ended": {
+      "home": "Back to home",
+      "tryAgain": "Try again",
+      "someone": "Someone",
+      "denied": {
+        "title": "You've been denied entry",
+        "body": "Someone in the meeting didn't let you in."
+      },
+      "timedOut": {
+        "title": "Nobody let you in",
+        "body": "You waited 15 minutes in the lobby. You can try again."
+      },
+      "removed": {
+        "title": "You were removed from the meeting",
+        "body": "{{name}} removed you. If you join again, you'll wait in the lobby."
+      },
+      "ended": {
+        "title": "The meeting has ended",
+        "body": "The meeting was ended for everyone."
+      },
+      "locked": {
+        "title": "This meeting is locked",
+        "body": "Nobody new can join right now. Ask the organizer to unlock it."
+      },
+      "noGuests": {
+        "title": "This meeting doesn't allow guests",
+        "body": "Sign in with an account to join, or ask the organizer."
+      },
+      "left": {
+        "title": "You left the meeting",
+        "body": "You can join again with the link, or the ID and passcode."
+      }
     }
   }
 }

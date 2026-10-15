@@ -13,7 +13,10 @@ import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
-import type { PreJoinState } from "../features/meetings/index.ts";
+import { useVisit, type Attendance, type Joined, type PreJoinState } from "../features/meetings/index.ts";
+import { LobbyPage } from "../pages/LobbyPage/index.ts";
+import { MeetingEndedPage } from "../pages/MeetingEndedPage/index.ts";
+import { MeetingPage } from "../pages/MeetingPage/index.ts";
 import { JoinMeetingPage } from "../pages/JoinMeetingPage/index.ts";
 import { JoinWorkspacePage } from "../pages/JoinWorkspacePage/index.ts";
 import { MeetingsPage } from "../pages/MeetingsPage/index.ts";
@@ -66,11 +69,73 @@ function Unreachable({ code, onRetry }: { code: string; onRetry: () => void }) {
   );
 }
 
-/** The pre-join screen, with the meeting handed over by the screen that found or made it (F02). */
-function PreJoinRoute({ back }: { back: string }) {
+/** Where a visit goes back to, and where Join a meeting is: for guests, and for signed-in people. */
+const GUEST_PLACES = { home: "/sign-in", join: "/join-meeting" };
+const MEMBER_PLACES = { home: "/meetings", join: "/meetings" };
+
+/** A visit to a meeting, signed in or as a guest (F02): pre-join, lobby, the call, and how it ended. */
+function meetingRoutes({ home, join, userName }: { home: string; join: string; userName: string | undefined }) {
+  return [
+    <Route key="pre-join" path="/meeting/pre-join" element={<PreJoinRoute back={join} userName={userName} />} />,
+    <Route key="lobby" path="/meeting/lobby" element={<LobbyRoute home={home} userName={userName} />} />,
+    <Route key="call" path="/meeting/call" element={<CallRoute home={home} />} />,
+    <Route key="ended" path="/meeting/ended" element={<EndedRoute home={home} join={join} />} />,
+  ];
+}
+
+/** Where a join answer leads: in, the lobby, or the outcome. */
+function useAfterJoin() {
+  const navigate = useNavigate();
+  return (visit: Joined) => {
+    if (visit.status === "admitted") void navigate("/meeting/call");
+    else if (visit.status === "waiting") void navigate("/meeting/lobby");
+    else void navigate("/meeting/ended", { state: visit });
+  };
+}
+
+function PreJoinRoute({ back, userName }: { back: string; userName: string | undefined }) {
   const location = useLocation();
   const navigate = useNavigate();
-  return <PreJoinPage meeting={location.state as PreJoinState | undefined} onCancel={() => void navigate(back)} />;
+  return (
+    <PreJoinPage
+      meeting={location.state as PreJoinState | undefined}
+      userName={userName}
+      onCancel={() => void navigate(back)}
+      onJoined={useAfterJoin()}
+    />
+  );
+}
+
+function LobbyRoute({ home, userName }: { home: string; userName: string | undefined }) {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  return (
+    <LobbyPage
+      name={userName ?? t("meetings.preJoin.you")}
+      onAdmitted={() => void navigate("/meeting/call")}
+      onOutcome={(visit) => void navigate("/meeting/ended", { state: visit })}
+      onLeft={() => void navigate(home)}
+    />
+  );
+}
+
+function CallRoute({ home }: { home: string }) {
+  const navigate = useNavigate();
+  return <MeetingPage onLeft={() => void navigate(home)} />;
+}
+
+function EndedRoute({ home, join }: { home: string; join: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const end = useVisit((state) => state.end);
+  const go = (path: string) => (end(), void navigate(path));
+  return (
+    <MeetingEndedPage
+      outcome={location.state as Attendance | undefined}
+      onHome={() => go(home)}
+      onTryAgain={() => go(join)}
+    />
+  );
 }
 
 function SignedOutRoutes() {
@@ -82,7 +147,7 @@ function SignedOutRoutes() {
         path="/join-meeting"
         element={<JoinMeetingPage onFound={preJoin} onBack={() => void navigate("/sign-in")} />}
       />
-      <Route path="/meeting/pre-join" element={<PreJoinRoute back="/join-meeting" />} />
+      {meetingRoutes({ ...GUEST_PLACES, userName: undefined })}
       <Route path="/sign-in" element={<SignInPage />} />
       <Route path="/create-account" element={<CreateAccountPage />} />
       <Route path="/code" element={<CodePage />} />
@@ -111,6 +176,7 @@ function CompanyOnly({ children }: { children: ReactNode }) {
 
 function SignedInScreens() {
   const navigate = useNavigate();
+  const { data: user } = useSession();
   const go = (screen: AppScreen) => void navigate(PATHS[screen]);
   const home = () => go("home");
   const settings = (screen: SettingsScreen) =>
@@ -120,7 +186,7 @@ function SignedInScreens() {
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
       <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
-      <Route path="/meeting/pre-join" element={<PreJoinRoute back="/meetings" />} />
+      {meetingRoutes({ ...MEMBER_PLACES, userName: user?.name })}
       <Route
         path="/people"
         element={
