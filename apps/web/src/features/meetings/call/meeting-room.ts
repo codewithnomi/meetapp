@@ -9,6 +9,8 @@ import type { DevicePrefs } from "../device-prefs.ts";
 import type { Joined } from "../visit.ts";
 import { inOrder, personOf, type CallPerson } from "./people.ts";
 import { REACTION_TOPIC, createGate, decodeReaction, encodeReaction, type Reaction } from "./reactions.ts";
+import { roomStateOf } from "./room-state.ts";
+import { startShare, stopShare } from "./share.ts";
 
 export const CONTROL_TOPIC = "meetapp.control";
 const RECONNECT_FOR_MS = 30_000;
@@ -67,6 +69,7 @@ function listen(room: Room, bump: () => void, handlers: RoomHandlers, setConnect
     RoomEvent.ParticipantAttributesChanged,
     RoomEvent.ConnectionQualityChanged,
     RoomEvent.ParticipantPermissionsChanged,
+    RoomEvent.RoomMetadataChanged,
   ];
   for (const event of changes) room.on(event, bump);
   room.on(RoomEvent.TrackSubscribed, playAudio).on(RoomEvent.TrackUnsubscribed, stopAudio);
@@ -134,6 +137,10 @@ export function useMeetingRoom(visit: Joined, prefs: DevicePrefs, handlers: Room
     people,
     connection,
     may: allowedSources(room),
+    state: roomStateOf(room?.metadata),
+    /** Share the source chosen in our picker (or, in a browser, the browser's own choice). */
+    share: async (sourceId: string | undefined) => (room ? (await startShare(room, sourceId), bump()) : undefined),
+    stopShare: async () => (room ? (await stopShare(room), bump()) : undefined),
     setMicrophone: async (on: boolean) => (await room?.localParticipant.setMicrophoneEnabled(on), bump()),
     setCamera: async (on: boolean) => (await room?.localParticipant.setCameraEnabled(on), bump()),
     sendReaction: async (reaction: Reaction) =>

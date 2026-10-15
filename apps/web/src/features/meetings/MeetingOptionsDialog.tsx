@@ -1,7 +1,7 @@
 // "Meeting options" for the organizer and co-organizers (approved canvas, AC-F02-02, 34, 36): who skips
 // the lobby, who presents, co-organizers (only the organizer changes them; people from the workspace),
 // and the attendees' mic and camera. The choices are kept here until Save sends them in one change.
-// Locking belongs to a running call, so it is added by the meeting screen (T15), not here.
+// Locking belongs to a running call: the meeting screen passes `lock`, which applies at once (AC-F02-37).
 import { MeetingOptionsForm, type CoOrganizers } from "@meetapp/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -19,6 +19,8 @@ export interface MeetingOptionsDialogProps {
   meetingId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Inside a call: the lock switch. */
+  lock?: { checked: boolean; onChange: (locked: boolean) => void } | undefined;
 }
 
 /** The organizer adds and removes co-organizers among the workspace's members (not themselves). */
@@ -78,13 +80,43 @@ function useSave(meetingId: string, draft: Options, isOrganizer: boolean, onDone
   return { save, saving: update.isPending, error: text ? t(text.key, text.values ?? {}) : undefined };
 }
 
-function OptionsForm({ meeting, onOpenChange }: { meeting: MeetingDetails; onOpenChange: (open: boolean) => void }) {
+/** The two "who" choices: who skips the lobby, who can present. */
+function useChoices(draft: Options, change: (next: Partial<Options>) => void) {
+  const { t } = useTranslation();
+  const options = AUDIENCES.map((value) => ({ value, label: t(`meetings.options.audience.${value}`) }));
+  return {
+    lobbyBypass: {
+      label: t("meetings.options.lobby"),
+      hint: t("meetings.options.lobbyHint"),
+      value: draft.lobbyBypass,
+      options,
+      onChange: (v: string) => change({ lobbyBypass: v as Options["lobbyBypass"] }),
+    },
+    whoCanPresent: {
+      label: t("meetings.options.present"),
+      hint: t("meetings.options.presentHint"),
+      value: draft.whoCanPresent,
+      options,
+      onChange: (v: string) => change({ whoCanPresent: v as Options["whoCanPresent"] }),
+    },
+  };
+}
+
+function OptionsForm({
+  meeting,
+  onOpenChange,
+  lock,
+}: {
+  meeting: MeetingDetails;
+  onOpenChange: (open: boolean) => void;
+  lock: MeetingOptionsDialogProps["lock"];
+}) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState<Options>(meeting.options);
   const change = (next: Partial<Options>) => setDraft((old) => ({ ...old, ...next }));
   const { coOrganizers, isOrganizer } = useCoOrganizers(meeting, draft, change);
+  const choices = useChoices(draft, change);
   const { save, saving, error } = useSave(meeting.id, draft, isOrganizer, () => onOpenChange(false));
-  const audiences = AUDIENCES.map((value) => ({ value, label: t(`meetings.options.audience.${value}`) }));
   const toSwitch = (key: "allowAttendeeMic" | "allowAttendeeCamera", name: "allowMic" | "allowCamera") => ({
     label: t(`meetings.options.${name}`),
     description: t(`meetings.options.${name}Hint`),
@@ -98,23 +130,13 @@ function OptionsForm({ meeting, onOpenChange }: { meeting: MeetingDetails; onOpe
       title={t("meetings.options.title")}
       meetingTitle={meeting.title}
       closeLabel={t("meetings.options.close")}
-      lobbyBypass={{
-        label: t("meetings.options.lobby"),
-        hint: t("meetings.options.lobbyHint"),
-        value: draft.lobbyBypass,
-        options: audiences,
-        onChange: (v) => change({ lobbyBypass: v as Options["lobbyBypass"] }),
-      }}
-      whoCanPresent={{
-        label: t("meetings.options.present"),
-        hint: t("meetings.options.presentHint"),
-        value: draft.whoCanPresent,
-        options: audiences,
-        onChange: (v) => change({ whoCanPresent: v as Options["whoCanPresent"] }),
-      }}
+      {...choices}
       coOrganizers={coOrganizers}
       allowMic={toSwitch("allowAttendeeMic", "allowMic")}
       allowCamera={toSwitch("allowAttendeeCamera", "allowCamera")}
+      lock={
+        lock ? { label: t("meetings.options.lock"), description: t("meetings.options.lockHint"), ...lock } : undefined
+      }
       guestsNote={t("meetings.options.guestsNote")}
       error={error}
       cancelLabel={t("meetings.options.cancel")}
@@ -128,9 +150,9 @@ function OptionsForm({ meeting, onOpenChange }: { meeting: MeetingDetails; onOpe
   );
 }
 
-export function MeetingOptionsDialog({ meetingId, open, onOpenChange }: MeetingOptionsDialogProps) {
+export function MeetingOptionsDialog({ meetingId, open, onOpenChange, lock }: MeetingOptionsDialogProps) {
   const meeting = useMeeting(open ? meetingId : undefined);
   if (!open || !meeting.data) return null;
   // A new form each time it opens, starting from the saved options.
-  return <OptionsForm key={meeting.dataUpdatedAt} meeting={meeting.data} onOpenChange={onOpenChange} />;
+  return <OptionsForm key={meeting.dataUpdatedAt} meeting={meeting.data} onOpenChange={onOpenChange} lock={lock} />;
 }

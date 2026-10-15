@@ -1,5 +1,18 @@
 export { useAnnouncer } from "./announcer.ts";
-export { endMeeting, meetingInfo, raiseHand } from "./call-api.ts";
+export {
+  actOn,
+  decideLobby,
+  endMeeting,
+  lobbyOf,
+  meetingInfo,
+  muteAll,
+  raiseHand,
+  setLocked,
+  setRole,
+  type Waiting,
+} from "./call-api.ts";
+export { can, canActOn } from "./permissions.ts";
+export { hasSharePicker, screenBlocked, shareSources, type ShareSource } from "./share.ts";
 export { useElapsed } from "./elapsed.ts";
 export {
   CONTROL_TOPIC,

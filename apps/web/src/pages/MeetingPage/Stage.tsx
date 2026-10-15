@@ -65,10 +65,13 @@ export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactio
   const pages = Math.max(1, Math.ceil(people.length / PAGE_SIZE));
   const current = Math.min(page, pages - 1);
   const main = mainOf(people, pinnedId);
+  // A pinned person comes first in the gallery too (Pin for me, as in Teams).
+  const pinned = people.find((p) => p.id === pinnedId);
+  const ordered = pinned ? [pinned, ...people.filter((p) => p.id !== pinned.id)] : people;
   const shown =
     layout === "speaker" && main
       ? [main, ...people.filter((p) => p.id !== main.id)]
-      : people.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
+      : ordered.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   const tiles = shown.map((person) => ({
     id: person.id,
     tile: <Tile person={person} pinned={person.id === pinnedId} onUnpin={onUnpin} reaction={reactions[person.id]} />,

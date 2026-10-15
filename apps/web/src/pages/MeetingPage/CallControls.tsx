@@ -1,15 +1,17 @@
 // The meeting's control bar (approved "Meeting: gallery" canvas, AC-F02-22, 23, 24, 38, 44): microphone
 // and camera (also with ⌘⇧M and ⌘⇧O), the hand (⌘⇧K), reactions, Leave, and End meeting for the
-// organizer and co-organizers. Sharing and More (device settings) arrive with T15 and T16.
+// organizer and co-organizers, and sharing for presenters and up (AC-F02-25). More (device settings)
+// arrives with T16.
 import { ControlBar } from "@meetapp/ui";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import { REACTIONS, EMOJI, shortcutText, type CallPerson, type Reaction } from "../../features/meetings/index.ts";
+import { REACTIONS, EMOJI, can, shortcutText, type CallPerson, type Reaction } from "../../features/meetings/index.ts";
 
 export type Panel = "people" | "info" | undefined;
 
 export interface CallControlsProps {
   me: CallPerson | undefined;
-  may: { microphone: boolean; camera: boolean };
+  may: { microphone: boolean; camera: boolean; screen: boolean };
   elapsed: string;
   count: number;
   panel: Panel;
@@ -18,6 +20,7 @@ export interface CallControlsProps {
   onCamera: () => void;
   onHand: () => void;
   onReaction: (reaction: Reaction) => void;
+  onShare: () => void;
   onLeave: () => void;
   onEnd: () => void;
 }
@@ -37,11 +40,30 @@ function useLabels(me: CallPerson | undefined, may: CallControlsProps["may"]) {
   };
 }
 
+/** Share: on while sharing (pressing stops it); presenters and up may start one (AC-F02-25). */
+function shareSwitch(t: TFunction, me: CallPerson | undefined, may: CallControlsProps["may"], onShare: () => void) {
+  const allowed = may.screen && can(me?.role, "share");
+  const sharing = Boolean(me?.screen);
+  const label = sharing ? "meetings.call.stopShare" : allowed ? "meetings.call.share" : "meetings.call.shareNotAllowed";
+  return { on: sharing, label: t(label), onToggle: onShare, disabled: !sharing && !allowed };
+}
+
+function reactionMenu(t: TFunction, onReaction: (reaction: Reaction) => void) {
+  return {
+    label: t("meetings.call.react"),
+    actions: REACTIONS.map((reaction) => ({
+      id: reaction,
+      label: `${EMOJI[reaction]} ${t(`meetings.call.reactions.${reaction}`)}`,
+      onSelect: () => onReaction(reaction),
+    })),
+  };
+}
+
 export function CallControls(props: CallControlsProps) {
   const { t } = useTranslation();
   const { me, may, elapsed, count, panel, onPanel } = props;
   const labels = useLabels(me, may);
-  const canEnd = me?.role === "organizer" || me?.role === "co_organizer";
+  const canEnd = can(me?.role, "end");
   const toggle = (which: Exclude<Panel, undefined>) => onPanel(panel === which ? undefined : which);
   return (
     <ControlBar
@@ -49,16 +71,9 @@ export function CallControls(props: CallControlsProps) {
       elapsed={elapsed}
       mic={{ on: me?.micOn ?? false, label: labels.mic, onToggle: props.onMicrophone, disabled: !may.microphone }}
       camera={{ on: me?.cameraOn ?? false, label: labels.camera, onToggle: props.onCamera, disabled: !may.camera }}
-      share={{ on: false, label: t("meetings.call.share"), onToggle: () => undefined, disabled: true }}
+      share={shareSwitch(t, me, may, props.onShare)}
       hand={{ on: Boolean(me?.handRaisedAt), label: labels.hand, onToggle: props.onHand }}
-      reactions={{
-        label: t("meetings.call.react"),
-        actions: REACTIONS.map((reaction) => ({
-          id: reaction,
-          label: `${EMOJI[reaction]} ${t(`meetings.call.reactions.${reaction}`)}`,
-          onSelect: () => props.onReaction(reaction),
-        })),
-      }}
+      reactions={reactionMenu(t, props.onReaction)}
       more={{ label: t("meetings.call.moreOptions"), active: false, onClick: () => undefined, disabled: true }}
       leave={{
         label: t("meetings.call.leave"),

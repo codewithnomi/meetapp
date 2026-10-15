@@ -211,11 +211,17 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - desktop test `call.spec.ts` (two windows, same account: see each other, mute by shortcut and a raised hand reach the other window, Leave) passes;
     - **next tasks:** Pin for me (from the participant menu) and sharing come with T15; the weak-connection rule by packet numbers, Rejoin and device settings with T16.
 
-- [ ] **T15: Panels and organizer controls in the app.**
+- [x] **T15: Panels and organizer controls in the app.**
   - Participants panel with the lobby, Meeting info, Meeting options, mute, remove, roles, lock, End meeting with confirmation, "Choose what to share" and sharing, the 30-hour notice.
   - Covers: AC-F02-15, 25, 26, 33, 34, 35, 36, 37, 38, 39.
   - Tests: TC-F02-49, 52, 69, 71, 74, 77, 79, 81.
   - Check: each control works from one window and is seen in the other.
+  - **Built in T15:**
+    - lobby inside the call (lobby bar and the panel's lobby; read on the server's "lobby changed" and every 10 s; arrivals announced), Admit/Deny/Admit all;
+    - each person's menu by role (a copy of the backend's table, `call/permissions.ts`): mute, lower hand, make presenter/attendee, Pin for me (everyone; the pinned person comes first and leads Speaker view), remove; Mute all;
+    - Meeting options inside the call with the Lock switch (applies at once); End meeting with a confirmation;
+    - sharing through "Choose what to share" (desktop picker; a browser uses its own); "Your share ended" when a newer share wins; the 30-hour "ends in 10 minutes" notice;
+    - `call.spec.ts` now also checks: a guest waits, the lobby bar names them "(Guest)", Admit all lets them in, Mute reaches them ("muted you"), Remove shows "You were removed"; sharing through the picker; End meeting reaches the other window. Both checks pass.
 
 - [ ] **T16: Connection and devices in the app.**
   - Weak-connection detection and notice; reconnect, and "You've lost connection" with Rejoin.

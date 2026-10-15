@@ -503,7 +503,9 @@
       "guestsNote": "Whether guests can join is set for the whole workspace by its owner and admins.",
       "cancel": "Cancel",
       "save": "Save",
-      "saving": "Saving"
+      "saving": "Saving",
+      "lock": "Lock the meeting",
+      "lockHint": "Nobody new can join. People who leave can't come back, except you and co-organizers."
     },
     "preJoin": {
       "missing": "Join a meeting",
@@ -629,7 +631,38 @@
       "raised": "{{name}} raised a hand",
       "mutedYou": "{{name}} muted you",
       "mutedYouBody": "You can unmute yourself when you want to talk.",
-      "dismiss": "OK"
+      "dismiss": "OK",
+      "stopShare": "Stop sharing",
+      "shareNotAllowed": "Only presenters can share",
+      "endingSoon": "The meeting ends in 10 minutes",
+      "endingSoonBody": "Meetings last at most 30 hours. Start a new one to keep talking.",
+      "shareEnded": "Your share ended",
+      "shareEndedBody": "Someone else started sharing, so your share stopped.",
+      "unmuteNow": "Unmute",
+      "failed": "That didn't work",
+      "failedBody": "The person may have left, or your role changed. Try again.",
+      "lobby": "Lobby",
+      "waitingBar": "{{count}} people are waiting in the lobby:",
+      "viewLobby": "View lobby",
+      "admitAll": "Admit all",
+      "waitingTitle": "Waiting in the lobby ({{count}})",
+      "admit": "Admit",
+      "deny": "Deny",
+      "admitNamed": "Admit {{name}}",
+      "denyNamed": "Deny {{name}}",
+      "muteAll": "Mute all",
+      "actionsFor": "Actions for {{name}}",
+      "lobbyArrived": "{{name}} is waiting in the lobby",
+      "actions": {
+        "mute": "Mute",
+        "lowerHand": "Lower hand",
+        "make": {
+          "presenter": "Make a presenter",
+          "attendee": "Make an attendee"
+        },
+        "pin": "Pin for me",
+        "remove": "Remove from meeting"
+      }
     },
     "ended": {
       "home": "Back to home",
@@ -663,6 +696,28 @@
         "title": "You left the meeting",
         "body": "You can join again with the link, or the ID and passcode."
       }
+    },
+    "share": {
+      "title": "Choose what to share",
+      "close": "Close",
+      "note": "Everyone in the meeting will see it. If someone else is sharing, your share replaces theirs. Sound from your computer isn't shared.",
+      "kind": "Share",
+      "screen": "Whole screen",
+      "window": "One window",
+      "screens": "Screens",
+      "windows": "Windows",
+      "finding": "Finding screens and windows",
+      "none": "Nothing to share was found.",
+      "blockedTitle": "Allow screen recording",
+      "blockedBody": "Open System Settings → Privacy & Security → Screen & System Audio Recording, turn on MeetApp, then restart it.",
+      "cancel": "Cancel",
+      "share": "Share"
+    },
+    "end": {
+      "title": "End the meeting for everyone?",
+      "body": "Everyone, including people in the lobby, will leave at once.",
+      "cancel": "Cancel",
+      "confirm": "End meeting"
     }
   }
 }

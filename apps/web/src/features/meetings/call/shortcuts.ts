@@ -17,7 +17,9 @@ export function shortcutOf(
 
 export function useMeetingShortcuts(onShortcut: (shortcut: Shortcut) => void): void {
   const handler = useRef(onShortcut);
-  handler.current = onShortcut;
+  useEffect(() => {
+    handler.current = onShortcut;
+  });
   useEffect(() => {
     const mac = isMac();
     const listener = (event: KeyboardEvent) => {

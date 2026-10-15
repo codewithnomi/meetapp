@@ -1,23 +1,57 @@
-// The side panels inside the call: Participants (everyone, raised hands first) and Meeting info (link,
-// ID and passcode for anyone in the call, AC-F02-01). The lobby, the organizer's actions and Meeting
-// options in these panels arrive with T15.
+// The side panels inside the call (approved "Meeting" canvases): Participants, with the lobby on top for
+// those who may let people in, Mute all, and each person's menu (AC-F02-15, 23, 33, 35, 36); and
+// Meeting info (link, ID and passcode for anyone in the call, AC-F02-01) with Meeting options for the
+// organizer and co-organizers.
 import { MeetingInfoPanel, ParticipantPanel } from "@meetapp/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import {
   copyText,
   meetingInfo,
+  muteAll,
   spacedMeetingNumber,
   type CallPerson,
   type Joined,
 } from "../../features/meetings/index.ts";
 import type { Panel } from "./CallControls.tsx";
+import type { Lobby } from "./lobby.ts";
 import { roleName, shownName } from "./names.ts";
+import { personActions, type ActionContext } from "./person-actions.ts";
 
-function PeoplePanel({ people, onClose }: { people: CallPerson[]; onClose: () => void }) {
+export interface PeopleContext {
+  people: CallPerson[];
+  lobby: Lobby;
+  canAdmit: boolean;
+  canMuteAll: boolean;
+  actions: ActionContext;
+}
+
+function lobbySection(t: TFunction, lobby: Lobby) {
+  return {
+    title: t("meetings.call.waitingTitle", { count: lobby.waiting.length }),
+    admitAll: { label: t("meetings.call.admitAll"), onClick: () => lobby.decide("admit", { all: true }) },
+    people: lobby.waiting.map((w) => {
+      const name = w.group === "member" ? w.name : t(`meetings.call.${w.group}`, { name: w.name });
+      return {
+        id: w.attendanceId,
+        name,
+        admitText: t("meetings.call.admit"),
+        denyText: t("meetings.call.deny"),
+        admitLabel: t("meetings.call.admitNamed", { name }),
+        denyLabel: t("meetings.call.denyNamed", { name }),
+        onAdmit: () => lobby.decide("admit", { attendanceIds: [w.attendanceId] }),
+        onDeny: () => lobby.decide("deny", { attendanceIds: [w.attendanceId] }),
+      };
+    }),
+  };
+}
+
+function PeoplePanel({ context, onClose }: { context: PeopleContext; onClose: () => void }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
+  const { people, lobby, canAdmit, canMuteAll, actions } = context;
   const found = query.trim().toLowerCase();
   const shown = people.filter((p) => found === "" || p.name.toLowerCase().includes(found));
   return (
@@ -26,7 +60,13 @@ function PeoplePanel({ people, onClose }: { people: CallPerson[]; onClose: () =>
       closeLabel={t("meetings.call.closePeople")}
       onClose={onClose}
       search={{ label: t("meetings.call.findPerson"), value: query, onChange: setQuery }}
+      lobby={canAdmit ? lobbySection(t, lobby) : undefined}
       inMeetingTitle={t("meetings.call.inMeeting", { count: people.length })}
+      muteAll={
+        canMuteAll
+          ? { label: t("meetings.call.muteAll"), onClick: () => void muteAll(actions.visit).catch(actions.onFailed) }
+          : undefined
+      }
       noMatchText={t("meetings.call.noMatch")}
       people={shown.map((p) => ({
         id: p.id,
@@ -39,12 +79,22 @@ function PeoplePanel({ people, onClose }: { people: CallPerson[]; onClose: () =>
         micLabel: p.micOn ? t("meetings.call.micOnState") : t("meetings.call.muted"),
         cameraOn: p.cameraOn,
         cameraLabel: p.cameraOn ? t("meetings.call.cameraOnState") : t("meetings.call.cameraOffState"),
+        actions: personActions(p, actions),
+        actionsLabel: t("meetings.call.actionsFor", { name: shownName(t, p) }),
       }))}
     />
   );
 }
 
-function InfoPanel({ visit, onClose }: { visit: Joined; onClose: () => void }) {
+function InfoPanel({
+  visit,
+  onClose,
+  onOptions,
+}: {
+  visit: Joined;
+  onClose: () => void;
+  onOptions: ((meetingId: string) => void) | undefined;
+}) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<string>();
   const info = useQuery({ queryKey: ["call-meeting", visit.call?.callId], queryFn: () => meetingInfo(visit) });
@@ -76,23 +126,22 @@ function InfoPanel({ visit, onClose }: { visit: Joined; onClose: () => void }) {
         { label: t("meetings.call.organizer"), value: meeting.organizer.name },
       ]}
       copyAll={{ label: t("meetings.ready.copyAll"), onClick: () => copy(all) }}
+      options={onOptions ? { label: t("meetings.ready.options"), onClick: () => onOptions(meeting.id) } : undefined}
       status={status}
     />
   );
 }
 
-export function Panels({
-  panel,
-  people,
-  visit,
-  onClose,
-}: {
+export interface PanelsProps {
   panel: Panel;
-  people: CallPerson[];
-  visit: Joined;
+  context: PeopleContext;
   onClose: () => void;
-}) {
-  if (panel === "people") return <PeoplePanel people={people} onClose={onClose} />;
-  if (panel === "info") return <InfoPanel visit={visit} onClose={onClose} />;
+  /** Organizer and co-organizers: opens Meeting options. */
+  onOptions: ((meetingId: string) => void) | undefined;
+}
+
+export function Panels({ panel, context, onClose, onOptions }: PanelsProps) {
+  if (panel === "people") return <PeoplePanel context={context} onClose={onClose} />;
+  if (panel === "info") return <InfoPanel visit={context.actions.visit} onClose={onClose} onOptions={onOptions} />;
   return null;
 }

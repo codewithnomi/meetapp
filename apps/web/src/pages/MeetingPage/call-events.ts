@@ -56,16 +56,36 @@ export function usePeopleAnnouncements(people: CallPerson[], announce: (kind: st
   }, [people, announce, t]);
 }
 
-export function useCallEvents() {
+/** A message over the stage until dismissed (canvas "Messages"). */
+export type CallNotice = { kind: "muted"; by: string } | { kind: "shareEnded" } | { kind: "endingSoon" };
+
+/**
+ * Server messages (trusted only from the server, design 3.6): "X muted you", "Your share ended" (the
+ * backend let a newer share win; the app stops its own), the 30-hour warning, and lobby changes.
+ */
+export function useCallEvents(on: { shareReplaced: () => void; lobbyChanged: () => void }) {
   const { t } = useTranslation();
   const announcer = useAnnouncer();
   const { reactions, show } = useReactions();
-  const [mutedBy, setMutedBy] = useState<string>();
+  const [notice, setNotice] = useState<CallNotice>();
+  const handlers = useRef(on);
+  useEffect(() => {
+    handlers.current = on;
+  });
   const onControl = (message: ControlMessage) => {
-    if (message.type !== "muted_by") return;
-    const by = message.by ?? t("meetings.ended.someone");
-    setMutedBy(by);
-    announcer.announce("muted", t("meetings.call.mutedYou", { name: by }));
+    if (message.type === "muted_by") {
+      const by = message.by ?? t("meetings.ended.someone");
+      setNotice({ kind: "muted", by });
+      announcer.announce("muted", t("meetings.call.mutedYou", { name: by }));
+    } else if (message.type === "share_replaced") {
+      handlers.current.shareReplaced();
+      setNotice({ kind: "shareEnded" });
+    } else if (message.type === "ending_soon") {
+      setNotice({ kind: "endingSoon" });
+      announcer.announce("ending", t("meetings.call.endingSoon"));
+    } else if (message.type === "lobby_changed") {
+      handlers.current.lobbyChanged();
+    }
   };
-  return { announcer, reactions, showReaction: show, mutedBy, clearMutedBy: () => setMutedBy(undefined), onControl };
+  return { announcer, reactions, showReaction: show, notice, clearNotice: () => setNotice(undefined), onControl };
 }
