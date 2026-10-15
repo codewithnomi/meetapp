@@ -4,89 +4,27 @@
 // happened (removed, ended, …) and shows that message.
 import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { apiRequest } from "../../features/api/index.ts";
 import {
   MeetingOptionsDialog,
   can,
-  endMeeting,
   hasSharePicker,
-  leaveMeeting,
   setLocked,
-  loadPrefs,
-  raiseHand,
   useElapsed,
-  useMeetingRoom,
-  useMeetingShortcuts,
   useVisit,
-  type Attendance,
   type Joined,
-  type Reaction,
 } from "../../features/meetings/index.ts";
 import { CallControls, type Panel } from "./CallControls.tsx";
 import { Panels } from "./Panels.tsx";
 import { Stage } from "./Stage.tsx";
-import { useCallEvents, usePeopleAnnouncements } from "./call-events.ts";
+import { DevicesPanel } from "./DevicesPanel.tsx";
 import { EndDialog } from "./EndDialog.tsx";
-import { useLobby } from "./lobby.ts";
 import { Notices } from "./Notices.tsx";
 import { ShareDialog } from "./ShareDialog.tsx";
+import { useCall, type CallState, type MeetingPageProps } from "./use-call.ts";
 
-export interface MeetingPageProps {
-  onLeft: () => void;
-  onOutcome: (outcome: Attendance) => void;
-}
-
-/** After an unexpected disconnect: the backend says why (removed, ended, dropped). */
-async function outcomeOf(visit: Joined): Promise<Attendance> {
-  return apiRequest<Attendance>(`/api/v1/attendances/${visit.attendanceId}`, {
-    headers: { "x-meeting-ticket": visit.ticket },
-  }).catch(() => ({ ...visit, status: "left" as const, leftReason: "dropped" as const }));
-}
-
-/** The call and what the person can do in it: devices, hand, sharing, shortcuts, leaving. */
-function useCall(visit: Joined, { onLeft, onOutcome }: MeetingPageProps) {
-  const [prefs] = useState(loadPrefs);
-  const leaving = useRef(false);
-  const stopSharing = useRef(() => undefined as unknown);
-  const lobbyRefresh = useRef(() => undefined as unknown);
-  const events = useCallEvents({
-    shareReplaced: () => stopSharing.current(),
-    lobbyChanged: () => lobbyRefresh.current(),
-  });
-  const end = useVisit((state) => state.end);
-  const finish = (go: () => void) => (end(), go());
-  const room = useMeetingRoom(visit, prefs, {
-    onReaction: events.showReaction,
-    onControl: events.onControl,
-    onDisconnected: () => {
-      if (!leaving.current) void outcomeOf(visit).then((outcome) => finish(() => onOutcome(outcome)));
-    },
-  });
-  usePeopleAnnouncements(room.people, events.announcer.announce);
-  const me = room.people.find((p) => p.isYou);
-  const lobby = useLobby(visit, can(me?.role, "admit"), events.announcer.announce);
-  // The server's messages reach the newest share and lobby functions (set after each render).
-  useEffect(() => {
-    stopSharing.current = room.stopShare;
-    lobbyRefresh.current = lobby.refresh;
-  });
-  const actions = {
-    microphone: () => void room.setMicrophone(!(me?.micOn ?? false)).catch(() => undefined),
-    camera: () => void room.setCamera(!(me?.cameraOn ?? false)).catch(() => undefined),
-    hand: () => void raiseHand(visit, !me?.handRaisedAt).catch(() => undefined),
-    react: (reaction: Reaction) =>
-      void room.sendReaction(reaction).then(() => events.showReaction(visit.attendanceId, reaction)),
-    leave: () => {
-      leaving.current = true;
-      void leaveMeeting(visit).then(() => finish(onLeft));
-    },
-    end: () => void endMeeting(visit).catch(() => undefined),
-  };
-  useMeetingShortcuts((shortcut) => actions[shortcut]());
-  return { room, me, events, actions, lobby };
-}
+export type { MeetingPageProps };
 
 type Dialog = { kind: "share" } | { kind: "end" } | { kind: "options"; meetingId: string } | undefined;
 
@@ -110,8 +48,6 @@ function LayoutSwitch({
     />
   );
 }
-
-type CallState = ReturnType<typeof useCall> & { visit: Joined };
 
 /** The lobby bar over the stage, for those who may let people in (approved "Meeting: gallery"). */
 function lobbyBar(t: TFunction, call: CallState, openPeople: () => void): LobbyBar | undefined {
@@ -215,41 +151,69 @@ function Controls({ screen }: { screen: Screen }) {
   );
 }
 
+function ScreenNotices({ screen }: { screen: Screen }) {
+  const { call, view } = screen;
+  const { events, actions, room, care } = call;
+  return (
+    <Notices
+      notice={events.notice}
+      failed={view.failed}
+      reconnecting={room.connection === "reconnecting"}
+      gone={care.gone}
+      onUnmute={actions.microphone}
+      onDismiss={events.clearNotice}
+      onDismissFailed={() => view.setFailed(false)}
+      onDismissGone={care.clearGone}
+    />
+  );
+}
+
+function ScreenStage({ screen }: { screen: Screen }) {
+  const { call, view } = screen;
+  return (
+    <Stage
+      people={call.room.people}
+      layout={view.layout}
+      page={view.page}
+      onPage={view.setPage}
+      pinnedId={view.pinnedId}
+      onUnpin={() => view.setPinnedId(undefined)}
+      reactions={call.events.reactions}
+      ownWeak={call.care.ownWeak}
+    />
+  );
+}
+
+function ScreenPanel({ screen }: { screen: Screen }) {
+  const { call, view, context, onOptions } = screen;
+  const close = () => view.setPanel(undefined);
+  if (view.panel === "devices")
+    return (
+      <DevicesPanel
+        room={call.room.room}
+        prefs={call.prefs}
+        setPrefs={call.setPrefs}
+        weak={call.care.ownWeak}
+        onClose={close}
+      />
+    );
+  return <Panels panel={view.panel} context={context} onClose={close} onOptions={onOptions} />;
+}
+
 function Call(props: MeetingPageProps & { visit: Joined }) {
   const screen = useScreen(props);
-  const { t, call, view, context, onOptions } = screen;
-  const { room, events, actions, visit } = call;
+  const { t, call, view, context } = screen;
   return (
     <>
       <MeetingLayout
-        title={visit.title}
+        title={call.visit.title}
         layoutSwitch={<LayoutSwitch value={view.layout} onChange={view.setLayout} />}
         lobby={context.canAdmit ? lobbyBar(t, call, () => view.setPanel("people")) : undefined}
-        notices={
-          <Notices
-            notice={events.notice}
-            failed={view.failed}
-            onUnmute={actions.microphone}
-            onDismiss={events.clearNotice}
-            onDismissFailed={() => view.setFailed(false)}
-          />
-        }
-        stage={
-          <Stage
-            people={room.people}
-            layout={view.layout}
-            page={view.page}
-            onPage={view.setPage}
-            pinnedId={view.pinnedId}
-            onUnpin={() => view.setPinnedId(undefined)}
-            reactions={events.reactions}
-          />
-        }
-        panel={
-          <Panels panel={view.panel} context={context} onClose={() => view.setPanel(undefined)} onOptions={onOptions} />
-        }
+        notices={<ScreenNotices screen={screen} />}
+        stage={<ScreenStage screen={screen} />}
+        panel={<ScreenPanel screen={screen} />}
         controls={<Controls screen={screen} />}
-        announcement={events.announcer.current}
+        announcement={call.events.announcer.current}
       />
       <Overlays dialog={view.dialog} call={call} onClose={() => view.setDialog(undefined)} />
     </>

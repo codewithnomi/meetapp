@@ -4,6 +4,7 @@
 import { Button, Icon, Input, SegmentedControl } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
+import { ActionErrorNotice } from "../auth/index.ts";
 import { idAddress, linkAddress } from "./meeting-address.ts";
 import { meetingErrorText } from "./meeting-errors.ts";
 import { useFindMeeting, type MeetingFound } from "./meetings-api.ts";
@@ -12,7 +13,8 @@ type Way = "id" | "link";
 
 function useErrorText(error: ReturnType<typeof useFindMeeting>["error"]): string | undefined {
   const { t } = useTranslation();
-  if (!error) return undefined;
+  // Not reaching MeetApp isn't about what was typed: it shows below, with Retry.
+  if (!error || error.code === "NETWORK_ERROR") return undefined;
   const text = meetingErrorText(error.code, error.retryAfterSeconds);
   return t(text.key, text.values ?? {});
 }
@@ -87,8 +89,8 @@ export function JoinMeetingForm({ onFound, note }: { onFound: (found: MeetingFou
   const find = useFindMeeting();
   const error = useErrorText(find.error);
   const set: Set = (field) => (event) => setValues((old) => ({ ...old, [field]: event.target.value }));
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = (event?: FormEvent) => {
+    event?.preventDefault();
     const address = way === "link" ? linkAddress(values.link) : idAddress(values.meetingNumber, values.passcode);
     find.mutate(address, { onSuccess: onFound });
   };
@@ -121,6 +123,7 @@ export function JoinMeetingForm({ onFound, note }: { onFound: (found: MeetingFou
         <Fields way={way} values={values} set={set} error={error} />
         <JoinButton pending={find.isPending} />
       </form>
+      {find.error?.code === "NETWORK_ERROR" ? <ActionErrorNotice error={find.error} onRetry={() => submit()} /> : null}
       {note ? <p className="m-0 text-[13px] text-ink-muted">{note}</p> : null}
     </section>
   );

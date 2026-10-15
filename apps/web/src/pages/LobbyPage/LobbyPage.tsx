@@ -5,6 +5,7 @@
 import { Button, IconButton, Spinner, VideoTile } from "@meetapp/ui";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { ActionErrorNotice } from "../../features/auth/index.ts";
 import {
   LocalVideo,
   leaveMeeting,
@@ -26,13 +27,13 @@ export interface LobbyPageProps {
 /** Moves on as soon as the status is no longer "waiting". */
 function useOutcome({ onAdmitted, onOutcome }: Pick<LobbyPageProps, "onAdmitted" | "onOutcome">) {
   const visit = useVisit((state) => state.visit);
-  useLobbyStatus(visit);
+  const status = useLobbyStatus(visit);
   useEffect(() => {
     if (!visit || visit.status === "waiting") return;
     if (visit.status === "admitted" && visit.call) onAdmitted(visit);
     else if (visit.status !== "admitted") onOutcome(visit);
   }, [visit, onAdmitted, onOutcome]);
-  return visit;
+  return { visit, status };
 }
 
 function Controls({ devices, onLeave }: { devices: PreJoinDevices; onLeave: () => void }) {
@@ -61,7 +62,7 @@ function Controls({ devices, onLeave }: { devices: PreJoinDevices; onLeave: () =
 
 export function LobbyPage({ name, onAdmitted, onOutcome, onLeft }: LobbyPageProps) {
   const { t } = useTranslation();
-  const visit = useOutcome({ onAdmitted, onOutcome });
+  const { visit, status } = useOutcome({ onAdmitted, onOutcome });
   const end = useVisit((state) => state.end);
   const devices = usePreJoinDevices();
   const { prefs, camera } = devices;
@@ -91,6 +92,7 @@ export function LobbyPage({ name, onAdmitted, onOutcome, onLeft }: LobbyPageProp
           </div>
         </div>
         <Controls devices={devices} onLeave={leave} />
+        {status.isError ? <ActionErrorNotice error={status.error} onRetry={() => void status.refetch()} /> : null}
       </div>
     </main>
   );

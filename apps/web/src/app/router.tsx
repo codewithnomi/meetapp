@@ -13,7 +13,14 @@ import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
-import { useVisit, type Attendance, type Joined, type PreJoinState } from "../features/meetings/index.ts";
+import {
+  meetingErrorText,
+  useRejoin,
+  useVisit,
+  type Attendance,
+  type Joined,
+  type PreJoinState,
+} from "../features/meetings/index.ts";
 import { LobbyPage } from "../pages/LobbyPage/index.ts";
 import { MeetingEndedPage } from "../pages/MeetingEndedPage/index.ts";
 import { MeetingPage } from "../pages/MeetingPage/index.ts";
@@ -132,13 +139,27 @@ function CallRoute({ home }: { home: string }) {
 function EndedRoute({ home, join }: { home: string; join: string }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const visit = useVisit((state) => state.visit);
   const end = useVisit((state) => state.end);
+  const rejoin = useRejoin();
+  const afterJoin = useAfterJoin();
   const go = (path: string) => (end(), void navigate(path));
+  const text = rejoin.error ? meetingErrorText(rejoin.error.code, rejoin.error.retryAfterSeconds) : undefined;
   return (
     <MeetingEndedPage
       outcome={location.state as Attendance | undefined}
       onHome={() => go(home)}
       onTryAgain={() => go(join)}
+      rejoin={
+        visit
+          ? {
+              onRejoin: () => rejoin.mutate(visit, { onSuccess: afterJoin }),
+              pending: rejoin.isPending,
+              error: text ? t(text.key, text.values ?? {}) : undefined,
+            }
+          : undefined
+      }
     />
   );
 }

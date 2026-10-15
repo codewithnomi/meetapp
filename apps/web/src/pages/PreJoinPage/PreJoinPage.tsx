@@ -24,11 +24,18 @@ export interface PreJoinPageProps {
 
 const MAX_NAME = 60;
 
-function JoinError({ join }: { join: ReturnType<typeof useJoinMeeting> }) {
+/** Why joining failed; when MeetApp can't be reached, with Retry (AC-F02-46). */
+function JoinError({ join, onRetry }: { join: ReturnType<typeof useJoinMeeting>; onRetry: () => void }) {
   const { t } = useTranslation();
   if (!join.error) return null;
   const text = meetingErrorText(join.error.code, join.error.retryAfterSeconds);
-  return <Notice tone="danger">{t(text.key, text.values ?? {})}</Notice>;
+  const retry =
+    join.error.code === "NETWORK_ERROR" ? { action: { label: t("meetings.call.retry"), onClick: onRetry } } : {};
+  return (
+    <Notice tone="danger" {...retry}>
+      {t(text.key, text.values ?? {})}
+    </Notice>
+  );
 }
 
 function JoinButtons({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
@@ -57,8 +64,8 @@ function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps
   const [guestName, setGuestName] = useState("");
   const [nameError, setNameError] = useState<string>();
   const guest = userName === undefined;
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
+  const submit = (event?: FormEvent) => {
+    event?.preventDefault();
     const name = guestName.trim();
     if (guest && (name.length < 1 || name.length > MAX_NAME)) return setNameError(t("meetings.preJoin.nameRule"));
     setNameError(undefined);
@@ -88,7 +95,7 @@ function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps
           {...(nameError ? { error: nameError } : {})}
         />
       ) : null}
-      <JoinError join={join} />
+      <JoinError join={join} onRetry={() => void submit()} />
       <JoinButtons pending={join.isPending} onCancel={onCancel} />
       {guest ? <p className="m-0 text-[13px] text-ink-muted">{t("meetings.preJoin.terms")}</p> : null}
     </form>

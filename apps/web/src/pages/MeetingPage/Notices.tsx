@@ -1,15 +1,20 @@
-// Messages over the stage (canvas "Messages"): "X muted you" (with Unmute), "Your share ended", "The
-// meeting ends in 10 minutes", and a short note when an action was refused. Each is read out once.
+// Messages over the stage (canvas "Messages"): "Reconnecting…", "X muted you" (with Unmute), "Your share
+// ended", "The meeting ends in 10 minutes", a device that was unplugged and what is used now, and a
+// short note when an action was refused. Each is read out once.
 import { MessageCard } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
+import type { DeviceGone } from "../../features/meetings/index.ts";
 import type { CallNotice } from "./call-events.ts";
 
 export interface NoticesProps {
   notice: CallNotice | undefined;
   failed: boolean;
+  reconnecting: boolean;
+  gone: DeviceGone | undefined;
   onUnmute: () => void;
   onDismiss: () => void;
   onDismissFailed: () => void;
+  onDismissGone: () => void;
 }
 
 function NoticeCard({
@@ -50,11 +55,44 @@ function NoticeCard({
   );
 }
 
-export function Notices({ notice, failed, onUnmute, onDismiss, onDismissFailed }: NoticesProps) {
+function Reconnecting() {
   const { t } = useTranslation();
-  if (!notice && !failed) return null;
+  return (
+    <MessageCard
+      icon="signal"
+      tone="warning"
+      live="polite"
+      className="max-w-100"
+      title={t("meetings.call.reconnecting")}
+      body={t("meetings.call.reconnectingBody")}
+    />
+  );
+}
+
+function Gone({ gone, onDismiss }: { gone: DeviceGone; onDismiss: () => void }) {
+  const { t } = useTranslation();
+  const what = gone.gone || t(`meetings.call.deviceKinds.${gone.kind}`);
+  return (
+    <MessageCard
+      icon="sliders"
+      tone="neutral"
+      live="polite"
+      className="max-w-100"
+      title={t("meetings.call.deviceGone", { gone: what })}
+      body={t("meetings.call.deviceNow", { now: gone.now || t("meetings.devices.defaultSpeakers") })}
+      primary={{ label: t("meetings.call.dismiss"), onClick: onDismiss }}
+    />
+  );
+}
+
+export function Notices(props: NoticesProps) {
+  const { t } = useTranslation();
+  const { notice, failed, reconnecting, gone, onUnmute, onDismiss, onDismissFailed, onDismissGone } = props;
+  if (!notice && !failed && !reconnecting && !gone) return null;
   return (
     <>
+      {reconnecting ? <Reconnecting /> : null}
+      {gone ? <Gone gone={gone} onDismiss={onDismissGone} /> : null}
       {notice ? <NoticeCard notice={notice} onUnmute={onUnmute} onDismiss={onDismiss} /> : null}
       {failed ? (
         <MessageCard

@@ -223,12 +223,21 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - sharing through "Choose what to share" (desktop picker; a browser uses its own); "Your share ended" when a newer share wins; the 30-hour "ends in 10 minutes" notice;
     - `call.spec.ts` now also checks: a guest waits, the lobby bar names them "(Guest)", Admit all lets them in, Mute reaches them ("muted you"), Remove shows "You were removed"; sharing through the picker; End meeting reaches the other window. Both checks pass.
 
-- [ ] **T16: Connection and devices in the app.**
+- [x] **T16: Connection and devices in the app.**
   - Weak-connection detection and notice; reconnect, and "You've lost connection" with Rejoin.
   - Device settings panel, noise suppression, unplugged devices, Leave and closed apps, the 10-second "Can't reach MeetApp" with Retry.
   - Covers: AC-F02-28, 29, 30, 31, 32, 46.
   - Tests: TC-F02-54, 55, 56, 59, 60, 61, 62, 63, 91.
   - Check: cutting the network for 10 seconds brings the person back by themselves in the same role.
+  - **Built in T16:**
+    - weak connection: the rule (over 5% loss or 300 ms, 5 seconds in a row; unit test TC-F02-54) read every second from the own connection's WebRTC numbers, shown only on the own tile and in Device settings;
+    - "Reconnecting…" while LiveKit retries (30 seconds); after that "You've lost connection" with **Rejoin** (the old ticket, once, within 30 minutes), which goes to the call or the lobby by the usual rules;
+    - Device settings panel from More: camera, microphone with level, speakers with Test speakers, noise suppression (on by default, applied to the sent microphone at once), all remembered;
+    - an unplugged device in use: the default takes over and the screen says which device changed;
+    - closing the window tells the backend (Leave sent as the page closes), so others see the person leave at once;
+    - "Can't reach MeetApp. Check your connection." with **Retry** on Join now, Join a meeting and the lobby's status check (Meet now and Get link had it already);
+    - the window check now also opens Device settings and switches noise suppression off.
+    - **At the end (D052, extended):** the network-cut checks (TC-F02-55, 56, 59), unplugging devices (TC-F02-61), leave and crash (TC-F02-62, 63) and the unreachable backend (TC-F02-91).
 
 - [ ] **T17: Workspace settings: Allow guests.**
   - WorkspaceSettingsPage (name moved from F01, Allow guests) and the menu item rename.

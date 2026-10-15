@@ -33,7 +33,7 @@ function newRoom(prefs: DevicePrefs): Room {
     dynacast: true,
     publishDefaults: { simulcast: true },
     audioCaptureDefaults: {
-      noiseSuppression: true,
+      noiseSuppression: prefs.noiseSuppression,
       echoCancellation: true,
       ...(prefs.microphoneId ? { deviceId: prefs.microphoneId } : {}),
     },
@@ -134,6 +134,7 @@ export function useMeetingRoom(visit: Joined, prefs: DevicePrefs, handlers: Room
     [room, version],
   );
   return {
+    room,
     people,
     connection,
     may: allowedSources(room),

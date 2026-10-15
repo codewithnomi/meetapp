@@ -17,6 +17,8 @@ export interface StageProps {
   pinnedId: string | undefined;
   onUnpin: () => void;
   reactions: Record<string, Reaction>;
+  /** The person's own line is weak; shown only on their own tile (AC-F02-28). */
+  ownWeak: boolean;
 }
 
 function Tile({
@@ -24,11 +26,13 @@ function Tile({
   pinned,
   onUnpin,
   reaction,
+  weak,
 }: {
   person: CallPerson;
   pinned: boolean;
   onUnpin: () => void;
   reaction: Reaction | undefined;
+  weak: boolean;
 }) {
   const { t } = useTranslation();
   const name = shownName(t, person);
@@ -42,7 +46,7 @@ function Tile({
       mutedLabel={person.micOn ? undefined : t("meetings.call.muted")}
       speakingText={person.speaking ? t("meetings.call.speaking") : undefined}
       handText={person.handRaisedAt ? t("meetings.call.handRaised") : undefined}
-      weakText={person.weak ? t("meetings.call.weak") : undefined}
+      weakText={weak ? t("meetings.call.weak") : undefined}
       pinned={pinned ? { text: t("meetings.call.pinned"), unpinLabel: t("meetings.call.unpin"), onUnpin } : undefined}
       reaction={reaction ? { emoji: EMOJI[reaction], text: person.name } : undefined}
     />
@@ -60,7 +64,7 @@ function mainOf(people: CallPerson[], pinnedId: string | undefined): CallPerson 
   );
 }
 
-export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactions }: StageProps) {
+export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactions, ownWeak }: StageProps) {
   const { t } = useTranslation();
   const pages = Math.max(1, Math.ceil(people.length / PAGE_SIZE));
   const current = Math.min(page, pages - 1);
@@ -74,7 +78,15 @@ export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactio
       : ordered.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   const tiles = shown.map((person) => ({
     id: person.id,
-    tile: <Tile person={person} pinned={person.id === pinnedId} onUnpin={onUnpin} reaction={reactions[person.id]} />,
+    tile: (
+      <Tile
+        person={person}
+        pinned={person.id === pinnedId}
+        onUnpin={onUnpin}
+        reaction={reactions[person.id]}
+        weak={person.isYou && (ownWeak || person.weak)}
+      />
+    ),
   }));
   const rest = people.length - 5;
   return (

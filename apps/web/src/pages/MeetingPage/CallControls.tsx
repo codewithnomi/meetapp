@@ -1,13 +1,12 @@
 // The meeting's control bar (approved "Meeting: gallery" canvas, AC-F02-22, 23, 24, 38, 44): microphone
 // and camera (also with ⌘⇧M and ⌘⇧O), the hand (⌘⇧K), reactions, Leave, and End meeting for the
-// organizer and co-organizers, and sharing for presenters and up (AC-F02-25). More (device settings)
-// arrives with T16.
+// organizer and co-organizers, sharing for presenters and up (AC-F02-25), and More for device settings.
 import { ControlBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { REACTIONS, EMOJI, can, shortcutText, type CallPerson, type Reaction } from "../../features/meetings/index.ts";
 
-export type Panel = "people" | "info" | undefined;
+export type Panel = "people" | "info" | "devices" | undefined;
 
 export interface CallControlsProps {
   me: CallPerson | undefined;
@@ -74,7 +73,7 @@ export function CallControls(props: CallControlsProps) {
       share={shareSwitch(t, me, may, props.onShare)}
       hand={{ on: Boolean(me?.handRaisedAt), label: labels.hand, onToggle: props.onHand }}
       reactions={reactionMenu(t, props.onReaction)}
-      more={{ label: t("meetings.call.moreOptions"), active: false, onClick: () => undefined, disabled: true }}
+      more={{ label: t("meetings.call.moreOptions"), active: panel === "devices", onClick: () => toggle("devices") }}
       leave={{
         label: t("meetings.call.leave"),
         onLeave: props.onLeave,

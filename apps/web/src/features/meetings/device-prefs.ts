@@ -7,6 +7,8 @@ export interface DevicePrefs {
   speakerId: string;
   cameraOn: boolean;
   microphoneOn: boolean;
+  /** On by default (AC-F02-30). */
+  noiseSuppression: boolean;
 }
 
 const KEY = "meetapp.devices";
@@ -16,6 +18,7 @@ export const DEFAULT_PREFS: DevicePrefs = {
   speakerId: "",
   cameraOn: true,
   microphoneOn: true,
+  noiseSuppression: true,
 };
 
 export function loadPrefs(storage: Pick<Storage, "getItem"> = localStorage): DevicePrefs {
@@ -29,6 +32,7 @@ export function loadPrefs(storage: Pick<Storage, "getItem"> = localStorage): Dev
       speakerId: text(saved.speakerId),
       cameraOn: on(saved.cameraOn),
       microphoneOn: on(saved.microphoneOn),
+      noiseSuppression: on(saved.noiseSuppression),
     };
   } catch {
     return DEFAULT_PREFS;

@@ -1,7 +1,8 @@
 // MeetingEndedPage (page): the message that ends a visit (approved "Messages" canvas): denied, nobody let
-// you in (15 minutes, AC-F02-18), removed (by whom, AC-F02-35), the meeting ended, locked, or guests
-// not allowed. One card, read out at once, with the way back.
+// you in (15 minutes, AC-F02-18), removed (by whom, AC-F02-35), the meeting ended, locked, guests not
+// allowed, or a connection lost for over 30 seconds with Rejoin (AC-F02-29). One card, read out at once.
 import { MessageCard, type IconName } from "@meetapp/ui";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { Attendance } from "../../features/meetings/index.ts";
 
@@ -10,9 +11,11 @@ export interface MeetingEndedPageProps {
   onHome: () => void;
   /** "Try again" after waiting too long: back to Join a meeting. */
   onTryAgain: () => void;
+  /** After a lost connection: Rejoin, with its waiting state and what went wrong. */
+  rejoin?: { onRejoin: () => void; pending: boolean; error: string | undefined } | undefined;
 }
 
-type Outcome = "denied" | "timedOut" | "removed" | "ended" | "locked" | "noGuests" | "left";
+type Outcome = "denied" | "timedOut" | "removed" | "ended" | "locked" | "noGuests" | "lost" | "left";
 
 function outcomeOf(outcome: MeetingEndedPageProps["outcome"]): Outcome {
   if (!outcome) return "left";
@@ -22,6 +25,7 @@ function outcomeOf(outcome: MeetingEndedPageProps["outcome"]): Outcome {
   if (outcome.leftReason === "ended") return "ended";
   if (outcome.leftReason === "locked") return "locked";
   if (outcome.leftReason === "guests_off") return "noGuests";
+  if (outcome.leftReason === "dropped") return "lost";
   return "left";
 }
 
@@ -32,10 +36,20 @@ const LOOK: Record<Outcome, { icon: IconName; tone: "neutral" | "warning" | "dan
   ended: { icon: "check", tone: "neutral" },
   locked: { icon: "lock", tone: "neutral" },
   noGuests: { icon: "users", tone: "neutral" },
+  lost: { icon: "signal", tone: "warning" },
   left: { icon: "check", tone: "neutral" },
 };
 
-export function MeetingEndedPage({ outcome, onHome, onTryAgain }: MeetingEndedPageProps) {
+/** The second button: Try again after a long wait, Rejoin after a lost connection. */
+function extraAction(t: TFunction, which: Outcome, props: MeetingEndedPageProps) {
+  if (which === "timedOut") return { secondary: { label: t("meetings.ended.tryAgain"), onClick: props.onTryAgain } };
+  if (which === "lost" && props.rejoin && !props.rejoin.pending)
+    return { secondary: { label: t("meetings.ended.rejoin"), onClick: props.rejoin.onRejoin } };
+  return {};
+}
+
+export function MeetingEndedPage(props: MeetingEndedPageProps) {
+  const { outcome, onHome } = props;
   const { t } = useTranslation();
   const which = outcomeOf(outcome);
   const by = outcome?.actedByName ?? t("meetings.ended.someone");
@@ -47,9 +61,9 @@ export function MeetingEndedPage({ outcome, onHome, onTryAgain }: MeetingEndedPa
         headingLevel={1}
         live="assertive"
         title={t(`meetings.ended.${which}.title`)}
-        body={t(`meetings.ended.${which}.body`, { name: by })}
+        body={props.rejoin?.error ?? t(`meetings.ended.${which}.body`, { name: by })}
         primary={{ label: t("meetings.ended.home"), onClick: onHome }}
-        {...(which === "timedOut" ? { secondary: { label: t("meetings.ended.tryAgain"), onClick: onTryAgain } } : {})}
+        {...extraAction(t, which, props)}
       />
     </main>
   );

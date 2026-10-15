@@ -38,11 +38,29 @@ export function useLobbyStatus(visit: Joined | undefined) {
   });
 }
 
-/** Leave the lobby or the meeting; the visit ends in the app whatever the backend answers. */
-export async function leaveMeeting(visit: Joined | undefined): Promise<void> {
+/** Leave the lobby or the meeting; the visit ends in the app whatever the backend answers. Also sent
+ * while the window closes, so the others see the person leave at once (AC-F02-32). */
+export async function leaveMeeting(visit: Joined | undefined, closing = false): Promise<void> {
   if (!visit) return;
   await apiRequest(`/api/v1/attendances/${visit.attendanceId}`, {
     method: "DELETE",
     headers: ticketHeader(visit.ticket),
+    keepalive: closing,
   }).catch(() => undefined);
+}
+
+/**
+ * Rejoin after a lost connection (AC-F02-29): the old ticket, once, within 30 minutes. The backend makes a
+ * new visit under the usual rules (lock, removal, lobby) with the old role.
+ */
+export function useRejoin() {
+  const start = useVisit((state) => state.start);
+  return useMutation<Joined, ApiError, Pick<Joined, "attendanceId" | "ticket">>({
+    mutationFn: (old) =>
+      apiRequest(`/api/v1/attendances/${old.attendanceId}/rejoin`, {
+        method: "POST",
+        headers: ticketHeader(old.ticket),
+      }),
+    onSuccess: start,
+  });
 }

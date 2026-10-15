@@ -65,10 +65,18 @@ test("TC-F02-42 [AC-F02-12] [AC-F02-13] [AC-F02-22] [AC-F02-23] two windows meet
   // Sharing through our picker (where the system allows screen capture): the button turns into Stop sharing.
   if (process.platform !== "darwin" || (await screenAllowed(first.page))) {
     await first.page.getByRole("button", { name: "Share screen" }).click();
-    await first.page.getByRole("radio").first().click();
+    await first.page.getByRole("radiogroup", { name: "Screens" }).getByRole("radio").first().click();
     await first.page.getByRole("button", { name: "Share", exact: true }).click();
     await expect(first.page.getByRole("button", { name: "Stop sharing" })).toBeVisible({ timeout: 15_000 });
   }
+
+  // Device settings from More: noise suppression on by default, and it can be switched off (AC-F02-30).
+  await first.page.getByRole("button", { name: "More options" }).click();
+  const noise = first.page.getByRole("switch", { name: "Noise suppression" });
+  await expect(noise).toBeChecked();
+  await noise.click();
+  await expect(noise).not.toBeChecked();
+  await expect(first.page.getByRole("combobox", { name: "Microphone" })).toBeVisible();
 
   // End meeting, after confirming: the other window is told.
   await first.page.getByRole("button", { name: "More ways to leave" }).click();

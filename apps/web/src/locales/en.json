@@ -662,6 +662,23 @@
         },
         "pin": "Pin for me",
         "remove": "Remove from meeting"
+      },
+      "reconnecting": "Reconnecting…",
+      "reconnectingBody": "Your connection dropped. MeetApp is trying to bring you back.",
+      "weakTitle": "Your connection is weak.",
+      "weakBody": "Others may see you in lower quality.",
+      "deviceGone": "{{gone}} disconnected.",
+      "deviceNow": "Now using {{now}}.",
+      "devices": "Device settings",
+      "closeDevices": "Close device settings",
+      "noiseSuppression": "Noise suppression",
+      "noiseSuppressionHint": "Cuts background noise like typing and fans.",
+      "unreachable": "Can't reach MeetApp. Check your connection.",
+      "retry": "Retry",
+      "deviceKinds": {
+        "camera": "Your camera",
+        "microphone": "Your microphone",
+        "speakers": "Your speakers"
       }
     },
     "ended": {
@@ -695,6 +712,11 @@
       "left": {
         "title": "You left the meeting",
         "body": "You can join again with the link, or the ID and passcode."
+      },
+      "rejoin": "Rejoin",
+      "lost": {
+        "title": "You've lost connection",
+        "body": "We couldn't reconnect in 30 seconds. Check your network, then rejoin."
       }
     },
     "share": {
