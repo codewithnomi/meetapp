@@ -85,7 +85,7 @@ Names match the canvas.
    - the **Meeting options** dialog (organizer and co-organizers);
    - **Choose what to share**;
    - **Leave**, with "End meeting" in its menu for the organizer and co-organizers.
-5. **Workspace settings** (owner and admins; in a personal workspace its user): name and **Allow guests**. This replaces the F01 menu item "Workspace name".
+5. **Workspace settings** (owner and admins; in a personal workspace its user): name (company workspaces only, AC-F01-24) and **Allow guests**. Its own menu item, "Workspace settings", above the person's own "Settings"; plain members don't see it, and the address sends them Home.
 
 **Keyboard** (AC-44): ⌘⇧M microphone, ⌘⇧O camera, ⌘⇧K raise/lower hand (Ctrl+Shift on Windows, the same keys as Teams). They are active only on the meeting screen, never system-wide.
 
@@ -371,6 +371,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 | `POST /calls/:callId/end` | ticket, organizer or co-organizer | End meeting (AC-38) |
 | `POST /livekit/webhook` | LiveKit only (signed with the API key, checked by `WebhookReceiver`; read as raw text through a parser for `application/webhook+json` on this route only) | joins, leaves, room finished, screen published |
 | `PATCH /workspaces/:workspaceId/settings` | owner, admin | `allowGuests` (AC-40) |
+| `GET /me` (F01, extended) | signed in | each workspace also carries `allowGuests`, so Workspace settings shows the saved value |
 
 **Errors** use the F00 format, with codes:
 - `MEETING_NOT_FOUND`;

@@ -8,9 +8,15 @@ export type MemberRole = (typeof MEMBER_ROLES)[number];
 /** 2–60 characters after trimming; two workspaces may share a name (AC-F01-15). */
 export const workspaceNameSchema = z.string().trim().min(2).max(60);
 
-/** A workspace as one of its members sees it, with that member's role. */
+/** A workspace as one of its members sees it, with that member's role and its guest switch (AC-F02-40). */
 export const workspaceSchema = z
-  .object({ id: z.uuid(), name: z.string(), kind: z.enum(WORKSPACE_KINDS), role: z.enum(MEMBER_ROLES) })
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    kind: z.enum(WORKSPACE_KINDS),
+    role: z.enum(MEMBER_ROLES),
+    allowGuests: z.boolean(),
+  })
   .meta({ id: "Workspace" });
 
 export type WorkspaceSummary = z.infer<typeof workspaceSchema>;

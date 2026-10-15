@@ -218,7 +218,8 @@
       "settings": "Settings",
       "people": "People",
       "requests": "Requests and invitations",
-      "meetings": "Meetings"
+      "meetings": "Meetings",
+      "workspace": "Workspace settings"
     },
     "create": {
       "title": "Create a company workspace",
@@ -360,6 +361,19 @@
       "sentTitle": "Request sent",
       "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days.",
       "loading": "Loading your invitations"
+    },
+    "settings": {
+      "title": "Workspace settings",
+      "subtitle": "Settings for {{name}}. Only its owner and admins can change them.",
+      "nameTitle": "Name",
+      "name": "Workspace name",
+      "nameRule": "Use 2 to 60 characters.",
+      "save": "Save name",
+      "saving": "Saving name",
+      "saved": "Name saved. Everyone in the workspace sees it within a minute.",
+      "guestsTitle": "Guests",
+      "allowGuests": "Allow guests",
+      "allowGuestsHint": "People without an account can join this workspace's meetings by link, after the lobby. When off, they are told \"This meeting doesn't allow guests\"; guests already in a meeting stay."
     }
   },
   "profile": {

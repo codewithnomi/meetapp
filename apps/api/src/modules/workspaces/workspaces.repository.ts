@@ -54,6 +54,7 @@ const summary = {
   name: workspaces.name,
   kind: workspaces.kind,
   role: workspaceMembers.role,
+  allowGuests: workspaces.allowGuests,
 };
 
 export function createWorkspacesRepository(executor: Executor) {
@@ -135,7 +136,7 @@ function changes(executor: Executor) {
           .returning({ id: workspaces.id, name: workspaces.name });
         if (!created) throw new Error("the new workspace row was not returned");
         await tx.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
-        return { id: created.id, name: created.name, kind: "company", role: "owner" };
+        return { id: created.id, name: created.name, kind: "company", role: "owner", allowGuests: true };
       }),
     setAllowGuests: async (workspaceId: string, allowGuests: boolean): Promise<void> => {
       await executor.update(workspaces).set({ allowGuests }).where(eq(workspaces.id, workspaceId));

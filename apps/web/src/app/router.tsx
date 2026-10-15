@@ -29,6 +29,7 @@ import { JoinWorkspacePage } from "../pages/JoinWorkspacePage/index.ts";
 import { MeetingsPage } from "../pages/MeetingsPage/index.ts";
 import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
+import { WorkspaceSettingsPage } from "../pages/WorkspaceSettingsPage/index.ts";
 import { PreJoinPage } from "../pages/PreJoinPage/index.ts";
 import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
@@ -189,6 +190,7 @@ const PATHS: Record<AppScreen, string> = {
   meetings: "/meetings",
   people: "/people",
   requests: "/requests",
+  workspace: "/workspace-settings",
   settings: "/settings",
   join: "/join",
 };
@@ -229,6 +231,7 @@ function SignedInScreens() {
           </CompanyOnly>
         }
       />
+      <Route path="/workspace-settings" element={<WorkspaceSettingsPage onNavigate={go} />} />
       <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
       <Route path="/settings" element={<ProfilePage onNavigate={settings} onBack={home} />} />
       <Route path="/settings/appearance" element={<SettingsPage onNavigate={settings} onBack={home} />} />

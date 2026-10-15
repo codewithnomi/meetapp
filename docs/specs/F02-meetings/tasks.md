@@ -239,11 +239,12 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - the window check now also opens Device settings and switches noise suppression off.
     - **At the end (D052, extended):** the network-cut checks (TC-F02-55, 56, 59), unplugging devices (TC-F02-61), leave and crash (TC-F02-62, 63) and the unreachable backend (TC-F02-91).
 
-- [ ] **T17: Workspace settings: Allow guests.**
+- [x] **T17: Workspace settings: Allow guests.**
   - WorkspaceSettingsPage (name moved from F01, Allow guests) and the menu item rename.
   - Covers: AC-F02-40.
   - Tests: TC-F02-83.
   - Check: turning guests off refuses a guest window at once.
+  - Built in T17: `pages/WorkspaceSettingsPage`, `features/workspaces/settings.ts`, the "Workspace settings" menu item (owner and admins), `/me` workspaces carry `allowGuests`. `tests/e2e/desktop/workspace-settings.spec.ts` passes (guest on the pre-join refused at once). Left for /spec-verify (D052): the "plain member doesn't see it" part of TC-83.
 
 ## Measuring and finishing
 
