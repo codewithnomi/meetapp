@@ -49,6 +49,7 @@ apps/web/src/
 apps/desktop/src/main/
   media-permissions.ts             camera and mic for MeetApp's own screens only; screen sharing through our picker
   device-key.ts                    a random key for this app on this computer (guests' "same app" for AC-35)
+  media-actions.ts, media-bridge.ts  the page bridge behind `meetapp.media` and `meetapp.deviceKey` (rules / Electron wiring)
 packages/ui                        atoms: LevelMeter; molecules: DeviceSelect, ParticipantRow (reworked), LobbyRow,
                                    MessageCard; organisms: VideoTile (reworked), ControlBar (reworked), Gallery,
                                    ParticipantPanel, MeetingInfoPanel, MeetingOptionsForm, DevicePanel, SharePicker;
@@ -317,7 +318,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 
 ## 5. Desktop app (AC-10, AC-54, S17, D040)
 - **Camera and microphone** (`media-permissions.ts`):
-  - `setPermissionRequestHandler` and `setPermissionCheckHandler` allow only `media` with audio and/or video, and only for a page whose origin is `app://meetapp` (or the development server in development).
+  - `setPermissionRequestHandler` and `setPermissionCheckHandler` allow only `media` with audio and/or video, and screen capture, and only for the window's top frame on `app://meetapp` (or the development server in development). Electron 44 reports a screen request as `media` with no media types; newer versions call it `display-capture`. Both are accepted, and the picker step below decides what is shared.
   - Choosing the speakers (`setSinkId`) may need Electron's `speaker-selection` permission for the same origin. A test case checks this.
   - Every other permission stays refused, as do device permissions (USB, HID, serial).
   - Context isolation, the sandbox and "no Node.js in the page" are unchanged.
@@ -335,7 +336,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
   - A "denied" answer becomes the matching pre-join message (AC-10).
   - Missing or busy devices come from the browser's own errors (`NotFoundError`, `NotReadableError`).
 - **Screen sharing:**
-  1. The page asks the main process for the list of screens and windows (`desktopCapturer.getSources` with thumbnails).
+  1. The page asks the main process for the list of screens and windows (`desktopCapturer.getSources` with thumbnails). The page gets stand-in ids (`share-1`, …), never the system's, so it can't capture a screen around the picker.
   2. The page shows our **Choose what to share** picker and sends back the chosen ID.
   3. `setDisplayMediaRequestHandler` answers the next screen request (within 10 seconds, once) with exactly that source and never with computer sound.
   4. If macOS screen recording isn't allowed (`getMediaAccessStatus("screen")`), the picker shows the "Allow screen recording" card instead.

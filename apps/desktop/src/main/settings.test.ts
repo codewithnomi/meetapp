@@ -69,4 +69,19 @@ describe("readSettings", () => {
     expect(s.userDataDir).toBeUndefined();
     expect(s.apiUrl).toBe("http://127.0.0.1:3000");
   });
+
+  it("TC-F02-113 [AC-F02-54] the call server: this computer by default, LIVEKIT_PORT, or a wss:// address only", () => {
+    expect(readSettings({}, MAIN).callServerUrl).toBe("ws://127.0.0.1:7880");
+    expect(readSettings({ LIVEKIT_PORT: "7990" }, MAIN).callServerUrl).toBe("ws://127.0.0.1:7990");
+    expect(readSettings({ LIVEKIT_PORT: "x y" }, MAIN).callServerUrl).toBe("ws://127.0.0.1:7880");
+    expect(readSettings({ LIVEKIT_PUBLIC_URL: "wss://calls.example.com" }, MAIN).callServerUrl).toBe(
+      "wss://calls.example.com",
+    );
+    expect(readSettings({ LIVEKIT_PUBLIC_URL: "ws://evil.example.com" }, MAIN).callServerUrl).toBe(
+      "ws://127.0.0.1:7880",
+    );
+    expect(readSettings({ LIVEKIT_PUBLIC_URL: "wss://calls.example.com" }, MAIN, true).callServerUrl).toBe(
+      "ws://127.0.0.1:7880",
+    );
+  });
 });

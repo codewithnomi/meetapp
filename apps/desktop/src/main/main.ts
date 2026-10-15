@@ -9,13 +9,20 @@ import { createAuthClient } from "./auth-client.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
+import { createMediaActions } from "./media-actions.ts";
+import { realMediaSystem, registerMediaBridge } from "./media-bridge.ts";
+import { createSharePicker } from "./media-permissions.ts";
 import { canOpenHandOffStart, contentSecurityPolicy, webPreferences, APP_ORIGIN } from "./security.ts";
 import { startSentry } from "./sentry.ts";
 import { readSettings } from "./settings.ts";
 
 const settings = readSettings(process.env, import.meta.dirname, app.isPackaged);
 const appUrl = settings.devServerUrl ?? `${APP_ORIGIN}/index.html`;
-const csp = contentSecurityPolicy({ apiUrl: settings.apiUrl, devServerUrl: settings.devServerUrl });
+const csp = contentSecurityPolicy({
+  apiUrl: settings.apiUrl,
+  devServerUrl: settings.devServerUrl,
+  callServerUrl: settings.callServerUrl,
+});
 
 if (settings.userDataDir) app.setPath("userData", settings.userDataDir);
 // Sandbox every page, including any created later, not only the main window.
@@ -42,7 +49,9 @@ function openWindow(): void {
 
 // Not awaited at the top level: Electron only becomes ready after this file has finished running.
 void app.whenReady().then(() => {
-  lockDownSession(session.defaultSession, csp, settings.devServerUrl);
+  const picker = createSharePicker();
+  lockDownSession(session.defaultSession, { csp, devServerUrl: settings.devServerUrl, appUrl, picker });
+  registerMediaBridge(createMediaActions(realMediaSystem(), picker), appUrl);
   // safeStorage works only once the app is ready.
   const tokens = createTokenStore(safeStorage, join(app.getPath("userData"), "auth-token"));
   const client = createAuthClient(settings.apiUrl, tokens);

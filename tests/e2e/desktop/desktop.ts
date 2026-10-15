@@ -15,7 +15,15 @@ const DESKTOP = fileURLToPath(new URL("../../../apps/desktop", import.meta.url))
  * Shell settings that must not reach the tested app: VS Code sets ELECTRON_RUN_AS_NODE (Electron would
  * start as plain Node.js), and the others would change what is tested or send crash reports.
  */
-const LEFT_OUT = new Set(["ELECTRON_RUN_AS_NODE", "MEETAPP_RENDERER_URL", "VITE_API_URL", "SENTRY_DSN"]);
+const LEFT_OUT = new Set([
+  "ELECTRON_RUN_AS_NODE",
+  "MEETAPP_RENDERER_URL",
+  "VITE_API_URL",
+  "SENTRY_DSN",
+  // F02: the call server's address changes the security policy; a test that needs it passes it.
+  "LIVEKIT_PORT",
+  "LIVEKIT_PUBLIC_URL",
+]);
 
 export interface RunningApp {
   app: ElectronApplication;
@@ -33,9 +41,13 @@ export function freshProfile(): string {
 
 const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms).unref());
 
-/** Quits the app and waits until its process has really ended; force-stops it after 10 s. */
+/**
+ * Quits the app and waits until its process has really ended; force-stops it after 10 s. Closing an app
+ * twice (a test's own clean-up and the shared one below) does nothing the second time: Playwright can't
+ * reach a closed app's process any more.
+ */
 export async function closeApp(app: ElectronApplication): Promise<void> {
-  started.delete(app);
+  if (!started.delete(app)) return;
   const child = app.process();
   const ended = () => child.exitCode !== null || child.signalCode !== null;
   if (ended()) return;
@@ -88,11 +100,13 @@ export function recordRequests(page: Page): string[] {
 }
 
 /**
- * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4): the
- * platform name and the sign-in calls main makes for the page. Anything else is a leak.
+ * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4, F02
+ * design section 5): the platform name, the sign-in calls main makes for the page, camera/mic/screen
+ * access with the share picker, and the device key. Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth"],
+  meetapp: ["platform", "auth", "media", "deviceKey"],
+  media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
   auth: [
     "startProviderSignIn",
     "finishProviderSignIn",
@@ -111,11 +125,15 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `window.meetapp.auth`. */
-export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; auth: string[] }> {
+/** What the page sees on `window.meetapp`: its keys, and the keys of `meetapp.media` and `meetapp.auth`. */
+export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; media: string[]; auth: string[] }> {
   return page.evaluate(() => {
-    const bridge = (window as { meetapp?: { auth?: object } }).meetapp ?? {};
-    return { meetapp: Object.keys(bridge), auth: Object.keys(bridge.auth ?? {}) };
+    const bridge = (window as { meetapp?: { auth?: object; media?: object } }).meetapp ?? {};
+    return {
+      meetapp: Object.keys(bridge),
+      media: Object.keys(bridge.media ?? {}),
+      auth: Object.keys(bridge.auth ?? {}),
+    };
   });
 }
 

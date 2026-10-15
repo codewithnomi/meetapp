@@ -29,10 +29,10 @@ async function waitForScreens(): Promise<void> {
 await buildDesktop();
 await waitForScreens();
 
-// Only the two settings the window needs leave .env; database and storage passwords stay out of it.
+// Only the settings the window needs leave .env (F02 adds the call server's address); database and storage passwords stay out of it.
 const fromFile = existsSync(envFile) ? parseEnv(readFileSync(envFile, "utf8")) : {};
 const env: NodeJS.ProcessEnv = { MEETAPP_RENDERER_URL: RENDERER_URL };
-for (const key of ["VITE_API_URL", "SENTRY_DSN"]) {
+for (const key of ["VITE_API_URL", "SENTRY_DSN", "LIVEKIT_PORT", "LIVEKIT_PUBLIC_URL"]) {
   const value = process.env[key] ?? fromFile[key];
   if (value !== undefined) env[key] = value;
 }

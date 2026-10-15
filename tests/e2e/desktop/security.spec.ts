@@ -1,10 +1,11 @@
-// The desktop app's security settings in the real app (AC-F00-24): TC-F00-58, 59, 60, 61.
+// The desktop app's security settings in the real app (AC-F00-24): TC-F00-58, 59, 60, 61; updated by
+// F02 (TC-F02-113): camera and microphone are allowed for the app's own page (media.spec.ts).
 import { expect, test } from "@playwright/test";
 import { BRIDGE, bridgeKeys, closeApp, launch, type RunningApp } from "./desktop.ts";
 
 const DESIGN_CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000; " +
-  "connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 let running: RunningApp;
 // False until this test's app has started, so a failed start is reported as itself, not as a crash
@@ -64,16 +65,9 @@ test("TC-F00-59 [AC-F00-24] outside addresses and new windows are blocked; only 
   expect(await app.evaluate(() => (globalThis as { opened?: string[] }).opened)).toEqual(["https://example.com/"]);
 });
 
-test("TC-F00-60 [AC-F00-24] camera, microphone and notifications are refused", async () => {
-  const answers = await running.page.evaluate(async () => {
-    const media = await navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(
-      () => "granted",
-      (error: Error) => error.name,
-    );
-    return { media, notifications: await Notification.requestPermission() };
-  });
-  expect(answers.media).not.toBe("granted");
-  expect(answers.notifications).toBe("denied");
+test("TC-F00-60 [AC-F00-24] notifications are refused", async () => {
+  // Camera and microphone are F02's (media.spec.ts); asking for them here would turn on a real camera.
+  expect(await running.page.evaluate(() => Notification.requestPermission())).toBe("denied");
 });
 
 test("TC-F00-61 [AC-F00-24] the security policy blocks inline and remote scripts", async () => {
@@ -121,7 +115,7 @@ test("TC-F00-59 [AC-F00-24] links, forms and embedded pages can't take the page 
   expect(violations).toEqual(expect.arrayContaining(["form-action", "frame-src"]));
 });
 
-test("TC-F00-60 [AC-F00-24] permission checks answer 'denied'", async () => {
+test("TC-F00-60 [AC-F00-24] [AC-F02-54] permission checks: camera and microphone for the app's page, nothing else", async () => {
   const states = await running.page.evaluate(async () =>
     Promise.all(
       (["camera", "microphone", "notifications", "geolocation"] as PermissionName[]).map(
@@ -129,5 +123,5 @@ test("TC-F00-60 [AC-F00-24] permission checks answer 'denied'", async () => {
       ),
     ),
   );
-  expect(states).toEqual(["denied", "denied", "denied", "denied"]);
+  expect(states).toEqual(["granted", "granted", "denied", "denied"]);
 });

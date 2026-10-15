@@ -142,13 +142,20 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
 
 ## Desktop app and screens
 
-- [ ] **T10: Desktop: camera, microphone and screen sharing.**
+- [x] **T10: Desktop: camera, microphone and screen sharing.**
   - `media-permissions.ts` installed by `lockDownSession` in place of the refusing handlers (D040 updated).
   - macOS access checks; the page bridge (`meetapp.media.*`, `meetapp.deviceKey()`); `device-key.ts`; the picker hand-off to `setDisplayMediaRequestHandler`.
   - The CSP `connect-src` built from the call-server setting. The F00 desktop security tests are updated.
   - Covers: AC-F02-10 (permission part), 35 (device key), 54.
   - Tests: TC-F02-111, 112, 113, 114.
   - Check: only MeetApp's own page gets the camera and mic; screen sharing works only through our picker.
+  - **Built in T10:**
+    - `media-permissions.ts` (the rules), `media-actions.ts` and `media-bridge.ts` (the page bridge), `device-key.ts`; `lockDownSession` takes the app's address and the share picker;
+    - the CSP's `connect-src` adds the call server (`LIVEKIT_PUBLIC_URL` if wss://, else `ws://127.0.0.1:<LIVEKIT_PORT>`), read by the desktop settings and passed by `pnpm dev`;
+    - unit tests for the rules, the picker list and the device key; `tests/e2e/desktop/media.spec.ts` in a real window, including a real screen capture where the system allows it (Linux CI, Windows, or a Mac that already allowed screen recording);
+    - the F00 desktop security tests now expect camera and microphone to be allowed for the app's page (checked through permission states, so no test turns on a real camera);
+    - fixed in the shared desktop test helper: closing an app twice crashed the clean-up (it already failed before T10).
+    - **Moved to the screen tasks:** the "Allow screen recording" card (TC-F02-112, with the picker in T15) and the meeting ticket never on disk (TC-F02-114, with the pre-join and lobby in T13).
 
 - [ ] **T11: Building blocks in the gallery.**
   - In packages/ui, with stories, tests and screenshots, styled from the approved canvas:
