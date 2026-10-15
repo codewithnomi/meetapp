@@ -316,7 +316,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** load
 - **Given** `pnpm test:load`: 99 simulated participants with video (`lk perf load-test`), the desktop app as the 100th
 - **When** the app shows page 1 of the gallery for 60 s, changes pages, and a simulated participant speaks
-- **Then** exactly 16 tiles are drawn at 15 frames per second or more; pages hold the rest; the speaker is heard with under 250 ms delay (round-trip time / 2 plus jitter buffer from WebRTC numbers)
+- **Then** exactly 16 tiles are drawn, each showing at least 90% of the frames it receives (measured 5 s after a page appears; the frames received are recorded too, D056); pages hold the rest; the speaker is heard with under 250 ms delay (round-trip time / 2 plus jitter buffer from WebRTC numbers)
 
 ### TC-F02-42: Gallery paging
 - **Covers:** AC-F02-20, AC-F02-47
@@ -677,7 +677,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** load
 - **Given** `pnpm test:load`: 24 simulated participants with video and the desktop app as the 25th, on the reference computer
 - **When** the app runs 5 minutes with paging and Speaker view
-- **Then** Electron's total process memory (main, renderer, GPU) stays under 600 MB
+- **Then** Electron's total process memory (main, renderer, GPU) stays under 700 MB (D056)
 
 ### Security
 

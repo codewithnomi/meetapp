@@ -1,7 +1,7 @@
 // `pnpm test:load` (F02 T18, design.md section 10): the 100-person and 25-person load tests. Starts the
 // normal services, a call server of its own on port 7890 (infra/load, no reports to the backend), the
 // backend pointed at that call server, and builds the app; runs tests/load; then stops what it started.
-// Takes about 15 minutes and much of the Mac's power; close `pnpm dev` first.
+// Takes about 15 minutes and much of the Mac's power; close `pnpm dev` first and leave the Mac idle.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import { ROOT, fail, requireEnvFile } from "./cli.ts";

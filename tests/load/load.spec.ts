@@ -1,7 +1,8 @@
 // Load tests (F02 T18; `pnpm test:load`, which starts the test call server and the backend first): the
 // desktop app in a meeting with 99 simulated people (TC-F02-41 gallery and sound, TC-F02-25 join time)
 // and with 24 (TC-F02-92 memory). The numbers are written to test-results/load-results.json; a target
-// that is missed fails the test, after every number was measured.
+// that is missed fails the test, after every number was measured. The simulated people run on this same
+// Mac, so run it on an idle Mac (other work on it lowers every number; seen 2026-10-15).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
@@ -12,10 +13,11 @@ import {
   firstSoundAt,
   percentile,
   playingVideos,
-  receivedFps,
   soundDelay,
-  tileFps,
+  tileRates,
   watchConnections,
+  worstShare,
+  type TileRate,
 } from "./measure.ts";
 import { simulate } from "./simulated.ts";
 
@@ -71,7 +73,7 @@ async function waitForPeople(page: Page, count: number): Promise<void> {
 async function rejoinTime(page: Page, link: string): Promise<number> {
   await page.getByRole("button", { name: "Leave", exact: true }).click();
   // The organizer's own Leave goes back to Meetings.
-  await expect(page.getByRole("heading", { level: 1, name: "Meetings" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Meetings" })).toBeVisible({ timeout: 15_000 });
   await page.getByRole("radio", { name: "Link" }).click();
   await page.getByLabel("Meeting link").fill(link);
   await page.getByRole("button", { name: "Join", exact: true }).click();
@@ -93,21 +95,22 @@ test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smo
     await waitForPeople(page, 100);
     await expect(page.getByRole("figure")).toHaveCount(16);
     await expect.poll(() => playingVideos(page), { timeout: 60_000 }).toBe(16);
-    const samples: number[][] = [];
+    const samples: TileRate[][] = [];
     for (let i = 0; i < 3; i += 1) {
       await page.waitForTimeout(10_000);
-      samples.push(await tileFps(page));
+      samples.push(await tileRates(page));
     }
-    const sent = await receivedFps(page);
-    const slowest = Math.min(...samples.flat());
+    const pageOne = Math.min(...samples.map(worstShare));
     await page.screenshot({ path: join(RESULTS, "hundred-people.png") });
     await page.getByRole("button", { name: "Next page" }).press("Enter");
     await expect(page.getByRole("region", { name: /page 2 of 7/ })).toBeVisible();
     await expect.poll(() => playingVideos(page), { timeout: 30_000 }).toBe(16);
-    const nextPageFps = await tileFps(page);
+    // A new page's videos start up first, as in Teams (D056: measured 5 s after the page appears).
+    await page.waitForTimeout(5_000);
+    const pageTwo = await tileRates(page);
     await page.getByRole("button", { name: "Previous page" }).press("Enter");
     const delay = await soundDelay(page);
-    record("gallery", { emptyJoinMs: joinMs, tileFps: samples, receivedFps: sent, nextPageFps, slowest, delay });
+    record("gallery", { emptyJoinMs: joinMs, pageOne: samples, pageTwo, delay });
     const joins: number[] = [];
     for (let i = 0; i < JOIN_RUNS; i += 1) {
       const started = Date.now();
@@ -117,8 +120,8 @@ test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smo
     const memoryMb = await appMemoryMb(app);
     const p95 = percentile(joins, 95);
     record("joins", { joins, p95, memoryMb });
-    expect.soft(slowest, "every tile at 15 frames per second or more").toBeGreaterThanOrEqual(15);
-    expect.soft(Math.min(...nextPageFps), "page 2 tiles at 15 fps or more").toBeGreaterThanOrEqual(15);
+    expect.soft(pageOne, "every tile shows at least 90% of the frames it receives").toBeGreaterThanOrEqual(0.9);
+    expect.soft(worstShare(pageTwo), "so does every tile on page 2").toBeGreaterThanOrEqual(0.9);
     expect.soft(delay.tracks, "a simulated person is heard").toBeGreaterThan(0);
     expect.soft(delay.ms, "sound delay under 250 ms").toBeLessThan(250);
     expect.soft(p95, "join time under 3 s in 95% of runs").toBeLessThan(3_000);
@@ -127,7 +130,7 @@ test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smo
   }
 });
 
-test("TC-F02-92 [AC-F02-47] 25 people for 5 minutes stay under 600 MB", async () => {
+test("TC-F02-92 [AC-F02-47] 25 people for 5 minutes stay under 700 MB", async () => {
   test.setTimeout(15 * 60_000);
   const { app, page } = await launchNewAccount(undefined, undefined, FAKE_MEDIA);
   const { room } = await meetNow(page);
@@ -154,7 +157,7 @@ test("TC-F02-92 [AC-F02-47] 25 people for 5 minutes stay under 600 MB", async ()
     }
     const highest = Math.max(...memory);
     record("twentyFive", { memory, highest });
-    expect(highest, "Electron's memory under 600 MB").toBeLessThan(600);
+    expect(highest, "Electron's memory under 700 MB (D056)").toBeLessThan(700);
   } finally {
     crowd.stop();
   }

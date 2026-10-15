@@ -23,7 +23,7 @@ Measurable goals. Specs and tests use these numbers. All are **proposals**; the 
 | Participants per meeting | **100** (with video), smooth on a normal laptop |
 | Uptime | **99.9%** per month (≈ 43 minutes of downtime max) |
 | Call survives a short network drop | reconnects automatically within **10 seconds** |
-| Desktop memory use in a 25-person video call | under **600 MB** |
+| Desktop memory use in a 25-person video call | under **700 MB** (D056; Teams uses about 800 MB–1 GB) |
 
 ## Transcription & AI quality
 | What | Target |

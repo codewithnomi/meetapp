@@ -504,7 +504,7 @@ The test cases go in tests.md (`TC-F02-…`). Following D052, each task runs onl
 | AC-F02-12 | load/desktop timing (join under 3 s) |
 | AC-F02-13 | integration + desktop (same account twice = two participants) |
 | AC-F02-14–19 | integration (lobby rules, admit, admit all, deny, 15-minute timeout with a fake clock, guests alone, 100 in lobby) + desktop (lobby screen, admit) |
-| AC-F02-20 | load (16 tiles ≥ 15 fps, pages, audio delay < 250 ms) + desktop (speaker view, pin) |
+| AC-F02-20 | load (16 tiles show ≥ 90% of the frames they receive, pages, audio delay < 250 ms) + desktop (speaker view, pin) |
 | AC-F02-21, 22 | desktop (speaking label and announcement within 0.5 s; mute/camera seen by the other window within 1 s; shortcuts) |
 | AC-F02-23, 24 | integration (hand order, lowering rights) + desktop (hand and reactions shown; reaction gone after 3 s) |
 | AC-F02-25 | desktop (share seen within 2 s, replaced share told, attendee has no Share) + integration (attendee pass has no screen right) |
@@ -521,7 +521,7 @@ The test cases go in tests.md (`TC-F02-…`). Following D052, each task runs onl
 | AC-F02-43 | screenshot tests of the new pages and components against the approved canvas (owner's look check at verify) |
 | AC-F02-44, 45 | desktop keyboard-only run + axe; live announcements; loading and error states; translation keys test |
 | AC-F02-46 | integration (Idempotency-Key) + desktop (backend stopped → message and Retry) |
-| AC-F02-47 | load (25-person meeting, memory < 600 MB) |
+| AC-F02-47 | load (25-person meeting, memory < 700 MB) |
 | AC-F02-48, 49, 50 | security integration (wrong tries, same miss answer and timing, pass scope and lifetime, removal within 5 s, reuse refused, outsider sweeps on every new route) |
 | AC-F02-51, 52 | html-names test extended; secrets-in-logs test extended (tokens, passcodes, link parts) |
 | AC-F02-53 | integration (call connections use DTLS-SRTP; production config demands wss) |

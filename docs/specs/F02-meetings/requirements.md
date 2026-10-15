@@ -108,7 +108,7 @@ Times are measured locally (`pnpm dev`) on the reference computer: the owner's M
 
 ### In the meeting
 - **AC-F02-20:** WHEN a meeting has 100 participants with cameras on (99 simulated), THEN the tester's app:
-  - shows a gallery page of 16 videos that keep moving smoothly (at least 15 frames a second), with pages for the rest;
+  - shows a gallery page of 16 videos that keep moving smoothly (each shows at least 90% of the frames it receives; small tiles receive 15 frames a second, as in Teams, D056), with pages for the rest;
   - hears any speaker with under 250 ms delay (quality-targets.md).
 
   **Speaker view** shows the person speaking in large. A person can **pin** one participant in large, for themselves only.
@@ -158,7 +158,7 @@ Times are measured locally (`pnpm dev`) on the reference computer: the owner's M
 - **AC-F02-44:** WHEN those screens are used with the keyboard alone, THEN everything works, with shortcuts for microphone and camera. Changes such as someone joining, a hand raised or being muted are announced to screen readers.
 - **AC-F02-45:** WHEN those screens load or fail, THEN they show loading and error states, and all text comes from the translation file.
 - **AC-F02-46:** WHEN the backend or the call server doesn't answer within 10 seconds while creating, joining or during a meeting, THEN the app shows "Can't reach MeetApp. Check your connection." with **Retry**. Pressing a button twice never creates two meetings.
-- **AC-F02-47:** WHEN a 25-person video meeting runs on the reference computer, THEN the desktop app uses under 600 MB of memory (quality-targets.md).
+- **AC-F02-47:** WHEN a 25-person video meeting runs on the reference computer, THEN the desktop app uses under 700 MB of memory (quality-targets.md, D056).
 
 ## Security & privacy
 Rules that apply (docs/architecture/security.md): S1, S2, S3, S4, S5, S6, S10, S11, S17, with D040.

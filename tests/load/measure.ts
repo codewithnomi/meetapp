@@ -20,43 +20,71 @@ export function watchConnections(page: Page): Promise<void> {
   });
 }
 
-/** Frames drawn per second by each video in the gallery: from its first to its last frame within `ms`. */
-export function tileFps(page: Page, ms = 10_000): Promise<number[]> {
-  return page.evaluate(async (period) => {
-    const videos = [...document.querySelectorAll<HTMLVideoElement>("figure video")];
-    const seen = videos.map(() => ({ frames: 0, first: 0, last: 0 }));
-    let counting = true;
-    videos.forEach((video, i) => {
-      const tick = (now: number) => {
-        const tile = seen[i];
-        if (!tile) return;
-        if (tile.frames === 0) tile.first = now;
-        tile.frames += 1;
-        tile.last = now;
-        if (counting) video.requestVideoFrameCallback(tick);
-      };
-      video.requestVideoFrameCallback(tick);
-    });
-    await new Promise((done) => setTimeout(done, period));
-    counting = false;
-    return seen.map(({ frames, first, last }) =>
-      frames < 2 ? 0 : Math.round(((frames - 1) / ((last - first) / 1000)) * 10) / 10,
-    );
-  }, ms);
+export interface TileRate {
+  /** Frames shown per second, from the tile's first to its last frame in the period. */
+  drawn: number;
+  /** Frames arriving per second for that tile's video (WebRTC); absent for the person's own camera. */
+  received?: number;
 }
 
-/** Frames per second arriving from the call server for each video being received (what the senders send). */
-export function receivedFps(page: Page): Promise<number[]> {
-  return page.evaluate(async () => {
-    const rates: number[] = [];
+/** Counts each gallery video's shown frames over `ms`. */
+function countFrames(period: number): Promise<{ track: string; drawn: number }[]> {
+  const videos = [...document.querySelectorAll<HTMLVideoElement>("figure video")];
+  const seen = videos.map(() => ({ frames: 0, first: 0, last: 0 }));
+  let counting = true;
+  videos.forEach((video, i) => {
+    const tick = (now: number) => {
+      const tile = seen[i];
+      if (!tile) return;
+      if (tile.frames === 0) tile.first = now;
+      tile.frames += 1;
+      tile.last = now;
+      if (counting) video.requestVideoFrameCallback(tick);
+    };
+    video.requestVideoFrameCallback(tick);
+  });
+  return new Promise((done) =>
+    setTimeout(() => {
+      counting = false;
+      done(
+        videos.map((video, i) => {
+          const { frames, first, last } = seen[i] ?? { frames: 0, first: 0, last: 0 };
+          const track = (video.srcObject as MediaStream | null)?.getVideoTracks()[0]?.id ?? "";
+          return { track, drawn: frames < 2 ? 0 : Math.round(((frames - 1) / ((last - first) / 1000)) * 10) / 10 };
+        }),
+      );
+    }, period),
+  );
+}
+
+/** Frames arriving per second for each received video, by its track id. */
+function receivedByTrack(): Promise<[string, number][]> {
+  return (async () => {
+    const received: [string, number][] = [];
     for (const connection of (window as Watched).meetappConnections ?? []) {
       (await connection.getStats()).forEach((s: Record<string, unknown>) => {
         if (s["type"] === "inbound-rtp" && s["kind"] === "video" && typeof s["framesPerSecond"] === "number")
-          rates.push(s["framesPerSecond"]);
+          received.push([String(s["trackIdentifier"]), s["framesPerSecond"]]);
       });
     }
-    return rates;
+    return received;
+  })();
+}
+
+/** Each gallery tile's shown frames per second next to the frames it receives (D056). */
+export async function tileRates(page: Page, ms = 10_000): Promise<TileRate[]> {
+  const tiles = await page.evaluate(countFrames, ms);
+  const received = new Map(await page.evaluate(receivedByTrack));
+  return tiles.map(({ track, drawn }) => {
+    const rate = received.get(track);
+    return rate === undefined ? { drawn } : { drawn, received: rate };
   });
+}
+
+/** The lowest share of received frames that any tile shows (1 = every frame). */
+export function worstShare(rates: TileRate[]): number {
+  const shares = rates.flatMap(({ drawn, received }) => (received ? [Math.min(1, drawn / received)] : []));
+  return shares.length === 0 ? 0 : Math.min(...shares);
 }
 
 /** How many videos on the screen are really playing a picture. */

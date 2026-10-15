@@ -248,12 +248,14 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
 
 ## Measuring and finishing
 
-- [ ] **T18: Load tests (`pnpm test:load`).**
+- [x] **T18: Load tests (`pnpm test:load`).**
   - `lk perf load-test` in Docker (`network_mode: service:livekit`): 99 simulated people with video, plus the app as the 100th.
   - Measures: frames per second of the 16 tiles, audio delay, join time, and memory in a 25-person meeting. Results recorded in verification.md.
   - Covers: AC-F02-12, 20, 47.
   - Tests: TC-F02-25, 41, 92.
   - Check: the targets of quality-targets.md are met on the reference MacBook, or the gap is shown to the owner.
+  - Built in T18: `tools/load.ts`, `infra/load/` (a test call server on port 7890 without reports to the backend, and the pinned `lk` image), `tests/load/`. Targets changed with the owner (D056): tiles show ≥ 90% of received frames; memory < 700 MB.
+  - Results on the owner's MacBook (2026-10-15), idle run: sound delay 63 ms; joins 1.2 s (95th percentile of 20); tiles 14.5–15 frames a second from 15 received; 25-person memory 470–650 MB. A run while the Mac was busy: memory 430–628 MB (pass) but tiles 1–15 frames a second and sound 472 ms. The simulated people share the Mac, so the gallery numbers need an idle Mac; re-run at /spec-verify. Also fixed during T18 (owner's report): the meeting screen fits the window, the control bar always shows, and tiles shrink to fit.
 
 - [ ] **T19: Keyboard, screen reader, states and documentation.**
   - A keyboard-only run through every F02 screen; loading and error states; translation keys.

@@ -350,3 +350,12 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** they come from the makers of the call server we use (D004), are free and Apache-2.0, and are widely used.
 - **Cost:** none.
 - **Vetted (T1, 2026-10-14):** livekit-client 2.22.3 (Apache-2.0; the newer 2.22.4 is under two weeks old), @livekit/components-react 2.9.24 (Apache-2.0), livekit/livekit-cli image v2.18.8 (Apache-2.0, 22 Sep 2026, pinned by digest when added in T18). The backend's livekit-server-sdk (2.19.1) is already in use since F00. Each is installed in the task that first uses it.
+
+### D056: How smooth and how light a big meeting must be (F02 load tests)
+- **Date:** 2026-10-15. **Status:** accepted (owner: "handle this as MS Teams is handling this").
+- **Decision:**
+  - **Smoothness:** like Teams, each video is sent at the size and speed its tile needs; small gallery tiles get the small, 15-frames-a-second version. A tile counts as smooth when it shows at least 90% of the frames it receives (measured 5 seconds after a page appears). The load test also records the frames received, so a slow sender and a slow app are told apart.
+  - **Memory:** the desktop app stays under **700 MB** in a 25-person video meeting (was 600 MB). Teams uses about 800 MB to 1 GB in such a meeting.
+- **Measured (2026-10-15, owner's MacBook):** 25-person meeting 470–650 MB over 5 minutes; 100-person meeting: tiles 14.5–15 frames a second from 15 received, sound delay 63 ms, joins 1.2 s (95th percentile).
+- **Why:** the old numbers expected more than the senders send (15) and less memory than comparable apps use. Memory is the person's own computer while a meeting is open: nothing is stored on a server and nothing costs money.
+- **Cost:** none.
