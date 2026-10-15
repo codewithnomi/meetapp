@@ -22,6 +22,8 @@ interface PanelButton {
   label: string;
   active: boolean;
   onClick: () => void;
+  /** Not available yet or not allowed; the label says why. */
+  disabled?: boolean;
 }
 
 export interface ControlBarProps {
@@ -110,7 +112,7 @@ function MainControls(props: Omit<ControlBarProps, "label" | "elapsed" | "people
         align="start"
         trigger={<IconButton icon="smile" label={reactions.label} />}
       />
-      <IconButton icon="more" label={more.label} active={more.active} onClick={more.onClick} />
+      <IconButton icon="more" label={more.label} active={more.active} disabled={more.disabled} onClick={more.onClick} />
       <LeaveGroup leave={leave} />
     </div>
   );

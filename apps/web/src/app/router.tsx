@@ -121,7 +121,12 @@ function LobbyRoute({ home, userName }: { home: string; userName: string | undef
 
 function CallRoute({ home }: { home: string }) {
   const navigate = useNavigate();
-  return <MeetingPage onLeft={() => void navigate(home)} />;
+  return (
+    <MeetingPage
+      onLeft={() => void navigate(home)}
+      onOutcome={(outcome) => void navigate("/meeting/ended", { state: outcome })}
+    />
+  );
 }
 
 function EndedRoute({ home, join }: { home: string; join: string }) {

@@ -19,3 +19,5 @@ export { testSpeakers } from "./local-media.ts";
 export { problemKey, type MediaKind } from "./media-problems.ts";
 export { usePreJoinDevices, type PreJoinDevices } from "./pre-join-devices.ts";
 export { useVisit, type Attendance, type Joined } from "./visit.ts";
+export * from "./call/index.ts";
+export { loadPrefs, type DevicePrefs } from "./device-prefs.ts";

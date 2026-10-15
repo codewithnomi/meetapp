@@ -62,14 +62,21 @@ test.afterEach(async () => {
   await Promise.all([...started].map(closeApp));
 });
 
+/**
+ * Chromium's stand-in camera and microphone (a test picture and a beep), with no permission prompt:
+ * meeting tests use them so no real camera or microphone is ever turned on (F02).
+ */
+export const FAKE_MEDIA = ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"];
+
 export async function launch(
   profile: string = freshProfile(),
   extraEnv: Record<string, string> = {},
+  switches: string[] = [],
 ): Promise<RunningApp> {
   const env: Record<string, string> = { ...extraEnv, MEETAPP_USER_DATA_DIR: profile };
   for (const [key, value] of Object.entries(process.env))
     if (value !== undefined && !(key in env) && !LEFT_OUT.has(key)) env[key] = value;
-  const app = await _electron.launch({ args: [DESKTOP], cwd: DESKTOP, env });
+  const app = await _electron.launch({ args: [DESKTOP, ...switches], cwd: DESKTOP, env });
   started.add(app);
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
@@ -224,9 +231,13 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
  * Like launchSignedIn, but with an account of its own (for tests that change the account's state, such as
  * its last-used workspace). Returns the app, the page and the account's email.
  */
-export async function launchNewAccount(profile: string = freshProfile(), email = `e2e-${randomUUID()}@example.test`) {
+export async function launchNewAccount(
+  profile: string = freshProfile(),
+  email = `e2e-${randomUUID()}@example.test`,
+  switches: string[] = [],
+) {
   test.skip(!API_URL || !MAILPIT, "needs the backend and Mailpit; runs from `pnpm test`");
-  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" }, switches);
   await signUpThroughBridge(running.page, email);
   await running.page.reload();
   await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
@@ -234,8 +245,8 @@ export async function launchNewAccount(profile: string = freshProfile(), email =
 }
 
 /** A second window for an existing account (made by launchNewAccount): signs in with its password. */
-export async function launchAs(email: string, profile: string = freshProfile()) {
-  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
+export async function launchAs(email: string, profile: string = freshProfile(), switches: string[] = []) {
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" }, switches);
   await running.page.evaluate(
     ([address, password]) => (window as unknown as WindowWithBridge).meetapp.auth.signInWithPassword(address, password),
     [email, TEST_PASSWORD] as const,

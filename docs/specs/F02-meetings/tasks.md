@@ -197,12 +197,19 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
     - `/meeting/call` shows "You're in the meeting" with Leave until T14 builds the call;
     - **at the end (D052, extended):** the desktop tests TC-F02-19, 20, 21 and 32, and the meeting-ticket-never-on-disk part of TC-F02-114. Admitting from another window needs the participants panel inside the call (T14–T15), so the task's check runs then.
 
-- [ ] **T14: The meeting: a first real call (milestone).**
+- [x] **T14: The meeting: a first real call (milestone).**
   - `useMeetingRoom` (livekit-client: adaptive stream, dynacast, simulcast, reconnect policy).
   - Gallery of 16 with pages, speaker view, pin, speaking highlight, mic and camera with shortcuts, hands, reactions, announcements.
   - Covers: AC-F02-12 (path), 13, 20 (layout), 21, 22, 23, 24, 44.
   - Tests: TC-F02-24, 42, 43, 44, 45, 47, 48, 89, 110 (DTLS-SRTP part), and the parts of 51 (a real client can't publish a screen as an attendee) and 98 (disconnect within 5 s, measured) that need a real participant.
   - Check: two app windows see and hear each other; the owner can try a call on the Mac.
+  - **Built in T14:**
+    - livekit-client 2.22.3 added; `@livekit/components-react` left out (our own hooks are enough, one dependency less);
+    - `features/meetings/call/`: `useMeetingRoom` (adaptive stream, dynacast, simulcast, 30-second reconnect policy, each start with its own connection), the people list from attributes (hands first in order), reactions (5 names, 1 a second, 3 seconds), shortcuts ⌘⇧M/⌘⇧O/⌘⇧K, announcements (one polite region, 2 seconds apart), elapsed time;
+    - MeetingPage: gallery (16 a page) and speaker view, tiles with speaking ring and word, hands, mute, weak connection (LiveKit's connection quality "poor"/"lost"), reactions; control bar; simple Participants and Meeting info panels; End meeting for organizers; "X muted you"; on an unexpected disconnect the backend says why (removed, ended) and that message shows;
+    - `pnpm dev:window` opens a second window with its own profile, to be two people on one Mac;
+    - desktop test `call.spec.ts` (two windows, same account: see each other, mute by shortcut and a raised hand reach the other window, Leave) passes;
+    - **next tasks:** Pin for me (from the participant menu) and sharing come with T15; the weak-connection rule by packet numbers, Rejoin and device settings with T16.
 
 - [ ] **T15: Panels and organizer controls in the app.**
   - Participants panel with the lobby, Meeting info, Meeting options, mute, remove, roles, lock, End meeting with confirmation, "Choose what to share" and sharing, the 30-hour notice.

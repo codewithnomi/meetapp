@@ -283,7 +283,7 @@ LiveKit already protects audio first, so on a weak line video gets worse or stop
 - packet loss;
 - round-trip time.
 
-When loss is over 5% or delay over 300 ms for 5 seconds in a row, the person's own tile and the Device panel show the weak-connection notice.
+When loss is over 5% or delay over 300 ms for 5 seconds in a row, the person's own tile and the Device panel show the weak-connection notice. (T14 first shows it from LiveKit's own connection quality, "poor" or "lost"; T16 adds the packet-loss and delay rule.)
 
 **Reconnecting** (AC-29):
 - LiveKit retries by itself.

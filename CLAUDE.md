@@ -36,7 +36,7 @@ The owner is not a programmer. **Explain things in simple, plain words. Avoid ja
 
 ## Commands
 Setup on a new Mac: `docs/getting-started.md`. Run from the project root:
-- **Start:** `pnpm dev` (services + backend + desktop app), `pnpm dev:stop` (stop services, data kept), `pnpm desktop` (only the window).
+- **Start:** `pnpm dev` (services + backend + desktop app), `pnpm dev:stop` (stop services, data kept), `pnpm desktop` (only the window), `pnpm dev:window` (one more window with its own sign-in, to be two people in a meeting; while `pnpm dev` runs).
 - **Test:** `pnpm test` (everything, needs Docker), `pnpm test:unit` (quick, no Docker), `pnpm test:integration`, `pnpm test:e2e` (desktop windows), `pnpm test:visual` (component screenshots, needs Docker; `pnpm test:visual:update` after an intended look change), `pnpm test:monitoring` (about 12 minutes; close `pnpm dev` first).
 - **Check:** `pnpm check` (lint, formatting, types, architecture, unused code, duplication, structure, licenses), `pnpm check:container` (backend container).
 - **Data:** `pnpm seed` (example accounts, password in `docs/runbooks/local-services.md`), `pnpm seed:clear`, `pnpm flag list`, `pnpm flag <key> on|off`, `pnpm email:test`, `pnpm storage:test`.
