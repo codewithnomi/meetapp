@@ -74,6 +74,9 @@ export async function launch(
   switches: string[] = [],
 ): Promise<RunningApp> {
   const env: Record<string, string> = { ...extraEnv, MEETAPP_USER_DATA_DIR: profile };
+  // `pnpm test:load` points the app at its own call server (the security policy allows only that one).
+  const loadServer = process.env["MEETAPP_E2E_LIVEKIT_PORT"];
+  if (loadServer) env["LIVEKIT_PORT"] = loadServer;
   for (const [key, value] of Object.entries(process.env))
     if (value !== undefined && !(key in env) && !LEFT_OUT.has(key)) env[key] = value;
   const app = await _electron.launch({ args: [DESKTOP, ...switches], cwd: DESKTOP, env });

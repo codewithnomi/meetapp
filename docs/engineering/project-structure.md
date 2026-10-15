@@ -92,7 +92,7 @@ meetapp/
     │   ├── desktop/               Real-window tests; shared steps in desktop.ts and workspace-steps.ts
     │   └── gallery/               Screenshot + accessibility check of every Storybook story and the invitation page (pnpm test:visual)
     ├── fixtures/                  Files that deliberately break rules, used to test the checks
-    └── load/                      Load tests (100-person meetings; later, not created yet)
+    └── load/                      Load tests (100- and 25-person meetings, `pnpm test:load`; numbers in tests/load/test-results)
 ```
 
 ## 2. Naming rules

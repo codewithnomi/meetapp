@@ -21,7 +21,7 @@ export function SidePanel({ title, closeLabel, onClose, children, className }: S
     <aside
       aria-labelledby={headingId}
       className={cx(
-        "box-border flex max-w-95 min-w-0 flex-[1_1_320px] flex-col gap-3 self-start rounded-lg bg-surface p-4 text-ink",
+        "box-border flex max-w-95 min-w-0 flex-[1_1_320px] flex-col gap-3 self-start overflow-y-auto rounded-lg max-h-full bg-surface p-4 text-ink",
         className,
       )}
     >

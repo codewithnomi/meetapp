@@ -2,6 +2,8 @@
 // view" screens. Gallery: up to 16 tiles on a page (the page gives this page's tiles), in 1 to 4
 // columns, with page arrows under them. Speaker: the first tile large, the next four in a strip, and
 // "+ 18 more" for the rest. The tiles are VideoTiles the page makes. All words arrive as props.
+// Tiles shrink to fit the height the frame gives (`--stage-height`, set by MeetingLayout), as in Teams:
+// a full page of 16 shows without scrolling.
 import type { ReactNode } from "react";
 import { IconButton } from "../../atoms/IconButton/index.ts";
 import { cx } from "../../lib/cx.ts";
@@ -37,12 +39,26 @@ export interface GalleryProps {
 /** Four tiles in the strip, plus the "+ N more" box: the strip's 5 columns (grid-cols-5). */
 const STRIP = 4;
 
+const GAP_PX = 10;
+/** The page arrows' row and the gap above it. */
+const ARROWS_PX = 46;
+const STAGE_HEIGHT = "var(--stage-height, 100dvh)";
+
 /** 1 tile: 1 column; up to 4: 2; up to 9: 3; more: 4. */
-function columns(count: number): string {
-  if (count <= 1) return "grid-cols-1";
-  if (count <= 4) return "grid-cols-2";
-  if (count <= 9) return "grid-cols-3";
-  return "grid-cols-4";
+function columnCount(count: number): number {
+  if (count <= 1) return 1;
+  if (count <= 4) return 2;
+  if (count <= 9) return 3;
+  return 4;
+}
+const COLUMNS = ["grid-cols-1", "grid-cols-1", "grid-cols-2", "grid-cols-3", "grid-cols-4"];
+
+/** The widest the grid may be so that every row of 16:9 tiles fits the stage's height. */
+function fitWidth(count: number, withArrows: boolean): string {
+  const cols = columnCount(count);
+  const rows = Math.max(1, Math.ceil(count / cols));
+  const fixed = (withArrows ? ARROWS_PX : 0) + (rows - 1) * GAP_PX;
+  return `calc((${STAGE_HEIGHT} - ${String(fixed)}px) / ${String(rows)} * 16 / 9 * ${String(cols)} + ${String((cols - 1) * GAP_PX)}px)`;
 }
 
 function PageArrows({ pages }: { pages: GalleryPages }) {
@@ -76,7 +92,11 @@ function SpeakerView({ tiles, moreText }: Pick<GalleryProps, "tiles" | "moreText
   const strip = others.slice(0, STRIP);
   return (
     <>
-      {main ? <div key={main.id}>{main.tile}</div> : null}
+      {main ? (
+        <div key={main.id} className="mx-auto w-full" style={{ maxWidth: `calc(${STAGE_HEIGHT} * 0.7 * 16 / 9)` }}>
+          {main.tile}
+        </div>
+      ) : null}
       {strip.length > 0 || moreText ? (
         <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
           {strip.map(({ id, tile }) => (
@@ -99,7 +119,10 @@ export function Gallery({ label, layout, tiles, pages, moreText }: GalleryProps)
       {layout === "speaker" ? (
         <SpeakerView tiles={tiles} moreText={moreText} />
       ) : (
-        <ul className={cx("m-0 grid list-none gap-2.5 p-0", columns(tiles.length))}>
+        <ul
+          className={cx("m-0 mx-auto grid w-full list-none gap-2.5 p-0", COLUMNS[columnCount(tiles.length)])}
+          style={{ maxWidth: fitWidth(tiles.length, Boolean(pages)) }}
+        >
           {tiles.map(({ id, tile }) => (
             <li key={id}>{tile}</li>
           ))}

@@ -1,0 +1,15 @@
+# A second call server for `pnpm test:load` only (F02 design.md section 10, T18). The same as
+# infra/livekit.yaml, except it sends no reports to the backend: the backend removes anyone it didn't
+# let in (S4), and the simulated people of the load tool join the room directly.
+port: 7880
+rtc:
+  tcp_port: 7891
+  udp_port: 7892
+  use_external_ip: false
+room:
+  auto_create: false
+  max_participants: 100
+  empty_timeout: 30
+  departure_timeout: 30
+logging:
+  level: warn
