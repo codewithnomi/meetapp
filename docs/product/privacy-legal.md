@@ -45,7 +45,7 @@ updated: 2026-10-11
 | Meeting record: who took part (name shown, member / external / guest), when each joined and left, how the call ended | plain fields; a deleted account's link is removed and only the name stays | how long comes with F06/F10 (S9) |
 | Guests: the name they typed | plain field, shown as text only | as the meeting record |
 | Guests' "same app" fingerprint (to keep a removed guest out of the call) | HMAC of the meeting ID and a random key made on their computer, so one guest's meetings can't be linked | as the meeting record |
-| Meeting tickets (the in-meeting pass) | SHA-256 fingerprint only; the app keeps the ticket in memory | until the person leaves |
+| Meeting tickets (the in-meeting pass) | SHA-256 fingerprint only, on the attendance; the app keeps the ticket in memory | works until the person leaves (30 minutes more for reading the outcome); the fingerprint stays with the meeting record |
 | Call-server reports already handled | report ID and time | 1 day |
 | Audio, video and screen shares | **never stored**: passed between people by the call server only | — |
 

@@ -13,6 +13,7 @@ Owner's machine: Apple M4, 16 GB RAM, macOS 26. Good for development and for loc
 | Piece | Runs as | Notes |
 |---|---|---|
 | Call server (LiveKit) | Docker container | Dev keys, only reachable from this Mac |
+| Load-test call server and the `lk` load tool | Docker containers, started only by `pnpm test:load` (`infra/load/`) | A second LiveKit on 127.0.0.1:7890 that sends no reports to the backend, plus simulated people (F02 T18) |
 | Database (PostgreSQL + pgvector) | Docker container | Data kept in a Docker volume |
 | Cache / job queue (Redis) | Docker container | Persistence on, so queued jobs survive restarts |
 | File storage (**RustFS**, replaces MinIO, D035) | Docker container | Works exactly like Cloudflare R2 (same "S3" API), so switching later needs no code change |

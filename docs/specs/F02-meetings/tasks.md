@@ -57,7 +57,7 @@ Small steps, done in order, on branch `feat/F02-meetings`. Each step is committe
 
 - [x] **T4: Finding a meeting.**
   - `POST /meeting-lookups`: link or ID+passcode, lookup tokens, the same miss answer and timing, the expired message only with the right secret.
-  - Wrong-try limits per person, per address and per meeting ID (RATE_LIMITED).
+  - Wrong-try limits per person, per address and per meeting ID (TOO_MANY_ATTEMPTS).
   - Covers: AC-F02-04, 08, 48.
   - Tests: TC-F02-04, 08, 15, 16, 17, 93, 94, 105.
   - Check: a wrong passcode and an unknown ID can't be told apart by answer or by timing.
@@ -285,5 +285,6 @@ TC-F02-01–03, 05–07, 09–12, 104 → T3 · 04, 08, 15–17, 93, 94, 105 →
   - Left as should-fix (not blocking, noted for F02 polish or F10): Rejoin shows no "Rejoining…" while pending; the co-organizer search has no "nobody found" line; a repeated identical announcement isn't read twice; Admit all and Mute all show no busy state; the people list draws all rows (100 is fine now that the clock no longer redraws it every second).
 - [ ] **T-fix-5: Coverage ≥ 80%.** Unit tests for `apps/web/src/features/meetings/**` (call, devices, join, visit) and `apps/api/src/providers/livekit.ts` branches.
 - [ ] **T-fix-6: The postponed and missing screen tests.** TC-13, 14, 18–21, 24, 43–45, 49, 51, 52, 55, 56, 59–63, 69, 71, 74, 75, 77, 79, 81, 83 (member part), 88, 90, 91, 98; F00/F01 desktop tests ask for the exact "Settings" button (done). Written 2026-10-16, to run: meetings-page, pre-join, connection, meeting-keyboard and workspace-settings (member) desktop specs, access.integration.test.ts (51, 75, 98); page tests for TC-90 pass. Still to write: TC-24, 43–45, 49, 52, 60, 69, 71, 74, 77, 79, 81 (check call.spec.ts first), the desktop parts of TC-107 and 114, TC-63 (organizer leaves, the call stays).
-- [ ] **T-fix-7: Documentation.** Every "must fix" of the documentation check in verification.md.
+- [x] **T-fix-7: Documentation.** Every "must fix" of the documentation check in verification.md.
+  - Done: design.md (created files incl. load tests, JoinMeetingPage, call/, meetings.ts, second-window; `0004_lobby_reasons`; `*_enc` columns; `left_reason` values; indexes; personal workspace on the guest switch; error codes `FORBIDDEN`/`NOT_FOUND`; the load-test call server; D054/D055 accepted and `@livekit/components-react` not added); tasks.md and tests.md error codes; D055 "built" note; D040 wording; frontend.md calling row; infrastructure.md (load-test call server, `trustProxy`); quality-targets.md (the 90% rule); privacy-legal.md (ticket fingerprint kept with the record); project-structure.md; docs/README.md (runbook); progress.md (session log, guests answered); the READMEs of api, desktop, web, ui, contracts and db. CLAUDE.md already listed `pnpm test:load`.
 - [ ] **T-fix-8: Final runs and the owner's checks.** The whole suite, `pnpm test:visual` (new baselines for the meeting screen), `pnpm check`, `pnpm check:container`, `pnpm test:load` on an idle Mac, the owner's look check (TC-F02-87), and the F02 components and icons added to the design system artifact (D029).

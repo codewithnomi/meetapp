@@ -24,6 +24,7 @@ Measurable goals. Specs and tests use these numbers. All are **proposals**; the 
 | Uptime | **99.9%** per month (≈ 43 minutes of downtime max) |
 | Call survives a short network drop | reconnects automatically within **10 seconds** |
 | Desktop memory use in a 25-person video call | under **700 MB** (D056; Teams uses about 800 MB–1 GB) |
+| Gallery smoothness in a 100-person meeting | each tile shows **at least 90%** of the frames it receives, measured 5 s after it appears (D056; AC-F02-20, TC-F02-41) |
 
 ## Transcription & AI quality
 | What | Target |

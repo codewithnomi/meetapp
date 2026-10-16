@@ -223,7 +223,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** integration
 - **Given** a call with a person waiting in the lobby
 - **When** a co-organizer changes the setting to Everyone, then Only me and co-organizers; a presenter and an attendee try the same
-- **Then** the waiting person stays waiting; people joining afterwards follow the new setting; presenter and attendee get 404 `NOT_ALLOWED`
+- **Then** the waiting person stays waiting; people joining afterwards follow the new setting; presenter and attendee get 404 `NOT_FOUND`
 
 ### TC-F02-29: Guests alone wait
 - **Covers:** AC-F02-17
@@ -351,7 +351,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** integration
 - **Given** a call with organizer, presenter P, attendee T1, T2
 - **When** T2 then T1 raise hands; T1 lowers their own; P lowers T2's; T1 tries to lower T2's
-- **Then** `handRaisedAt` attributes give the order T2, T1; own and presenter lowering work; the attendee lowering another's hand gets 404 `NOT_ALLOWED`
+- **Then** `handRaisedAt` attributes give the order T2, T1; own and presenter lowering work; the attendee lowering another's hand gets 404 `NOT_FOUND`
 
 ### TC-F02-47: Hands and reactions in the app
 - **Covers:** AC-F02-23, AC-F02-24
@@ -500,7 +500,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Level:** integration
 - **Given** an organizer, co-organizer, presenter and attendee ticket
 - **When** each calls mute, mute-all, remove, lower-hand, role change, lobby admit/deny, lock, end, and options
-- **Then** calls succeed only where the table allows; others get 404 `NOT_ALLOWED`; remove or role change aimed at the organizer is refused
+- **Then** calls succeed only where the table allows; others get 404 `NOT_FOUND`; remove or role change aimed at the organizer is refused
 
 ### TC-F02-68: Mute and Mute all
 - **Covers:** AC-F02-33

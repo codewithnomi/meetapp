@@ -28,7 +28,11 @@ Screens follow the approved designs (D029): canvas https://claude.ai/artifact/7A
 ## 1. What gets created
 ```
 infra/livekit.yaml                 rooms only made by the backend, 100-person cap, an empty room stays open 30 s, webhooks to the API
+infra/load/                        load tests only: a second call server on 127.0.0.1:7890 without webhooks, and the pinned `lk` tool
+tools/load.ts                      `pnpm test:load` (starts the above and the backend, builds the app, runs tests/load)
+tests/load/                        the 100- and 25-person load tests (TC-25, 41, 92)
 apps/api/src/
+  meetings.ts                      wiring of the meeting and call modules (services, routes, jobs)
   providers/livekit.ts             rooms, participants, permissions, data messages, passes (tokens), webhook check
   modules/meetings/                create, options, lookup by link or ID+passcode, expiry, record (meetings.*.ts)
   modules/calls/                   join, lobby, admit/deny, in-call controls, end, the 30-hour limit (calls.*.ts)
@@ -39,8 +43,12 @@ apps/api/src/
 packages/db/src/schema/meetings.ts meetings, co-organizers, calls, attendances; workspaces.allow_guests
 packages/contracts/src/meetings.ts Zod schemas for every new endpoint and every server data message
 apps/web/src/
-  features/meetings/               API hooks, useMeetingRoom (LiveKit), devices, shortcuts, announcements
+  features/meetings/               API hooks, the visit (visit.ts: the ticket in memory only), devices, the pre-join
+    call/                          useMeetingRoom (livekit-client), people, reactions, devices in the call, shortcuts,
+                                   announcements, sharing; permissions.ts is a display copy of the role table (the
+                                   server decides; the copy only shapes menus)
   pages/MeetingsPage               Meet now, Get a meeting link, Join (canvas "Meetings")
+  pages/JoinMeetingPage            "Join a meeting" for guests, from the sign-in screen (ID+passcode or link)
   pages/PreJoinPage                camera, mic level, speakers, guest name (canvas "Pre-join", "Pre-join as a guest")
   pages/LobbyPage                  waiting (canvas "Lobby")
   pages/MeetingPage                gallery, speaker view, panels, dialogs (canvas "Meeting: …", "Meeting options", "Choose what to share")
@@ -50,6 +58,7 @@ apps/desktop/src/main/
   media-permissions.ts             camera and mic for MeetApp's own screens only; screen sharing through our picker
   device-key.ts                    a random key for this app on this computer (guests' "same app" for AC-35)
   media-actions.ts, media-bridge.ts  the page bridge behind `meetapp.media` and `meetapp.deviceKey` (rules / Electron wiring)
+apps/desktop/scripts/second-window.ts  `pnpm dev:window`: a second window with its own sign-in (two people on one Mac)
 packages/ui                        atoms: LevelMeter, ActionMenu (the ⋯ menu, moved out of MemberRow so rows share it);
                                    molecules: DeviceSelect, ParticipantRow (reworked), LobbyRow, MessageCard,
                                    SidePanel (the panels' frame); organisms: VideoTile (reworked), ControlBar (reworked),
@@ -301,20 +310,20 @@ When loss is over 5% or delay over 300 ms for 5 seconds in a row, the person's o
 
 **Memory** (AC-47): only visible tiles hold video elements. Hidden tiles stop their video elements, and the gallery never draws more than 16.
 
-## 4. Data stored (migration `0003_meetings`)
+## 4. Data stored (migrations `0003_meetings` and `0004_lobby_reasons`)
 | Table / column | What it holds |
 |---|---|
 | `workspaces.allow_guests` | boolean, default true (AC-40) |
-| `meetings` | `id`, `workspace_id`, `organizer_id`, `kind` (meet_now / link), `title`, `meeting_number` (12 digits), `link_lookup` (HMAC, unique), `link_secret` (encrypted), `passcode_check` (HMAC), `passcode` (encrypted), `key_version`, `lobby_bypass`, `who_can_present`, `allow_attendee_mic`, `allow_attendee_camera`, `expires_at`, `created_at`, `updated_at`. A plain unique index on `meeting_number` covers all rows (a new draw if taken; 9·10¹¹ numbers make reuse unnecessary) |
+| `meetings` | `id`, `workspace_id`, `organizer_id`, `kind` (meet_now / link), `title`, `meeting_number` (12 digits), `link_lookup` (HMAC, unique), `link_secret_enc` (encrypted), `passcode_check` (HMAC), `passcode_enc` (encrypted), `key_version`, `lobby_bypass`, `who_can_present`, `allow_attendee_mic`, `allow_attendee_camera`, `expires_at`, `created_at`, `updated_at`. A plain unique index on `meeting_number` covers all rows (a new draw if taken; 9·10¹¹ numbers make reuse unnecessary) |
 | `meeting_co_organizers` | `id`, `meeting_id`, `user_id` (unique together), times; at most 10, checked in code and by a trigger that locks the meeting row first |
 | `calls` | `id` (also the LiveKit room name), `workspace_id`, `meeting_id`, `started_at`, `ended_at`, `end_reason` (last_left / ended / time_limit), `locked` |
-| `call_attendances` | `id` (also the LiveKit identity), `workspace_id`, `call_id` (empty while waiting before a call exists), `meeting_id`, `user_id` (empty for guests; set to empty if the account is deleted, the record keeps the name), `display_name` (the name shown and kept in the record), `guest_device_hash` (HMAC of the meeting ID and the device key, so one guest's meetings can't be linked), `participant_group` (member / external / guest), `role_override`, `status` (waiting / admitted / in_call / left / denied / removed / timed_out / turned_away), `ticket_hash`, `lobby_entered_at`, `last_seen_at`, `admitted_at`, `joined_at`, `left_at`, `left_reason` (leave / dropped / removed / ended), `acted_by` (the attendance that admitted, denied or removed: guests can be presenters too), `rejoined_at` (Rejoin works once), `last_event_at` (time of the newest LiveKit event applied) |
+| `call_attendances` | `id` (also the LiveKit identity), `workspace_id`, `call_id` (empty while waiting before a call exists), `meeting_id`, `user_id` (empty for guests; set to empty if the account is deleted, the record keeps the name), `display_name` (the name shown and kept in the record), `guest_device_hash` (HMAC of the meeting ID and the device key, so one guest's meetings can't be linked), `participant_group` (member / external / guest), `role_override`, `status` (waiting / admitted / in_call / left / denied / removed / timed_out / turned_away), `ticket_hash`, `lobby_entered_at`, `last_seen_at`, `admitted_at`, `joined_at`, `left_at`, `left_reason` (leave / dropped / removed / ended / locked / guests_off; the last two added by `0004_lobby_reasons` for people turned away from the lobby), `acted_by` (the attendance that admitted, denied or removed: guests can be presenters too), `rejoined_at` (Rejoin works once), `last_event_at` (time of the newest LiveKit event applied) |
 | `livekit_events` | `id`, `event_id` (unique), times: webhooks already handled, kept 1 day |
 
 Indexes:
-- `call_attendances` on `(meeting_id, status)` for the lobby and the counts;
-- on `ticket_hash`;
-- `meetings` on `(workspace_id)` and `expires_at`.
+- `call_attendances` on `(meeting_id, status)` for the lobby and the counts, `(call_id, status)` for a call's people, `user_id`, `workspace_id`; `ticket_hash` is unique;
+- `meetings` on `workspace_id`, `organizer_id` and `expires_at`; `meeting_co_organizers` on `user_id`;
+- `calls` on `workspace_id`, and `calls_one_running_per_meeting`: at most one call per meeting with `ended_at` empty (a partial unique index).
 
 Every query that reads a meeting goes through its workspace or a ticket for it (S2).
 
@@ -370,7 +379,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 | `PATCH /calls/:callId` | ticket, organizer or co-organizer | lock or unlock (AC-37) |
 | `POST /calls/:callId/end` | ticket, organizer or co-organizer | End meeting (AC-38) |
 | `POST /livekit/webhook` | LiveKit only (signed with the API key, checked by `WebhookReceiver`; read as raw text through a parser for `application/webhook+json` on this route only) | joins, leaves, room finished, screen published |
-| `PATCH /workspaces/:workspaceId/settings` | owner, admin | `allowGuests` (AC-40) |
+| `PATCH /workspaces/:workspaceId/settings` | owner, admin (in a personal workspace, its user) | `allowGuests` (AC-40) |
 | `GET /me` (F01, extended) | signed in | each workspace also carries `allowGuests`, so Workspace settings shows the saved value |
 
 **Errors** use the F00 format, with codes:
@@ -380,7 +389,8 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 - `MEETING_FULL`;
 - `LOBBY_FULL`;
 - `GUESTS_NOT_ALLOWED`;
-- `NOT_ALLOWED`;
+- `FORBIDDEN` (403: naming co-organizers by someone who isn't the organizer);
+- `NOT_FOUND` (404: every refusal on the call routes, so a ticket or a role can't be probed);
 - `TOO_MANY_ATTEMPTS` (with the wait time).
 
 **Ticket routes:** the meeting ticket goes in its own header, `X-Meeting-Ticket`, because the desktop app replaces `Authorization` with the sign-in token (F01). CORS allows the header, and the log cleaning hides it. The `meeting-ticket` plugin looks the ticket up by fingerprint and loads the attendance, its call and its current role.
@@ -403,7 +413,7 @@ Anything else is answered with 404 (S1, S2, AC-50).
 - **Reaching the API:**
   - On the Mac (Docker Desktop), `host.docker.internal` reaches the API, which stays on 127.0.0.1 (AC-F00-23).
   - Linux CI has no such bridge to 127.0.0.1. There, `docker-compose.yml` adds `extra_hosts: host.docker.internal:host-gateway`, and the CI's API listens on the Docker bridge address (in CI only, `tools/test.ts` starts it with `API_HOST=0.0.0.0` on a throw-away machine).
-- **Load-test bots:** the `lk` container runs with `network_mode: "service:livekit"`, so "127.0.0.1" means the call server for it too.
+- **Load-test bots:** `pnpm test:load` starts a second call server (`infra/load/`, 127.0.0.1:7890, media on 7891/7892) that sends no webhooks, since the backend removes anyone it didn't let in; the backend runs against it with `LIVEKIT_PORT=7890`. The `lk` container runs with `network_mode: "service:livekit-load"`, so "127.0.0.1" means that call server for it too.
 - **Speaker updates:** LiveKit's `audio.update_interval` is lowered if the test for AC-21 (highlight within half a second) needs it.
 - In development the signalling runs over `ws://127.0.0.1` (this computer only). Media is always encrypted between app and call server (DTLS-SRTP, part of WebRTC) (AC-53). Online it will be `wss://` behind HTTPS (infrastructure.md stage 3).
 
@@ -532,5 +542,5 @@ The test cases go in tests.md (`TC-F02-…`). Following D052, each task runs onl
 | AC-F02-54 | desktop security tests (only media for app origin; other permissions refused; screen only after our picker; settings unchanged) |
 
 ## Decisions made here
-- **D054 (proposed):** how meetings are built (backend decides, LiveKit enforces; lobby by polling; meeting tickets; webhooks as the record).
-- **D055 (proposed):** new libraries `livekit-client` and `@livekit/components-react` (hooks only, styled with our components), and the `livekit/livekit-cli` Docker image for load tests. Each is vetted with `/add-dependency` before it's added.
+- **D054 (accepted 2026-10-14):** how meetings are built (backend decides, LiveKit enforces; lobby by polling; meeting tickets; webhooks as the record).
+- **D055 (accepted 2026-10-14):** new libraries `livekit-client` and the pinned `livekit/livekit-cli` Docker image for load tests. `@livekit/components-react` was vetted but not added (T14): our own hooks in `features/meetings/call` do the job.

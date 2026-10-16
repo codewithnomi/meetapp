@@ -6,6 +6,8 @@ Zod schemas shared by the backend and the apps: what each endpoint receives and 
 - `src/errors.ts`: the standard error body `{ error: { code, message, requestId, details? } }`.
 - `src/health.ts`: the health check response.
 - `src/flags.ts`: the feature flags list.
+- `src/workspaces.ts`, `src/accounts.ts`… (F01): accounts, workspaces, members, invitations, join requests.
+- `src/meetings.ts`, `src/calls.ts` (F02): every meeting and call endpoint, and the call server's data messages.
 
 ## Run it
 Nothing to start: the backend and the apps import it.

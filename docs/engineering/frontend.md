@@ -58,7 +58,7 @@ Create components with the `/new-component` command so every component gets all 
 | Forms | **React Hook Form + Zod** | Validation; Zod schemas are shared with the backend |
 | Translations | **i18next** | Many languages, right-to-left (Urdu/Arabic) support |
 | Component docs | **Storybook** | Every component documented visually: the living UI documentation |
-| Calling UI | **LiveKit React components/hooks** | Used inside our own organisms, styled with our tokens |
+| Calling UI | **`livekit-client`** with our own hooks in `features/meetings/call` | No LiveKit React components (D055); every visual is one of our organisms, styled with our tokens |
 
 ## 4. Quality rules
 - **Accessibility:** WCAG 2.2 AA. Everything usable with the keyboard; every button has a label; color contrast checked (Storybook a11y addon).
