@@ -63,22 +63,35 @@ function freshFrom(deps: CallsDeps, old: CallAttendance, ticket: string) {
   };
 }
 
-async function rejoin(deps: CallsDeps, attendanceId: string, ticketHash: string, address: string) {
+/**
+ * The attendance that may rejoin: dropped within 30 minutes, or let in but never connected (the call
+ * couldn't connect); the latter counts as dropped from now on.
+ */
+async function droppedOne(deps: CallsDeps, attendanceId: string, ticketHash: string) {
   const old = await deps.attendances.byTicket(ticketHash);
-  const leftAgo = deps.now().getTime() - (old?.leftAt?.getTime() ?? 0);
-  if (
-    !old ||
-    old.id !== attendanceId ||
-    old.status !== "left" ||
-    old.leftReason !== "dropped" ||
-    leftAgo > OUTCOME_MS
-  ) {
-    throw notFound();
+  if (!old || old.id !== attendanceId) throw notFound();
+  if (old.status === "admitted" && !old.joinedAt) {
+    await deps.events.dropped(old.id, deps.now());
+    return (await deps.attendances.byId(old.id)) ?? old;
   }
+  const leftAgo = deps.now().getTime() - (old.leftAt?.getTime() ?? 0);
+  if (old.status !== "left" || old.leftReason !== "dropped" || leftAgo > OUTCOME_MS) throw notFound();
+  return old;
+}
+
+async function rejoin(deps: CallsDeps, attendanceId: string, ticketHash: string, address: string) {
+  const old = await droppedOne(deps, attendanceId, ticketHash);
   const wait = await deps.limiter.take(RATE_RULES.meetingJoinsPerAddress, address);
   if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many tries. Wait a minute.", wait);
-  // Once per attendance: the first Rejoin marks it.
+  // Once per attendance: the first Rejoin marks it; one that can't be completed gives it back.
   if (!(await deps.attendances.markRejoined(old.id, deps.now()))) throw notFound();
+  return enter(deps, old).catch(async (error: unknown) => {
+    await deps.attendances.unmarkRejoined(old.id);
+    throw error;
+  });
+}
+
+async function enter(deps: CallsDeps, old: CallAttendance) {
   const row = await deps.meetings.find(old.meetingId);
   if (!row) throw notFound();
   if (!isUsable(row, deps.now())) throw new AppError(410, "MEETING_EXPIRED", "This meeting has expired.");

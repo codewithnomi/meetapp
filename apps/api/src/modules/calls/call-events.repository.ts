@@ -33,6 +33,10 @@ async function markInCall(executor: Executor, attendanceId: string, at: Date): P
 export function createCallEventsRepository(executor: Executor) {
   return {
     firstTime: (eventId: string) => firstTime(executor, eventId),
+    /** Forgets one report whose handling failed, so the call server's retry is handled (not dropped). */
+    forgetEvent: async (eventId: string): Promise<void> => {
+      await executor.delete(livekitEvents).where(eq(livekitEvents.eventId, eventId));
+    },
     forgetEventsBefore: async (before: Date): Promise<void> => {
       await executor.delete(livekitEvents).where(lt(livekitEvents.createdAt, before));
     },

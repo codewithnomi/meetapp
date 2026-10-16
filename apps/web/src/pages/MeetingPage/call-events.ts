@@ -12,14 +12,19 @@ import {
   type Reaction,
 } from "../../features/meetings/index.ts";
 
+/** Each person's latest reaction, shown for 3 seconds from its own start (a newer one restarts the time). */
 function useReactions() {
   const [reactions, setReactions] = useState<Record<string, Reaction>>({});
+  const [timers] = useState(() => new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => () => timers.forEach(clearTimeout), [timers]);
   const show = (personId: string, reaction: Reaction) => {
     setReactions((old) => ({ ...old, [personId]: reaction }));
-    setTimeout(
-      () => setReactions((old) => Object.fromEntries(Object.entries(old).filter(([id]) => id !== personId))),
-      SHOWN_MS,
-    );
+    clearTimeout(timers.get(personId));
+    const hide = () => {
+      timers.delete(personId);
+      setReactions((old) => Object.fromEntries(Object.entries(old).filter(([id]) => id !== personId)));
+    };
+    timers.set(personId, setTimeout(hide, SHOWN_MS));
   };
   return { reactions, show };
 }

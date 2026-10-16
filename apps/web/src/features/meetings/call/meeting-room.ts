@@ -91,9 +91,11 @@ function listen(room: Room, bump: () => void, handlers: RoomHandlers, setConnect
   });
 }
 
-async function connect(room: Room, visit: Joined, prefs: DevicePrefs) {
+/** Connects, then turns on the chosen devices; stops early once `live()` says this connection was closed. */
+async function connect(room: Room, visit: Joined, prefs: DevicePrefs, live: () => boolean) {
   if (!visit.call) throw new Error("no call");
   await room.connect(visit.call.serverUrl, visit.call.pass);
+  if (!live()) return;
   if (prefs.speakerId) await room.switchActiveDevice("audiooutput", prefs.speakerId).catch(() => false);
   // A device that fails (missing, refused, not allowed for attendees) just stays off.
   await room.localParticipant.setMicrophoneEnabled(prefs.microphoneOn).catch(() => undefined);
@@ -108,26 +110,51 @@ function allowedSources(room: Room | undefined) {
   return { microphone: may(2), camera: may(1), screen: may(3) };
 }
 
+interface RoomSetters {
+  bump: () => void;
+  setRoom: (room: Room) => void;
+  setConnection: (connection: Connection) => void;
+}
+
+/**
+ * A new connection each time; returns its clean-up. A connection being closed never touches the next one
+ * (React may start the screen twice in development, and Rejoin starts a new one).
+ */
+function startRoom(visit: Joined, prefs: DevicePrefs, handlers: RoomHandlers, set: RoomSetters): () => void {
+  const current = newRoom(prefs);
+  let live = true;
+  listen(current, set.bump, handlers, set.setConnection);
+  set.setRoom(current);
+  void connect(current, visit, prefs, () => live)
+    .then(() => {
+      if (!live) return;
+      set.setConnection("connected");
+      set.bump();
+    })
+    .catch(() => {
+      if (!live) return;
+      // Never connected (call server unreachable, pass refused): ask the backend what happened, as after
+      // a lost connection, so the person sees a message and Rejoin instead of an empty screen.
+      set.setConnection("failed");
+      handlers.onDisconnected(undefined);
+    });
+  return () => {
+    live = false;
+    current.removeAllListeners();
+    void current.disconnect();
+  };
+}
+
 export function useMeetingRoom(visit: Joined, prefs: DevicePrefs, handlers: RoomHandlers) {
   const [room, setRoom] = useState<Room>();
   const [version, setVersion] = useState(0);
   const [connection, setConnection] = useState<Connection>("connecting");
   const bump = () => setVersion((v) => v + 1);
-  useEffect(() => {
-    // A new connection each time: a connection being closed must never touch the next one (React may
-    // start the screen twice in development).
-    const current = newRoom(prefs);
-    listen(current, bump, handlers, setConnection);
-    setRoom(current);
-    void connect(current, visit, prefs)
-      .then(() => (setConnection("connected"), bump()))
-      .catch(() => setConnection("failed"));
-    return () => {
-      current.removeAllListeners();
-      void current.disconnect();
-    };
+  useEffect(
+    () => startRoom(visit, prefs, handlers, { bump, setRoom, setConnection }),
     // Connect once per visit; handlers and prefs are read at that moment.
-  }, [visit.attendanceId]);
+    [visit.attendanceId],
+  );
   const people = useMemo(
     () => (room ? inOrder([room.localParticipant, ...room.remoteParticipants.values()].map(personOf)) : []),
     // `version` changes on every room event, so the list is read again then.

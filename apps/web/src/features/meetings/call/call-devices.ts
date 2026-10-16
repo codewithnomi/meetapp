@@ -61,8 +61,10 @@ async function checkDevices(room: Room, known: Map<DeviceKind, string>, onGone: 
   for (const kind of ["videoinput", "audioinput", "audiooutput"] as const) {
     const active = room.getActiveDevice(kind);
     const devices = await Room.getLocalDevices(kind, false).catch(() => []);
-    const label = devices.find((d) => d.deviceId === active)?.label;
-    if (active && active !== "default" && !label) {
+    // Gone means missing from the list (a device without a name is still there).
+    const device = devices.find((d) => d.deviceId === active);
+    const label = device?.label;
+    if (active && active !== "default" && !device) {
       await room.switchActiveDevice(kind, "default").catch(() => false);
       const now = devices.find((d) => d.deviceId === "default")?.label ?? devices[0]?.label ?? "";
       onGone({ kind: kindName(kind), gone: known.get(kind) ?? "", now });

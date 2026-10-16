@@ -58,21 +58,29 @@ async function screenShared(deps: CallsDeps, room: string, identity: string): Pr
   }
 }
 
+async function apply(deps: CallsDeps, event: WebhookEvent): Promise<void> {
+  const room = event.room?.name ?? "";
+  const identity = event.participant?.identity ?? "";
+  const at = eventTime(event, deps.now());
+  if (event.event === "participant_joined") await joinedRoom(deps, room, identity, at);
+  if (event.event === "participant_left") await leftRoom(deps, identity, at);
+  if (event.event === "room_finished" && UUID.test(room)) await deps.events.endCall(room, "last_left", at);
+  if (event.event === "track_published" && event.track?.source === TrackSource.SCREEN_SHARE) {
+    await screenShared(deps, room, identity);
+  }
+}
+
 export function createWebhookService(deps: CallsDeps) {
   return {
     /** Reads and checks a report (throws when the signature or body is wrong), then applies it. */
     receive: async (body: string, authorization: string | undefined): Promise<void> => {
       const event = await deps.livekit.readWebhook(body, authorization);
       if (!(await deps.events.firstTime(event.id))) return;
-      const room = event.room?.name ?? "";
-      const identity = event.participant?.identity ?? "";
-      const at = eventTime(event, deps.now());
-      if (event.event === "participant_joined") await joinedRoom(deps, room, identity, at);
-      if (event.event === "participant_left") await leftRoom(deps, identity, at);
-      if (event.event === "room_finished" && UUID.test(room)) await deps.events.endCall(room, "last_left", at);
-      if (event.event === "track_published" && event.track?.source === TrackSource.SCREEN_SHARE) {
-        await screenShared(deps, room, identity);
-      }
+      // A report whose handling fails is forgotten again, so the call server's retry is applied.
+      await apply(deps, event).catch(async (error: unknown) => {
+        await deps.events.forgetEvent(event.id);
+        throw error;
+      });
     },
   };
 }

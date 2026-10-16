@@ -66,6 +66,8 @@ function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps
   const guest = userName === undefined;
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
+    // Enter pressed twice joins once (one attendance, one ticket).
+    if (join.isPending) return;
     const name = guestName.trim();
     if (guest && (name.length < 1 || name.length > MAX_NAME)) return setNameError(t("meetings.preJoin.nameRule"));
     setNameError(undefined);

@@ -34,7 +34,9 @@ export function useLobbyStatus(visit: Joined | undefined) {
       return attendance;
     },
     enabled: visit?.status === "waiting",
-    refetchInterval: (query) => (query.state.data?.status === "waiting" || !query.state.data ? POLL_MS : false),
+    // Asks every 2 s while waiting; after an error it stops until the person presses Retry.
+    refetchInterval: (query) =>
+      query.state.status !== "error" && (query.state.data?.status === "waiting" || !query.state.data) ? POLL_MS : false,
   });
 }
 

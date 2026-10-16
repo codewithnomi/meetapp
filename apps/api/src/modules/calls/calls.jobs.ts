@@ -25,8 +25,11 @@ async function repairCall(deps: CallsDeps, call: Call, now: Date): Promise<void>
     }
   }
   const present = new Set(people.map((person) => person.identity));
-  for (const attendance of await deps.attendances.inCallOf(call.id)) {
-    const quietFor = now.getTime() - (attendance.lastEventAt ?? attendance.updatedAt).getTime();
+  // Marked inside but not there (a lost report), or let in but never connected (closed the app, the
+  // connection failed): their place is freed, so they don't count toward the 100 (AC-F02-42).
+  for (const attendance of await deps.attendances.presentIn(call.id)) {
+    const since = attendance.status === "in_call" ? attendance.lastEventAt : attendance.admittedAt;
+    const quietFor = now.getTime() - (since ?? attendance.updatedAt).getTime();
     if (!present.has(attendance.id) && quietFor > START_GRACE_MS) await deps.events.dropped(attendance.id, now);
   }
 }

@@ -102,6 +102,10 @@ export function createAttendancesRepository(executor: Executor) {
         .returning({ id: callAttendances.id });
       return changed.length === 1;
     },
+    /** Gives the Rejoin back when it couldn't be completed (refused, or a step failed). */
+    unmarkRejoined: async (id: string): Promise<void> => {
+      await executor.update(callAttendances).set({ rejoinedAt: null }).where(eq(callAttendances.id, id));
+    },
     /** Everyone with a place in the call: let in, or inside. */
     presentIn: (callId: string): Promise<CallAttendance[]> =>
       executor
@@ -111,12 +115,6 @@ export function createAttendancesRepository(executor: Executor) {
     setRoleOverride: async (id: string, roleOverride: "presenter" | "attendee"): Promise<void> => {
       await executor.update(callAttendances).set({ roleOverride }).where(eq(callAttendances.id, id));
     },
-    /** People marked inside one call (compared with the call server by the clean-up). */
-    inCallOf: (callId: string): Promise<CallAttendance[]> =>
-      executor
-        .select()
-        .from(callAttendances)
-        .where(and(eq(callAttendances.callId, callId), eq(callAttendances.status, "in_call"))),
     seen: async (id: string, at: Date): Promise<void> => {
       await executor.update(callAttendances).set({ lastSeenAt: at }).where(eq(callAttendances.id, id));
     },
