@@ -48,10 +48,15 @@ function isNumberTaken(error: unknown): boolean {
   return code === UNIQUE_VIOLATION && constraint === "meetings_meeting_number_unique";
 }
 
-async function coOrganizersOf(executor: Executor, meetingId: string): Promise<string[]> {
+/** Only co-organizers who are still members of the meeting's workspace count (AC-F02-36, S2). */
+async function coOrganizersOf(executor: Executor, meetingId: string, workspaceId: string): Promise<string[]> {
   const rows = await executor
     .select({ userId: meetingCoOrganizers.userId })
     .from(meetingCoOrganizers)
+    .innerJoin(
+      workspaceMembers,
+      and(eq(workspaceMembers.userId, meetingCoOrganizers.userId), eq(workspaceMembers.workspaceId, workspaceId)),
+    )
     .where(eq(meetingCoOrganizers.meetingId, meetingId));
   return rows.map((row) => row.userId);
 }
@@ -93,7 +98,7 @@ async function findMeeting(executor: Executor, meetingId: string): Promise<Meeti
     workspaceKind: row.workspaceKind,
     allowGuests: row.allowGuests,
     organizerIsMember: row.membership !== null,
-    coOrganizerIds: await coOrganizersOf(executor, meetingId),
+    coOrganizerIds: await coOrganizersOf(executor, meetingId, row.meeting.workspaceId),
   };
 }
 

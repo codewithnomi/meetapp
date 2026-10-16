@@ -1,17 +1,17 @@
-// Who may send a screen, who is disconnected and how fast, and the co-organizer limit (F02; AC-F02-25,
-// 36, 49): TC-F02-51, 75, 98. TC-F02-51 reads the rights from the passes the backend signs: a raw
-// LiveKit client needs a browser's WebRTC, so publishing itself is checked in the desktop tests (call.spec.ts). Real routes and database; the call server's side is recorded (a raw
-// LiveKit client needs a browser's WebRTC, so the rights are read from the passes the backend signs).
-// Own database; needs the `pnpm dev` services.
+// Who may send a screen, who is disconnected and how fast, the co-organizer limit, and co-organizers who
+// leave the workspace (F02; AC-F02-25, 36, 49): TC-F02-51, 75, 98, and the T-fix-1 security check.
+// TC-F02-51 reads the rights from the passes the backend signs: a raw LiveKit client needs a browser's
+// WebRTC, so publishing itself is checked in the desktop tests (call.spec.ts). Real routes and
+// database; the call server's side is recorded. Own database; needs the `pnpm dev` services.
 import { meetingCoOrganizers } from "@meetapp/db";
-import { TokenVerifier, TrackSource } from "livekit-server-sdk";
+import { TokenVerifier } from "livekit-server-sdk";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { localConfig } from "../../test-support/integration.ts";
 import { recordingLiveKit, webhookBody, webhookSignature } from "../../test-support/livekit-events.ts";
-import { joined, meetingWithTeam } from "../../test-support/meetings-setup.ts";
+import { join, joined, meetingWithTeam, withTicket } from "../../test-support/meetings-setup.ts";
 import { caller } from "../../test-support/workspaces-setup.ts";
 import { createControlsService } from "./controls.service.ts";
 import { createWebhookService } from "./webhook.service.ts";
@@ -35,11 +35,12 @@ describe("who may send a screen", { timeout: 30_000 }, () => {
     const attendee = await joined(t, meeting, attendeePerson);
     const cfg = localConfig();
     const verifier = new TokenVerifier(cfg.LIVEKIT_API_KEY, cfg.LIVEKIT_API_SECRET);
-    const sourcesOf = async (who: { call?: { pass: string } }) =>
-      (await verifier.verify(who.call?.pass ?? "")).video?.canPublishSources ?? [];
-    expect(await sourcesOf(host)).toContain(TrackSource.SCREEN_SHARE);
-    expect(await sourcesOf(attendee)).not.toContain(TrackSource.SCREEN_SHARE);
-    expect(await sourcesOf(attendee)).toContain(TrackSource.MICROPHONE);
+    // The signed pass names the sources as text ("camera", "microphone", "screen_share").
+    const sourcesOf = async (who: { call?: { pass: string } }): Promise<string[]> =>
+      ((await verifier.verify(who.call?.pass ?? "")).video?.canPublishSources ?? []).map(String);
+    expect(await sourcesOf(host)).toContain("screen_share");
+    expect(await sourcesOf(attendee)).not.toContain("screen_share");
+    expect(await sourcesOf(attendee)).toContain("microphone");
   });
 });
 
@@ -104,5 +105,36 @@ describe("disconnecting and reusing a pass", { timeout: 30_000 }, () => {
     const took = await reuse(r.deps, r.callId, r.member.attendanceId);
     expect(r.recorded.removed).toContain(r.member.attendanceId);
     expect(took).toBeLessThan(1_500);
+  });
+});
+
+describe("a co-organizer who leaves the workspace", { timeout: 30_000 }, () => {
+  it("T-fix-1 [AC-F02-36] [AC-F02-37] once removed from the workspace, a co-organizer has no co-organizer powers", async () => {
+    const { meeting, organizer, members } = await meetingWithTeam(t, "exco", 1);
+    const [coPerson] = members;
+    if (!coPerson) throw new Error("member missing");
+    const call = caller(t);
+    await call(organizer.token, "PATCH", `/api/v1/meetings/${meeting.id}/options`, { coOrganizerIds: [coPerson.id] });
+    const host = await joined(t, meeting, organizer);
+    expect((await joined(t, meeting, coPerson)).call?.role).toBe("co_organizer");
+    const removed = await call(
+      organizer.token,
+      "DELETE",
+      `/api/v1/workspaces/${meeting.workspaceId}/members/${coPerson.id}`,
+    );
+    expect(removed.statusCode).toBe(204);
+    const rows = await t.database.db
+      .select()
+      .from(meetingCoOrganizers)
+      .where(eq(meetingCoOrganizers.userId, coPerson.id));
+    expect(rows).toEqual([]);
+    const locked = await withTicket(t, host.ticket, {
+      method: "PATCH",
+      url: `/api/v1/calls/${host.call?.callId ?? ""}`,
+      payload: { locked: true },
+    });
+    expect(locked.statusCode).toBe(204);
+    // A co-organizer would get past the lock; an outsider is refused.
+    expect((await join(t, meeting, coPerson)).json<{ error: { code: string } }>().error.code).toBe("MEETING_LOCKED");
   });
 });
