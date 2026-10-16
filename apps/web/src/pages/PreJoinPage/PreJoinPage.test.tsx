@@ -82,3 +82,17 @@ describe("TC-F02-21 guest name and Terms text on the pre-join", () => {
     expect(api.callsTo("POST", "/api/v1/meetings/join")[1]?.body).toMatchObject({ guestName: "b".repeat(60) });
   });
 });
+
+describe("T-fix-3 pressing Enter twice while joining", () => {
+  it("T-fix-3 sends one join, not two", async () => {
+    const api = fakeApi({ [JOIN]: never });
+    open("Pat Lee");
+    const join = screen.getByRole("button", { name: "Join now" });
+    join.focus();
+    await userEvent.keyboard("{Enter}");
+    expect(await screen.findByText("Joining")).toBeInTheDocument();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
+    expect(api.callsTo("POST", "/api/v1/meetings/join")).toHaveLength(1);
+  });
+});

@@ -1,7 +1,7 @@
 // TC-F02-54 (AC-F02-28): weak only after 5 seconds in a row over 5% loss or 300 ms delay; it clears when
 // readings are good again.
 import { describe, expect, it } from "vitest";
-import { createWeakDetector } from "./weak-connection.ts";
+import { createWeakDetector, readingOf } from "./weak-connection.ts";
 
 const run = (readings: { loss: number; roundTrip: number }[]) => {
   const detect = createWeakDetector();
@@ -33,5 +33,25 @@ describe("TC-F02-54 weak connection detection", () => {
       { loss: 0.06, roundTrip: 0 },
     ];
     expect(run(mix).at(-1)).toBe(true);
+  });
+});
+
+describe("TC-F02-54 reading the line report", () => {
+  const report = (stats: object[]) => new Map(stats.map((s, i) => [String(i), s])) as unknown as RTCStatsReport;
+
+  it("TC-F02-54 [AC-F02-28] takes the worst loss and delay of what the far side reports", () => {
+    const reading = readingOf(
+      report([
+        { type: "remote-inbound-rtp", fractionLost: 0.02, roundTripTime: 0.4 },
+        { type: "remote-inbound-rtp", fractionLost: 0.1, roundTripTime: 0.1 },
+        { type: "inbound-rtp", fractionLost: 0.9, roundTripTime: 9 },
+      ]),
+    );
+    expect(reading).toEqual({ loss: 0.1, roundTrip: 0.4 });
+  });
+
+  it("TC-F02-54 [AC-F02-28] missing numbers count as zero; no far-side report gives no reading", () => {
+    expect(readingOf(report([{ type: "remote-inbound-rtp" }]))).toEqual({ loss: 0, roundTrip: 0 });
+    expect(readingOf(report([{ type: "outbound-rtp" }]))).toBeUndefined();
   });
 });
