@@ -52,7 +52,6 @@ export async function actor(deps: CallsDeps, callId: string, ticketHash: string,
   return { attendance, row };
 }
 
-/** A waiting person's ask: still here, or timed out after 15 minutes (AC-F02-18). */
 /** Why a waiting person can no longer wait: guests switched off, or the meeting locked (AC-F02-37, 40). */
 async function turnAwayReason(deps: CallsDeps, attendance: CallAttendance, row: MeetingRow) {
   if (attendance.participantGroup === "guest" && !row.allowGuests) return "guests_off" as const;
@@ -81,6 +80,8 @@ async function stillWaiting(deps: CallsDeps, attendance: CallAttendance, row: Me
 }
 
 async function status(deps: CallsDeps, attendanceId: string, ticketHash: string) {
+  const wait = await deps.limiter.take(RATE_RULES.attendanceStatus, ticketHash);
+  if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many requests. Wait a moment.", wait);
   let attendance = await own(deps, attendanceId, ticketHash);
   const row = await deps.meetings.find(attendance.meetingId);
   if (!row) throw notFound();

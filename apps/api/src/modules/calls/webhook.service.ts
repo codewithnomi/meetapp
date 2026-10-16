@@ -11,6 +11,9 @@ const RECONNECT_MS = 30 * 1000;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Every person the backend lets into a room is named by their attendance id. */
+export const isAttendanceId = (identity: string): boolean => UUID.test(identity);
+
 /** May this attendance be in this room now? */
 export function allowedIn(attendance: CallAttendance | undefined, room: string, now: Date): boolean {
   if (!attendance || attendance.callId !== room) return false;

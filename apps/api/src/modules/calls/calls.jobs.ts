@@ -6,7 +6,7 @@
 import { Queue, Worker, type ConnectionOptions } from "bullmq";
 import type { Call } from "@meetapp/db";
 import { CALL_LIMIT_MS, LOBBY_WAIT_MS, type CallsDeps } from "./admission.ts";
-import { allowedIn } from "./webhook.service.ts";
+import { allowedIn, isAttendanceId } from "./webhook.service.ts";
 
 const QUEUE = "calls";
 const CLEAN_UP = "clean-up";
@@ -18,7 +18,9 @@ const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
 async function repairCall(deps: CallsDeps, call: Call, now: Date): Promise<void> {
   const people = await deps.livekit.participants(call.id);
   for (const person of people) {
-    if (!allowedIn(await deps.attendances.byId(person.identity), call.id, now)) {
+    // Someone the backend never let in (not an attendance id) goes at once.
+    const attendance = isAttendanceId(person.identity) ? await deps.attendances.byId(person.identity) : undefined;
+    if (!allowedIn(attendance, call.id, now)) {
       await deps.livekit.remove(call.id, person.identity).catch(() => undefined);
     }
   }
@@ -36,7 +38,8 @@ export function createCallJobs(deps: CallsDeps) {
       await deps.events.timeOutWaiting(new Date(now.getTime() - LOBBY_WAIT_MS));
       const rooms = new Set(await deps.livekit.runningRooms());
       for (const call of await deps.events.runningCalls()) {
-        if (rooms.has(call.id)) await repairCall(deps, call, now);
+        // One call that fails to repair doesn't stop the others; the next round tries it again.
+        if (rooms.has(call.id)) await repairCall(deps, call, now).catch(() => undefined);
         else if (now.getTime() - call.startedAt.getTime() > START_GRACE_MS) {
           await deps.events.endCall(call.id, "last_left", now);
         }

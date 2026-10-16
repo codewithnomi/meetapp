@@ -79,10 +79,13 @@ export const meetingsRoutes: FastifyPluginAsyncZod<{
   app.post("/api/v1/workspaces/:workspaceId/meetings", CREATE, async (request, reply) => {
     const caller = signedInUser(request);
     const membership = memberOf(request);
-    const created = await idempotency.once(`meetings:${caller.id}`, request.headers["idempotency-key"], () =>
-      meetings.create(caller, membership, request.body.kind, request.body.title),
-    );
-    return reply.status(201).send(created);
+    // Only the new meeting's id is kept for a repeat: its link and passcode never sit in Redis (security review).
+    let created: Awaited<ReturnType<MeetingsService["create"]>> | undefined;
+    const { id } = await idempotency.once(`meetings:${caller.id}`, request.headers["idempotency-key"], async () => {
+      created = await meetings.create(caller, membership, request.body.kind, request.body.title);
+      return { id: created.id };
+    });
+    return reply.status(201).send(created ?? (await meetings.repeatCreate(caller, id)));
   });
 
   app.post("/api/v1/meeting-lookups", LOOKUP, async (request) =>

@@ -108,6 +108,18 @@ describe("disconnecting and reusing a pass", { timeout: 30_000 }, () => {
   });
 });
 
+describe("status asks", { timeout: 60_000 }, () => {
+  it("T-fix-2 [AC-F02-49] one ticket may ask for its status 120 times a minute, then waits", async () => {
+    const { meeting } = await meetingWithTeam(t, "asks");
+    const guest = await joined(t, meeting);
+    const ask = () => withTicket(t, guest.ticket, { method: "GET", url: `/api/v1/attendances/${guest.attendanceId}` });
+    for (let i = 0; i < 120; i += 1) expect((await ask()).statusCode).toBe(200);
+    const refused = await ask();
+    expect(refused.statusCode).toBe(429);
+    expect(refused.json<{ error: { code: string } }>().error.code).toBe("TOO_MANY_ATTEMPTS");
+  });
+});
+
 describe("a co-organizer who leaves the workspace", { timeout: 30_000 }, () => {
   it("T-fix-1 [AC-F02-36] [AC-F02-37] once removed from the workspace, a co-organizer has no co-organizer powers", async () => {
     const { meeting, organizer, members } = await meetingWithTeam(t, "exco", 1);

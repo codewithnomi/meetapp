@@ -142,7 +142,8 @@ describe("guest names and lookup tokens", { timeout: 30_000 }, () => {
     }
     for (const good of ["L", "y".repeat(60)])
       expect((await join(t, meeting, undefined, { guestName: good })).statusCode).toBe(200);
-    const cleaned = await joined(t, meeting, undefined, { guestName: "  Leo\u0007 Martins\u0000 " });
+    // Control and format characters go (a direction override or an invisible character can't fake a name).
+    const cleaned = await joined(t, meeting, undefined, { guestName: "  Leo\u0007 Mar\u202Etins\u200B\u0000 " });
     const [row] = await t.database.db
       .select()
       .from(callAttendances)

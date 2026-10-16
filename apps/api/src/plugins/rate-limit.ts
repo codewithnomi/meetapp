@@ -44,6 +44,9 @@ export const RATE_RULES = {
   meetingJoinsPerToken: { name: "meeting-joins-token", limit: 10, windowSeconds: 60 },
   /** Actions in a call (admit, mute, remove, hand…) per meeting ticket: 30 a minute; status asks don't count. */
   callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
+  /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
+   * database or the call server (S5; F02 verification). */
+  attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

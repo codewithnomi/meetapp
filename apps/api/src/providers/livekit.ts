@@ -11,7 +11,7 @@ import {
   type ParticipantInfo,
   type WebhookEvent,
 } from "livekit-server-sdk";
-import type { Config } from "../config/config.ts";
+import { callServerAdminUrl, type Config } from "../config/config.ts";
 
 const PASS_TTL = "10m";
 /** How long an empty room stays open (also set in infra/livekit.yaml). */
@@ -71,8 +71,7 @@ async function muteMicrophone(rooms: RoomServiceClient, room: string, identity: 
 }
 
 export function createLiveKitProvider(config: Config) {
-  const url = `http://${config.LIVEKIT_HOST}:${String(config.LIVEKIT_PORT)}`;
-  const rooms = new RoomServiceClient(url, config.LIVEKIT_API_KEY, config.LIVEKIT_API_SECRET);
+  const rooms = new RoomServiceClient(callServerAdminUrl(config), config.LIVEKIT_API_KEY, config.LIVEKIT_API_SECRET);
   const webhooks = new WebhookReceiver(config.LIVEKIT_API_KEY, config.LIVEKIT_API_SECRET);
 
   return {

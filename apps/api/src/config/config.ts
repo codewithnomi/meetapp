@@ -147,6 +147,12 @@ export function callServerUrl(config: Config): string {
   return config.LIVEKIT_PUBLIC_URL ?? `ws://127.0.0.1:${String(config.LIVEKIT_PORT)}`;
 }
 
+/** Where the backend reaches the call server's admin API: https online (S6), plain http only on this computer. */
+export function callServerAdminUrl(config: Config): string {
+  const scheme = config.NODE_ENV === "production" ? "https" : "http";
+  return `${scheme}://${config.LIVEKIT_HOST}:${String(config.LIVEKIT_PORT)}`;
+}
+
 export class ConfigError extends Error {
   readonly problems: string[];
 

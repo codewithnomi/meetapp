@@ -441,6 +441,10 @@ Anything else is answered with 404 (S1, S2, AC-50).
   - traces drop request bodies for meeting routes.
 - **S11, AC-51:** Zod limits plus text-only rendering.
 - **S17, AC-54:** section 5.
+- **Known limits (security review, 2026-10-16), accepted:**
+  - one address can keep a known meeting ID blocked for ID+passcode joining (20 wrong tries a minute); the link still works;
+  - a removed guest is recognised by the app's device key on that computer only (AC-35 says "the same app"); a new key gets back to the lobby, where the lobby rules apply; organizers can lock the meeting;
+  - per-address limits need `trustProxy` set before going online (infrastructure.md).
 - **Privacy:** privacy-legal.md gains:
   - meeting records with participant names and times;
   - guests' names;

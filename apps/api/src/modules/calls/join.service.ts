@@ -34,10 +34,15 @@ export interface JoinRequest {
 const notFound = () =>
   new AppError(404, "MEETING_NOT_FOUND", "We couldn't find that meeting. Check the link, or the ID and passcode.");
 
-/** 1–60 characters after removing control characters and trimming (AC-F02-11, 51). */
+/**
+ * 1–60 characters after removing control and format characters (direction overrides, invisible
+ * characters, so a guest can't pose as someone else) and trimming (AC-F02-11, 51).
+ */
 function cleanGuestName(name: string | undefined): string {
-  // eslint-disable-next-line no-control-regex -- removing control characters is the point
-  const cleaned = (name ?? "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "").trim();
+  const cleaned = (name ?? "")
+    .normalize("NFC")
+    .replace(/[\p{Cc}\p{Cf}]/gu, "")
+    .trim();
   if (cleaned.length < 1 || cleaned.length > 60) {
     throw new AppError(400, "BAD_REQUEST", "Type a name of 1 to 60 characters.");
   }

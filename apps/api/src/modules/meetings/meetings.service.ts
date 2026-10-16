@@ -100,7 +100,26 @@ async function createMeeting(deps: Required<Omit<MeetingsServiceDeps, "onChange"
   });
   const row = await repository.find(meeting.id);
   if (!row) throw notFound();
-  return { ...detailsOf(row, secrets), lookupToken: lookupTokens.issue({ meetingId: meeting.id, userId: caller.id }) };
+  return withLookupToken(detailsOf(row, secrets), lookupTokens, caller.id);
+}
+
+/** The creator's answer carries a lookup token, so the app can go straight to the pre-join. */
+function withLookupToken(details: MeetingDetails, tokens: MeetingsServiceDeps["lookupTokens"], userId: string) {
+  return { ...details, lookupToken: tokens.issue({ meetingId: details.id, userId }) };
+}
+
+/** Co-organizers are distinct members of the workspace, not the organizer; none in Personal (AC-F02-36). */
+async function checkCoOrganizers(
+  repository: MeetingsServiceDeps["repository"],
+  row: MeetingRow,
+  userIds: string[],
+): Promise<string[]> {
+  const unique = [...new Set(userIds)];
+  if (unique.length === 0) return unique;
+  if (row.workspaceKind === "personal" || unique.includes(row.meeting.organizerId)) throw badCoOrganizers();
+  const members = await repository.membersAmong(row.meeting.workspaceId, unique);
+  if (members.length !== unique.length) throw badCoOrganizers();
+  return unique;
 }
 
 export function createMeetingsService({
@@ -123,18 +142,12 @@ export function createMeetingsService({
     return { ...row, isOrganizer };
   }
 
-  async function checkCoOrganizers(row: MeetingRow, userIds: string[]): Promise<string[]> {
-    const unique = [...new Set(userIds)];
-    if (unique.length === 0) return unique;
-    if (row.workspaceKind === "personal" || unique.includes(row.meeting.organizerId)) throw badCoOrganizers();
-    const members = await repository.membersAmong(row.meeting.workspaceId, unique);
-    if (members.length !== unique.length) throw badCoOrganizers();
-    return unique;
-  }
-
   return {
     create: (caller: Caller, membership: Membership, kind: Meeting["kind"], title?: string) =>
       createMeeting({ repository, secrets, lookupTokens, limiter, now }, { caller, membership, kind, title }),
+    /** A repeated "create" (same Idempotency-Key): the first meeting's answer again, with a new lookup token. */
+    repeatCreate: async (caller: Caller, meetingId: string) =>
+      withLookupToken(detailsOf(await managed(caller, meetingId), secrets), lookupTokens, caller.id),
     get: async (caller: Caller, meetingId: string): Promise<MeetingDetails> =>
       detailsOf(await managed(caller, meetingId), secrets),
     update: async (caller: Caller, meetingId: string, change: MeetingUpdate): Promise<MeetingDetails> => {
@@ -142,7 +155,7 @@ export function createMeetingsService({
       const { coOrganizerIds, ...options } = change;
       if (coOrganizerIds !== undefined) {
         if (!row.isOrganizer) throw forbidden();
-        await repository.setCoOrganizers(meetingId, await checkCoOrganizers(row, coOrganizerIds));
+        await repository.setCoOrganizers(meetingId, await checkCoOrganizers(repository, row, coOrganizerIds));
       }
       const expiresAt = extendedExpiry(row.meeting.kind, row.meeting.expiresAt, now());
       await repository.update(meetingId, { ...options, expiresAt });

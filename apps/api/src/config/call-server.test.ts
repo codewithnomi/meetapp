@@ -3,7 +3,7 @@
 // DTLS-SRTP part of TC-F02-110 needs a real call and is tested in T14.
 import { describe, expect, it } from "vitest";
 import { fakeEnv } from "../test-support/fake-env.ts";
-import { ConfigError, callServerUrl, isAllowedCallServerUrl, loadConfig } from "./config.ts";
+import { ConfigError, callServerAdminUrl, callServerUrl, isAllowedCallServerUrl, loadConfig } from "./config.ts";
 
 function problemsFor(env: Record<string, string>): string[] {
   try {
@@ -45,6 +45,13 @@ describe("TC-F02-110 [AC-F02-53] the call server's address", () => {
     expect(isAllowedCallServerUrl("ws://call.example.test", "development")).toBe(false);
     expect(isAllowedCallServerUrl("http://127.0.0.1:7880", "development")).toBe(false);
     expect(isAllowedCallServerUrl("not a url", "development")).toBe(false);
+  });
+
+  it("TC-F02-110 [AC-F02-53] the backend talks to the call server's admin API over https in production", () => {
+    const at = { LIVEKIT_HOST: "call.example.test", LIVEKIT_PORT: "7880" };
+    const production = { ...fakeEnv("production"), ...at, LIVEKIT_PUBLIC_URL: "wss://call.example.test" };
+    expect(callServerAdminUrl(loadConfig(production))).toBe("https://call.example.test:7880");
+    expect(callServerAdminUrl(loadConfig({ ...fakeEnv("development"), ...at }))).toBe("http://call.example.test:7880");
   });
 
   it("TC-F02-110 [AC-F02-53] production refuses the example call-server secret", () => {

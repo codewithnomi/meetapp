@@ -52,6 +52,7 @@ Container images ──► GitHub Container Registry (free)
 | Domain, DNS, HTTPS | Buy a domain (~$10–15/year); Cloudflare free plan for DNS, HTTPS certificates and attack protection |
 | Infrastructure as code | **OpenTofu** (free) describes all servers in files, so they can be rebuilt exactly and changes are reviewed in Pull Requests |
 | Deploying | CI builds container images, then deploys to staging automatically and to production with one approval |
+| Network addresses behind a proxy | The backend's per-address limits (joins, lookups) read the socket address. Behind Cloudflare or a load balancer, set Fastify's `trustProxy` to the proxy's exact address ranges (never `true`), so limits apply per person and can't be dodged with a forged `X-Forwarded-For` (F02 security review) |
 | Secrets | GitHub encrypted secrets for CI; a secrets manager (e.g. Infisical, open source) for servers |
 | Database | Start self-managed with automatic backups + point-in-time restore; move to managed Postgres when revenue allows |
 | Monitoring | operations.md: Sentry, Grafana, uptime checks, status page |

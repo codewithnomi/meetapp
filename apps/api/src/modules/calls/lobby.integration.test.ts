@@ -182,8 +182,8 @@ describe("meeting tickets", { timeout: 30_000 }, () => {
       // A's ticket on B's call and on B's attendance.
       withTicket(t, a.host.ticket, { method: "GET", url: `/api/v1/calls/${b.host.call?.callId ?? ""}/lobby` }),
       withTicket(t, a.host.ticket, { method: "GET", url: `/api/v1/attendances/${b.host.attendanceId}` }),
-      // A changed ticket, no ticket, a lobby ticket on an in-call route.
-      withTicket(t, `${a.host.ticket.slice(0, -1)}A`, {
+      // A changed ticket (its last character always differs), no ticket, a lobby ticket on an in-call route.
+      withTicket(t, `${a.host.ticket.slice(0, -1)}${a.host.ticket.endsWith("A") ? "B" : "A"}`, {
         method: "GET",
         url: `/api/v1/attendances/${a.host.attendanceId}`,
       }),
