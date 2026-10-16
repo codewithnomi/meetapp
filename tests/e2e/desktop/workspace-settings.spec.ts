@@ -1,7 +1,9 @@
 // Workspace settings (F02 T17): the owner turns Allow guests off, and a guest who is already on the
 // pre-join is refused when pressing Join now. TC-F02-83.
+import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { launch, launchNewAccount } from "./desktop.ts";
+import { freshProfile, launch, launchNewAccount } from "./desktop.ts";
+import { acceptInvitation, createWorkspace, inviteByEmail } from "./workspace-steps.ts";
 
 test.describe.configure({ timeout: 120_000 });
 
@@ -32,4 +34,17 @@ test("TC-F02-83 [AC-F02-40] turning Allow guests off refuses a guest at once", a
   await expect(guest.page.getByText("This meeting doesn't allow guests", { exact: false }).first()).toBeVisible({
     timeout: 10_000,
   });
+});
+
+test("TC-F02-83 [AC-F02-40] a plain member does not see the Workspace settings switch", async () => {
+  const owner = await launchNewAccount();
+  await createWorkspace(owner.page, "Personal", "Guests Co");
+  const memberEmail = `e2e-${randomUUID()}@example.test`;
+  await inviteByEmail(owner.page, memberEmail);
+  await expect(owner.page.getByRole("button", { name: "Workspace settings" })).toBeVisible();
+
+  const member = await launchNewAccount(freshProfile(), memberEmail);
+  await acceptInvitation(member.page, "Personal", "Guests Co");
+  await expect(member.page.getByRole("button", { name: "Workspace settings" })).toHaveCount(0);
+  await expect(member.page.getByRole("switch", { name: "Allow guests" })).toHaveCount(0);
 });
