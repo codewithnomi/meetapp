@@ -8,6 +8,12 @@ import { EMOJI, TrackVideo, type CallPerson, type Reaction } from "../../feature
 import { roleName, shownName } from "./names.ts";
 
 const PAGE_SIZE = 16;
+/** Speaker view: the main person and a strip of 4; the rest is "+N more". */
+const SPEAKER_TILES = 5;
+
+/** `first` (the pinned or main person) first, then everyone else in order (Pin for me, as in Teams). */
+const firstOf = (people: CallPerson[], first: CallPerson | undefined) =>
+  first ? [first, ...people.filter((p) => p.id !== first.id)] : people;
 
 export interface StageProps {
   people: CallPerson[];
@@ -69,13 +75,13 @@ export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactio
   const pages = Math.max(1, Math.ceil(people.length / PAGE_SIZE));
   const current = Math.min(page, pages - 1);
   const main = mainOf(people, pinnedId);
-  // A pinned person comes first in the gallery too (Pin for me, as in Teams).
-  const pinned = people.find((p) => p.id === pinnedId);
-  const ordered = pinned ? [pinned, ...people.filter((p) => p.id !== pinned.id)] : people;
   const shown =
     layout === "speaker" && main
-      ? [main, ...people.filter((p) => p.id !== main.id)]
-      : ordered.slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
+      ? firstOf(people, main).slice(0, SPEAKER_TILES)
+      : firstOf(
+          people,
+          people.find((p) => p.id === pinnedId),
+        ).slice(current * PAGE_SIZE, (current + 1) * PAGE_SIZE);
   const tiles = shown.map((person) => ({
     id: person.id,
     tile: (
@@ -88,7 +94,7 @@ export function Stage({ people, layout, page, onPage, pinnedId, onUnpin, reactio
       />
     ),
   }));
-  const rest = people.length - 5;
+  const rest = people.length - SPEAKER_TILES;
   return (
     <Gallery
       label={

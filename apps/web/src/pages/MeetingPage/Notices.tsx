@@ -9,6 +9,8 @@ import type { CallNotice } from "./call-events.ts";
 export interface NoticesProps {
   notice: CallNotice | undefined;
   failed: boolean;
+  /** The call is starting: "Connecting…" until it answers. */
+  connecting: boolean;
   reconnecting: boolean;
   gone: DeviceGone | undefined;
   onUnmute: () => void;
@@ -55,16 +57,16 @@ function NoticeCard({
   );
 }
 
-function Reconnecting() {
+function Connection({ again }: { again: boolean }) {
   const { t } = useTranslation();
   return (
     <MessageCard
       icon="signal"
-      tone="warning"
+      tone={again ? "warning" : "neutral"}
       live="polite"
       className="max-w-100"
-      title={t("meetings.call.reconnecting")}
-      body={t("meetings.call.reconnectingBody")}
+      title={t(again ? "meetings.call.reconnecting" : "meetings.call.connecting")}
+      body={t(again ? "meetings.call.reconnectingBody" : "meetings.call.connectingBody")}
     />
   );
 }
@@ -87,11 +89,11 @@ function Gone({ gone, onDismiss }: { gone: DeviceGone; onDismiss: () => void }) 
 
 export function Notices(props: NoticesProps) {
   const { t } = useTranslation();
-  const { notice, failed, reconnecting, gone, onUnmute, onDismiss, onDismissFailed, onDismissGone } = props;
-  if (!notice && !failed && !reconnecting && !gone) return null;
+  const { notice, failed, connecting, reconnecting, gone, onUnmute, onDismiss, onDismissFailed, onDismissGone } = props;
+  if (!notice && !failed && !connecting && !reconnecting && !gone) return null;
   return (
     <>
-      {reconnecting ? <Reconnecting /> : null}
+      {connecting || reconnecting ? <Connection again={reconnecting} /> : null}
       {gone ? <Gone gone={gone} onDismiss={onDismissGone} /> : null}
       {notice ? <NoticeCard notice={notice} onUnmute={onUnmute} onDismiss={onDismiss} /> : null}
       {failed ? (

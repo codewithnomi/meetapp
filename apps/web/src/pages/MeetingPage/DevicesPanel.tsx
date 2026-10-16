@@ -6,6 +6,7 @@ import type { Room } from "livekit-client";
 import { useTranslation } from "react-i18next";
 import {
   deviceActions,
+  deviceOptions,
   testSpeakers,
   useDeviceLists,
   useMicLevel,
@@ -22,9 +23,6 @@ export interface DevicesPanelProps {
   onClose: () => void;
 }
 
-const options = (devices: MediaDeviceInfo[]) =>
-  devices.map((device, index) => ({ value: device.deviceId, label: device.label || String(index + 1) }));
-
 export function DevicesPanel({ room, prefs, setPrefs, weak, onClose }: DevicesPanelProps) {
   const { t } = useTranslation();
   const lists = useDeviceLists(room);
@@ -39,14 +37,14 @@ export function DevicesPanel({ room, prefs, setPrefs, weak, onClose }: DevicesPa
       camera={{
         label: t("meetings.devices.camera"),
         value: active("videoinput", prefs.cameraId),
-        options: options(lists.cameras),
+        options: deviceOptions(lists.cameras, t("meetings.devices.camera")),
         emptyLabel: t("meetings.devices.noCamera"),
         onChange: (id) => act.choose("videoinput", id),
       }}
       microphone={{
         label: t("meetings.devices.microphone"),
         value: active("audioinput", prefs.microphoneId),
-        options: options(lists.microphones),
+        options: deviceOptions(lists.microphones, t("meetings.devices.microphone")),
         emptyLabel: t("meetings.devices.noMicrophone"),
         onChange: (id) => act.choose("audioinput", id),
         level,
@@ -55,7 +53,7 @@ export function DevicesPanel({ room, prefs, setPrefs, weak, onClose }: DevicesPa
       speakers={{
         label: t("meetings.devices.speakers"),
         value: active("audiooutput", prefs.speakerId),
-        options: options(lists.speakers),
+        options: deviceOptions(lists.speakers, t("meetings.devices.speakers")),
         emptyLabel: t("meetings.devices.defaultSpeakers"),
         onChange: (id) => act.choose("audiooutput", id),
         test: {

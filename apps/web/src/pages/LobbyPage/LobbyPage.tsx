@@ -84,7 +84,7 @@ export function LobbyPage({ name, onAdmitted, onOutcome, onLeft }: LobbyPageProp
         </div>
         <div className="flex flex-col items-center gap-2.5">
           <h1 tabIndex={-1} className="m-0 text-[26px] leading-8 font-bold tracking-[-0.01em] outline-none">
-            {visit?.title ?? ""}
+            {visit?.title ?? t("meetings.preJoin.missing")}
           </h1>
           <div className="flex items-center gap-2.5 text-ink-muted">
             <Spinner size={18} />

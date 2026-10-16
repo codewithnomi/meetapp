@@ -53,6 +53,11 @@ describe("IconButton", () => {
     expect(screen.getByRole("button", { name: "Unmute" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("TC-F02-86 [AC-F02-44] a label that names the action reports no pressed state", () => {
+    render(<IconButton icon="mic-off" label="Unmute" off labelIsAction />);
+    expect(screen.getByRole("button", { name: "Unmute" })).not.toHaveAttribute("aria-pressed");
+  });
+
   it("TC-F00-32 [AC-F00-14] aria-pressed is false when active/off are given as false", () => {
     render(<IconButton icon="mic" label={T.mute} active={false} off={false} />);
     expect(screen.getByRole("button", { name: "Mute" })).toHaveAttribute("aria-pressed", "false");

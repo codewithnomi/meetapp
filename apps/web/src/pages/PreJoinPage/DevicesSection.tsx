@@ -5,17 +5,12 @@ import { Button, DeviceSelect, IconButton, LevelMeter, Notice, VideoTile } from 
 import { useTranslation } from "react-i18next";
 import {
   LocalVideo,
+  deviceOptions,
   problemKey,
   testSpeakers,
   type MediaKind,
   type PreJoinDevices,
 } from "../../features/meetings/index.ts";
-
-const options = (devices: MediaDeviceInfo[], fallback: string) =>
-  devices.map((device, index) => ({
-    value: device.deviceId,
-    label: device.label || `${fallback} ${String(index + 1)}`,
-  }));
 
 function Problems({ devices }: { devices: PreJoinDevices }) {
   const { t } = useTranslation();
@@ -38,12 +33,14 @@ function Switches({ devices }: { devices: PreJoinDevices }) {
       <IconButton
         icon={prefs.microphoneOn ? "mic" : "mic-off"}
         off={!prefs.microphoneOn}
+        labelIsAction
         label={prefs.microphoneOn ? t("meetings.devices.micOff") : t("meetings.devices.micOn")}
         onClick={() => change({ microphoneOn: !prefs.microphoneOn })}
       />
       <IconButton
         icon={prefs.cameraOn ? "camera" : "camera-off"}
         off={!prefs.cameraOn}
+        labelIsAction
         label={prefs.cameraOn ? t("meetings.devices.cameraOff") : t("meetings.devices.cameraOn")}
         onClick={() => change({ cameraOn: !prefs.cameraOn })}
       />
@@ -59,21 +56,21 @@ function Choices({ devices }: { devices: PreJoinDevices }) {
       <DeviceSelect
         label={t("meetings.devices.camera")}
         value={prefs.cameraId}
-        options={options(lists.cameras, t("meetings.devices.camera"))}
+        options={deviceOptions(lists.cameras, t("meetings.devices.camera"))}
         emptyLabel={t("meetings.devices.noCamera")}
         onChange={(cameraId) => change({ cameraId })}
       />
       <DeviceSelect
         label={t("meetings.devices.microphone")}
         value={prefs.microphoneId}
-        options={options(lists.microphones, t("meetings.devices.microphone"))}
+        options={deviceOptions(lists.microphones, t("meetings.devices.microphone"))}
         emptyLabel={t("meetings.devices.noMicrophone")}
         onChange={(microphoneId) => change({ microphoneId })}
       />
       <DeviceSelect
         label={t("meetings.devices.speakers")}
         value={prefs.speakerId}
-        options={options(lists.speakers, t("meetings.devices.speakers"))}
+        options={deviceOptions(lists.speakers, t("meetings.devices.speakers"))}
         emptyLabel={t("meetings.devices.defaultSpeakers")}
         onChange={(speakerId) => change({ speakerId })}
       />

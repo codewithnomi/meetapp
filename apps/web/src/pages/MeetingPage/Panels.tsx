@@ -2,11 +2,13 @@
 // those who may let people in, Mute all, and each person's menu (AC-F02-15, 23, 33, 35, 36); and
 // Meeting info (link, ID and passcode for anyone in the call, AC-F02-01) with Meeting options for the
 // organizer and co-organizers.
-import { MeetingInfoPanel, ParticipantPanel } from "@meetapp/ui";
+import { MeetingInfoPanel, ParticipantPanel, SidePanel, Spinner } from "@meetapp/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import type { ApiError } from "../../features/api/index.ts";
+import { ActionErrorNotice } from "../../features/auth/index.ts";
 import {
   copyText,
   meetingInfo,
@@ -14,6 +16,7 @@ import {
   spacedMeetingNumber,
   type CallPerson,
   type Joined,
+  type MeetingDetails,
 } from "../../features/meetings/index.ts";
 import type { Panel } from "./CallControls.tsx";
 import type { Lobby } from "./lobby.ts";
@@ -86,20 +89,11 @@ function PeoplePanel({ context, onClose }: { context: PeopleContext; onClose: ()
   );
 }
 
-function InfoPanel({
-  visit,
-  onClose,
-  onOptions,
-}: {
-  visit: Joined;
-  onClose: () => void;
-  onOptions: ((meetingId: string) => void) | undefined;
-}) {
+type InfoProps = { onClose: () => void; onOptions: ((meetingId: string) => void) | undefined };
+
+function InfoDetails({ meeting, onClose, onOptions }: InfoProps & { meeting: MeetingDetails }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState<string>();
-  const info = useQuery({ queryKey: ["call-meeting", visit.call?.callId], queryFn: () => meetingInfo(visit) });
-  const meeting = info.data;
-  if (!meeting) return null;
   const number = spacedMeetingNumber(meeting.meetingNumber);
   const copy = (text: string) =>
     void copyText(text).then((ok) => setStatus(ok ? t("meetings.call.copied") : t("meetings.ready.copyFailed")));
@@ -129,6 +123,25 @@ function InfoPanel({
       options={onOptions ? { label: t("meetings.ready.options"), onClick: () => onOptions(meeting.id) } : undefined}
       status={status}
     />
+  );
+}
+
+/** Meeting info; while it loads, and when it fails (with Retry), the panel frame still shows (UI review). */
+function InfoPanel({ visit, onClose, onOptions }: InfoProps & { visit: Joined }) {
+  const { t } = useTranslation();
+  const info = useQuery<MeetingDetails, ApiError>({
+    queryKey: ["call-meeting", visit.call?.callId],
+    queryFn: () => meetingInfo(visit),
+  });
+  if (info.data) return <InfoDetails meeting={info.data} onClose={onClose} onOptions={onOptions} />;
+  return (
+    <SidePanel title={t("meetings.call.info")} closeLabel={t("meetings.call.closeInfo")} onClose={onClose}>
+      {info.isError ? (
+        <ActionErrorNotice error={info.error} onRetry={() => void info.refetch()} />
+      ) : (
+        <Spinner label={t("meetings.call.loadingInfo")} />
+      )}
+    </SidePanel>
   );
 }
 

@@ -116,6 +116,14 @@ export function useDeviceLists(refreshWhen: unknown): DeviceLists {
   return lists;
 }
 
+/** Choices for a device list; a device without a name is "Camera 1", "Microphone 2"… (`fallback` translated). */
+export function deviceOptions(devices: MediaDeviceInfo[], fallback: string) {
+  return devices.map((device, index) => ({
+    value: device.deviceId,
+    label: device.label || `${fallback} ${String(index + 1)}`,
+  }));
+}
+
 /** A short, soft tone through the chosen speakers (AC-F02-09). */
 export async function testSpeakers(speakerId: string): Promise<void> {
   const context = new AudioContext() as AudioContext & { setSinkId?: (id: string) => Promise<void> };

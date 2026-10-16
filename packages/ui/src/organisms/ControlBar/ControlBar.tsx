@@ -87,6 +87,7 @@ function MainControls(props: Omit<ControlBarProps, "label" | "elapsed" | "people
         icon={mic.on ? "mic" : "mic-off"}
         label={mic.label}
         off={!mic.on}
+        labelIsAction
         disabled={mic.disabled}
         onClick={mic.onToggle}
       />
@@ -94,6 +95,7 @@ function MainControls(props: Omit<ControlBarProps, "label" | "elapsed" | "people
         icon={camera.on ? "camera" : "camera-off"}
         label={camera.label}
         off={!camera.on}
+        labelIsAction
         disabled={camera.disabled}
         onClick={camera.onToggle}
       />
@@ -101,10 +103,11 @@ function MainControls(props: Omit<ControlBarProps, "label" | "elapsed" | "people
         icon="screen"
         label={share.label}
         active={share.on}
+        labelIsAction
         disabled={share.disabled}
         onClick={share.onToggle}
       />
-      <IconButton icon="hand" label={hand.label} active={hand.on} onClick={hand.onToggle} />
+      <IconButton icon="hand" label={hand.label} active={hand.on} labelIsAction onClick={hand.onToggle} />
       <ActionMenu
         label={reactions.label}
         actions={reactions.actions}

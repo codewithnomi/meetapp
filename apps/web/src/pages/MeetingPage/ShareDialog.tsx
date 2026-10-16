@@ -16,14 +16,17 @@ function useSources() {
   const [blocked, setBlocked] = useState(false);
   useEffect(() => {
     let live = true;
-    void screenBlocked().then(async (isBlocked) => {
-      if (!live) return;
-      setBlocked(isBlocked);
-      if (!isBlocked) {
-        const list = await shareSources();
-        if (live) setSources(list);
-      }
-    });
+    void screenBlocked()
+      .then(async (isBlocked) => {
+        if (!live) return;
+        setBlocked(isBlocked);
+        if (!isBlocked) {
+          const list = await shareSources();
+          if (live) setSources(list);
+        }
+      })
+      // If the computer can't list its screens, the picker says none were found instead of waiting forever.
+      .catch(() => live && setSources([]));
     return () => {
       live = false;
     };

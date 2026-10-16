@@ -2,7 +2,7 @@
 // name (company workspaces, AC-F01-24) and the Allow guests switch (AC-F02-40), which applies at once to
 // every meeting of the workspace. Only the owner and admins (in Personal, its user) have this screen;
 // anyone else is sent Home.
-import { Button, Input, Notice, Toggle } from "@meetapp/ui";
+import { Button, Input, Notice, Spinner, Toggle } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
@@ -12,6 +12,7 @@ import {
   WorkspaceShell,
   useAllowGuests,
   useCurrentWorkspace,
+  useMe,
   useRenameWorkspace,
   useWorkspaceName,
   type AppScreen,
@@ -124,12 +125,27 @@ function SettingsContent({ workspace }: { workspace: MyWorkspace }) {
   );
 }
 
+/** Until the workspaces arrive: a spinner, or the error with Retry. */
+function Waiting() {
+  const { t } = useTranslation();
+  const me = useMe();
+  return (
+    <main className="px-6 py-10 sm:px-12">
+      {me.isError ? (
+        <ActionErrorNotice error={me.error} onRetry={() => void me.refetch()} />
+      ) : (
+        <Spinner label={t("workspaces.settings.loading")} />
+      )}
+    </main>
+  );
+}
+
 export function WorkspaceSettingsPage({ onNavigate }: WorkspaceSettingsPageProps) {
   const { current } = useCurrentWorkspace();
   if (current && current.role === "member") return <Navigate to="/" replace />;
   return (
     <WorkspaceShell screen="workspace" onNavigate={onNavigate}>
-      {current ? <SettingsContent key={current.id} workspace={current} /> : null}
+      {current ? <SettingsContent key={current.id} workspace={current} /> : <Waiting />}
     </WorkspaceShell>
   );
 }

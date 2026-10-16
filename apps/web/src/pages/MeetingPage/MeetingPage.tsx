@@ -6,6 +6,7 @@ import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Navigate } from "react-router";
 import {
   MeetingOptionsDialog,
   can,
@@ -124,13 +125,15 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions, elapsed: useElapsed() };
+  return { t, call, view, context, share, onOptions };
 }
 
 type Screen = ReturnType<typeof useScreen>;
 
+/** The control bar; only it redraws every second for the clock (not the whole call, UI review). */
 function Controls({ screen }: { screen: Screen }) {
-  const { call, view, share, elapsed } = screen;
+  const { call, view, share } = screen;
+  const elapsed = useElapsed();
   const { room, me, actions } = call;
   return (
     <CallControls
@@ -158,6 +161,7 @@ function ScreenNotices({ screen }: { screen: Screen }) {
     <Notices
       notice={events.notice}
       failed={view.failed}
+      connecting={room.connection === "connecting"}
       reconnecting={room.connection === "reconnecting"}
       gone={care.gone}
       onUnmute={actions.microphone}
@@ -222,6 +226,7 @@ function Call(props: MeetingPageProps & { visit: Joined }) {
 
 export function MeetingPage({ onLeft, onOutcome }: MeetingPageProps) {
   const visit = useVisit((state) => state.visit);
-  if (!visit?.call) return null;
+  // No visit (e.g. the screen was reloaded): nothing to show here, so back to the start.
+  if (!visit?.call) return <Navigate to="/" replace />;
   return <Call visit={visit} onLeft={onLeft} onOutcome={onOutcome} />;
 }

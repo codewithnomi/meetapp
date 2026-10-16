@@ -98,7 +98,13 @@ function SpeakerView({ tiles, moreText }: Pick<GalleryProps, "tiles" | "moreText
         </div>
       ) : null}
       {strip.length > 0 || moreText ? (
-        <ul className="m-0 grid list-none grid-cols-5 gap-2.5 p-0">
+        <ul
+          className="m-0 mx-auto grid w-full list-none grid-cols-5 gap-2.5 p-0"
+          // The strip takes the height the main tile leaves (30%), so it fits short, wide windows too.
+          style={{
+            maxWidth: `calc((${STAGE_HEIGHT} * 0.3 - ${String(GAP_PX)}px) * 16 / 9 * 5 + ${String(4 * GAP_PX)}px)`,
+          }}
+        >
           {strip.map(({ id, tile }) => (
             <li key={id}>{tile}</li>
           ))}

@@ -373,7 +373,8 @@
       "saved": "Name saved. Everyone in the workspace sees it within a minute.",
       "guestsTitle": "Guests",
       "allowGuests": "Allow guests",
-      "allowGuestsHint": "People without an account can join this workspace's meetings by link, after the lobby. When off, they are told \"This meeting doesn't allow guests\"; guests already in a meeting stay."
+      "allowGuestsHint": "People without an account can join this workspace's meetings by link, after the lobby. When off, they are told \"This meeting doesn't allow guests\"; guests already in a meeting stay.",
+      "loading": "Loading workspace settings"
     }
   },
   "profile": {
@@ -634,6 +635,7 @@
       "cameraOnState": "Camera on",
       "cameraOffState": "Camera off",
       "closeInfo": "Close meeting info",
+      "loadingInfo": "Loading meeting info",
       "copy": "Copy",
       "copied": "Copied",
       "organizer": "Organizer",
@@ -677,6 +679,8 @@
         "pin": "Pin for me",
         "remove": "Remove from meeting"
       },
+      "connecting": "Connecting…",
+      "connectingBody": "Joining the call. This takes a moment.",
       "reconnecting": "Reconnecting…",
       "reconnectingBody": "Your connection dropped. MeetApp is trying to bring you back.",
       "weakTitle": "Your connection is weak.",
