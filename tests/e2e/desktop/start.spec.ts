@@ -50,7 +50,7 @@ test("TC-F00-31 [AC-F00-13b] nothing is fetched from Google or any outside addre
   const { app, page } = await launchSignedIn();
   const addresses = recordRequests(page);
   await page.reload();
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
 
   expect(addresses.length).toBeGreaterThan(0);

@@ -18,7 +18,7 @@ const ACCENTS = [
 
 /** Settings → Appearance (since F01 T16 Settings opens on Profile and account). */
 async function openSettings(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   await page.getByRole("button", { name: "Appearance" }).click();
 }

@@ -18,7 +18,7 @@ async function typeCode(page: Page, email: string, since: Date) {
 }
 
 async function signOut(page: Page) {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(title(page, "Sign in to MeetApp")).toBeVisible();
 }
