@@ -13,6 +13,8 @@ describe("TC-F02-111 [AC-F02-54] permission rules", () => {
     expect(allowsRequest({ ...own, permission: "media", mediaTypes: ["audio", "video"] }, APP)).toBe(true);
     expect(allowsRequest({ ...own, permission: "media", mediaTypes: ["audio"] }, APP)).toBe(true);
     expect(allowsRequest({ ...own, permission: "display-capture", mediaTypes: ["video"] }, APP)).toBe(true);
+    // Copy buttons: writing to the clipboard (never reading it).
+    expect(allowsRequest({ ...own, permission: "clipboard-sanitized-write" }, APP)).toBe(true);
     // Electron 44 reports a screen request as "media" with no media types.
     expect(allowsRequest({ ...own, permission: "media", mediaTypes: [] }, APP)).toBe(true);
     expect(allowsRequest({ url: `${DEV}/`, isMainFrame: true, permission: "media", mediaTypes: ["video"] }, DEV)).toBe(
@@ -39,15 +41,22 @@ describe("TC-F02-111 [AC-F02-54] permission rules", () => {
 
   it("TC-F02-111 [AC-F02-54] other sites, embedded frames and the dev server outside development are refused", () => {
     const camera = { permission: "media", mediaTypes: ["video"], isMainFrame: true };
+    expect(
+      allowsRequest({ url: "https://evil.example/", isMainFrame: true, permission: "clipboard-sanitized-write" }, APP),
+    ).toBe(false);
     for (const url of ["https://evil.example/", "app://other/index.html", "file:///tmp/a.html", "data:text/html,x", ""])
       expect(allowsRequest({ ...camera, url }, APP), url).toBe(false);
     expect(allowsRequest({ ...camera, url: `${DEV}/` }, APP)).toBe(false);
     expect(allowsRequest({ ...camera, ...own, isMainFrame: false }, APP)).toBe(false);
   });
 
-  it("TC-F02-111 [AC-F02-54] checks: media and speaker selection for the app's page only", () => {
+  it("TC-F02-111 [AC-F02-54] checks: media, speaker selection and clipboard writing for the app's page only", () => {
     expect(allowsCheck({ ...own, permission: "media" }, APP)).toBe(true);
     expect(allowsCheck({ ...own, permission: "speaker-selection" }, APP)).toBe(true);
+    expect(allowsCheck({ ...own, permission: "clipboard-sanitized-write" }, APP)).toBe(true);
+    expect(
+      allowsCheck({ url: "https://evil.example/", isMainFrame: true, permission: "clipboard-sanitized-write" }, APP),
+    ).toBe(false);
     for (const permission of ["notifications", "usb", "serial", "hid", "clipboard-read"])
       expect(allowsCheck({ ...own, permission }, APP), permission).toBe(false);
     expect(allowsCheck({ url: "https://evil.example/", isMainFrame: true, permission: "media" }, APP)).toBe(false);

@@ -6,6 +6,9 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { copyText, spacedMeetingNumber, type MeetingDetails } from "../../features/meetings/index.ts";
 
+/** The "Get link" button; this dialog gives focus back to it (it was busy while the link was made). */
+export const GET_LINK_ID = "get-meeting-link";
+
 export interface LinkReadyDialogProps {
   meeting: MeetingDetails;
   workspaceName: string;
@@ -88,6 +91,7 @@ export function LinkReadyDialog({ meeting, workspaceName, onClose, onOptions }: 
       title={t("meetings.ready.title")}
       description={meeting.title}
       closeLabel={t("meetings.ready.close")}
+      returnFocusId={GET_LINK_ID}
     >
       <div className="flex min-h-11 items-center gap-2.5 rounded-full bg-surface-sunken py-0 pr-2 pl-4.5">
         <span className="min-w-0 flex-1 truncate text-[14px]">{meeting.link}</span>

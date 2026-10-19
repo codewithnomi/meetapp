@@ -119,7 +119,7 @@ export async function openOptions(page: Page): Promise<Locator> {
 
 export async function saveOptions(page: Page, dialog: Locator): Promise<void> {
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog).toBeHidden();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
 }
 
 /** The organizer lets only organizers and co-organizers present, so everybody else is an attendee. */

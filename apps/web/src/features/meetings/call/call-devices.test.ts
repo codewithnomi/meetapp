@@ -69,6 +69,40 @@ describe("device changes", () => {
     renderHook(() => useDeviceChanges(undefined, onGone));
   });
 
+  it("TC-F02-61 [AC-F02-31] speakers that LiveKit already switched away from are still reported", async () => {
+    const room = new FakeRoom();
+    room.active = { audiooutput: "usb-spk" };
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "usb-spk", label: "USB speakers" }] };
+    const onGone = vi.fn<(gone: DeviceGone) => void>();
+    renderHook(() => useDeviceChanges(asRoom(room), onGone));
+    await flush();
+    room.active = { audiooutput: "default" };
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "default", label: "MacBook speakers" }] };
+    await act(async () => void room.emit("mediaDevicesChanged"));
+    await flush();
+    expect(onGone).toHaveBeenCalledWith({ kind: "speakers", gone: "USB speakers", now: "MacBook speakers" });
+  });
+
+  it('TC-F02-61 [AC-F02-31] a gone camera is replaced by a real camera (not "default"), and reported once', async () => {
+    const room = new FakeRoom();
+    room.active = { videoinput: "usb-cam" };
+    FakeRoom.localDevices = { videoinput: [{ deviceId: "usb-cam", label: "USB camera" }] };
+    const onGone = vi.fn<(gone: DeviceGone) => void>();
+    renderHook(() => useDeviceChanges(asRoom(room), onGone));
+    await flush();
+    FakeRoom.localDevices = { videoinput: [{ deviceId: "built-in", label: "FaceTime camera" }] };
+    room.switchActiveDevice.mockImplementation(async (kind: string, id: string) => {
+      room.active = { ...room.active, [kind]: id };
+      return true;
+    });
+    await act(async () => void room.emit("mediaDevicesChanged"));
+    await flush();
+    expect(room.switchActiveDevice).toHaveBeenCalledWith("videoinput", "built-in");
+    await act(async () => void room.emit("mediaDevicesChanged"));
+    await flush();
+    expect(onGone).toHaveBeenCalledTimes(1);
+  });
+
   it("TC-F02-31 [AC-F02-31] stops listening when the screen closes", () => {
     const room = new FakeRoom();
     const { unmount } = renderHook(() => useDeviceChanges(asRoom(room), vi.fn()));

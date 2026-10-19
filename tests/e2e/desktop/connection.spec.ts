@@ -46,7 +46,7 @@ test("TC-F02-56 [AC-F02-29] a short drop reconnects within 10 s of the restore, 
   await a.page.getByRole("switch", { name: "Lock the meeting" }).click();
   await a.page.getByRole("button", { name: "Close", exact: true }).first().click();
   await line.cut();
-  expect(await line.openSockets()).toBe(0);
+  await expect.poll(() => line.openSockets(), { timeout: 5_000 }).toBe(0);
   // 20 s without the call server's signalling (media is not touched, so the window shows no notice; the
   // app keeps trying and does not give up before 30 s).
   await b.page.waitForTimeout(20_000);

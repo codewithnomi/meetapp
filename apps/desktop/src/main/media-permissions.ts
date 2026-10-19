@@ -19,11 +19,15 @@ export interface PermissionAsk {
 }
 
 /** A permission request (the page asks, the person may be prompted). */
+const CHECKED = new Set(["media", "speaker-selection", "clipboard-sanitized-write"]);
+
 export function allowsRequest(ask: PermissionAsk, appUrl: string): boolean {
   if (!ask.isMainFrame || !isInsideApp(ask.url, appUrl)) return false;
   // Screen capture: "display-capture" in newer Electron, "media" with no media types in Electron 44.
   // Our picker then decides what is shared (shareAnswer).
   if (ask.permission === "display-capture") return true;
+  // Copy buttons (meeting link, ID, passcode): writing to the clipboard only, never reading it.
+  if (ask.permission === "clipboard-sanitized-write") return true;
   if (ask.permission !== "media") return false;
   const types = ask.mediaTypes ?? [];
   return types.every((type) => MEDIA_TYPES.has(type));
@@ -32,8 +36,8 @@ export function allowsRequest(ask: PermissionAsk, appUrl: string): boolean {
 /** A permission check (the page asks whether it has a permission, without a prompt). */
 export function allowsCheck(ask: PermissionAsk, appUrl: string): boolean {
   if (!ask.isMainFrame || !isInsideApp(ask.url, appUrl)) return false;
-  // Choosing the speakers (setSinkId) is checked as "speaker-selection".
-  return ask.permission === "media" || ask.permission === "speaker-selection";
+  // Choosing the speakers (setSinkId) is checked as "speaker-selection"; Copy as "clipboard-sanitized-write".
+  return CHECKED.has(ask.permission);
 }
 
 export interface ShareSource {

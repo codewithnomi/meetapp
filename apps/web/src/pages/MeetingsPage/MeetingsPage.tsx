@@ -20,7 +20,7 @@ import {
   useWorkspaceName,
   type AppScreen,
 } from "../../features/workspaces/index.ts";
-import { LinkReadyDialog } from "./LinkReadyDialog.tsx";
+import { GET_LINK_ID, LinkReadyDialog } from "./LinkReadyDialog.tsx";
 
 export interface MeetingsPageProps {
   onNavigate: (screen: AppScreen) => void;
@@ -31,12 +31,14 @@ const newKey = () => crypto.randomUUID();
 
 /** A big button that waits (and can't be pressed again) while its meeting is being made. */
 function MakeButton({
+  id,
   pending,
   label,
   pendingLabel,
   type = "button",
   onClick,
 }: {
+  id?: string;
   pending: boolean;
   label: string;
   pendingLabel: string;
@@ -45,12 +47,20 @@ function MakeButton({
 }) {
   if (pending)
     return (
-      <Button type={type} variant="secondary" size="lg" className="self-start" loading loadingLabel={pendingLabel}>
+      <Button
+        id={id}
+        type={type}
+        variant="secondary"
+        size="lg"
+        className="self-start"
+        loading
+        loadingLabel={pendingLabel}
+      >
         {label}
       </Button>
     );
   return (
-    <Button type={type} variant="secondary" size="lg" className="self-start" {...(onClick ? { onClick } : {})}>
+    <Button id={id} type={type} variant="secondary" size="lg" className="self-start" {...(onClick ? { onClick } : {})}>
       {label}
     </Button>
   );
@@ -122,6 +132,7 @@ function GetLinkCard({ workspaceId, onCreated }: { workspaceId: string; onCreate
       />
       <ActionErrorNotice error={create.error} onRetry={() => submit()} />
       <MakeButton
+        id={GET_LINK_ID}
         type="submit"
         pending={create.isPending}
         label={t("meetings.start.getLinkButton")}

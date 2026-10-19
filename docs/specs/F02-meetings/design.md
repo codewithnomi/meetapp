@@ -331,6 +331,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
 - **Camera and microphone** (`media-permissions.ts`):
   - `setPermissionRequestHandler` and `setPermissionCheckHandler` allow only `media` with audio and/or video, and screen capture, and only for the window's top frame on `app://meetapp` (or the development server in development). Electron 44 reports a screen request as `media` with no media types; newer versions call it `display-capture`. Both are accepted, and the picker step below decides what is shared.
   - Choosing the speakers (`setSinkId`) may need Electron's `speaker-selection` permission for the same origin. A test case checks this.
+  - The Copy buttons (meeting link, ID, passcode) need `clipboard-sanitized-write` for the same page: allowed (writing only; reading the clipboard stays refused). Found by TC-F02-13/14 at verification.
   - Every other permission stays refused, as do device permissions (USB, HID, serial).
   - Context isolation, the sandbox and "no Node.js in the page" are unchanged.
 - **One place for the rules:** `lockDownSession` (`guards.ts`) installs these handlers instead of the ones that refuse everything, because Electron keeps only the last handler set.

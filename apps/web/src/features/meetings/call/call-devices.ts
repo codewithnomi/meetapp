@@ -56,27 +56,55 @@ export interface DeviceGone {
 const kindName = (kind: DeviceKind): DeviceGone["kind"] =>
   kind === "videoinput" ? "camera" : kind === "audioinput" ? "microphone" : "speakers";
 
-/** When a device in use disappears, the default one takes over and `onGone` says which changed. */
-async function checkDevices(room: Room, known: Map<DeviceKind, string>, onGone: (gone: DeviceGone) => void) {
-  for (const kind of ["videoinput", "audioinput", "audiooutput"] as const) {
+interface InUse {
+  id: string;
+  label: string;
+}
+
+/** What takes over: the computer's default for sound, the first camera for video ("default" isn't a camera). */
+function replacementFor(kind: DeviceKind, devices: MediaDeviceInfo[]): MediaDeviceInfo | undefined {
+  const fallback = kind === "videoinput" ? undefined : devices.find((d) => d.deviceId === "default");
+  return fallback ?? devices.find((d) => d.deviceId !== "default") ?? devices[0];
+}
+
+/**
+ * When a device in use disappears from the list (by id: a device without a name is still there), another
+ * takes over and `onGone` says which changed. LiveKit may already have switched the speakers by itself,
+ * so the device remembered from the last check is compared, not only the active one (AC-F02-31).
+ */
+async function checkKind(
+  room: Room,
+  kind: DeviceKind,
+  known: Map<DeviceKind, InUse>,
+  onGone: (gone: DeviceGone) => void,
+) {
+  const devices = await Room.getLocalDevices(kind, false).catch(() => []);
+  const present = (id: string | undefined) => devices.some((d) => d.deviceId === id);
+  // On the first check nothing is remembered yet: the active device (name unknown) stands in.
+  const first = room.getActiveDevice(kind);
+  const before = known.get(kind) ?? (first ? { id: first, label: "" } : undefined);
+  if (before && before.id !== "default" && !present(before.id)) {
+    const next = replacementFor(kind, devices);
     const active = room.getActiveDevice(kind);
-    const devices = await Room.getLocalDevices(kind, false).catch(() => []);
-    // Gone means missing from the list (a device without a name is still there).
-    const device = devices.find((d) => d.deviceId === active);
-    const label = device?.label;
-    if (active && active !== "default" && !device) {
-      await room.switchActiveDevice(kind, "default").catch(() => false);
-      const now = devices.find((d) => d.deviceId === "default")?.label ?? devices[0]?.label ?? "";
-      onGone({ kind: kindName(kind), gone: known.get(kind) ?? "", now });
+    if (next && (!active || active === before.id || !present(active))) {
+      await room.switchActiveDevice(kind, next.deviceId).catch(() => false);
     }
-    if (label) known.set(kind, label);
+    onGone({ kind: kindName(kind), gone: before.label, now: next?.label ?? "" });
   }
+  const id = room.getActiveDevice(kind);
+  const now = devices.find((d) => d.deviceId === id);
+  if (id && now) known.set(kind, { id, label: now.label });
+  else known.delete(kind);
+}
+
+async function checkDevices(room: Room, known: Map<DeviceKind, InUse>, onGone: (gone: DeviceGone) => void) {
+  for (const kind of ["videoinput", "audioinput", "audiooutput"] as const) await checkKind(room, kind, known, onGone);
 }
 
 export function useDeviceChanges(room: Room | undefined, onGone: (gone: DeviceGone) => void) {
   useEffect(() => {
     if (!room) return undefined;
-    const known = new Map<DeviceKind, string>();
+    const known = new Map<DeviceKind, InUse>();
     const check = () => void checkDevices(room, known, onGone);
     check();
     room.on(RoomEvent.MediaDevicesChanged, check);
