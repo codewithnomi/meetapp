@@ -48,7 +48,13 @@ const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms).un
  */
 export async function closeApp(app: ElectronApplication): Promise<void> {
   if (!started.delete(app)) return;
-  const child = app.process();
+  // An app that was killed from outside has lost its Playwright connection: `process()` then throws.
+  let child: ReturnType<ElectronApplication["process"]>;
+  try {
+    child = app.process();
+  } catch {
+    return;
+  }
   const ended = () => child.exitCode !== null || child.signalCode !== null;
   if (ended()) return;
   const exited = new Promise<void>((done) => child.once("exit", () => done()));
@@ -183,17 +189,17 @@ function accountFile(): string {
 }
 
 /** Creates an account through the app's bridge, with the code from the fake inbox. */
-async function signUpThroughBridge(page: Page, email: string): Promise<void> {
+async function signUpThroughBridge(page: Page, email: string, name = "E2E Person"): Promise<void> {
   const since = new Date();
   const started = await page.evaluate(
-    ([address, password]) =>
+    ([address, password, person]) =>
       (window as unknown as WindowWithBridge).meetapp.auth.startSignUp({
         email: address,
-        name: "E2E Person",
+        name: person,
         password,
         termsAccepted: true,
       }),
-    [email, TEST_PASSWORD] as const,
+    [email, TEST_PASSWORD, name] as const,
   );
   const code = await codeFor(email, since);
   await page.evaluate(([id, value]) => (window as unknown as WindowWithBridge).meetapp.auth.finishSignUp(id, value), [
@@ -232,16 +238,18 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
 
 /**
  * Like launchSignedIn, but with an account of its own (for tests that change the account's state, such as
- * its last-used workspace). Returns the app, the page and the account's email.
+ * its last-used workspace). Returns the app, the page and the account's email. `name` is the display name
+ * (tests with several people give each their own, to tell the tiles apart).
  */
 export async function launchNewAccount(
   profile: string = freshProfile(),
   email = `e2e-${randomUUID()}@example.test`,
   switches: string[] = [],
+  name = "E2E Person",
 ) {
   test.skip(!API_URL || !MAILPIT, "needs the backend and Mailpit; runs from `pnpm test`");
   const running = await launch(profile, { VITE_API_URL: API_URL ?? "" }, switches);
-  await signUpThroughBridge(running.page, email);
+  await signUpThroughBridge(running.page, email, name);
   await running.page.reload();
   await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
   return { ...running, email };

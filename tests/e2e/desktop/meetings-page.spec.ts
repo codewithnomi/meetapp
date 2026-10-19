@@ -31,9 +31,11 @@ test("TC-F02-13 [AC-F02-01] Meet now opens the pre-join with the title, and Meet
 
   const link = await infoLink(me.page);
   expect(link).toMatch(LINK);
+  // Copy: the status line says "Copied" and the link is on the clipboard. Soft checks, so the rest of the
+  // test still runs (the desktop app's permission rules refuse the page's clipboard write: see the report).
   await me.page.getByRole("button", { name: "Copy", exact: true }).click();
-  await expect(me.page.getByText("Copied")).toBeVisible();
-  expect(await clipboard(me.app)).toBe(link);
+  await expect.soft(me.page.getByRole("status")).toHaveText("Copied");
+  expect.soft(await clipboard(me.app)).toBe(link);
 
   const passcode =
     (await me.page.locator("dt", { hasText: "Passcode" }).locator("xpath=following-sibling::dd[1]").textContent()) ??
@@ -45,9 +47,9 @@ test("TC-F02-13 [AC-F02-01] Meet now opens the pre-join with the title, and Meet
   expect(passcode).toMatch(/^[\w]{6}$/);
   await me.page.getByRole("button", { name: "Copy all details" }).click();
   const all = await clipboard(me.app);
-  expect(all).toContain(`Link: ${link}`);
-  expect(all).toContain(`Meeting ID: ${number}`);
-  expect(all).toContain(`Passcode: ${passcode}`);
+  expect.soft(all).toContain(`Link: ${link}`);
+  expect.soft(all).toContain(`Meeting ID: ${number}`);
+  expect.soft(all).toContain(`Passcode: ${passcode}`);
 });
 
 test("TC-F02-14 [AC-F02-02] Get a meeting link shows link, ID and passcode with Copy, does not join, and Meeting options open with defaults", async () => {
@@ -57,13 +59,16 @@ test("TC-F02-14 [AC-F02-02] Get a meeting link shows link, ID and passcode with 
   const link = (await dialog.getByText(LINK).textContent()) ?? "";
   expect(link).toMatch(LINK);
 
+  // Soft checks: the desktop app's permission rules refuse the page's clipboard write (see the report).
   await dialog.getByRole("button", { name: "Copy link" }).click();
-  await expect(dialog.getByText("Link copied")).toBeVisible();
-  expect(await clipboard(me.app)).toBe(link);
+  await expect.soft(dialog.getByRole("status")).toHaveText("Link copied");
+  expect.soft(await clipboard(me.app)).toBe(link);
   await dialog.getByRole("button", { name: "Copy ID" }).click();
-  expect(await clipboard(me.app)).toMatch(/^\d{12}$/);
+  await expect.soft(dialog.getByRole("status")).toHaveText("Meeting ID copied");
+  expect.soft(await clipboard(me.app)).toMatch(/^\d{12}$/);
   await dialog.getByRole("button", { name: "Copy passcode" }).click();
-  expect(await clipboard(me.app)).toMatch(/^[\w]{6}$/);
+  await expect.soft(dialog.getByRole("status")).toHaveText("Passcode copied");
+  expect.soft(await clipboard(me.app)).toMatch(/^[\w]{6}$/);
   // The app did not join the call.
   await expect(controls(me.page)).toHaveCount(0);
 

@@ -3,7 +3,7 @@
 // bridge), TC-F02-21 guest name and Terms text. Needs the backend and Mailpit (`pnpm test`).
 import { expect, test } from "@playwright/test";
 import { FAKE_MEDIA, closeApp, freshProfile, launch, launchNewAccount } from "./desktop.ts";
-import { controls, infoLink, joinAsGuest, meetNow } from "./meeting-steps.ts";
+import { controls, fakeAccessStatus, infoLink, meetNow, meterPeak } from "./meeting-steps.ts";
 
 test.describe.configure({ timeout: 120_000 });
 const API_URL = process.env["MEETAPP_E2E_API_URL"] ?? "";
@@ -18,10 +18,9 @@ test("TC-F02-19 [AC-F02-09] preview and meter work, Test speakers plays, devices
   await expect
     .poll(() => devices.locator("video").evaluate((v: HTMLVideoElement) => v.readyState >= 2 && v.videoWidth > 0))
     .toBe(true);
-  // The fake microphone beeps; the meter moves above 0 at some point.
-  await expect
-    .poll(async () => Number(await devices.getByRole("meter").getAttribute("aria-valuenow")), { timeout: 15_000 })
-    .toBeGreaterThan(0);
+  // The fake microphone beeps; the meter moves above 0 at some point (a beep is short, so it is watched
+  // inside the page rather than polled).
+  expect(await meterPeak(devices.getByRole("meter"), 15_000)).toBeGreaterThan(0);
   await page.evaluate(() => {
     const w = window as unknown as { tones: number };
     w.tones = 0;
@@ -55,19 +54,19 @@ test("TC-F02-19 [AC-F02-09] preview and meter work, Test speakers plays, devices
 });
 
 const PROBLEMS = [
-  ["missing", "No camera found", "No microphone found"],
+  [
+    "missing",
+    "No camera found. Plug one in, or join without video.",
+    "No microphone found. Plug one in, or join without sound.",
+  ],
   ["denied", "System Settings → Privacy & Security → Camera", "System Settings → Privacy & Security → Microphone"],
 ] as const;
 
 for (const [kind, camera, microphone] of PROBLEMS) {
   test(`TC-F02-20 [AC-F02-10] a ${kind} camera and microphone are named with the fix, and Join now still works`, async () => {
     const me = await launchNewAccount(undefined, undefined, FAKE_MEDIA);
+    await fakeAccessStatus(me.app, kind === "denied" ? "denied" : "granted");
     await me.page.evaluate((how) => {
-      const w = window as unknown as { meetapp: { media: object } };
-      const status = how === "denied" ? "denied" : "granted";
-      Object.assign(w.meetapp.media, {
-        accessStatus: async () => ({ camera: status, microphone: status, screen: "granted" }),
-      });
       if (how === "missing")
         navigator.mediaDevices.getUserMedia = async () => {
           throw new DOMException("none", "NotFoundError");
@@ -100,6 +99,7 @@ test("TC-F02-21 [AC-F02-11] a guest needs a name of 1 to 60 characters; the Term
     await expect(guest.page.getByText("Type a name of 1 to 60 characters.")).toBeVisible();
     await expect(guest.page.getByText("Someone in the meeting will let you in soon.")).toHaveCount(0);
   }
-  await joinAsGuest(guest.page, link, "a");
+  await guest.page.getByLabel("Your name").fill("a");
+  await guest.page.getByRole("button", { name: "Join now" }).click();
   await expect(guest.page.getByText("Someone in the meeting will let you in soon.")).toBeVisible();
 });
