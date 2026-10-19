@@ -29,10 +29,11 @@ export function buildArgs(root: string): string[] {
 
 /**
  * The container runs in production mode, which refuses the example secrets from .env.example (D050),
- * so the check gives it throwaway ones of its own, new each run.
+ * so the check gives it throwaway ones of its own, new each run. Production also needs a wss:// call
+ * server address (AC-F02-53); a stand-in is enough, as the health check doesn't reach the call server.
  */
 function throwawaySecrets(): string[] {
-  return ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY"].flatMap((name) => [
+  return ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY", "LIVEKIT_API_SECRET"].flatMap((name) => [
     "-e",
     `${name}=${randomBytes(32).toString("hex")}`,
   ]);
@@ -50,6 +51,8 @@ export function runArgs(envFile: string, hostPort: number): string[] {
     envFile,
     ...Object.entries(SERVICES).flatMap(([name, value]) => ["-e", `${name}=${value}`]),
     ...throwawaySecrets(),
+    "-e",
+    "LIVEKIT_PUBLIC_URL=wss://call.example.test",
     "-e",
     "NODE_ENV=production",
     "-e",
@@ -81,4 +84,15 @@ export function secretScanArgs(gitleaksImage: string, exportDir: string, configF
     "--no-banner",
     "--redact",
   ];
+}
+
+/**
+ * In production mode the backend reaches the call server's admin API over https only (S6), and the local
+ * call server has no https, so that one check is expected to be down here; everything else must be "ok".
+ * The image's own health check then reports unhealthy, so its status is only required to exist.
+ */
+export function healthyButCallServer(body: unknown): boolean {
+  const checks = (body as { checks?: Record<string, string> } | undefined)?.checks ?? {};
+  const others = Object.entries(checks).filter(([name]) => name !== "callServer");
+  return others.length > 0 && others.every(([, state]) => state === "ok");
 }

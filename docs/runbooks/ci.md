@@ -17,6 +17,7 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 ## Traps found in F01
 - **The backend container didn't start on GitHub** ("/api/v1/health did not answer 200 within 90 s"), while every local test passed. The backend had started importing `@meetapp/design-tokens` (email colors) and `apps/api/Dockerfile` copied only `db` and `contracts`. Local tests never build the image. Fix: copy every `@meetapp/*` package the API depends on; `/spec-verify` now runs `pnpm check:container`. To see why a container won't start, run it by hand and read `docker logs`.
 - **Production refuses the example secrets** (D050), so the container check passes throwaway ones of its own.
+- **Production needs the call server over wss/https (F02):** the container check passes a stand-in `LIVEKIT_PUBLIC_URL=wss://…` and a throwaway `LIVEKIT_API_SECRET`. The local call server has no https, so in the container the health answer reports `callServer: down`; the check accepts that one entry only (database, cache and storage must be `ok`) and says so in its last line.
 - **Semgrep:** state `authTagLength` for AES-GCM; a safe pass-through gets `// nosemgrep: <rule>` with the reason on the line above.
 
 ## Rules

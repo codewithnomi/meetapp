@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { GITLEAKS_IMAGE } from "./check-secrets.mjs";
 import { ROOT, fail } from "./cli.ts";
-import { CONTAINER, IMAGE, buildArgs, runArgs, secretScanArgs } from "./container-commands.ts";
+import { CONTAINER, IMAGE, buildArgs, healthyButCallServer, runArgs, secretScanArgs } from "./container-commands.ts";
 import { DOCKER_MESSAGES, checkDocker } from "./dev-checks.ts";
 
 const HEALTHY_WITHIN_MS = 90_000;
@@ -36,7 +36,8 @@ async function waitHealthy(port: number): Promise<boolean> {
   while (Date.now() < deadline) {
     const status = docker(["inspect", "-f", "{{.State.Health.Status}}", CONTAINER], true).out;
     const answer = await fetch(`http://127.0.0.1:${String(port)}/api/v1/health`).catch(() => undefined);
-    if (status === "healthy" && answer?.status === 200) return true;
+    const body: unknown = await answer?.json().catch(() => undefined);
+    if (status !== "" && healthyButCallServer(body)) return true;
     await new Promise((done) => setTimeout(done, 2000));
   }
   return false;
@@ -59,7 +60,8 @@ async function checks(): Promise<string[]> {
   const problems: string[] = [];
   const port = await freePort();
   if (!docker(runArgs(join(ROOT, ".env"), port)).ok) return ["The container did not start."];
-  if (!(await waitHealthy(port))) problems.push("Not healthy: /api/v1/health did not answer 200 within 90 s.");
+  if (!(await waitHealthy(port)))
+    problems.push("Not healthy: /api/v1/health did not report database, cache and storage ok within 90 s.");
   if (docker(["exec", CONTAINER, "id", "-u"], true).out === "0") problems.push("The container runs as root.");
   const envFiles = docker(["exec", CONTAINER, "find", "/app", "-name", ".env*"], true).out;
   if (envFiles !== "") problems.push(`The image contains settings files: ${envFiles.replace(/\n/g, ", ")}`);
@@ -76,4 +78,6 @@ const problems = await checks();
 if (problems.length > 0) process.stderr.write(docker(["logs", "--tail", "40", CONTAINER], true).out + "\n");
 docker(["rm", "-f", CONTAINER], true);
 if (problems.length > 0) fail(`Container check failed:\n  - ${problems.join("\n  - ")}`);
-process.stdout.write(`✓ ${IMAGE}: healthy, runs as a non-root user, no .env, no secrets found.\n`);
+process.stdout.write(
+  `✓ ${IMAGE}: healthy (the call server link needs https online, not checked here), runs as a non-root user, no .env, no secrets found.\n`,
+);
