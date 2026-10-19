@@ -1,7 +1,8 @@
 // MeetingLayout (template): the meeting screen's frame from the approved "Meeting" screens, always on
 // the dark stage. Top: the meeting title and the Gallery/Speaker switch. Under it, for those who may let
 // people in, the lobby bar ("2 people are waiting in the lobby", View lobby, Admit all). Then the stage
-// with a side panel beside it, and the control bar at the bottom. The screen is exactly the window's
+// with a side panel beside it (the stage shrinks; only on phone widths does the panel go below), and the
+// control bar at the bottom. The screen is exactly the window's
 // height: the control bar always shows (as in Teams), the stage's height is passed on as
 // `--stage-height` so the gallery's tiles fit it, and only the stage scrolls if it still doesn't fit.
 // One polite live region carries the announcements (joins, hands, "X muted you", AC-F02-44). Slots only: the page fills them.
@@ -88,7 +89,7 @@ export function MeetingLayout(props: MeetingLayoutProps) {
       </header>
       {lobby ? <Lobby lobby={lobby} /> : null}
       {notices ? <div className="mx-6 mb-3 flex shrink-0 flex-col gap-2">{notices}</div> : null}
-      <main ref={setArea} className="flex min-h-0 flex-1 flex-wrap gap-4 overflow-y-auto px-6">
+      <main ref={setArea} className="flex min-h-0 flex-1 flex-wrap gap-4 overflow-y-auto px-6 sm:flex-nowrap">
         <div className="min-w-0 flex-[999_1_560px]" style={stageHeight}>
           {stage}
         </div>

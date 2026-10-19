@@ -46,7 +46,7 @@ function spokenName(props: VideoTileProps): string {
 function TopLeft({ speakingText, handText }: Pick<VideoTileProps, "speakingText" | "handText">) {
   if (!speakingText && !handText) return null;
   return (
-    <div aria-hidden="true" className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5">
+    <div aria-hidden="true" className="absolute top-2.5 left-2.5 flex flex-col items-start gap-1.5 @max-[120px]:hidden">
       {handText ? (
         <span className={cx(PILL, "bg-hand-raised font-bold text-on-hand-raised")}>
           <Icon name="hand" size={14} />
@@ -83,7 +83,7 @@ function TopRight({ weakText, pinned }: Pick<VideoTileProps, "weakText" | "pinne
       {weakText ? (
         <span aria-hidden="true" className={cx(PILL, "bg-stage-scrim font-[550] text-stage-warning")}>
           <Icon name="signal" size={14} />
-          {weakText}
+          <span className="@max-[160px]:hidden">{weakText}</span>
         </span>
       ) : null}
     </div>
@@ -95,7 +95,7 @@ function Reaction({ reaction }: { reaction: NonNullable<VideoTileProps["reaction
   return (
     <span
       aria-hidden="true"
-      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-md bg-stage-scrim px-3 py-2 text-[12px] font-semibold"
+      className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1 rounded-md bg-stage-scrim px-3 py-2 text-[12px] font-semibold @max-[120px]:hidden"
     >
       <span className="text-[32px] leading-9">{reaction.emoji}</span>
       {reaction.text}
@@ -110,14 +110,16 @@ export function VideoTile(props: VideoTileProps) {
     <figure
       aria-label={spokenName(props)}
       className={cx(
-        "relative m-0 aspect-video max-w-full overflow-hidden rounded-lg bg-stage-tile text-stage-ink",
+        "@container relative m-0 aspect-video max-w-full overflow-hidden rounded-lg bg-stage-tile text-stage-ink",
         className,
       )}
     >
       {showVideo ? (
         <div className="absolute inset-0 [&>video]:size-full [&>video]:object-cover">{video}</div>
       ) : (
-        <div className="absolute inset-0 grid place-items-center">
+        // In a small tile (the speaker strip, a narrow window) the picture shrinks so the name stays readable;
+        // in a tiny one only the picture shows (the name is still the figure's label for screen readers).
+        <div className="absolute inset-0 flex items-center justify-center @max-[240px]:scale-50 @max-[160px]:scale-[0.4]">
           <Avatar name={name} size="xl" {...(photoUrl ? { src: photoUrl } : {})} />
         </div>
       )}
@@ -134,7 +136,7 @@ export function VideoTile(props: VideoTileProps) {
       {reaction ? <Reaction reaction={reaction} /> : null}
       <figcaption
         aria-hidden="true"
-        className="absolute bottom-2.5 left-2.5 inline-flex max-w-[calc(100%-20px)] items-center gap-1.5 overflow-hidden rounded-sm bg-stage-scrim px-2.5 py-1 text-[13px] leading-4.5 font-[550] whitespace-nowrap"
+        className="absolute bottom-2.5 left-2.5 inline-flex max-w-[calc(100%-20px)] @max-[120px]:hidden items-center gap-1.5 overflow-hidden rounded-sm bg-stage-scrim px-2.5 py-1 text-[13px] leading-4.5 font-[550] whitespace-nowrap"
       >
         {mutedLabel ? <Icon name="mic-off" size={14} className="text-stage-danger" /> : null}
         <span className="truncate">{name}</span>

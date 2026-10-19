@@ -109,7 +109,7 @@ function SpeakerView({ tiles, moreText }: Pick<GalleryProps, "tiles" | "moreText
             <li key={id}>{tile}</li>
           ))}
           {moreText ? (
-            <li className="grid min-h-20 place-items-center rounded-lg bg-stage-tile text-[14px] font-semibold text-stage-ink">
+            <li className="grid aspect-video place-items-center rounded-lg bg-stage-tile text-center text-[14px] font-semibold text-stage-ink">
               {moreText}
             </li>
           ) : null}
