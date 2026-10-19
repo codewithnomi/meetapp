@@ -105,10 +105,19 @@ export function useDeviceChanges(room: Room | undefined, onGone: (gone: DeviceGo
   useEffect(() => {
     if (!room) return undefined;
     const known = new Map<DeviceKind, InUse>();
-    const check = () => void checkDevices(room, known, onGone);
+    // One check at a time, so one unplug is announced once. A device chosen after joining (the speakers
+    // are set once connected) is remembered when it becomes active, before it can be unplugged.
+    let queue = Promise.resolve();
+    const check = () => {
+      queue = queue.then(() => checkDevices(room, known, onGone)).catch(() => undefined);
+    };
     check();
     room.on(RoomEvent.MediaDevicesChanged, check);
-    return () => void room.off(RoomEvent.MediaDevicesChanged, check);
+    room.on(RoomEvent.ActiveDeviceChanged, check);
+    return () => {
+      room.off(RoomEvent.MediaDevicesChanged, check);
+      room.off(RoomEvent.ActiveDeviceChanged, check);
+    };
     // `onGone` is read when a change happens.
   }, [room]);
 }

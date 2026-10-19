@@ -1,5 +1,6 @@
 // "Meeting options" for the organizer and co-organizers (AC-F02-02, 34, 36, 37).
-import { screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
+import { focusManager } from "@tanstack/react-query";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeAuth, PAT, renderWithApp } from "../auth/fake-auth.tsx";
@@ -136,6 +137,22 @@ describe("meeting options dialog", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it("TC-F02-04 [AC-F02-02] a background refresh (the window gaining focus) keeps the unsaved choices", async () => {
+    const api = fakeApi({
+      [MEETING]: () => json(meeting("u-1")),
+      [`GET /api/v1/workspaces/${WS}/members`]: () => json(members),
+    });
+    open();
+    await userEvent.selectOptions(await screen.findByLabelText("Who can present?"), "everyone");
+    act(() => {
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+    });
+    await waitFor(() => expect(api.callsTo("GET", "/api/v1/meetings/m1")).toHaveLength(2));
+    focusManager.setFocused(undefined);
+    expect(screen.getByLabelText<HTMLSelectElement>("Who can present?").value).toBe("everyone");
   });
 
   it("TC-F02-65 [AC-F02-37] inside a call the lock switch applies at once", async () => {

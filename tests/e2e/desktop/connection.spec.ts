@@ -105,7 +105,7 @@ test("TC-F02-61 [AC-F02-31] each device in use that disappears is replaced withi
   const unplug = await unpluggable(a.page);
   await a.page.getByRole("button", { name: "Meetings" }).click();
   await a.page.getByRole("button", { name: "Meet now" }).click();
-  // Speakers first: a camera that cannot be replaced keeps announcing itself (see the report).
+  // Speakers first, then microphone, then camera; each is announced once.
   const chosen = [
     ["Speakers", "Fake Audio Output 1"],
     ["Microphone", "Fake Audio Input 1"],
@@ -120,7 +120,7 @@ test("TC-F02-61 [AC-F02-31] each device in use that disappears is replaced withi
   await expect(controls(a.page)).toBeVisible({ timeout: 20_000 });
   for (const [, label] of chosen) {
     await unplug(label);
-    // Soft, so the other devices are still checked (the speakers case fails: see the report).
+    // Soft, so a failure for one device still lets the others be checked.
     await expect.soft(a.page.getByText(`${label} disconnected.`)).toBeVisible({ timeout: 2_000 });
     await expect.soft(a.page.getByText(/^Now using /)).toBeVisible();
     await a.page

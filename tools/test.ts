@@ -2,7 +2,8 @@
 // (or stops at once with the Docker message), runs all unit and integration tests with one merged
 // coverage report (business logic at least 80%), then the real desktop-window tests against a running
 // backend. Prints a short summary and fails if any part failed. CI runs the two parts as separate jobs:
-// `--only vitest` and `--only desktop`.
+// `--only vitest` and `--only desktop`; with `--only desktop`, anything after `--` goes to Playwright
+// (e.g. `-- meeting-roles.spec.ts` runs one file).
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createServer, type AddressInfo } from "node:net";
@@ -106,7 +107,8 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
       process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);
       return false;
     }
-    return run("pnpm", ["test:e2e"], {
+    const passed = process.argv.indexOf("--");
+    return run("pnpm", ["test:e2e", ...(passed >= 0 ? process.argv.slice(passed + 1) : [])], {
       VITE_API_URL: apiUrl,
       MEETAPP_E2E_API_URL: apiUrl,
       MEETAPP_E2E_API_PID: String(api.pid),

@@ -103,12 +103,30 @@ describe("device changes", () => {
     expect(onGone).toHaveBeenCalledTimes(1);
   });
 
+  it("TC-F02-61 [AC-F02-31] speakers chosen after joining are remembered, so their unplugging is reported", async () => {
+    const room = new FakeRoom();
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "usb-spk", label: "USB speakers" }] };
+    const onGone = vi.fn<(gone: DeviceGone) => void>();
+    renderHook(() => useDeviceChanges(asRoom(room), onGone));
+    await flush();
+    room.active = { audiooutput: "usb-spk" };
+    await act(async () => void room.emit("activeDeviceChanged"));
+    await flush();
+    room.active = { audiooutput: "default" };
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "default", label: "MacBook speakers" }] };
+    await act(async () => void room.emit("mediaDevicesChanged"));
+    await flush();
+    expect(onGone).toHaveBeenCalledWith({ kind: "speakers", gone: "USB speakers", now: "MacBook speakers" });
+  });
+
   it("TC-F02-31 [AC-F02-31] stops listening when the screen closes", () => {
     const room = new FakeRoom();
     const { unmount } = renderHook(() => useDeviceChanges(asRoom(room), vi.fn()));
     expect(room.listenerCount("mediaDevicesChanged")).toBe(1);
+    expect(room.listenerCount("activeDeviceChanged")).toBe(1);
     unmount();
     expect(room.listenerCount("mediaDevicesChanged")).toBe(0);
+    expect(room.listenerCount("activeDeviceChanged")).toBe(0);
   });
 });
 

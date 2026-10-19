@@ -153,6 +153,7 @@ function OptionsForm({
 export function MeetingOptionsDialog({ meetingId, open, onOpenChange, lock }: MeetingOptionsDialogProps) {
   const meeting = useMeeting(open ? meetingId : undefined);
   if (!open || !meeting.data) return null;
-  // A new form each time it opens, starting from the saved options.
-  return <OptionsForm key={meeting.dataUpdatedAt} meeting={meeting.data} onOpenChange={onOpenChange} lock={lock} />;
+  // A new form each time it opens (closing unmounts it), starting from the saved options. A background
+  // refetch (the window gaining focus) must not start it over: that would lose unsaved choices and a Save.
+  return <OptionsForm key={meetingId} meeting={meeting.data} onOpenChange={onOpenChange} lock={lock} />;
 }
