@@ -4,33 +4,9 @@
 // sharing goes through our picker, and End meeting tells the other window. TC-F02-42, 43, 44 (path), 47 (hand), 89 (shortcut).
 import { expect, test, type Page } from "@playwright/test";
 import { FAKE_MEDIA, launch, launchAs, launchNewAccount } from "./desktop.ts";
+import { joinByLink, meetNow, playingVideos, tile } from "./meeting-steps.ts";
 
 test.describe.configure({ timeout: 180_000 });
-
-async function meetNow(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Meetings" }).click();
-  await page.getByRole("button", { name: "Meet now" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /^Meeting with / })).toBeVisible();
-  await page.getByRole("button", { name: "Join now" }).click();
-  await expect(page.getByRole("group", { name: "Meeting controls" })).toBeVisible({ timeout: 20_000 });
-}
-
-async function joinByLink(page: Page, link: string): Promise<void> {
-  await page.getByRole("button", { name: "Meetings" }).click();
-  await page.getByRole("radio", { name: "Link" }).click();
-  await page.getByLabel("Meeting link").fill(link);
-  await page.getByRole("button", { name: "Join", exact: true }).click();
-  await page.getByRole("button", { name: "Join now" }).click();
-  await expect(page.getByRole("group", { name: "Meeting controls" })).toBeVisible({ timeout: 20_000 });
-}
-
-/** How many videos in the window are really playing a picture. */
-const playingVideos = (page: Page) =>
-  page.evaluate(
-    () => [...document.querySelectorAll("video")].filter((v) => v.readyState >= 2 && v.videoWidth > 0).length,
-  );
-
-const tile = (page: Page, name: RegExp) => page.getByRole("figure", { name });
 
 /** macOS asks before the first screen capture; a test can't answer, so sharing is checked only once allowed. */
 const screenAllowed = (page: Page) =>

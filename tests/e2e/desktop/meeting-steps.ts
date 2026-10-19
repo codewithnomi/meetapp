@@ -8,7 +8,7 @@ export const tile = (page: Page, name: RegExp) => page.getByRole("figure", { nam
 /** The meeting shortcuts' modifier keys: ⌘⇧ on a Mac, Ctrl+Shift elsewhere. */
 export const SHORTCUT = process.platform === "darwin" ? "Meta+Shift" : "Control+Shift";
 export const LINK = /\/m\/[\w-]{22}$/;
-export const IN_CALL = { timeout: 20_000 };
+const IN_CALL = { timeout: 20_000 };
 
 /** Meetings, Meet now, Join now: inside the call as its organizer. */
 export async function meetNow(page: Page): Promise<void> {
