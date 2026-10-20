@@ -21,7 +21,8 @@
 - **F02 Meetings & calling:** requirements **approved** by the owner (2026-10-14) on branch `feat/F02-meetings`:
   - `docs/specs/F02-meetings/requirements.md`, 54 ACs, following Microsoft Teams at the owner's request (D053);
   - reviewed by spec-reviewer, and its findings fixed.
-- **Next step:** all F02 tasks are done (T-fix-8 finished 2026-10-20: full suite, checks, container, screenshots, load test, the owner's look check "looks good", design system updated). The owner types `/spec-verify F02` for the second verification; on PASS it opens the Pull Request and the owner merges. Then F03 In-meeting chat.
+- **F02 verified: PASS (2026-10-20)**, see `docs/specs/F02-meetings/verification.md` (second run; the Medium security items and a clean-up bug found by the reviews were fixed with tests first). Smoothness for 100 people met on an idle Mac only; the owner accepted it (D056), to re-check before going online.
+- **Next step:** the owner merges the F02 Pull Request; then F03 In-meeting chat (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
@@ -51,6 +52,14 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-16 to 2026-10-20: Session 5 (F02 fixes, final runs, second verification)
+- T-fix-3 to T-fix-8 done: connection, place, Rejoin and device bugs; meeting-screen accessibility; app unit tests (coverage over 80%); the postponed desktop tests (they found real bugs: Copy refused by the desktop rules, focus lost after dialogs, unplugged speakers and cameras); documentation.
+- Final runs (T-fix-8): the full suite, `pnpm check`, the container check (production needs a wss call-server address; the local call server has no https), new screenshots (the side panel now stays beside the videos in narrow windows; small tiles shrink their picture).
+- Load test (2026-10-20): sound 70 ms, joins 1.9 s, 25 people at most 598 MB met; smoothness 73%/63% against 90% on a busy Mac (met on an idle Mac on 2026-10-15). The owner chose not to re-run it (D056 updated).
+- Owner's look check: "looks good". Ideas for after a first usable version noted in features.md (call toasts, a Teams-style share border and Stop sharing bar, people search and chat).
+- Design system updated with the F02 components and icons (D029).
+- Second /spec-verify (2026-10-20): the reviews found a removed member or organizer keeping in-call powers and rejoining as a member (Medium), a call ended too early on a slow first connection, docs gaps; all fixed with tests before the verdict.
 
 ### 2026-10-14 to 2026-10-16: Session 4 (F02 Meetings & calling: build and first verification)
 - F02 requirements, screen designs, design, tests (114 cases) and tasks (19 steps) approved; D053 (follow Teams), D054, D055 accepted; D052 extended (tests only where needed per task, the rest at /spec-verify).

@@ -1,7 +1,7 @@
 ---
 feature: F02
 title: Meetings & calling
-status: in-progress
+status: done
 updated: 2026-10-20
 ---
 
