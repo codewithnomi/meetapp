@@ -143,3 +143,5 @@ export function createChatPollsRepository(db: Database) {
 }
 
 export type ChatPollsRepository = ReturnType<typeof createChatPollsRepository>;
+
+export type { ChatPoll } from "@meetapp/db";

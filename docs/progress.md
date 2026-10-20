@@ -36,7 +36,8 @@
 - **F03 T7 done:** GIF settings for the app's own KLIPY search, GIF and sticker messages, the workspace "Allow GIFs" switch.
 - **F03 T8 done (backend complete):** chat setting with notes, after-meeting reading, the AI reading rule, account-deletion and export helpers, clean-up jobs.
 - **For later features:** F06/F10 must call `chatUpkeep.beforeMeetingDeleted` before deleting a meeting record, and F10's account deletion must call `chatUpkeep.forgetPerson`.
-- **Next step:** F03 T9, backend security sweeps (`/next`).
+- **F03 T9 done:** chat security sweeps (other meetings' ids, plain-text names, no chat text in logs); `pnpm check` clean. **F03 backend complete (T1–T9).**
+- **Next step:** F03 T10, desktop: spell check, Save as, drop safety, content policy (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

@@ -3,7 +3,7 @@
 // saved with its news, then delivered to the room.
 import { randomUUID } from "node:crypto";
 import { documentPlainText, type MessageDocument } from "@meetapp/contracts";
-import type { ChatMessage } from "@meetapp/db";
+import type { ChatMessage } from "./chat.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";

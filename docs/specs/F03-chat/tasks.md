@@ -69,10 +69,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-62, 64, 65, 67, 68, 70, 71, 73, 74, 91; the `chat_events` clean-up (TC-F03-92, kept 1 day).
   - **Built in T8:** `chatMode` in Meeting options (also in the room's shared state), with a note and `chat_mode_changed` news when changed during a call; `chat-after.*` (reading, links and organizer deletes after the meeting, under `/api/v1/meetings/:meetingId/chat/…`; "took part" means let into a call, not removed; the latest ended call's setting decides); `chatForAi` (the reading rule, text marked as data, for F06/F07); `chat-upkeep.*` (minute-by-minute clean-up inside the call jobs: news older than a day, files of deleted messages, files never sent within an hour; `forgetPerson` and `exportFor` for account deletion and data requests, used by support until F10 builds account deletion; `beforeMeetingDeleted` for F06/F10 to call before deleting a meeting record, so its files go too).
 
-- [ ] **T9: Backend security sweeps.**
+- [x] **T9: Backend security sweeps.**
   - Outsider sweep generated from the router, other workspace and other meeting, logs without chat text, names and poll text stored as plain text.
   - Covers: S1, S2, S10, S11 for every new route.
-  - Tests: TC-F03-79, 80, 82 (server part), 87.
+  - Tests: TC-F03-79 (the F02 meeting sweep, which lists routes from the router, now covers every chat route), 80, 82 (server part), 87.
+  - **Built in T9:** `chat-security.integration.test.ts`; log cleaning also hides `options`, `fileName` and the `X-File-Name` header; services take database types only through their repositories (architecture check); `pnpm check` clean.
 
 ## Desktop and app
 

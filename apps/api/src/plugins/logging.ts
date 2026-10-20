@@ -25,8 +25,10 @@ const SECRET_FIELDS = [
   // F03: chat text (message documents, their visible text, poll questions and answers, links, GIF searches).
   "plainText",
   "question",
+  "options",
   "href",
   "description",
+  "fileName",
 ];
 const NAME_FIELDS = ["name", "firstName", "lastName", "displayName", "guestName"];
 const SENSITIVE = [...SECRET_FIELDS, ...NAME_FIELDS];
@@ -37,6 +39,7 @@ const REDACT_PATHS = [
   "req.headers.cookie",
   'req.headers["set-cookie"]',
   'req.headers["x-meeting-ticket"]',
+  'req.headers["x-file-name"]',
   'res.headers["set-auth-token"]',
   "req.body",
   "body",

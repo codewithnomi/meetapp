@@ -90,8 +90,8 @@ const inlineSchema = z.discriminatedUnion("type", [
 const paragraphSchema = z.strictObject({ type: z.literal("paragraph"), content: z.array(inlineSchema).optional() });
 type Paragraph = z.infer<typeof paragraphSchema>;
 
-export type ListItem = { content: (Paragraph | List)[] };
-export type List = { type: "bulletList" | "orderedList"; items: ListItem[] };
+type ListItem = { content: (Paragraph | List)[] };
+type List = { type: "bulletList" | "orderedList"; items: ListItem[] };
 
 const listSchema: z.ZodType<List> = z.lazy(() =>
   z.strictObject({

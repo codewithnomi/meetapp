@@ -12,7 +12,7 @@ export interface AfterDeps extends ChatDeps {
 }
 
 /** The person's latest join of the meeting, allowed to do `action` afterwards; 404 otherwise (S1, S2). */
-export async function afterActor(deps: AfterDeps, userId: string, meetingId: string, action: ChatAction) {
+async function afterActor(deps: AfterDeps, userId: string, meetingId: string, action: ChatAction) {
   const joins = await deps.after.joinsOf(meetingId, userId);
   const [latest] = joins;
   if (!latest || joins.some((join) => join.status === "removed")) throw notFound();

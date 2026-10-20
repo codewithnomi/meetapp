@@ -62,5 +62,3 @@ export function createChatUpkeepService(deps: UpkeepDeps) {
     beforeMeetingDeleted: (meetingId: string) => deps.upkeep.markMeetingFiles(meetingId),
   };
 }
-
-export type ChatUpkeepService = ReturnType<typeof createChatUpkeepService>;

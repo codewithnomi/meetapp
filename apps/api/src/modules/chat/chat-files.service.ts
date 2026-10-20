@@ -2,7 +2,7 @@
 // its content and cleaned before anything is stored; downloads go through our backend with a signed
 // link that works for 5 minutes, so every answer carries the safe headers.
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
-import type { ChatAttachment } from "@meetapp/db";
+import type { ChatAttachment } from "./chat-files.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
@@ -33,13 +33,13 @@ function sign(secret: string, body: string): string {
 }
 
 /** `<id>.<p|f>.<end time>.<signature>`: which file, the preview or the file, and until when. */
-export function fileToken(secret: string, attachmentId: string, preview: boolean, expiresAt: number): string {
+function fileToken(secret: string, attachmentId: string, preview: boolean, expiresAt: number): string {
   const body = `${attachmentId}.${preview ? "p" : "f"}.${String(expiresAt)}`;
   return `${body}.${sign(secret, body)}`;
 }
 
 /** The file a token names, or undefined when it was changed or its 5 minutes passed. */
-export function readFileToken(secret: string, token: string, now: number) {
+function readFileToken(secret: string, token: string, now: number) {
   const [id, kind, end, signature] = token.split(".");
   if (!id || !kind || !end || !signature) return undefined;
   const expected = Buffer.from(sign(secret, `${id}.${kind}.${end}`));

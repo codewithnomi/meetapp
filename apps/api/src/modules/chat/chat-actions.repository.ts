@@ -13,7 +13,7 @@ import { and, count, eq, inArray, isNull, ne } from "drizzle-orm";
 import { recordEvent } from "./chat.repository.ts";
 
 /** Most different emoji one person may add to one message (AC-F03-13). */
-export const MAX_REACTIONS_PER_PERSON = 20;
+const MAX_REACTIONS_PER_PERSON = 20;
 const CHECK_VIOLATION = "23514";
 
 export type Change<T> = { row: T; seq: number } | undefined;

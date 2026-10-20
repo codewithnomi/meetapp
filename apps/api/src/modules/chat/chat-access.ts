@@ -14,7 +14,7 @@ import type { ChatRepository, Cursor } from "./chat.repository.ts";
 
 /** Bigger news goes out as `{ type, id, seq }` only and apps fetch the message (design 3.4). */
 export const MAX_PACKET_BYTES = 14 * 1024;
-export const DELETED_TEXT = "This message was deleted";
+const DELETED_TEXT = "This message was deleted";
 
 export interface ChatDeps {
   calls: CallsDeps;
@@ -65,7 +65,7 @@ export async function broadcast(deps: ChatDeps, callId: string, event: ChatEvent
   await deps.calls.livekit.sendChat(callId, packet).catch(() => undefined);
 }
 
-export function cursorOf(message: Pick<ChatMessage, "createdAt" | "id">): string {
+function cursorOf(message: Pick<ChatMessage, "createdAt" | "id">): string {
   return `${message.createdAt.toISOString()}_${message.id}`;
 }
 

@@ -19,7 +19,7 @@ const olderThan = (cursor: Cursor) =>
   );
 
 /** The next event number for a meeting; the meeting row is locked so numbers never repeat. */
-export async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
+async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
   await executor.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${meetingId} for update`);
   const [row] = await executor
     .select({ last: sql<number>`coalesce(max(${chatEvents.seq}), 0)::int` })
@@ -121,3 +121,5 @@ export function createChatRepository(db: Database) {
 }
 
 export type ChatRepository = ReturnType<typeof createChatRepository>;
+
+export type { ChatMessage } from "@meetapp/db";

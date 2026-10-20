@@ -19,6 +19,9 @@
     "packages/ui": {
       "ignoreDependencies": ["@fontsource-variable/figtree", "@fontsource-variable/jetbrains-mono"]
     },
+    "apps/api": {
+      "ignoreDependencies": ["emojibase-data"]
+    },
     "apps/web": {
       "ignoreDependencies": ["tailwindcss"]
     },

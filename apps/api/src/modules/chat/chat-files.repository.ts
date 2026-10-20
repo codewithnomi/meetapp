@@ -4,7 +4,7 @@ import { chatAttachments, meetings, type ChatAttachment, type Database, type Exe
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 
 /** All the files of one meeting together, sent or not (AC-F03-34). */
-export const MAX_MEETING_FILE_BYTES = 500 * 1024 * 1024;
+const MAX_MEETING_FILE_BYTES = 500 * 1024 * 1024;
 
 export type NewAttachment = typeof chatAttachments.$inferInsert;
 
@@ -76,3 +76,5 @@ export function createChatFilesRepository(db: Database) {
 }
 
 export type ChatFilesRepository = ReturnType<typeof createChatFilesRepository>;
+
+export type { ChatAttachment } from "@meetapp/db";

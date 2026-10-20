@@ -3,7 +3,7 @@
 // creator, organizer and co-organizers always (as in Teams). Anonymous polls never name anyone.
 import { createHmac } from "node:crypto";
 import type { PollView } from "@meetapp/contracts";
-import type { ChatPoll } from "@meetapp/db";
+import type { ChatPoll } from "./chat-polls.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { notFound, roleOf } from "../calls/admission.ts";
 import { broadcast, chatActor, invalid, sentBy, viewOne, type ChatDeps } from "./chat-access.ts";

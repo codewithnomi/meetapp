@@ -12,7 +12,7 @@ import {
 } from "@meetapp/db";
 import { and, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 
-export const DELETED_USER = "Deleted user";
+const DELETED_USER = "Deleted user";
 
 const joinsOf = (db: Executor, userId: string) =>
   db.select({ id: callAttendances.id }).from(callAttendances).where(eq(callAttendances.userId, userId));
