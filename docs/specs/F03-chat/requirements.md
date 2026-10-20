@@ -62,7 +62,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 
 ### Polls
 - **AC-F03-21:** WHEN the organizer, a co-organizer or a presenter creates a poll (a question up to 200 characters, 2 to 10 answers up to 100 characters each, one answer or several allowed, votes anonymous or with names), THEN it appears in the chat for everyone within 2 seconds.
-- **AC-F03-22:** WHEN a person in the meeting (including a guest) votes, THEN their vote counts once; they can change it until the poll is closed; everyone sees the result (counts and percentages) update within 2 seconds; with an anonymous poll, nobody, not even the creator, can see who voted for what.
+- **AC-F03-22:** WHEN a person in the meeting (including a guest) votes, THEN their vote counts once; they can change it until the poll is closed; after voting (as in Teams), they see the result (counts and percentages) update within 2 seconds, and the creator, organizer and co-organizers see it at any time; with an anonymous poll, nobody, not even the creator, can see who voted for what.
 - **AC-F03-23:** WHEN the creator, the organizer or a co-organizer closes the poll (or the meeting ends), THEN no more votes are accepted and the final result stays in the chat, also after the meeting (AC-F03-42). Attendees can vote but not create polls; the server refuses it.
 
 ### GIFs and stickers
