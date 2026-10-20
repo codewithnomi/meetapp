@@ -7,6 +7,7 @@ import { asTheyAreNow, notFound, roleOf, type CallsDeps } from "../calls/admissi
 import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
 import type { ChatActionsRepository } from "./chat-actions.repository.ts";
+import type { ChatFilesRepository } from "./chat-files.repository.ts";
 import type { ChatPollsRepository } from "./chat-polls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import type { ChatRepository, Cursor } from "./chat.repository.ts";
@@ -20,6 +21,9 @@ export interface ChatDeps {
   chat: ChatRepository;
   actions: ChatActionsRepository;
   polls: ChatPollsRepository;
+  files: ChatFilesRepository;
+  /** Signs the 5-minute download links (design section 6). */
+  fileLinkSecret: string;
   /** Keys the poll voter hash (design 3.7): never stored with the votes. */
   voterSecret: string;
 }
@@ -92,6 +96,7 @@ interface Extras {
   quoted?: ChatMessage;
   reactions: ChatMessageView["reactions"];
   pollId?: string | undefined;
+  attachments: ChatMessageView["attachments"];
 }
 
 function viewOf(message: ChatMessage, extras: Extras) {
@@ -118,6 +123,7 @@ function viewOf(message: ChatMessage, extras: Extras) {
         }
       : null,
     reactions: message.deletedAt ? [] : extras.reactions,
+    attachments: message.deletedAt ? [] : extras.attachments,
     pollId: message.deletedAt ? null : (extras.pollId ?? null),
     system: (message.system as ChatMessageView["system"]) ?? null,
   };
@@ -136,12 +142,24 @@ export async function viewsOf(
   const ids = messages.map((message) => message.id);
   const reactions = await deps.actions.reactionsOf(ids);
   const polls = new Map((await deps.polls.byMessages(ids)).map((poll) => [poll.messageId, poll.id]));
+  const files = await deps.files.ofMessages(ids);
   return messages.map((message) => {
     const quote = message.replyToId ? quoted.get(message.replyToId) : undefined;
     return viewOf(message, {
       ...(quote ? { quoted: quote } : {}),
       reactions: reactionsFor(reactions, message.id, viewer),
       ...(polls.has(message.id) ? { pollId: polls.get(message.id) } : {}),
+      attachments: files
+        .filter((file) => file.messageId === message.id)
+        .map((file) => ({
+          id: file.id,
+          fileName: file.fileName,
+          mediaType: file.mediaType,
+          sizeBytes: file.sizeBytes,
+          width: file.width,
+          height: file.height,
+          hasPreview: file.previewKey !== null,
+        })),
     });
   });
 }

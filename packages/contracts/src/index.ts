@@ -109,6 +109,11 @@ export {
 export {
   CHAT_MODES,
   CHAT_PAGE_SIZE,
+  attachmentLinkQuerySchema,
+  attachmentLinkSchema,
+  attachmentParamsSchema,
+  fileTokenParamsSchema,
+  uploadedSchema,
   POLL_LIMITS,
   createPollBodySchema,
   pollParamsSchema,

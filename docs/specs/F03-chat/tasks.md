@@ -51,10 +51,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-37, 38, 39, 40, 41 (during the call). Reading the final result after the meeting comes with the after-meeting routes in T8.
   - **Built in T5:** `chat-polls.repository.ts`, `chat-polls.service.ts`, `chat-polls.routes.ts`; the voter key is HMAC(a key derived from `DATA_ENCRYPTION_KEY`, poll id + account, guest device fingerprint or join), so votes can't be linked across polls; when a call ends (either way) its chat setting is saved in `calls.chat_mode_at_end` and open polls close (`call-events.repository.ts`). Fixed on the way: chat news rows took the message's own id (`recordEvent`).
 
-- [ ] **T6: Files and pictures.**
+- [x] **T6: Files and pictures.**
   - Upload (streamed, 25 MB), content checks (no old Office files, no macros), sharp clean-up and previews, bomb limits, private storage, 5-minute links with safe headers, limits, clean-up of unsent and deleted files.
   - Covers: AC-F03-28, 30, 31, 32, 33, 34; AC-F03-05 (cut-off upload).
-  - Tests: TC-F03-12, 50, 51, 52, 56, 57, 58, 60, 84, 85, 86.
+  - Tests: TC-F03-12 (a failed store leaves no row or file), 50, 51, 52, 56, 57, 58, 60, 84, 85, 86. The 1-hour clean-up of unsent files and the removal of deleted messages' files from storage come with the clean-up jobs in T8; after-meeting links with the after-meeting routes in T8.
+  - **Built in T6:** `chat-files.ts` (content checks with file-type 22.1.1; Office files with a macro part refused; text only as .txt/.csv, valid UTF-8, no page code; pictures re-saved by sharp, upright, without hidden details, with a 480 px preview; 40-million-pixel and 300-frame limits), `chat-files.repository.ts` (500 MB per meeting counted with the meeting row locked), `chat-files.service.ts` and routes (upload as the request body with `X-File-Name`; files given to a message in the same save; signed 5-minute links to `/api/v1/chat-files/:token` answered with `attachment`, `nosniff`, `no-store` and a sandbox policy). Design changed (owner told): no multipart library, downloads through our backend instead of storage links. New "download" right: everyone in the call but guests.
 
 - [ ] **T7: GIFs, stickers and the GIF switch.**
   - The `gif-settings` route (key, `GIF_API_URL`, per-meeting `customer_id`), GIF messages checked for `static.klipy.com` addresses, sticker messages, `allowGifs` in workspace settings.

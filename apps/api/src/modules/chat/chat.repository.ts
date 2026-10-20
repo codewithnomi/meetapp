@@ -2,6 +2,7 @@
 // to one meeting, which the service reached through the caller's ticket (S2).
 import { type Database, type Executor, chatEvents, chatMessages, meetings, type ChatMessage } from "@meetapp/db";
 import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
+import { claimAttachments } from "./chat-files.repository.ts";
 
 export type NewChatMessage = typeof chatMessages.$inferInsert;
 
@@ -45,7 +46,15 @@ export async function recordEvent(
  * Saves a message and its event together. When the same sender already sent this `clientId`, nothing
  * is added and the saved message comes back with `created: false` (AC-F03-05).
  */
-async function insertMessage(db: Database, message: NewChatMessage, eventType: string) {
+/** Thrown inside the save when the files named aren't this sender's ready, unsent files. */
+export class AttachmentsNotYoursError extends Error {
+  constructor() {
+    super("attachments can't be sent with this message");
+    this.name = "AttachmentsNotYoursError";
+  }
+}
+
+async function insertMessage(db: Database, message: NewChatMessage, eventType: string, attachmentIds: string[] = []) {
   return db.transaction(async (tx) => {
     const [saved] = await tx.insert(chatMessages).values(message).onConflictDoNothing().returning();
     if (!saved) {
@@ -61,14 +70,14 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
       if (!existing) throw new Error("message neither saved nor found");
       return { message: existing, created: false as const };
     }
-    const seq = await nextSeq(tx, saved.meetingId);
-    await tx.insert(chatEvents).values({
-      workspaceId: saved.workspaceId,
+    const claim = {
+      ids: attachmentIds,
+      messageId: saved.id,
       meetingId: saved.meetingId,
-      seq,
-      type: eventType,
-      payload: { id: saved.id },
-    });
+      uploaderAttendanceId: saved.senderAttendanceId ?? "",
+    };
+    if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
+    const seq = await recordEvent(tx, saved, eventType, { id: saved.id });
     return { message: saved, created: true as const, seq };
   });
 }
@@ -90,7 +99,8 @@ async function eventsAfter(db: Database, meetingId: string, after: number) {
 
 export function createChatRepository(db: Database) {
   return {
-    insertMessage: (message: NewChatMessage, eventType: string) => insertMessage(db, message, eventType),
+    insertMessage: (message: NewChatMessage, eventType: string, attachmentIds?: string[]) =>
+      insertMessage(db, message, eventType, attachmentIds),
     /** One page of a meeting's history, newest first (the app shows them oldest at the top). */
     page: (meetingId: string, limit: number, before?: Cursor): Promise<ChatMessage[]> =>
       db

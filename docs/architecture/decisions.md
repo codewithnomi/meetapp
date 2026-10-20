@@ -373,6 +373,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Date:** 2026-10-20. **Status:** accepted (owner approved the F03 design, 2026-10-20; each library vetted in F03 T1 with `/add-dependency`).
 - **Decision:** TipTap (rich text editor on ProseMirror, MIT), Frimousse (emoji picker, MIT), file-type (finds a file's real type from its bytes, MIT), `@fastify/multipart` (file uploads, MIT), and emojibase-data (the emoji list, MIT), bundled so the picker never downloads it from a CDN.
 - **Vetted (T1, 2026-10-20), versions at least two weeks old:** `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/pm` and the underline, link and placeholder extensions 3.31.4 (MIT, 6 maintainers, monthly releases); `frimousse` 0.4.0 (MIT, Liveblocks, React 18/19, about 300 KB); `emojibase-data` 17.0.0 (MIT; only the needed languages are copied into the app); `file-type` 22.1.1 (MIT, needs Node 22+, we run 24; 4 small dependencies); `@fastify/multipart` 10.1.2 (MIT, Fastify team, Fastify 5). Each is installed in the task that first uses it.
+- **Changed in T6:** `@fastify/multipart` is not used: uploads send the file itself as the body, as the F01 photo upload does. Downloads go through our backend with a signed 5-minute link (storage links can't carry the `nosniff` header), so no link-signing library is needed.
 - **Why:** a safe, Teams-like message box with formatting and code; a small emoji picker we can style; file checks that don't trust the file name.
 - **Cost:** none.
 

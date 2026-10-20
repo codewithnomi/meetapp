@@ -5,6 +5,7 @@ import { documentPlainText, type MessageDocument } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
+import { AttachmentsNotYoursError } from "./chat.repository.ts";
 import {
   broadcast,
   chatActor,
@@ -21,8 +22,9 @@ export { MAX_PACKET_BYTES, type ChatDeps } from "./chat-access.ts";
 
 interface SendInput {
   clientId: string;
-  body: MessageDocument;
+  body?: MessageDocument | undefined;
   replyToId?: string | undefined;
+  attachmentIds?: string[] | undefined;
 }
 
 async function takeMessageTurn(deps: ChatDeps, ticketHash: string): Promise<void> {
@@ -34,22 +36,32 @@ async function takeMessageTurn(deps: ChatDeps, ticketHash: string): Promise<void
 
 async function send(deps: ChatDeps, callId: string, ticketHash: string, input: SendInput) {
   const { attendance, row } = await chatActor(deps, callId, ticketHash, "send");
-  const plainText = documentPlainText(input.body);
-  if (plainText.trim() === "") throw invalid();
+  const attachmentIds = [...new Set(input.attachmentIds ?? [])];
+  const plainText = input.body ? documentPlainText(input.body) : "";
+  // Text, files, or both; an empty message is refused (AC-F03-03).
+  if (plainText.trim() === "" && attachmentIds.length === 0) throw invalid();
+  // Guests send no files (AC-F03-33).
+  if (attachmentIds.length > 0) await chatActor(deps, callId, ticketHash, "attach");
   // A reply quotes a message of this meeting only (AC-F03-14).
   if (input.replyToId && !(await deps.chat.one(row.meeting.id, input.replyToId))) throw invalid();
   await takeMessageTurn(deps, ticketHash);
-  const saved = await deps.chat.insertMessage(
-    {
-      ...sentBy({ attendance, row }, callId),
-      kind: "text",
-      body: input.body,
-      plainText,
-      replyToId: input.replyToId ?? null,
-      clientId: input.clientId,
-    },
-    "message_created",
-  );
+  const saved = await deps.chat
+    .insertMessage(
+      {
+        ...sentBy({ attendance, row }, callId),
+        kind: "text",
+        body: input.body ?? null,
+        plainText,
+        replyToId: input.replyToId ?? null,
+        clientId: input.clientId,
+      },
+      "message_created",
+      attachmentIds,
+    )
+    .catch((error: unknown) => {
+      if (error instanceof AttachmentsNotYoursError) throw invalid();
+      throw error;
+    });
   const view = await viewOne(deps, saved.message, attendance.id);
   if (saved.created) {
     await broadcast(deps, callId, { seq: saved.seq, type: "message_created", id: view.id, message: view });

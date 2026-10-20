@@ -5,6 +5,7 @@ import type { Group, MeetingRole } from "../calls/calls.permissions.ts";
 
 export type ChatAction =
   | "read"
+  | "download"
   | "send"
   | "react"
   | "vote"
@@ -48,6 +49,7 @@ function canDuringCall(action: ChatAction, facts: ChatFacts): boolean {
     case "deleteOwn":
       return true;
     case "attach":
+    case "download":
       return facts.group !== "guest";
     case "createPoll":
       return POLL_MAKERS.includes(facts.role);
@@ -66,7 +68,7 @@ function canDuringCall(action: ChatAction, facts: ChatFacts): boolean {
 function canAfterMeeting(action: ChatAction, facts: ChatFacts): boolean {
   if (facts.group === "guest") return false;
   const reads = facts.mode === "in_meeting" ? isOrganizer(facts.role) : true;
-  if (action === "read") return reads;
+  if (action === "read" || action === "download") return reads;
   if (action === "deleteAny" || action === "pin") return reads && isOrganizer(facts.role);
   // The setting can be changed between calls; it applies to the next call (design 3.8).
   return action === "setMode" && isOrganizer(facts.role);

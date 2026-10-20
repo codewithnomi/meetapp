@@ -19,6 +19,7 @@ import { joinRequestsRoutes } from "./modules/join-requests/join-requests.routes
 import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
+import { chatFilesRoutes } from "./modules/chat/chat-files.routes.ts";
 import { chatPollsRoutes } from "./modules/chat/chat-polls.routes.ts";
 import { chatRoutes } from "./modules/chat/chat.routes.ts";
 import { liveKitWebhookRoutes } from "./modules/calls/livekit-webhook.routes.ts";
@@ -129,7 +130,20 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
   await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
   await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
-  const { meetings, lookups, join, lobby, rejoin, record, webhooks, controls, chat, chatActions, chatPolls } = accounts;
+  const {
+    meetings,
+    lookups,
+    join,
+    lobby,
+    rejoin,
+    record,
+    webhooks,
+    controls,
+    chat,
+    chatActions,
+    chatPolls,
+    chatFiles,
+  } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
   await app.register(liveKitWebhookRoutes, { webhooks });
@@ -137,4 +151,5 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(chatRoutes, { chat });
   await app.register(chatActionsRoutes, { actions: chatActions });
   await app.register(chatPollsRoutes, { polls: chatPolls });
+  await app.register(chatFilesRoutes, { files: chatFiles });
 }

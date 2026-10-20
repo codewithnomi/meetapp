@@ -649,7 +649,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 - **Level:** security
 - **Given** stored files of each type, including text and CSV
 - **When** each signed link is fetched
-- **Then** the answer has `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff` and the stored type (never `text/html` or `image/svg+xml`); the link address is on the storage host only; a link with a changed signature or changed path is refused
+- **Then** the answer has `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff` and the stored type (never `text/html` or `image/svg+xml`); the link points to our own backend (`/api/v1/chat-files/:token`), never straight to storage; a link with a changed signature, a changed file id or a passed end time is refused
 
 ### TC-F03-87: Logs contain no chat text, security
 - **Covers:** AC-F03-01, AC-F03-28, AC-F03-24

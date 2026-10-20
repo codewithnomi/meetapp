@@ -47,6 +47,8 @@ export const RATE_RULES = {
   // F03: 10 chat messages in 10 seconds per person (AC-F03-06); reactions and votes have their own limit.
   chatMessages: { name: "chat-messages", limit: 10, windowSeconds: 10 },
   chatReactions: { name: "chat-reactions", limit: 30, windowSeconds: 60 },
+  // 10 file uploads a minute per person, sent or not (AC-F03-34).
+  chatUploads: { name: "chat-uploads", limit: 10, windowSeconds: 60 },
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
    * database or the call server (S5; F02 verification). */
   attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },

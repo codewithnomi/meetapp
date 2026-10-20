@@ -7,6 +7,7 @@ import { canChat, type ChatAction, type ChatPresence } from "./chat.permissions.
 
 const ACTIONS: ChatAction[] = [
   "read",
+  "download",
   "send",
   "react",
   "vote",
@@ -27,7 +28,7 @@ function expectedDuringCall(action: ChatAction, role: MeetingRole, group: Group,
   const organizer = role === "organizer" || role === "co_organizer";
   const writing = ["send", "react", "vote", "attach", "createPoll"].includes(action);
   if (writing && mode === "off") return false;
-  if (action === "attach") return group !== "guest";
+  if (action === "attach" || action === "download") return group !== "guest";
   if (action === "createPoll") return role !== "attendee";
   if (["deleteAny", "pin", "closeAnyPoll", "setMode"].includes(action)) return organizer;
   return true;
@@ -37,7 +38,7 @@ function expectedDuringCall(action: ChatAction, role: MeetingRole, group: Group,
 function expectedAfter(action: ChatAction, role: MeetingRole, group: Group, mode: ChatMode): boolean {
   const organizer = role === "organizer" || role === "co_organizer";
   if (group === "guest") return false;
-  if (action === "read") return mode === "in_meeting" ? organizer : true;
+  if (action === "read" || action === "download") return mode === "in_meeting" ? organizer : true;
   if (action === "deleteAny" || action === "pin") return organizer;
   return action === "setMode" && organizer;
 }

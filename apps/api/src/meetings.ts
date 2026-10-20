@@ -22,6 +22,8 @@ import { createChatActionsRepository } from "./modules/chat/chat-actions.reposit
 import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
 import { createChatPollsRepository } from "./modules/chat/chat-polls.repository.ts";
 import { createChatPollsService } from "./modules/chat/chat-polls.service.ts";
+import { createChatFilesRepository } from "./modules/chat/chat-files.repository.ts";
+import { createChatFilesService, type FileStorage } from "./modules/chat/chat-files.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
@@ -34,6 +36,8 @@ interface MeetingWiring {
   config: Config;
   db: Database;
   livekit: LiveKitProvider;
+  /** Private file storage for chat files (F03). */
+  storage: FileStorage;
 }
 
 function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimiter): CallsDeps {
@@ -53,19 +57,25 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
   };
 }
 
-/** Meeting chat (F03): messages, and what people do to them. */
-function chatPieces(calls: CallsDeps, db: Database, voterSecret: string) {
+const keyFor = (config: Config, label: string) =>
+  Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", label, 32)).toString("hex");
+
+/** Meeting chat (F03): messages, what people do to them, polls and files. */
+function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
   const chatDeps = {
     calls,
     chat: createChatRepository(db),
     actions: createChatActionsRepository(db),
     polls: createChatPollsRepository(db),
-    voterSecret,
+    files: createChatFilesRepository(db),
+    voterSecret: keyFor(config, "chat-poll-voters-v1"),
+    fileLinkSecret: keyFor(config, "chat-file-links-v1"),
   };
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
     chatPolls: createChatPollsService(chatDeps),
+    chatFiles: createChatFilesService(chatDeps, storage),
     chatDeps,
   };
 }
@@ -86,11 +96,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     controls: createControlsService(callsDeps),
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
-    ...chatPieces(
-      callsDeps,
-      db,
-      Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", "chat-poll-voters-v1", 32)).toString("hex"),
-    ),
+    ...chatPieces(wiring, callsDeps),
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,

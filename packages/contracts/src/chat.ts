@@ -133,7 +133,14 @@ export const chatMessageParamsSchema = z.object({ callId: z.string(), messageId:
 
 /** Sending a text message; `clientId` makes a repeated send return the saved message (AC-F03-05). */
 export const sendMessageBodySchema = z
-  .object({ clientId: z.uuid(), body: messageDocumentSchema, replyToId: z.uuid().optional() })
+  .object({
+    clientId: z.uuid(),
+    /** May be left out when the message only carries files. */
+    body: messageDocumentSchema.optional(),
+    replyToId: z.uuid().optional(),
+    /** Files uploaded first (up to 10 per message, AC-F03-28). */
+    attachmentIds: z.array(z.uuid()).max(10).optional(),
+  })
   .meta({ id: "SendChatMessage" });
 
 /** Older messages: `before` is the cursor of the oldest message already shown. */
@@ -165,6 +172,18 @@ export const chatMessageSchema = z
     /** Emoji with their counts, the names of who reacted, and whether "you" did (AC-F03-13). */
     reactions: z.array(
       z.object({ emoji: z.string(), count: z.number().int(), names: z.array(z.string()), mine: z.boolean() }),
+    ),
+    /** Files sent with the message; links come from the attachment link route. */
+    attachments: z.array(
+      z.object({
+        id: z.uuid(),
+        fileName: z.string(),
+        mediaType: z.string(),
+        sizeBytes: z.number().int(),
+        width: z.number().int().nullable(),
+        height: z.number().int().nullable(),
+        hasPreview: z.boolean(),
+      }),
     ),
     /** For a poll message: the poll to fetch (results depend on who asks, AC-F03-22). */
     pollId: z.uuid().nullable(),
@@ -261,3 +280,14 @@ export const pollSchema = z
   })
   .meta({ id: "Poll" });
 export type PollView = z.infer<typeof pollSchema>;
+
+export const attachmentParamsSchema = z.object({ callId: z.string(), attachmentId: z.string() });
+export const attachmentLinkQuerySchema = z.object({ preview: z.enum(["true", "false"]).default("false") });
+export const uploadedSchema = z
+  .object({ id: z.uuid(), fileName: z.string(), mediaType: z.string(), sizeBytes: z.number().int() })
+  .meta({ id: "ChatUpload" });
+/** A download link to our own backend, valid 5 minutes (AC-F03-31). */
+export const attachmentLinkSchema = z
+  .object({ url: z.string(), expiresAt: z.iso.datetime({ offset: true }) })
+  .meta({ id: "ChatFileLink" });
+export const fileTokenParamsSchema = z.object({ token: z.string().max(300) });

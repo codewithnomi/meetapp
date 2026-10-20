@@ -68,7 +68,8 @@ const fill = (url: string, ids: Ids) =>
     .replace(":callId", ids.callId)
     .replace(":attendanceId", ids.attendanceId)
     .replace(":messageId", ids.attendanceId)
-    .replace(":pollId", ids.attendanceId);
+    .replace(":pollId", ids.attendanceId)
+    .replace(":attachmentId", ids.attendanceId);
 
 /** Everything a refused call must leave unchanged. */
 async function snapshot(ids: Ids): Promise<string> {
