@@ -3,21 +3,10 @@
 // id made here, so a retry never makes a copy (AC-F03-05). "Not sent" after the 10-second limit.
 import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
 import { useCallback, useEffect, useReducer, useRef } from "react";
+import { ApiError } from "../../api/index.ts";
 import type { Joined } from "../visit.ts";
 import { eventsAfter, messagesPage, oneMessage, sendMessage } from "./chat-api.ts";
 import { chatReducer, emptyChat, missedNews, type ChatAction, type ChatState } from "./chat-state.ts";
-
-/** A plain-text message as the stored document: one paragraph per line (the rich box comes in T13). */
-function plainDocument(text: string): MessageDocument {
-  const lines = text.split("\n");
-  return {
-    v: 1,
-    blocks: lines.map((line) => ({
-      type: "paragraph" as const,
-      ...(line ? { content: [{ type: "text" as const, text: line }] } : {}),
-    })),
-  };
-}
 
 const MAX_CATCH_UP = 50;
 
@@ -89,11 +78,13 @@ export function useChat(visit: Joined) {
   );
 
   const send = useCallback(
-    (text: string, clientId: string = crypto.randomUUID()) => {
-      dispatch({ type: "sending", item: { clientId, text, status: "sending" } });
-      void sendMessage(visit, { clientId, body: plainDocument(text) })
+    (body: MessageDocument, clientId: string = crypto.randomUUID()) => {
+      dispatch({ type: "sending", item: { clientId, body, status: "sending" } });
+      void sendMessage(visit, { clientId, body })
         .then((message) => dispatch({ type: "sent", clientId, message }))
-        .catch(() => dispatch({ type: "failed", clientId }));
+        .catch((error: unknown) =>
+          dispatch({ type: "failed", clientId, tooFast: error instanceof ApiError && error.code === "CHAT_TOO_FAST" }),
+        );
     },
     [visit],
   );

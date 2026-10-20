@@ -1,0 +1,75 @@
+// The message box's content turned into the stored document (F03 TC-F03-31, 28, 05 app parts).
+import { describe, expect, it } from "vitest";
+import { toRichDocument, visibleText } from "./rich-document.ts";
+
+// Test nodes are loose on purpose (some are not valid TipTap nodes), so they are typed as `never`.
+const text = (value: string, marks?: object[]) => ({ type: "text", text: value, ...(marks ? { marks } : {}) }) as never;
+
+describe("TC-F03-31 the message box keeps only allowed formatting", () => {
+  it("TC-F03-28 [AC-F03-15] every allowed block and mark is kept", () => {
+    const doc = toRichDocument({
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            text("b", [{ type: "bold" }]),
+            text("l", [{ type: "link", attrs: { href: "https://example.com" } }]),
+          ],
+        },
+        {
+          type: "bulletList",
+          content: [{ type: "listItem", content: [{ type: "paragraph", content: [text("one")] }] }],
+        },
+        { type: "blockquote", content: [{ type: "paragraph", content: [text("q")] }] },
+        { type: "codeBlock", attrs: { language: "typescript" }, content: [text("const a = 1;\n\tb()")] },
+      ],
+    });
+    expect(doc).toEqual({
+      v: 1,
+      blocks: [
+        {
+          type: "paragraph",
+          content: [text("b", [{ type: "bold" }]), text("l", [{ type: "link", href: "https://example.com" }])],
+        },
+        { type: "bulletList", items: [{ content: [{ type: "paragraph", content: [text("one")] }] }] },
+        { type: "quote", content: [{ type: "paragraph", content: [text("q")] }] },
+        { type: "codeBlock", language: "typescript", text: "const a = 1;\n\tb()" },
+      ],
+    });
+  });
+
+  it("TC-F03-31 [AC-F03-17] pasted extras become plain text; bad links and marks are dropped", () => {
+    const doc = toRichDocument({
+      type: "doc",
+      content: [
+        { type: "heading", content: [text("Big title")] },
+        {
+          type: "paragraph",
+          content: [
+            text("x", [
+              { type: "link", attrs: { href: "javascript:alert(1)" } },
+              { type: "textStyle", attrs: { color: "red" } },
+            ]),
+            { type: "image", attrs: { src: "https://e/x.png" } },
+          ],
+        },
+      ],
+    });
+    expect(doc.blocks).toEqual([
+      { type: "paragraph", content: [text("Big title")] },
+      { type: "paragraph", content: [text("x")] },
+    ]);
+  });
+
+  it("TC-F03-05 [AC-F03-03] the visible text counts like the server: blocks joined by line breaks", () => {
+    const doc = toRichDocument({
+      type: "doc",
+      content: [
+        { type: "paragraph", content: [text("ab")] },
+        { type: "codeBlock", content: [text("cd")] },
+      ],
+    });
+    expect(visibleText(doc)).toBe("ab\ncd");
+  });
+});

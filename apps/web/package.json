@@ -15,6 +15,7 @@
     "@meetapp/design-tokens": "workspace:*",
     "@meetapp/ui": "workspace:*",
     "@tanstack/react-query": "5.104.1",
+    "emojibase-data": "17.0.0",
     "i18next": "^26.4.2",
     "livekit-client": "2.22.3",
     "react": "^19.3.0",

@@ -1,11 +1,11 @@
 // The chat as the app holds it (F03 design.md 3.3, 3.4): messages by id in time order, the ones being
 // sent, the pinned ones, the news number seen last, and unread messages while the panel is closed.
 // A pure reducer, so the rules are tested without a screen.
-import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
+import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
 
 export interface Sending {
   clientId: string;
-  text: string;
+  body: MessageDocument;
   status: "sending" | "failed";
 }
 
@@ -19,6 +19,8 @@ export interface ChatState {
   lastSeq: number;
   unread: number;
   open: boolean;
+  /** The last send was refused for sending too fast (AC-F03-06). */
+  tooFast: boolean;
 }
 
 export const emptyChat: ChatState = {
@@ -30,6 +32,7 @@ export const emptyChat: ChatState = {
   lastSeq: 0,
   unread: 0,
   open: false,
+  tooFast: false,
 };
 
 export type ChatAction =
@@ -43,7 +46,7 @@ export type ChatAction =
   | { type: "event"; event: ChatEvent; mine: boolean }
   | { type: "sending"; item: Sending }
   | { type: "sent"; clientId: string; message: ChatMessageView }
-  | { type: "failed"; clientId: string }
+  | { type: "failed"; clientId: string; tooFast: boolean }
   | { type: "open"; open: boolean };
 
 const order = (a: ChatMessageView, b: ChatMessageView) =>
@@ -89,7 +92,11 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "event":
       return applyEvent(state, action.event, action.mine);
     case "sending":
-      return { ...state, sending: [...state.sending.filter((s) => s.clientId !== action.item.clientId), action.item] };
+      return {
+        ...state,
+        tooFast: false,
+        sending: [...state.sending.filter((s) => s.clientId !== action.item.clientId), action.item],
+      };
     case "sent":
       return {
         ...state,
@@ -99,6 +106,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "failed":
       return {
         ...state,
+        tooFast: action.tooFast,
         sending: state.sending.map((s) => (s.clientId === action.clientId ? { ...s, status: "failed" } : s)),
       };
     case "open":

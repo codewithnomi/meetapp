@@ -6,6 +6,7 @@ export * from "./CodeInput/index.ts";
 export * from "./DeviceSelect/index.ts";
 export * from "./Dialog/index.ts";
 export * from "./DropArea/index.ts";
+export * from "./EmojiPicker/index.ts";
 export * from "./InviteForm/index.ts";
 export * from "./JoinLinkCard/index.ts";
 export * from "./LobbyRow/index.ts";

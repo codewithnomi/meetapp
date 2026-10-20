@@ -4,6 +4,10 @@ import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
 import { describe, expect, it } from "vitest";
 import { chatReducer, emptyChat, missedNews, type ChatState } from "./chat-state.ts";
 
+const DOC = {
+  v: 1 as const,
+  blocks: [{ type: "paragraph" as const, content: [{ type: "text" as const, text: "hi" }] }],
+};
 let n = 0;
 function message(overrides: Partial<ChatMessageView> = {}): ChatMessageView {
   n += 1;
@@ -69,13 +73,13 @@ describe("chat state", () => {
     const sent = message();
     const failed = run(
       emptyChat,
-      { type: "sending", item: { clientId: "c1", text: "hi", status: "sending" } },
-      { type: "failed", clientId: "c1" },
+      { type: "sending", item: { clientId: "c1", body: DOC, status: "sending" } },
+      { type: "failed", clientId: "c1", tooFast: false },
     );
-    expect(failed.sending).toEqual([{ clientId: "c1", text: "hi", status: "failed" }]);
+    expect(failed.sending).toEqual([{ clientId: "c1", body: DOC, status: "failed" }]);
     const retried = run(
       failed,
-      { type: "sending", item: { clientId: "c1", text: "hi", status: "sending" } },
+      { type: "sending", item: { clientId: "c1", body: DOC, status: "sending" } },
       { type: "sent", clientId: "c1", message: sent },
     );
     expect(retried.sending).toEqual([]);

@@ -2,10 +2,10 @@
 // older ones loaded when scrolling up, the view kept still while reading older messages with a "New
 // messages" button (AC-F03-08), messages being sent and "Not sent" with Retry (AC-F03-05). The message
 // box here sends plain text; the rich box with formatting comes in T13.
-import type { ChatMessageView } from "@meetapp/contracts";
-import { ChatMessage, ChatPanel, IconButton, Input, SystemNote } from "@meetapp/ui";
+import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
+import { ChatComposer, ChatMessage, ChatPanel, SystemNote, type ChatComposerLabels } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { setReaction, type Chat, type Sending } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
@@ -87,7 +87,7 @@ function Pending({ item, chat }: { item: Sending; chat: Chat }) {
       name={t("meetings.chat.you")}
       own
       time=""
-      document={{ v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: item.text }] }] }}
+      document={item.body}
       status={
         item.status === "sending"
           ? { kind: "sending", label: t("meetings.chat.sending") }
@@ -95,7 +95,7 @@ function Pending({ item, chat }: { item: Sending; chat: Chat }) {
               kind: "failed",
               label: t("meetings.chat.notSent"),
               retryLabel: t("meetings.chat.retry"),
-              onRetry: () => chat.retry(item.text, item.clientId),
+              onRetry: () => chat.retry(item.body, item.clientId),
             }
       }
       onOpenLink={openLink}
@@ -105,31 +105,86 @@ function Pending({ item, chat }: { item: Sending; chat: Chat }) {
   );
 }
 
-function Composer({ onSend }: { onSend: (text: string) => void }) {
-  const { t } = useTranslation();
-  const [text, setText] = useState("");
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (text.trim() === "") return;
-    onSend(text);
-    setText("");
+const RECENT_KEY = "meetapp.chat.recentEmoji";
+const MAX_RECENT = 8;
+
+/** Recently used emoji, kept on this computer only (a per-viewer convenience). */
+function useRecentEmoji() {
+  const [recent, setRecent] = useState<string[]>(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+      return Array.isArray(saved)
+        ? saved.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT)
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const used = (emoji: string) => {
+    const next = [emoji, ...recent.filter((item) => item !== emoji)].slice(0, MAX_RECENT);
+    setRecent(next);
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    } catch {
+      // Not saved: the list still works for this session.
+    }
   };
+  return { recent, used };
+}
+
+function Composer({ chat }: { chat: Chat }) {
+  const { t } = useTranslation();
+  const emoji = useRecentEmoji();
+  const labels = Object.fromEntries(
+    COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
+  ) as unknown as ChatComposerLabels;
   return (
-    <form onSubmit={submit} className="flex items-center gap-2">
-      <div className="min-w-0 flex-1">
-        <Input
-          id="chat-message"
-          aria-label={t("meetings.chat.placeholder")}
-          placeholder={t("meetings.chat.placeholder")}
-          value={text}
-          maxLength={4000}
-          onChange={(event) => setText(event.target.value)}
-        />
-      </div>
-      <IconButton icon="send" label={t("meetings.chat.send")} variant="ghost" type="submit" />
-    </form>
+    <>
+      {chat.state.tooFast ? (
+        <p role="alert" className="m-0 rounded-md bg-warning-soft p-2.5 text-[13px] text-ink">
+          {t("meetings.chat.tooFast")}
+        </p>
+      ) : null}
+      <ChatComposer
+        labels={labels}
+        tooManyLabel={(over) => t("meetings.chat.tooMany", { count: over })}
+        onSend={(body) => chat.send(body as MessageDocument)}
+        emoji={{
+          dataUrl: "/emojibase",
+          recent: emoji.recent,
+          labels: {
+            search: t("meetings.chat.emojiSearch"),
+            recent: t("meetings.chat.emojiRecent"),
+            loading: t("meetings.chat.emojiLoading"),
+            empty: t("meetings.chat.emojiEmpty"),
+            skinTone: t("meetings.chat.skinTone"),
+          },
+        }}
+        onEmojiUsed={emoji.used}
+      />
+    </>
   );
 }
+
+const COMPOSER_KEYS = [
+  "placeholder",
+  "send",
+  "format",
+  "emoji",
+  "formatting",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "bulletList",
+  "orderedList",
+  "quote",
+  "link",
+  "linkAddress",
+  "applyLink",
+  "code",
+  "codeBlock",
+] as const;
 
 /** Keeps the newest message in view, unless the person is reading older ones (AC-F03-08). */
 function useStickToBottom(count: number, chat: Chat) {
@@ -212,7 +267,7 @@ export function ChatArea({ chat, visit, onClose }: { chat: Chat; visit: Joined; 
         </>
       }
       newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
-      composer={<Composer onSend={(text) => chat.send(text)} />}
+      composer={<Composer chat={chat} />}
     />
   );
 }

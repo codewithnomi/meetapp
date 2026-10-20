@@ -783,10 +783,34 @@
       "sending": "Sending…",
       "notSent": "Not sent",
       "retry": "Retry",
-      "placeholder": "Message everyone",
-      "send": "Send",
       "copy": "Copy",
-      "reaction": "{{emoji}}, {{count}}: {{names}}"
+      "reaction": "{{emoji}}, {{count}}: {{names}}",
+      "tooMany": "{{count}} characters too many",
+      "tooFast": "You're sending messages too fast. Try again in a few seconds.",
+      "emojiSearch": "Search emoji",
+      "emojiRecent": "Recently used",
+      "emojiLoading": "Loading emoji…",
+      "emojiEmpty": "No emoji found",
+      "skinTone": "Skin tone",
+      "composer": {
+        "placeholder": "Message everyone",
+        "send": "Send (Enter)",
+        "format": "Format",
+        "emoji": "Emoji",
+        "formatting": "Formatting",
+        "bold": "Bold (⌘B)",
+        "italic": "Italic (⌘I)",
+        "underline": "Underline (⌘U)",
+        "strike": "Strikethrough",
+        "bulletList": "Bulleted list",
+        "orderedList": "Numbered list",
+        "quote": "Quote",
+        "link": "Insert link",
+        "linkAddress": "Link address",
+        "applyLink": "Add link",
+        "code": "Inline code",
+        "codeBlock": "Code block"
+      }
     }
   }
 }

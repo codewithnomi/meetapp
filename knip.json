@@ -23,7 +23,7 @@
       "ignoreDependencies": ["emojibase-data"]
     },
     "apps/web": {
-      "ignoreDependencies": ["tailwindcss"]
+      "ignoreDependencies": ["tailwindcss", "emojibase-data"]
     },
     "apps/desktop": {
       "entry": ["src/main/main.ts", "src/preload/preload.ts", "scripts/*.ts"]

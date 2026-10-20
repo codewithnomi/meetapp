@@ -1,4 +1,5 @@
 // Organisms: larger self-contained sections built from molecules and atoms (docs/engineering/frontend.md).
+export * from "./ChatComposer/index.ts";
 export * from "./ChatMessage/index.ts";
 export * from "./ChatPanel/index.ts";
 export * from "./ControlBar/index.ts";
