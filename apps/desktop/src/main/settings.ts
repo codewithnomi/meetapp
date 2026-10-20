@@ -14,6 +14,8 @@ export interface DesktopSettings {
   sentryDsn: string | undefined;
   /** The call server (F02), for the content security policy; the backend's join answers say the same. */
   callServerUrl: string;
+  /** KLIPY's API (F03, D059); a local fake only in development tests. */
+  gifApiUrl: string;
 }
 
 const DEFAULT_API_URL = "http://127.0.0.1:3000";
@@ -57,6 +59,15 @@ function callServerUrl(env: NodeJS.ProcessEnv, packaged: boolean): string {
   }
 }
 
+const KLIPY_API = "https://api.klipy.com";
+
+/** GIF_API_URL in development (e.g. a fake service on this computer for the tests); KLIPY otherwise. */
+function gifApiUrl(env: NodeJS.ProcessEnv, packaged: boolean): string {
+  const value = packaged ? undefined : filled(env["GIF_API_URL"]);
+  if (!value) return KLIPY_API;
+  return value.startsWith("https://") || isLocalHttp(value) ? value : KLIPY_API;
+}
+
 export function readSettings(env: NodeJS.ProcessEnv, mainDir: string, packaged = false): DesktopSettings {
   const devServerUrl = filled(env["MEETAPP_RENDERER_URL"]);
   return {
@@ -67,5 +78,6 @@ export function readSettings(env: NodeJS.ProcessEnv, mainDir: string, packaged =
     userDataDir: packaged ? undefined : filled(env["MEETAPP_USER_DATA_DIR"]),
     sentryDsn: filled(env["SENTRY_DSN"]),
     callServerUrl: callServerUrl(env, packaged),
+    gifApiUrl: gifApiUrl(env, packaged),
   };
 }

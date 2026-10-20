@@ -5,6 +5,7 @@
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
+import { FILES_CHANNEL } from "../main/chat-desktop.ts";
 import { MEDIA_ACTION_NAMES, MEDIA_CHANNEL } from "../main/media-actions.ts";
 
 const auth = Object.fromEntries(
@@ -18,5 +19,7 @@ const media = Object.fromEntries(
   ]),
 );
 const deviceKey = () => ipcRenderer.invoke(MEDIA_CHANNEL, "deviceKey", []);
+// F03: save a chat file from our backend with a "Save as" dialog.
+const files = { save: (url: string) => ipcRenderer.invoke(FILES_CHANNEL, "save", url) };
 
-contextBridge.exposeInMainWorld("meetapp", { platform: process.platform, auth, media, deviceKey });
+contextBridge.exposeInMainWorld("meetapp", { platform: process.platform, auth, media, deviceKey, files });

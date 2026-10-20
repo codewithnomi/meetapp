@@ -47,6 +47,8 @@ export interface CspOptions {
   devServerUrl?: string | undefined;
   /** The call server (F02): ws:// on this computer in development, wss:// online. */
   callServerUrl?: string | undefined;
+  /** KLIPY's API, which the app searches itself (F03, D059). */
+  gifApiUrl?: string | undefined;
 }
 
 /** The call server's address, plus its http(s) twin, which the call library uses to check the connection. */
@@ -56,6 +58,9 @@ function callServerSources(url: string | undefined): string[] {
   return [origin.replace(/^http/, "ws"), origin];
 }
 
+/** Where KLIPY's GIF pictures come from (F03 design section 7). */
+const GIF_IMAGES = "https://static.klipy.com";
+
 /** Development only; must equal DEV_CSP_NONCE in apps/web/vite.config.ts (checked by a test). */
 export const DEV_CSP_NONCE = "meetapp-dev";
 
@@ -63,13 +68,14 @@ export const DEV_CSP_NONCE = "meetapp-dev";
  * Content Security Policy: only the app's own scripts, styles and fonts; no inline scripts. In development
  * the dev server's own live-reload scripts are allowed through their nonce.
  */
-export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl }: CspOptions): string {
+export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl, gifApiUrl }: CspOptions): string {
   const api = originOf(apiUrl) ?? "";
   const dev = devServerUrl ? originOf(devServerUrl) : undefined;
   const connect = [
     "'self'",
     api,
     ...callServerSources(callServerUrl),
+    ...(gifApiUrl ? [originOf(gifApiUrl) ?? ""] : []),
     ...(dev ? [dev.replace(/^http/, "ws")] : []),
   ].join(" ");
   return [
@@ -79,7 +85,8 @@ export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl }: C
     dev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
     "font-src 'self'",
     // Profile photos come from the backend, with the token main adds (F01, AC-F01-25).
-    `img-src 'self' data: ${api}`,
+    // Chat GIFs load straight from KLIPY's image server, as KLIPY requires (F03, D059).
+    `img-src 'self' data: ${api}${gifApiUrl ? ` ${GIF_IMAGES}` : ""}`,
     `connect-src ${connect}`,
     "object-src 'none'",
     "base-uri 'none'",
