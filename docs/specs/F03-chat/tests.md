@@ -330,12 +330,13 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 
 ### GIFs and stickers
 
-### TC-F03-43: GIF search through our backend
+### TC-F03-43: GIF settings for the app's own search
 - **Covers:** AC-F03-24, AC-F03-27
 - **Level:** integration
-- **Given** the fake GIF service recording each request
-- **When** M1 searches "cats" with workspace W1 member data (name, email, meeting title) available; the fake service also is made slow (over 2 seconds) or down; M1 searches 31 times in a minute
-- **Then** results come back; the service saw the secret key, a family-safe filter, and a random per-meeting customer id, and no name, email, user id, ticket or meeting detail; slow or down gives "GIFs aren't available" error while other chat works; the 31st search is refused with the rate-limit error
+- **Given** meeting X in workspace W1 with GIFs allowed, member M1 and guest G1 in the call, and a second meeting Y with M1 in it
+- **When** M1 and G1 call `GET /calls/:callId/chat/gif-settings`; M1 calls it again in meeting Y; a person in the lobby, a removed person and an outsider call it; chat is set to Off and M1 calls it; M1 sends GIF messages whose image address is `https://static.klipy.com/…`, `http://static.klipy.com/…` and `https://evil.example/…`
+- **Then** M1 and G1 get the KLIPY address, the key and a `customer_id`; M1's `customer_id` differs between X and Y and contains no user, attendance or meeting id in readable form; lobby, removed and outsider get `NOT_FOUND`; chat Off gives `CHAT_OFF`; only the `https://static.klipy.com` GIF is accepted, the others get `CHAT_INVALID`
+
 
 ### TC-F03-44: GIF in the app
 - **Covers:** AC-F03-24
@@ -673,10 +674,11 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 
 ### TC-F03-90: GIF search sends no personal data, security
 - **Covers:** AC-F03-24, AC-F03-27
-- **Level:** security
-- **Given** the fake GIF service logging full requests (address, headers, body) and M1 with a known name, email, user id, meeting id, IP-forwarding headers and ticket
-- **When** M1 searches and sends a GIF; the workspace turns GIFs off and M1 searches again
-- **Then** the service sees only the search words, the key, the safe-search filter and a random per-meeting id (different for different meetings); with GIFs off no request reaches the service; the app's content security policy allows the GIF image host and the file storage host in `img-src` only
+- **Level:** security (desktop)
+- **Given** `GIF_API_URL` pointing at a fake KLIPY service that logs full requests (address, query, headers, body), and M1 with a known name, email, user id, meeting id and ticket
+- **When** M1 opens the GIF picker, searches "cats" and sends a GIF; then the workspace turns GIFs off and M1 tries again
+- **Then** the fake service saw only the key in the address, `q`, the per-meeting `customer_id`, `locale`, `per_page` and the family-safe `content_filter`, with no ad settings and no name, email, user id, meeting id, ticket or our sign-in token in any header; GIF images load only from the allowed image host; with GIFs off the picker is hidden and no request reaches the service; the app's content security policy allows `api.klipy.com` in `connect-src` and `static.klipy.com` in `img-src` and nothing else from KLIPY
+
 
 ### TC-F03-91: Chat for AI reads only what the person can read, security
 - **Covers:** AC-F03-42

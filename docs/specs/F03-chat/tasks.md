@@ -24,7 +24,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
     - libraries vetted, versions pinned in D058; emojibase-data added so the emoji picker downloads nothing;
     - LiveKit has no per-topic data limit, so apps ignore participant packets on `meetapp.chat` (design 3.4);
     - `GIF_API_KEY` (optional) and `GIF_API_URL` settings, with the config tests;
-    - **open:** KLIPY's terms couldn't be read: the office network's web filter (Fortinet) blocks klipy.com. KLIPY also says its API shows ads between GIFs; whether a partner can turn them off is unconfirmed. To check with the owner before T7 (GIFs are built against a fake service, so nothing waits);
+    - KLIPY checked (on another network; the office network's Fortinet filter blocks klipy.com): free, ads optional (we never ask for them), family-safe filter per request, but searches and GIF loads must come from the person's app, not our server. The owner chose to follow that (D059 changed; design section 7, TC-F03-43 and 90 updated);
     - Electron's bundled spell-check dictionaries are checked in T10, where they are built.
 
 - [ ] **T2: Database tables (migration `0005_chat`) and the permissions table.**
@@ -53,7 +53,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-12, 50, 51, 52, 56, 57, 58, 60, 84, 85, 86.
 
 - [ ] **T7: GIFs, stickers and the GIF switch.**
-  - GIF search through the backend (fake GIF service in tests), GIF and sticker messages, `allowGifs` in workspace settings.
+  - The `gif-settings` route (key, `GIF_API_URL`, per-meeting `customer_id`), GIF messages checked for `static.klipy.com` addresses, sticker messages, `allowGifs` in workspace settings.
   - Covers: AC-F03-24, 26, 27.
   - Tests: TC-F03-43, 47, 48, 90.
 
@@ -95,9 +95,9 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-21, 23, 26, 36, 42.
 
 - [ ] **T15: Files, drag and drop, GIFs and stickers in the app.**
-  - Attach, chips with progress, previews, Download, drop area, paste; GIF picker with the one-time notice, reduced motion; stickers; Workspace settings: Allow GIFs.
+  - Attach, chips with progress, previews, Download, drop area, paste; GIF picker searching KLIPY from the app ("Powered by KLIPY", results in KLIPY's order) with the one-time notice, reduced motion; stickers; Workspace settings: Allow GIFs.
   - Covers: AC-F03-24–29, 33, 34.
-  - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61.
+  - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61, 90 (app part).
 
 - [ ] **T16: Chat setting, removed people and after the meeting in the app.**
   - Meeting chat setting in Meeting options, notes, "Chat is turned off", the app clearing chat when a ticket ends, Open chat from the meetings list.

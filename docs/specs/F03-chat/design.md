@@ -12,11 +12,11 @@ updated: 2026-10-20
 - **The backend decides everything:** the app sends a message to our backend, which checks that the sender is really in the meeting, that chat is on, and that the message is safe. The backend saves it in the database and then asks the call server (LiveKit, already running for F02) to deliver it to everyone in the call at once. Apps only trust chat news that comes from the server, never from another participant.
 - **Formatting is not HTML:** a message is stored as a small, strict list of "blocks" (paragraph, list, quote, code) with allowed styles (bold, italic…). Our own code draws it on screen, so a message can never carry a script or hidden page code.
 - **Files:** a file goes to our backend, which checks its real content (not its name), removes location and camera details from pictures, and keeps it in private file storage (RustFS on the Mac). Downloads use links that expire after 5 minutes.
-- **GIFs:** searches go through our backend to a GIF service, so the service never sees who is searching (D059, owner's choice). Stickers are our own small set, built into the app.
+- **GIFs:** come from KLIPY's free service. As KLIPY's rules require, each person's app searches KLIPY directly and loads the GIFs from KLIPY's image server, so nothing about GIFs is stored or passed through our server except which GIF was sent (D059, owner's choice). Stickers are our own small set, built into the app.
 - **Spelling:** the desktop app's built-in spell checker (part of Electron), working on the computer only.
 - **Polls, reactions, pins, replies, edits and deletes** follow the same path: app → backend (checks) → database → call server → everyone.
 - **After the meeting:** people who took part read the chat through the normal signed-in connection.
-- **Cost:** nothing while everything runs on the Mac. The GIF service is free (to be confirmed in T1).
+- **Cost:** nothing while everything runs on the Mac. KLIPY is free (no ads are asked for).
 
 Screens follow the approved designs (D029): canvas https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ, section "In-meeting chat (F03)" (4 screens, approved 2026-10-20).
 
@@ -25,7 +25,7 @@ Screens follow the approved designs (D029): canvas https://claude.ai/artifact/7A
 packages/contracts/src/chat.ts            Zod shapes: message document, events, requests, errors
 packages/db/src/schema/chat.ts            tables (section 4), migration 0005_chat
 apps/api/src/modules/chat/                routes, service, repository, document checks, file checks,
-                                          poll logic, GIF search, broadcaster, clean-up jobs
+                                          poll logic, GIF settings, broadcaster, clean-up jobs
 apps/web/src/features/meetings/chat/      chat panel, composer, message list, pickers, polls, hooks
 packages/ui/src/…                         new components (section 2.3)
 apps/desktop/src/main/spellcheck.ts       spell check and its right-click menu
@@ -176,11 +176,18 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Drag and drop / paste (AC-29):** the meeting window listens to `dragenter`/`dragleave`/`drop` (counting enter and leave so child elements don't flicker); dropped and pasted files go through the same checks in the app first (size, type by extension) to give quick messages, then through the server's real checks.
 
 ## 7. GIFs and stickers (AC-24–27)
-- **GIF service (D059, owner's choice 2026-10-20):** Tenor's API closed on 30 June 2026. The proposal is **KLIPY** (free API, used by WhatsApp and Discord since Tenor closed), with GIPHY as the fallback. T1 confirms the free terms, that results can be limited to family-safe content, and that ads can be left out.
-- **Search through our backend:** `GET /calls/:callId/chat/gifs?q=` (ticket, 30 searches a minute) calls the service with our secret key, a family-safe filter and a random per-meeting customer id; the service never gets names, emails or meeting details. The first time, the app shows the notice (AC-27) and remembers "Got it" in local settings.
-- **Showing GIFs:** the app loads the GIF images straight from the service's image servers (allowed by name in the content security policy), as Teams does with GIPHY (owner's choice, 2026-10-20). That means the service can see the viewer's internet address; this is written in privacy-legal.md. Sending stores only the service's GIF id and addresses, which the backend checks are on the service's image host.
+- **GIF service (D059, owner's choice 2026-10-20):** **KLIPY**'s free API (Tenor's closed on 30 June 2026). Checked in T1 against KLIPY's integration rules (docs.klipy.com):
+  - API requests and GIF loads must come from the person's own app, not through our servers, and GIFs must not be copied, stored or re-hosted;
+  - results are shown in KLIPY's order, in their own GIF area, with "Powered by KLIPY" shown;
+  - ads are optional: we never send the ad settings, so no ads appear;
+  - safety: the `content_filter` setting asks for family-safe results; extra blocked words are set in KLIPY's Partner Panel;
+  - a test key allows 100 searches an hour; a free production key is requested from KLIPY before going online.
+- **Search from the app:** when the GIF picker opens, the app asks our backend `GET /calls/:callId/chat/gif-settings` (ticket; refused when GIFs are off or chat is off). It returns the KLIPY key and a `customer_id` = HMAC(server secret, meeting id + attendance id), so KLIPY can't link one person across meetings. The app then calls `https://api.klipy.com/api/v1/<key>/gifs/search` itself with `q`, `customer_id`, `locale`, `per_page=24` and `content_filter` for family-safe results. The key is not a secret in this set-up (KLIPY's client keys are meant to live in apps); it is still kept out of the code and comes from settings.
+- **What KLIPY sees:** the search words, the person's internet address when searching and when any GIF is shown, and the random `customer_id`; never names, emails or meeting details.
+- **Sending a GIF:** the message stores only KLIPY's GIF id, the sizes, the description and the image addresses exactly as KLIPY returned them. The backend checks each address is `https://static.klipy.com/…` and refuses others. No GIF file is ever stored by us.
+- **Showing GIFs:** loaded straight from `static.klipy.com` (allowed by name in the content security policy), using KLIPY's addresses unchanged.
 - **Reduce motion (AC-25):** with the system setting on, the app shows the GIF's still picture with a Play button; every GIF can be paused. Each has a text description from the service ("GIF: …").
-- **Turned off (AC-27):** `PATCH /workspaces/:workspaceId/settings` gains `allowGifs` (owner and admins, as F02's `allowGuests`); when false, the GIF button is hidden and the backend refuses searches and GIF messages with `CHAT_GIFS_OFF`.
+- **Turned off (AC-27):** `PATCH /workspaces/:workspaceId/settings` gains `allowGifs` (owner and admins, as F02's `allowGuests`); when false, the GIF button is hidden and the backend refuses GIF settings and GIF messages with `CHAT_GIFS_OFF`.
 - **Stickers (AC-26):** about 24 SVG stickers drawn for MeetApp, in `packages/ui/src/assets/stickers/`, each with a name and a text description. A sticker message stores only the name; unknown names are refused.
 
 ## 8. Backend endpoints (all under `/api/v1`)
@@ -193,7 +200,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | `POST /calls/:callId/chat/pins`, `DELETE …/pins/:messageId` | organizer, co-organizers | pin, unpin |
 | `POST /calls/:callId/chat/polls`, `GET …/polls/:id`, `PUT …/polls/:id/vote`, `POST …/polls/:id/close` | 3.1 | polls |
 | `POST /calls/:callId/chat/attachments`, `GET …/attachments/:id/link` | members and external people in call | upload, download link |
-| `GET /calls/:callId/chat/gifs` | ticket, GIFs allowed | GIF search |
+| `GET /calls/:callId/chat/gif-settings` | ticket, GIFs allowed, chat on | the KLIPY key and a per-meeting `customer_id` for the app's own search |
 | `GET /meetings/:meetingId/chat/messages`, `GET …/attachments/:id/link`, `GET …/polls/:id` | signed in, 3.1 | after the meeting |
 | `DELETE /meetings/:meetingId/chat/messages/:id`, `POST`/`DELETE …/pins` | organizer, co-organizers | after the meeting |
 | `PATCH /meetings/:id/options` (F02, extended) | organizer, co-organizers | `chatMode` |
@@ -218,22 +225,22 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ## Security and privacy
 - **S1, S2:** every route checks the ticket of this call or, after the meeting, the signed-in user's non-removed attendance in this meeting (members and external people) (3.1), re-reading roles each time; all refusals look like `NOT_FOUND`; outsider sweeps cover every new route.
-- **S5:** rate limits for messages, reactions, votes, files, GIF searches (3.2, 6, 7).
-- **S10:** message text, file names, GIF searches and poll text are never logged (only ids and counts); the log cleaning gains `body`, `plain_text`, `q`, `question`, poll option `text`, `href`, the GIF `description`, `fileName` (the `X-Meeting-Ticket` header is already hidden since F02).
+- **S5:** rate limits for messages, reactions, votes and files (3.2, 6); GIF searches are limited by KLIPY itself.
+- **S10:** message text, file names, poll text are never logged (only ids and counts); the log cleaning gains `body`, `plain_text`, `q`, `question`, poll option `text`, `href`, the GIF `description`, `fileName` (the `X-Meeting-Ticket` header is already hidden since F02).
 - **S11:** strict document shape (5.2), text-only rendering, http/https links opened outside, file names cleaned.
 - **S12:** content-based type checks, 25 MB limit, private storage, 5-minute links, `attachment` downloads, never opened by the app. **Virus scanning is a must-do before going online** (progress.md).
 - **S14:** chat text will be passed to AI (F06, F07) as data, inside clear data markers, never as instructions; AI only uses chats the asking person can read (3.1).
-- **Desktop (S17):** the content security policy adds the GIF service's image host and the file storage host (RustFS now, R2 later, from settings) to `img-src` only; drag and drop of files must not navigate the window (the existing navigation guard already blocks it; a test checks a dropped file goes to chat, not the window).
-- **Privacy-legal.md:** chat row already added; the GIF service entry is updated with "sees the viewer's internet address when GIFs are shown".
+- **Desktop (S17):** the content security policy adds `api.klipy.com` (from `GIF_API_URL`) to `connect-src`, and the GIF image host `static.klipy.com` and the file storage host (RustFS now, R2 later, from settings) to `img-src` only; drag and drop of files must not navigate the window (the existing navigation guard already blocks it; a test checks a dropped file goes to chat, not the window).
+- **Privacy-legal.md:** chat row already added; the KLIPY entry says it receives the search words, a random per-meeting id and the internet address of people searching or seeing GIFs.
 
 ## Cost impact
-None locally: chat uses the existing database, file storage and call server. The GIF service is free (KLIPY's free API, to be confirmed in T1). Online later: chat files use R2 storage (about $0.015 per GB a month; 1,000 meetings × 50 MB ≈ 50 GB ≈ $0.75 a month).
+None locally: chat uses the existing database, file storage and call server. KLIPY is free (checked in T1; no ads asked for). Online later: chat files use R2 storage (about $0.015 per GB a month; 1,000 meetings × 50 MB ≈ 50 GB ≈ $0.75 a month).
 
 ## Test approach
 Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own tests; the full suite, desktop tests and screenshots run at `/spec-verify`.
 
 - **Unit:** permissions table; document checks (allowed and refused shapes, limits, link schemes); renderer (no HTML injection, code kept exactly); content type checks with sample files (renamed `.exe` as `.pdf`, broken text, Office files); poll result rules; emoji list check; drop area enter/leave counting; every new component (stories, keyboard, axe).
-- **Integration (API + Postgres + Redis + RustFS + the local LiveKit):** every endpoint's rights (members, external, guests, lobby, removed, after the meeting, other workspaces); chat modes; rate limits; idempotent send; broadcast events received by a test LiveKit participant and only from the server; picture details removed (checked with sharp's metadata); 5-minute links; clean-up jobs with a fake clock; account deletion step; meeting deletion; GIF search against a fake GIF service (no real network in tests).
+- **Integration (API + Postgres + Redis + RustFS + the local LiveKit):** every endpoint's rights (members, external, guests, lobby, removed, after the meeting, other workspaces); chat modes; rate limits; idempotent send; broadcast events received by a test LiveKit participant and only from the server; picture details removed (checked with sharp's metadata); 5-minute links; clean-up jobs with a fake clock; account deletion step; meeting deletion; the gif-settings route and GIF address checks (no real network in tests).
 - **Desktop end to end (Playwright + Electron, 2–3 windows):** send and see within 1 second; history for late joiners; formatting and code Copy; reactions, reply, edit, delete, pin; poll create, vote, close; GIF (fake service) and sticker; drag and drop and paste of files, download with Save as; chat off and in-meeting-only; guest has no attach; removed person stops receiving; spell check suggestions in the context menu; keyboard-only run with announcements.
 - **Load:** the 100-person load test sends chat messages from the simulated people's side through the API and measures delivery time to the desktop app (95% under 1 second).
 - **Screenshots:** new components and the chat panel against the approved canvas.
@@ -253,7 +260,7 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 | AC-F03-18 | desktop (misspelled word → suggestions in the context menu; no network request) |
 | AC-F03-19, 20 | integration (3-pin limit, rights) + desktop (pinned bar and note within 2 s) |
 | AC-F03-21, 22, 23 | integration (limits, one vote, change, anonymous has no names anywhere, results only after voting, close, auto-close at end, attendee can't create) + desktop (poll and results seen within 2 s) |
-| AC-F03-24–27 | desktop timing (GIF results within 2 s from the fake service) + integration (fake GIF service: family-safe filter sent, no personal data sent; GIFs off refused) + desktop (reduced motion still picture, descriptions, notice once, stickers) |
+| AC-F03-24–27 | desktop timing (GIF results within 2 s from the fake service) + integration (gif-settings rights, per-meeting customer id, only static.klipy.com addresses accepted; GIFs off refused) + desktop (the app's KLIPY request to a fake service carries the family-safe filter, no ad settings and no personal data) + desktop (reduced motion still picture, descriptions, notice once, stickers) |
 | AC-F03-28–34 | unit (type checks) + integration (25 MB, real type, details removed, links expire, no links after access lost, guests refused, 10/min and 500 MB) + desktop (drop area, paste, chips, download) |
 | AC-F03-35–38 | integration (each mode on every writing route, who reads after, 403 for others) + desktop (note within 2 s) |
 | AC-F03-39, 40, 41 | integration (lobby, removed, guest left) + desktop (removed window stops receiving within 2 s) |
@@ -262,5 +269,5 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 
 ## Decisions made here
 - **D058 (accepted):** new libraries for F03: TipTap (editor), Frimousse (emoji picker) with emojibase-data bundled, file-type (content check), `@fastify/multipart` (uploads); vetted in T1.
-- **D059 (accepted by the owner, 2026-10-20):** GIF service: KLIPY's free API through our backend (GIPHY as fallback); images shown from the service's servers.
+- **D059 (accepted by the owner, 2026-10-20; changed in T1):** GIF service: KLIPY's free API, searched from each person's app as KLIPY's rules require, GIFs loaded from KLIPY; we store only which GIF was sent; no ads.
 - **D060 (proposed):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.

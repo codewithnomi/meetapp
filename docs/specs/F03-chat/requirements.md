@@ -102,7 +102,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 
 ## Security & privacy
 - S2: chat and files never cross workspaces or meetings; every request is checked on the server against the person's place in that meeting.
-- Outside service: GIF search words (not names or meeting details) go to the GIF service, and, as in Teams, it sees the internet address of people whose app shows a GIF (owner, 2026-10-20); admins can turn GIFs off (AC-F03-27). Listed in privacy-legal.md.
+- Outside service: GIF search words (not names or meeting details) go from the person's app to the GIF service (KLIPY), and, as in Teams, it sees the internet address of people whose app shows a GIF (owner, 2026-10-20); admins can turn GIFs off (AC-F03-27). Listed in privacy-legal.md.
 - S11: every message is length-checked and shown only as plain text (only http/https links, opened outside the app).
 - S12: files: allowed types checked by their real content, size limit, private storage, short-lived download links, never run.
 - S14: chat text is data, not instructions, when F06 minutes and F07 Ask AI use it later; AI answers use only chats the asking person could open themselves.

@@ -27,7 +27,7 @@
 - **F03 screen designs:** 4 screens drawn on the canvas (2026-10-20, "In-meeting chat (F03)" row), **approved** by the owner (2026-10-20); poll results show after voting, as in Teams.
 - **F03 design:** **approved** by the owner (2026-10-20, `docs/specs/F03-chat/design.md`), reviewed by spec-reviewer and fixed; D058, D060 accepted; D059 accepted (KLIPY GIFs, loaded straight from KLIPY; no old .doc/.xls/.ppt).
 - **F03 tests and tasks:** **approved** by the owner (2026-10-20): tests.md 95 test cases (every AC covered), tasks.md 18 steps (every test case in a step).
-- **F03 building:** T1 done (libraries vetted, GIF settings). Open: KLIPY terms unreadable here (the network's web filter blocks klipy.com) and KLIPY shows ads between GIFs; owner to check before T7.
+- **F03 building:** T1 done (libraries vetted, GIF settings). KLIPY checked on another network: free, ads optional (never asked for); the owner chose searches from each person's app, as KLIPY requires (D059 changed).
 - **Next step:** F03 T2, database tables (`/next`).
 
 ## Open questions (need the owner's answer)

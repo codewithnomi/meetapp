@@ -379,6 +379,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D059: GIF service for meeting chat
 - **Date:** 2026-10-20. **Status:** accepted (owner, 2026-10-20: KLIPY; GIFs load straight from KLIPY, as Teams does with GIPHY; old .doc/.xls/.ppt files not accepted in chat).
 - **Decision:** KLIPY's free API, called only through our backend with a family-safe filter and no personal data; GIF images load from KLIPY's image servers. GIPHY is the fallback. Tenor's API closed on 30 June 2026.
+- **Changed in F03 T1 (2026-10-20, owner: "whatever is free… we will not store anything on our server… it will load on users' internet"):** KLIPY's integration rules require searches and GIF loads to come from the person's own app, not through partner servers, and forbid storing or re-hosting GIFs. So each app searches KLIPY directly with a per-meeting random `customer_id` and the family-safe filter; our backend only hands out the key and that id, and checks that sent GIFs point to `static.klipy.com`. Ads are optional in KLIPY and we never ask for them. Free; a production key is requested from KLIPY before going online.
 - **Why:** free; used by WhatsApp and Discord since Tenor closed; our backend keeps the key secret and hides who is searching.
 - **Cost:** none (free terms confirmed in T1).
 
