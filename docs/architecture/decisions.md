@@ -370,7 +370,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none (files use the existing storage).
 
 ### D058: New libraries for F03 (chat)
-- **Date:** 2026-10-20. **Status:** proposed (vetted in F03 T1 with `/add-dependency`).
+- **Date:** 2026-10-20. **Status:** accepted (owner approved the F03 design, 2026-10-20; (vetted in F03 T1 with `/add-dependency`).
 - **Decision:** TipTap (rich text editor on ProseMirror, MIT), Frimousse (emoji picker, MIT), file-type (finds a file's real type from its bytes, MIT), `@fastify/multipart` (file uploads, MIT).
 - **Why:** a safe, Teams-like message box with formatting and code; a small emoji picker we can style; file checks that don't trust the file name.
 - **Cost:** none.
@@ -382,7 +382,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none (free terms confirmed in T1).
 
 ### D060: How chat is built (F03)
-- **Date:** 2026-10-20. **Status:** proposed.
+- **Date:** 2026-10-20. **Status:** accepted (owner approved the F03 design, 2026-10-20).
 - **Decision:** one chat per meeting; the backend checks and saves every action, then LiveKit delivers server-only events on topic `meetapp.chat`; messages are a strict JSON document drawn by our own renderer (never HTML); files are checked by content, cleaned and kept in private storage with 5-minute links; spell check is Electron's built-in one with bundled dictionaries.
 - **Why:** the app can't skip the rules, nothing typed can run as code, and no new server is needed.
 - **Cost:** none.
