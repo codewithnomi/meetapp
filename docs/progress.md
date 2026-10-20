@@ -26,7 +26,8 @@
 - **F03 In-meeting chat:** requirements **approved** by the owner (2026-10-20) on branch `feat/F03-chat` (`docs/specs/F03-chat/requirements.md`, 46 ACs), following Teams (D057: no private messages, guests text only, 25 MB files; plus emoji, reactions, replies, rich text and code, pins, polls, GIFs and stickers), reviewed by spec-reviewer and fixed. Virus scanning of chat files is a must-do before going online.
 - **F03 screen designs:** 4 screens drawn on the canvas (2026-10-20, "In-meeting chat (F03)" row), **approved** by the owner (2026-10-20); poll results show after voting, as in Teams.
 - **F03 design:** **approved** by the owner (2026-10-20, `docs/specs/F03-chat/design.md`), reviewed by spec-reviewer and fixed; D058, D060 accepted; D059 accepted (KLIPY GIFs, loaded straight from KLIPY; no old .doc/.xls/.ppt).
-- **Next step:** F03 tests.md and tasks.md (`/next`).
+- **F03 tests and tasks:** draft (2026-10-20): tests.md 95 test cases (every AC covered), tasks.md 18 steps (every test case in a step).
+- **Next step:** the owner approves F03 tests and tasks; then building T1 (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
