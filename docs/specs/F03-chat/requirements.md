@@ -72,7 +72,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 - **AC-F03-27:** WHEN the workspace's owner or an admin turns **GIFs** off in Workspace settings (default: on), THEN the GIF picker is hidden in that workspace's meetings, and the server refuses GIF messages. Before a first GIF search, the person is told once that their search words are sent to the GIF service.
 
 ### Files and pictures
-- **AC-F03-28:** WHEN a person attaches a file of an allowed type up to 25 MB, THEN it is sent with the message; pictures (PNG, JPEG, GIF, WebP) show a small preview, other files show their name, size and a **Download** button. Allowed types: pictures above, PDF, plain text, CSV, and Word, Excel and PowerPoint documents. WHEN a preview can't be shown, THEN the file name and **Download** show instead.
+- **AC-F03-28:** WHEN a person attaches a file of an allowed type up to 25 MB, THEN it is sent with the message; pictures (PNG, JPEG, GIF, WebP) show a small preview, other files show their name, size and a **Download** button. Allowed types: pictures above, PDF, plain text, CSV, and Word, Excel and PowerPoint documents in the current formats (.docx, .xlsx, .pptx, without macros); old .doc, .xls and .ppt files are refused (owner, 2026-10-20). WHEN a preview can't be shown, THEN the file name and **Download** show instead.
 - **AC-F03-29:** WHEN a person drags one or more files from their computer over the meeting window, THEN a clear drop area appears over the chat panel ("Drop files to share in chat"; the panel opens if it was closed); WHEN they drop the files, THEN they are attached to the message box, ready to send, with the same type and size checks as AC-F03-28 and AC-F03-30; WHEN they drag back out, THEN the drop area goes away. Pasting a picture (Ctrl/Cmd+V) attaches it the same way. Guests see no drop area (AC-F03-33).
 - **AC-F03-30:** WHEN the file is larger than 25 MB, or its real content is not an allowed type (whatever its name says), THEN it is refused with "Files can be up to 25 MB" or "This kind of file can't be sent", and nothing is stored.
 - **AC-F03-31:** WHEN someone downloads or previews a file, THEN it works only for people allowed to see that message; a download link copied out of the app stops working within 5 minutes. WHEN a person loses access (removed, guest left), THEN they get no new links. Files are never opened or run by the app; downloaded files are saved where the person chooses.
@@ -102,7 +102,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 
 ## Security & privacy
 - S2: chat and files never cross workspaces or meetings; every request is checked on the server against the person's place in that meeting.
-- Outside service: GIF search words (not names or meeting details) go to the GIF service; admins can turn GIFs off (AC-F03-27). Listed in privacy-legal.md.
+- Outside service: GIF search words (not names or meeting details) go to the GIF service, and, as in Teams, it sees the internet address of people whose app shows a GIF (owner, 2026-10-20); admins can turn GIFs off (AC-F03-27). Listed in privacy-legal.md.
 - S11: every message is length-checked and shown only as plain text (only http/https links, opened outside the app).
 - S12: files: allowed types checked by their real content, size limit, private storage, short-lived download links, never run.
 - S14: chat text is data, not instructions, when F06 minutes and F07 Ask AI use it later; AI answers use only chats the asking person could open themselves.

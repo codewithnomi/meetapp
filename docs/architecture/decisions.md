@@ -368,3 +368,21 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Added (owner, 2026-10-20):** as in Teams: emoji picker, reactions, replies with a quote, rich text with code blocks, pinned messages (organizer and co-organizers, up to 3), polls (organizer, co-organizers, presenters create; everyone votes), GIFs from an outside GIF service (family-safe, admins can turn it off) and a built-in sticker set. F03 grows from small to medium.
 - **Why:** people coming from Teams find nothing new; fewer ways for unknown people to upload files; less storage.
 - **Cost:** none (files use the existing storage).
+
+### D058: New libraries for F03 (chat)
+- **Date:** 2026-10-20. **Status:** proposed (vetted in F03 T1 with `/add-dependency`).
+- **Decision:** TipTap (rich text editor on ProseMirror, MIT), Frimousse (emoji picker, MIT), file-type (finds a file's real type from its bytes, MIT), `@fastify/multipart` (file uploads, MIT).
+- **Why:** a safe, Teams-like message box with formatting and code; a small emoji picker we can style; file checks that don't trust the file name.
+- **Cost:** none.
+
+### D059: GIF service for meeting chat
+- **Date:** 2026-10-20. **Status:** accepted (owner, 2026-10-20: KLIPY; GIFs load straight from KLIPY, as Teams does with GIPHY; old .doc/.xls/.ppt files not accepted in chat).
+- **Decision:** KLIPY's free API, called only through our backend with a family-safe filter and no personal data; GIF images load from KLIPY's image servers. GIPHY is the fallback. Tenor's API closed on 30 June 2026.
+- **Why:** free; used by WhatsApp and Discord since Tenor closed; our backend keeps the key secret and hides who is searching.
+- **Cost:** none (free terms confirmed in T1).
+
+### D060: How chat is built (F03)
+- **Date:** 2026-10-20. **Status:** proposed.
+- **Decision:** one chat per meeting; the backend checks and saves every action, then LiveKit delivers server-only events on topic `meetapp.chat`; messages are a strict JSON document drawn by our own renderer (never HTML); files are checked by content, cleaned and kept in private storage with 5-minute links; spell check is Electron's built-in one with bundled dictionaries.
+- **Why:** the app can't skip the rules, nothing typed can run as code, and no new server is needed.
+- **Cost:** none.

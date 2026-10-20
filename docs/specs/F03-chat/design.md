@@ -1,0 +1,266 @@
+---
+feature: F03
+title: In-meeting chat
+status: draft
+updated: 2026-10-20
+---
+
+# F03 In-meeting chat: Design (HOW)
+
+## Summary (plain English)
+- **One chat per meeting:** every message belongs to the meeting, not to one call. So a link meeting joined again next week still shows its earlier chat, as in Teams.
+- **The backend decides everything:** the app sends a message to our backend, which checks that the sender is really in the meeting, that chat is on, and that the message is safe. The backend saves it in the database and then asks the call server (LiveKit, already running for F02) to deliver it to everyone in the call at once. Apps only trust chat news that comes from the server, never from another participant.
+- **Formatting is not HTML:** a message is stored as a small, strict list of "blocks" (paragraph, list, quote, code) with allowed styles (bold, italic…). Our own code draws it on screen, so a message can never carry a script or hidden page code.
+- **Files:** a file goes to our backend, which checks its real content (not its name), removes location and camera details from pictures, and keeps it in private file storage (RustFS on the Mac). Downloads use links that expire after 5 minutes.
+- **GIFs:** searches go through our backend to a GIF service, so the service never sees who is searching (D059, owner's choice). Stickers are our own small set, built into the app.
+- **Spelling:** the desktop app's built-in spell checker (part of Electron), working on the computer only.
+- **Polls, reactions, pins, replies, edits and deletes** follow the same path: app → backend (checks) → database → call server → everyone.
+- **After the meeting:** people who took part read the chat through the normal signed-in connection.
+- **Cost:** nothing while everything runs on the Mac. The GIF service is free (to be confirmed in T1).
+
+Screens follow the approved designs (D029): canvas https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ, section "In-meeting chat (F03)" (4 screens, approved 2026-10-20).
+
+## 1. What gets created
+```
+packages/contracts/src/chat.ts            Zod shapes: message document, events, requests, errors
+packages/db/src/schema/chat.ts            tables (section 4), migration 0005_chat
+apps/api/src/modules/chat/                routes, service, repository, document checks, file checks,
+                                          poll logic, GIF search, broadcaster, clean-up jobs
+apps/web/src/features/meetings/chat/      chat panel, composer, message list, pickers, polls, hooks
+packages/ui/src/…                         new components (section 2.3)
+apps/desktop/src/main/spellcheck.ts       spell check and its right-click menu
+apps/desktop/src/main/downloads.ts        "Save as" for chat files
+packages/ui/src/assets/stickers/          our own sticker set (SVG)
+```
+
+## 2. Screens and user flow
+### 2.1 In the meeting
+- **Chat** button in the control bar (side group) opens the panel to the right of the videos (F03Chat). A badge shows unread messages, counted in the app (AC-07).
+- **Panel parts, top to bottom:** pinned bar (up to 3, "1 of 2", AC-19), message list (`role="log"`), "New messages" button (AC-08), composer.
+- **Message list:**
+  - loads the newest 50, then 50 more when scrolled to the top (AC-02);
+  - messages are not grouped by sender; each shows with name, avatar or initials, time, "(External)" or "(Guest)" (AC-01);
+  - shows system notes ("Aisha Khan pinned a message", "… turned chat off") centred and small;
+  - while scrolled up, new messages don't move the view; the button appears (AC-08);
+  - empty: "No messages yet" (AC-09).
+- **Pointing at a message, or Tab to it:** a small toolbar with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
+- **Composer:**
+  - a rich text box (section 5.1) with the Format toolbar (shown or hidden by the Format button);
+  - buttons: Format, Emoji, GIF, Sticker, Attach (not for guests), Create a poll (organizer, co-organizers, presenters), Send;
+  - Enter sends, Shift+Enter makes a new line, Esc cancels a reply or an edit;
+  - a counter appears near the limit, and over it shows "212 characters too many" and disables Send (AC-03);
+  - dropped or pasted files show as chips with progress before sending (AC-29).
+- **Drop area:** dragging files anywhere over the meeting window opens the panel and shows the drop area (F03States, AC-29). It hides when the drag leaves the window or is dropped. Guests see nothing.
+- **Chat off:** the composer is replaced by the note "Chat is turned off for this meeting" (AC-35).
+
+### 2.2 After the meeting
+- **Meetings list:** a past meeting row (F02's list of recent meetings) gets **Open chat** when the person may read it (AC-42). F06 later moves this into the meetings library.
+- The chat opens read-only: no composer, no edit or delete (except organizer and co-organizer delete, AC-11), files still downloadable.
+
+### 2.3 New UI components (Atomic Design, `packages/ui`)
+- **Atoms:** `ReactionChip`, `FileChip`.
+- **Molecules:** `ChatMessage` (extended: rich body, reply quote, attachments, reactions, edited and deleted states, sending and "Not sent" states), `MessageActions`, `ReplyQuote`, `CodeBlock` (with Copy), `FileCard`, `ImagePreview`, `PollOption`, `SystemNote`, `PinnedBar`.
+- **Organisms:** `ChatComposer`, `FormatToolbar`, `EmojiPicker`, `GifPicker`, `StickerPicker`, `PollCard`, `PollCreator`, `DropArea`, `ChatPanel`.
+- The design system canvas gets the new components after the look check, as in F02.
+
+## 3. How chat works
+### 3.1 Who may do what (one table in `chat/permissions.ts`, unit tested)
+| Action | Who |
+|---|---|
+| read during the call | anyone admitted or in the call (status `admitted`/`in_call`), any group |
+| send text, emoji, GIF, sticker, react, reply, vote | same, while chat mode is `on` or `in_meeting` |
+| attach files | same, but not guests (AC-33) |
+| edit own message | the sender, only while the call the message was sent in (`chat_messages.call_id`) is running; otherwise `CHAT_EDIT_ENDED` |
+| delete own message | same as edit |
+| delete anyone's message, pin, unpin | organizer, co-organizers (during or after) |
+| create a poll | organizer, co-organizers, presenters (during a call) |
+| close a poll | its creator, organizer, co-organizers |
+| change chat mode | organizer, co-organizers (Meeting options, before or during) |
+| read after the meeting | a signed-in user (member or external) with a non-removed attendance in a call of this meeting, when the most recent ended call's `chat_mode_at_end` is `on`/`off`; when it is `in_meeting`, organizer and co-organizers only (AC-36, 42) |
+
+- **Lobby** (`waiting`) gets nothing (AC-39). **Removed** people lose everything for this meeting (AC-40). **Guests** lose access when their ticket ends; a rejoin gives a new ticket and the history again (AC-41).
+- **Roles come from F02**, re-read on every request (as F02's second verification required), never from the app.
+
+### 3.2 Sending a message (AC-01, 03, 05, 06)
+1. The app gives each message a `clientId` (random UUID) and shows it at once as "sending".
+2. `POST /calls/:callId/chat/messages` with the meeting ticket: `{ clientId, body | gif | sticker, replyToId?, attachmentIds? }`.
+3. The backend checks: rights (3.1), chat mode, rate limit, the document (5.2), that attachments are this sender's, unsent and from this meeting, that `replyToId` is a message of this meeting.
+4. It saves the message (one transaction with the attachments), then broadcasts `message_created` (3.4).
+5. **Twice-sent protection:** `(sender_attendance_id, client_id)` is unique; a repeat returns the saved message, so retry and reconnect never make a copy.
+6. **Timing out:** no answer within 10 seconds → "Not sent" with **Retry**, which resends the same `clientId`.
+7. **Rate limits (Redis, per sender):** 10 messages per 10 seconds; the 11th is refused for 10 seconds with `CHAT_TOO_FAST` and the wait time (AC-06). Reactions and votes count separately (30 a minute), so a quick reaction doesn't block typing.
+
+### 3.3 Reading (AC-02, 42)
+- During the call: `GET /calls/:callId/chat/messages?before=<cursor>&limit=50` (ticket).
+- After: `GET /meetings/:meetingId/chat/messages?before=…` (signed in, 3.1).
+- Order: by `created_at`, then `id` (UUIDv7, so time-ordered). The cursor is the last `id`.
+- Each answer includes reactions (counts, and whether "you" reacted), reply quotes (sender and first line), attachments, poll states, and the pinned list on the first page.
+- Live news received while a page is loading is merged by `id`, so nothing is lost or shown twice.
+
+### 3.4 Delivering news to everyone (AC-01, 13, 19–23, 37)
+- **How:** after saving, the backend calls LiveKit's `sendData` (reliable) on topic `meetapp.chat`, to everyone in the room, exactly as F02 sends `meetapp.control`.
+- **Trust:** apps accept `meetapp.chat` only when LiveKit marks it as sent by the server (no participant identity). Participants can't publish to it: LiveKit passes go out with `canPublishData` limited to the reaction topic (F02's reactions). T1 checks that per-topic limits work; if not, apps simply ignore participant packets on this topic.
+- **Events:** `message_created`, `message_edited`, `message_deleted`, `reactions_changed` (message id + new counts), `pins_changed`, `poll_created`, `poll_changed` (counts; see 3.7), `poll_closed`, `chat_mode_changed`.
+- **Size:** LiveKit's reliable packets should stay under about 15 KB. Any event larger than 14 KB (long code, edits included) is sent as `{ type, id, seq }` only; apps then fetch that message (`GET …/chat/messages/:id`).
+- **Missed news:** every chat event gets a per-meeting sequence number (`chat_events` table, kept 1 day). After a reconnect the app asks `GET …/chat/events?after=<last seq>` and applies them in order; if the gap is older than what is kept, it reloads the pinned list and the visible pages. Tested with more than 50 messages plus an edit during a drop.
+- **Speed (AC-01):** one database write plus one LiveKit call; measured in the 100-person load test (95% under 1 second).
+
+### 3.5 Editing and deleting (AC-10, 11, 20)
+- `PATCH …/chat/messages/:id` (`{ body }`, own text messages only, during a call): `edited_at` is set; `message_edited` is broadcast.
+- `DELETE …/chat/messages/:id` (after the app's confirmation): the body, GIF, sticker and attachments are removed at once (attachments' files deleted by a job within a minute), `deleted_at` and `deleted_by` stay. If pinned, it's unpinned. Replies quoting it show "This message was deleted".
+- After the meeting, only organizer and co-organizer delete exists, on the `/meetings/:meetingId/…` route.
+
+### 3.6 Reactions, replies, pins (AC-12–14, 19, 20)
+- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions` removes, with `{ emoji }` in the body, normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. At most 20 different ones per person per message. Who reacted is shown when pointing at a chip (names only; a guest's typed name).
+- **Replies:** `replyToId` is stored; the quote is built on reading, so edits and deletes show up in it.
+- **Pins:** `POST …/pins` (`{ messageId }`) and `DELETE …/pins/:messageId`; at most 3, checked inside one transaction; the app asks which to unpin when full.
+
+### 3.7 Polls (AC-21–23)
+- `POST …/polls` (`{ question ≤200, options 2–10 × ≤100, multiple, anonymous }`) makes a poll and its message (the poll appears in the chat like a message).
+- `PUT …/polls/:id/vote` (`{ optionIds }`, one unless `multiple`), replacing the person's earlier vote; refused once closed.
+- `POST …/polls/:id/close`; when the last call of the meeting ends, open polls close automatically (the F02 end handling calls `closeOpenPolls`).
+- **Who sees results (owner, 2026-10-20, as in Teams):** a person sees counts only after voting; the creator, organizer and co-organizers always. So `poll_changed` carries only the poll id and a version number; apps that may see results fetch `GET …/polls/:id`, which answers with counts only to those allowed.
+- **Anonymous polls:** a vote row stores `voter_key` = HMAC(server secret, poll id + the voter's user id, or guest device fingerprint), never the attendance or the user, and no time. Names are never returned for an anonymous poll. "Nobody" (AC-22) means nobody in the product; someone running the servers with both the secret and the database could work it out, as with any such system. Non-anonymous polls also store `attendance_id`, and the result lists names.
+
+### 3.8 Chat mode (AC-35–38)
+- New column `meetings.chat_mode` (`on` default, `in_meeting`, `off`), set through F02's `PATCH /meetings/:id/options` (organizer and co-organizers; others get 403, AC-38).
+- During a call: the backend puts it in the room metadata (as F02 does for options), saves a system note and broadcasts `chat_mode_changed` (AC-37, within 2 seconds).
+- **Off** blocks every writing route with `CHAT_OFF` (messages, files, reactions, votes, polls).
+- **Each call keeps its own end value:** when a call ends, `calls.chat_mode_at_end` saves the mode. After-meeting reading uses the most recent ended call's value (3.1). The organizer can change `meetings.chat_mode` at any time; between calls it applies to the next call only and never changes who can read already-ended calls' chat after the fact beyond that rule.
+
+## 4. Data stored (migration `0005_chat`)
+| Table / column | What it holds |
+|---|---|
+| `meetings.chat_mode` | `on` / `in_meeting` / `off`, default `on` |
+| `calls.chat_mode_at_end` | the mode when that call ended (3.8) |
+| `workspaces.allow_gifs` | boolean, default true (AC-27) |
+| `chat_messages` | `id` (UUIDv7), `workspace_id`, `meeting_id`, `call_id` (the call it was sent in), `sender_attendance_id`, `sender_user_id` (empty for guests and after account deletion), `sender_name` (as shown at the time), `sender_group`, `kind` (text / gif / sticker / poll / system), `body` (JSON document, section 5.2; empty when deleted), `plain_text` (the visible text, for counting, Copy text and later search; empty when deleted), `gif` (JSON: service id, size, description, the service's image addresses), `sticker` (our sticker name), `system` (JSON: event and name), `reply_to_id`, `client_id`, `created_at`, `edited_at`, `deleted_at`, `deleted_by_attendance_id` |
+| `chat_attachments` | `id`, `workspace_id`, `meeting_id`, `message_id` (empty until sent), `uploader_attendance_id`, `file_name` (cleaned), `media_type` (from the content check), `size_bytes`, `storage_key`, `preview_key` (pictures), `width`, `height`, `status` (uploading / ready / deleted), `created_at` |
+| `chat_reactions` | `message_id`, `attendance_id`, `emoji`, `reactor_name`, `created_at`; primary key on the first three |
+| `chat_events` | `meeting_id`, `seq`, `type`, `payload`, `created_at`: recent news for catching up after a reconnect, kept 1 day |
+| `chat_pins` | `meeting_id`, `message_id`, `pinned_by_attendance_id`, `created_at`; at most 3 per meeting (checked with the meeting row locked) |
+| `chat_polls` | `id`, `message_id`, `meeting_id`, `question`, `multiple`, `anonymous`, `creator_attendance_id`, `closed_at`, `version` |
+| `chat_poll_options` | `id`, `poll_id`, `position`, `text` |
+| `chat_poll_votes` | `poll_id`, `option_id`, `voter_key`, `attendance_id` and `created_at` (both empty when anonymous); unique on `(poll_id, option_id, voter_key)` |
+
+- **Indexes:** `chat_messages (meeting_id, id)`, unique `(sender_attendance_id, client_id)`, `sender_user_id`, `reply_to_id`; `chat_attachments (meeting_id)`, `(message_id)`, `(status, created_at)` for clean-up.
+- **Deleting a meeting** (F06/F10) deletes its chat rows (cascade) and a job deletes its files (AC-43).
+- **Account deletion (AC-44):** F01's deletion job gains a step: the person's messages get empty `body`/`plain_text`, their attachments are deleted, `sender_user_id` becomes empty and `sender_name` becomes "Deleted user"; their reactions and non-anonymous votes are removed.
+- **Data export** (privacy-legal, until built into the app it's done on request): a query by `sender_user_id` returns their messages and files.
+- **Workspace separation (S2):** every chat row carries `workspace_id`; every query filters by the meeting reached through the caller's ticket or membership.
+
+## 5. Message content
+### 5.1 The editor
+- **TipTap** (open source, MIT, built on ProseMirror) for the composer: bold, italic, underline, strikethrough, bullet and numbered lists, quote, link, inline code, code block; Markdown-style typing (three backticks, `**`, `-`), Cmd/Ctrl+B/I/U. Pasted content keeps only these (AC-17). To be vetted in T1 with `/add-dependency` (D058).
+- **Links:** the Link button and pasted addresses accept only `http`/`https`; plain addresses typed in text become links on display (AC-04).
+- **Emoji picker:** **Frimousse** (MIT, small, unstyled, with search and skin tones), styled with our tokens. "Recently used" kept in the app's local settings. To be vetted (D058).
+- **Spell check (AC-18):** Electron's built-in spell checker (on Mac it uses macOS's own; on Windows Hunspell dictionaries that Electron normally downloads from Google's servers. We point `setSpellCheckerDictionaryDownloadURL` at dictionaries bundled with the app, so nothing is fetched; T1 confirms this works, and the no-network test runs on both Mac and Windows). Language follows the app language. The right-click menu (built in `spellcheck.ts` from Electron's `context-menu` event) shows suggestions, "Add to dictionary", and Cut/Copy/Paste. macOS auto-correct works on its own when the user has it on.
+
+### 5.2 The stored document (checked by Zod in `packages/contracts/src/chat.ts`)
+- `{ v: 1, blocks: Block[] }` where a block is `paragraph`, `bulletList`, `orderedList` (items are lists of paragraphs, 3 levels deep at most), `quote`, or `codeBlock` (`{ language?, text }`).
+- Inline parts: `text` with marks from `bold`, `italic`, `underline`, `strike`, `code`, `link` (`href` http/https only, at most 2,000 characters), and `hardBreak`.
+- **Empty messages:** a text message whose trimmed `plain_text` is empty and that has no attachments is refused with `CHAT_INVALID`; a message with only attachments is allowed (AC-03).
+- **Anything else is refused** by the backend with `CHAT_INVALID` (the app converts first, so people don't see this). At most 4,000 visible characters (code included) and 32 KB stored (AC-03, 17).
+- **Drawing it:** our own React renderer turns the document into elements. React escapes all text; there is no `dangerouslySetInnerHTML`. Code blocks are shown in a monospace `pre`, never turned into links (AC-16).
+- **Links open outside the app:** clicks go through the existing desktop rule (`guardContents` → `shell.openExternal`, http/https only).
+
+## 6. Files and pictures (AC-28–34)
+- **Upload:** `POST /calls/:callId/chat/attachments` (ticket; multipart through `@fastify/multipart`, streamed, refused past 25 MB with `CHAT_FILE_TOO_BIG`). Then `POST …/messages` with `attachmentIds`. Up to 10 files per message.
+- **Content check:** the first bytes decide the type (library **file-type**, MIT, to be vetted, D058): PNG, JPEG, GIF, WebP, PDF, DOCX/XLSX/PPTX (ZIP with the right inner parts; macro-enabled files, those with `vbaProject.bin` or a docm/xlsm/pptm content type, are refused). The old Office formats (.doc, .xls, .ppt) are not accepted: their container is shared with installers and often carries macros (owner, 2026-10-20). Plain text and CSV are accepted only when the whole file is valid UTF-8 without control characters. Anything else: `CHAT_FILE_TYPE` and nothing is kept (AC-30).
+- **Pictures:** re-saved with **sharp** (already used for profile photos) in the same format: turned the right way up first (`.rotate()`), then saved without location, camera and other hidden details (AC-32); `limitInputPixels` (40 million) and at most 300 frames for animated GIF/WebP refuse "decompression bombs"; a preview up to 480 px wide is made. Animated GIFs keep their animation.
+- **Names:** the shown file name is cleaned (no paths, no control characters, at most 200 characters).
+- **Storage:** private bucket `chat` in RustFS (R2 later), key `workspace/meeting/attachment-id`; files are never run or opened by the app.
+- **Download:** `GET …/attachments/:id/link` checks the rights again and returns a signed address valid 5 minutes, with `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff` and the stored type (text and CSV as `text/plain; charset=utf-8`) (AC-31). People who lost access get no new links. The desktop app saves through a "Save as" dialog (`downloads.ts`); pictures' previews are shown from such links too.
+- **Limits:** 10 uploads a minute per person (`CHAT_FILE_RATE`; every upload counts, sent or not), 500 MB of files per meeting (`CHAT_MEETING_FILES_FULL`), counting all attachments not deleted, including unsent ones, checked with the meeting row locked so two uploads can't both slip under it (AC-34).
+- **Unfinished uploads:** attachments never sent are deleted after 1 hour; a cut-off upload leaves nothing (AC-05).
+- **Drag and drop / paste (AC-29):** the meeting window listens to `dragenter`/`dragleave`/`drop` (counting enter and leave so child elements don't flicker); dropped and pasted files go through the same checks in the app first (size, type by extension) to give quick messages, then through the server's real checks.
+
+## 7. GIFs and stickers (AC-24–27)
+- **GIF service (D059, owner's choice 2026-10-20):** Tenor's API closed on 30 June 2026. The proposal is **KLIPY** (free API, used by WhatsApp and Discord since Tenor closed), with GIPHY as the fallback. T1 confirms the free terms, that results can be limited to family-safe content, and that ads can be left out.
+- **Search through our backend:** `GET /calls/:callId/chat/gifs?q=` (ticket, 30 searches a minute) calls the service with our secret key, a family-safe filter and a random per-meeting customer id; the service never gets names, emails or meeting details. The first time, the app shows the notice (AC-27) and remembers "Got it" in local settings.
+- **Showing GIFs:** the app loads the GIF images straight from the service's image servers (allowed by name in the content security policy), as Teams does with GIPHY (owner's choice, 2026-10-20). That means the service can see the viewer's internet address; this is written in privacy-legal.md. Sending stores only the service's GIF id and addresses, which the backend checks are on the service's image host.
+- **Reduce motion (AC-25):** with the system setting on, the app shows the GIF's still picture with a Play button; every GIF can be paused. Each has a text description from the service ("GIF: …").
+- **Turned off (AC-27):** `PATCH /workspaces/:workspaceId/settings` gains `allowGifs` (owner and admins, as F02's `allowGuests`); when false, the GIF button is hidden and the backend refuses searches and GIF messages with `CHAT_GIFS_OFF`.
+- **Stickers (AC-26):** about 24 SVG stickers drawn for MeetApp, in `packages/ui/src/assets/stickers/`, each with a name and a text description. A sticker message stores only the name; unknown names are refused.
+
+## 8. Backend endpoints (all under `/api/v1`)
+| Endpoint | Who | Purpose |
+|---|---|---|
+| `GET /calls/:callId/chat/messages` (`?before&limit`), `GET …/messages/:id`, `GET …/chat/events?after=` | ticket, in call | history, one message, catching up |
+| `POST /calls/:callId/chat/messages` | ticket, may write | send |
+| `PATCH`, `DELETE /calls/:callId/chat/messages/:id` | sender; delete also organizer, co-organizers | edit, delete |
+| `POST`, `DELETE /calls/:callId/chat/messages/:id/reactions` (`{ emoji }`) | ticket, may write | react |
+| `POST /calls/:callId/chat/pins`, `DELETE …/pins/:messageId` | organizer, co-organizers | pin, unpin |
+| `POST /calls/:callId/chat/polls`, `GET …/polls/:id`, `PUT …/polls/:id/vote`, `POST …/polls/:id/close` | 3.1 | polls |
+| `POST /calls/:callId/chat/attachments`, `GET …/attachments/:id/link` | members and external people in call | upload, download link |
+| `GET /calls/:callId/chat/gifs` | ticket, GIFs allowed | GIF search |
+| `GET /meetings/:meetingId/chat/messages`, `GET …/attachments/:id/link`, `GET …/polls/:id` | signed in, 3.1 | after the meeting |
+| `DELETE /meetings/:meetingId/chat/messages/:id`, `POST`/`DELETE …/pins` | organizer, co-organizers | after the meeting |
+| `PATCH /meetings/:id/options` (F02, extended) | organizer, co-organizers | `chatMode` |
+| `PATCH /workspaces/:workspaceId/settings` (F02, extended) | owner, admin | `allowGifs` |
+
+- **Errors** (F00 format): `CHAT_OFF`, `CHAT_TOO_FAST` (with wait time), `CHAT_INVALID`, `CHAT_FILE_TOO_BIG`, `CHAT_FILE_TYPE`, `CHAT_FILE_RATE`, `CHAT_MEETING_FILES_FULL`, `CHAT_PINS_FULL`, `CHAT_POLL_CLOSED`, `CHAT_GIFS_OFF`, `CHAT_EDIT_ENDED`; and `NOT_FOUND` for every rights refusal, as in F02 (S1, S2).
+- Every write route takes the F00 `Idempotency-Key` where retrying could double it (messages use `clientId`).
+
+## Edge cases and errors
+- **Lost connection while typing:** the draft stays; sends show "Not sent" and retry with the same `clientId`.
+- **Message arrives while the history is loading:** merged by id (3.3).
+- **Two organizers pin a 4th message at once:** the meeting row lock makes one of them get `CHAT_PINS_FULL`.
+- **Edit and delete at the same time:** the update checks `deleted_at` is empty; an edit after a delete gets `NOT_FOUND`.
+- **Deleting a poll message:** closes the poll and deletes its votes. System notes can't be deleted.
+- **Ticket ends (guest leaves, person removed):** the app clears its chat in memory, cached file links and previews (AC-40, 41).
+- **Vote after close:** `CHAT_POLL_CLOSED`; the app shows the closed result.
+- **Removed during an upload:** the upload finishes but the message is refused; the clean-up job deletes the file.
+- **Very long code block:** sent by id only (3.4).
+- **GIF service down or slow (over 2 seconds):** the picker shows "GIFs aren't available right now. Try again later."; the rest of chat works.
+- **Chat mode changes while someone is typing:** their send gets `CHAT_OFF`; the draft stays.
+- **Clock differences:** times come from the server.
+
+## Security and privacy
+- **S1, S2:** every route checks the ticket of this call or, after the meeting, the signed-in user's non-removed attendance in this meeting (members and external people) (3.1), re-reading roles each time; all refusals look like `NOT_FOUND`; outsider sweeps cover every new route.
+- **S5:** rate limits for messages, reactions, votes, files, GIF searches (3.2, 6, 7).
+- **S10:** message text, file names, GIF searches and poll text are never logged (only ids and counts); the log cleaning gains `body`, `plain_text`, `q`, `question`, poll option `text`, `href`, the GIF `description`, `fileName` (the `X-Meeting-Ticket` header is already hidden since F02).
+- **S11:** strict document shape (5.2), text-only rendering, http/https links opened outside, file names cleaned.
+- **S12:** content-based type checks, 25 MB limit, private storage, 5-minute links, `attachment` downloads, never opened by the app. **Virus scanning is a must-do before going online** (progress.md).
+- **S14:** chat text will be passed to AI (F06, F07) as data, inside clear data markers, never as instructions; AI only uses chats the asking person can read (3.1).
+- **Desktop (S17):** the content security policy adds the GIF service's image host and the file storage host (RustFS now, R2 later, from settings) to `img-src` only; drag and drop of files must not navigate the window (the existing navigation guard already blocks it; a test checks a dropped file goes to chat, not the window).
+- **Privacy-legal.md:** chat row already added; the GIF service entry is updated with "sees the viewer's internet address when GIFs are shown".
+
+## Cost impact
+None locally: chat uses the existing database, file storage and call server. The GIF service is free (KLIPY's free API, to be confirmed in T1). Online later: chat files use R2 storage (about $0.015 per GB a month; 1,000 meetings × 50 MB ≈ 50 GB ≈ $0.75 a month).
+
+## Test approach
+Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own tests; the full suite, desktop tests and screenshots run at `/spec-verify`.
+
+- **Unit:** permissions table; document checks (allowed and refused shapes, limits, link schemes); renderer (no HTML injection, code kept exactly); content type checks with sample files (renamed `.exe` as `.pdf`, broken text, Office files); poll result rules; emoji list check; drop area enter/leave counting; every new component (stories, keyboard, axe).
+- **Integration (API + Postgres + Redis + RustFS + the local LiveKit):** every endpoint's rights (members, external, guests, lobby, removed, after the meeting, other workspaces); chat modes; rate limits; idempotent send; broadcast events received by a test LiveKit participant and only from the server; picture details removed (checked with sharp's metadata); 5-minute links; clean-up jobs with a fake clock; account deletion step; meeting deletion; GIF search against a fake GIF service (no real network in tests).
+- **Desktop end to end (Playwright + Electron, 2–3 windows):** send and see within 1 second; history for late joiners; formatting and code Copy; reactions, reply, edit, delete, pin; poll create, vote, close; GIF (fake service) and sticker; drag and drop and paste of files, download with Save as; chat off and in-meeting-only; guest has no attach; removed person stops receiving; spell check suggestions in the context menu; keyboard-only run with announcements.
+- **Load:** the 100-person load test sends chat messages from the simulated people's side through the API and measures delivery time to the desktop app (95% under 1 second).
+- **Screenshots:** new components and the chat panel against the approved canvas.
+
+| AC | How it's tested |
+|---|---|
+| AC-F03-01 | desktop (two windows, under 1 s, names and groups) + load (100 people, 95% under 1 s) |
+| AC-F03-02 | integration (paging, order, late joiner sees earlier messages, guest rejoin) + desktop (newest 50 shown within 2 s) |
+| AC-F03-03 | unit (limits) + desktop (counter, Send disabled) + integration (server refuses) |
+| AC-F03-04 | unit (renderer: only http/https links; other schemes plain) + desktop security (link opens outside) |
+| AC-F03-05 | integration (same `clientId` twice → one message) + desktop (API stopped → Not sent → Retry) |
+| AC-F03-06 | integration (11th in 10 s refused for 10 s, message text) |
+| AC-F03-07, 08, 09 | desktop (badge, 99+, no jump while scrolled up, New messages, empty state) |
+| AC-F03-10, 11 | integration (rights, during vs after, text and file removed) + desktop (confirmation, "Edited", "deleted") |
+| AC-F03-12, 13, 14 | desktop (picker search, skin tones, recent; reactions seen within 1 s; reply quote and jump) + integration (20-reaction limit, emoji list) |
+| AC-F03-15, 16, 17 | unit (document checks, paste cleaning, renderer) + desktop (toolbar, shortcuts, backticks, Copy exact) |
+| AC-F03-18 | desktop (misspelled word → suggestions in the context menu; no network request) |
+| AC-F03-19, 20 | integration (3-pin limit, rights) + desktop (pinned bar and note within 2 s) |
+| AC-F03-21, 22, 23 | integration (limits, one vote, change, anonymous has no names anywhere, results only after voting, close, auto-close at end, attendee can't create) + desktop (poll and results seen within 2 s) |
+| AC-F03-24–27 | desktop timing (GIF results within 2 s from the fake service) + integration (fake GIF service: family-safe filter sent, no personal data sent; GIFs off refused) + desktop (reduced motion still picture, descriptions, notice once, stickers) |
+| AC-F03-28–34 | unit (type checks) + integration (25 MB, real type, details removed, links expire, no links after access lost, guests refused, 10/min and 500 MB) + desktop (drop area, paste, chips, download) |
+| AC-F03-35–38 | integration (each mode on every writing route, who reads after, 403 for others) + desktop (note within 2 s) |
+| AC-F03-39, 40, 41 | integration (lobby, removed, guest left) + desktop (removed window stops receiving within 2 s) |
+| AC-F03-42, 43, 44 | integration (after-meeting readers per call end value, link meeting reused: no edits of last call's messages, meeting deletion removes rows and files, account deletion step runs within the 30-day job schedule) |
+| AC-F03-45, 46 | desktop keyboard-only run + axe + live announcements; translation keys test |
+
+## Decisions made here
+- **D058 (proposed):** new libraries for F03: TipTap (editor), Frimousse (emoji picker), file-type (content check), `@fastify/multipart` (uploads); each vetted with `/add-dependency` in T1.
+- **D059 (accepted by the owner, 2026-10-20):** GIF service: KLIPY's free API through our backend (GIPHY as fallback); images shown from the service's servers.
+- **D060 (proposed):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.
