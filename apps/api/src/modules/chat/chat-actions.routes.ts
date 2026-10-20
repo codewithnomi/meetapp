@@ -5,7 +5,6 @@ import {
   chatMessageSchema,
   chatParamsSchema,
   editMessageBodySchema,
-  meetingTicketHeadersSchema,
   pinBodySchema,
   pinnedListSchema,
   reactionBodySchema,
@@ -13,20 +12,12 @@ import {
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import type { FastifyRequest } from "fastify";
+import { chatRoute } from "./chat-route.ts";
 import { ticketOf } from "../../plugins/meeting-ticket.ts";
 import { idParam } from "../../plugins/workspace-access.ts";
 import type { ChatActionsService } from "./chat-actions.service.ts";
 
-const tags = ["chat"];
-const config = { access: "optional" as const };
-const TICKET =
-  "Needs the meeting ticket (X-Meeting-Ticket) of someone in this call whose role allows it; otherwise 404.";
 const MESSAGE = "/api/v1/calls/:callId/chat/messages/:messageId";
-
-const route = <S extends object>(summary: string, schema: S) => ({
-  config,
-  schema: { summary, description: TICKET, tags, headers: meetingTicketHeadersSchema, ...schema },
-});
 
 const on = (request: FastifyRequest<{ Params: { callId: string; messageId: string } }>) => ({
   callId: idParam(request.params.callId),
@@ -44,34 +35,34 @@ const done = async (work: Promise<unknown>, reply: NoContent) => {
 export const chatActionsRoutes: FastifyPluginAsyncZod<{ actions: ChatActionsService }> = async (app, { actions }) => {
   app.patch(
     MESSAGE,
-    route("Edit your own message", {
+    chatRoute("Edit your own message", {
       params: chatMessageParamsSchema,
       body: editMessageBodySchema,
       response: { 200: chatMessageSchema },
     }),
     (request) => actions.edit(on(request), request.body.body),
   );
-  app.delete(MESSAGE, route("Delete a message", { params: chatMessageParamsSchema }), (request, reply) =>
+  app.delete(MESSAGE, chatRoute("Delete a message", { params: chatMessageParamsSchema }), (request, reply) =>
     done(actions.delete(on(request)), reply),
   );
   app.post(
     `${MESSAGE}/reactions`,
-    route("React to a message", { params: chatMessageParamsSchema, body: reactionBodySchema }),
+    chatRoute("React to a message", { params: chatMessageParamsSchema, body: reactionBodySchema }),
     (request, reply) => done(actions.react(on(request), request.body.emoji), reply),
   );
   app.delete(
     `${MESSAGE}/reactions/:emoji`,
-    route("Take back a reaction (the emoji URL-encoded)", { params: reactionParamsSchema }),
+    chatRoute("Take back a reaction (the emoji URL-encoded)", { params: reactionParamsSchema }),
     (request, reply) => done(actions.unreact(on(request), request.params.emoji), reply),
   );
   app.get(
     "/api/v1/calls/:callId/chat/pins",
-    route("Pinned messages", { params: chatParamsSchema, response: { 200: pinnedListSchema } }),
+    chatRoute("Pinned messages", { params: chatParamsSchema, response: { 200: pinnedListSchema } }),
     (request) => actions.pinned(idParam(request.params.callId), ticketOf(request)),
   );
   app.post(
     "/api/v1/calls/:callId/chat/pins",
-    route("Pin a message for everyone", { params: chatParamsSchema, body: pinBodySchema }),
+    chatRoute("Pin a message for everyone", { params: chatParamsSchema, body: pinBodySchema }),
     (request, reply) =>
       done(
         actions.pin({
@@ -84,7 +75,7 @@ export const chatActionsRoutes: FastifyPluginAsyncZod<{ actions: ChatActionsServ
   );
   app.delete(
     "/api/v1/calls/:callId/chat/pins/:messageId",
-    route("Unpin a message", { params: chatMessageParamsSchema }),
+    chatRoute("Unpin a message", { params: chatMessageParamsSchema }),
     (request, reply) => done(actions.unpin(on(request)), reply),
   );
 };

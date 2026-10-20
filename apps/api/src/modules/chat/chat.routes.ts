@@ -6,30 +6,22 @@ import {
   chatParamsSchema,
   eventsPageSchema,
   eventsQuerySchema,
-  meetingTicketHeadersSchema,
   messagesPageSchema,
   messagesQuerySchema,
   sendMessageBodySchema,
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
+import { chatRoute } from "./chat-route.ts";
 import { ticketOf } from "../../plugins/meeting-ticket.ts";
 import { idParam } from "../../plugins/workspace-access.ts";
 import type { ChatService } from "./chat.service.ts";
 
-const tags = ["chat"];
-const config = { access: "optional" as const };
-const TICKET = "Needs the meeting ticket (X-Meeting-Ticket) of someone in this call; otherwise 404.";
 const BASE = "/api/v1/calls/:callId/chat";
-
-const route = <S extends object>(summary: string, schema: S) => ({
-  config,
-  schema: { summary, description: TICKET, tags, headers: meetingTicketHeadersSchema, ...schema },
-});
 
 export const chatRoutes: FastifyPluginAsyncZod<{ chat: ChatService }> = async (app, { chat }) => {
   app.post(
     `${BASE}/messages`,
-    route("Send a message to everyone in the meeting", {
+    chatRoute("Send a message to everyone in the meeting", {
       params: chatParamsSchema,
       body: sendMessageBodySchema,
       response: { 200: chatMessageSchema },
@@ -38,7 +30,7 @@ export const chatRoutes: FastifyPluginAsyncZod<{ chat: ChatService }> = async (a
   );
   app.get(
     `${BASE}/messages`,
-    route("The meeting's chat, newest 50 first", {
+    chatRoute("The meeting's chat, newest 50 first", {
       params: chatParamsSchema,
       querystring: messagesQuerySchema,
       response: { 200: messagesPageSchema },
@@ -47,12 +39,12 @@ export const chatRoutes: FastifyPluginAsyncZod<{ chat: ChatService }> = async (a
   );
   app.get(
     `${BASE}/messages/:messageId`,
-    route("One chat message", { params: chatMessageParamsSchema, response: { 200: chatMessageSchema } }),
+    chatRoute("One chat message", { params: chatMessageParamsSchema, response: { 200: chatMessageSchema } }),
     (request) => chat.one(idParam(request.params.callId), ticketOf(request), idParam(request.params.messageId)),
   );
   app.get(
     `${BASE}/events`,
-    route("Chat news missed while disconnected", {
+    chatRoute("Chat news missed while disconnected", {
       params: chatParamsSchema,
       querystring: eventsQuerySchema,
       response: { 200: eventsPageSchema },
