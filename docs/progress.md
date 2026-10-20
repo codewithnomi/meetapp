@@ -39,7 +39,8 @@
 - **F03 T9 done:** chat security sweeps (other meetings' ids, plain-text names, no chat text in logs); `pnpm check` clean. **F03 backend complete (T1–T9).**
 - **F03 T10 done:** spell-check menu, Save as for chat files only, KLIPY in the security policy. Open for F04: Windows spell-check dictionaries ship with the installer.
 - **F03 T11 done:** the reading-side building blocks in Storybook (message renderer, message, panel, reactions, reply quote, file card, pinned bar, notes, drop area); the writing-side ones come with T13–T15.
-- **Next step:** F03 T12, the chat panel in the meeting, a first real chat (milestone) (`/next`).
+- **F03 T12 done (milestone):** chat works in the meeting: send, receive within a second, unread count, history for late joiners, Not sent with Retry. Waiting for the owner to try it with two windows.
+- **Next step:** after the owner's try, F03 T13, the rich message box (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

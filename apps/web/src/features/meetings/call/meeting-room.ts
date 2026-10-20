@@ -5,6 +5,7 @@
 // Reactions come from people on "meetapp.reaction"; "meetapp.control" is trusted only from the server.
 import { Room, RoomEvent, Track, type DisconnectReason, type Participant, type RemoteTrack } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
+import type { ChatEvent } from "@meetapp/contracts";
 import type { DevicePrefs } from "../device-prefs.ts";
 import type { Joined } from "../visit.ts";
 import { inOrder, personOf } from "./people.ts";
@@ -13,6 +14,8 @@ import { roomStateOf } from "./room-state.ts";
 import { startShare, stopShare } from "./share.ts";
 
 const CONTROL_TOPIC = "meetapp.control";
+/** Chat news (F03 design 3.4): trusted only from the server; anything a participant sends is dropped. */
+const CHAT_TOPIC = "meetapp.chat";
 const RECONNECT_FOR_MS = 30_000;
 
 export type Connection = "connecting" | "connected" | "reconnecting" | "failed";
@@ -25,6 +28,20 @@ export interface RoomHandlers {
   onReaction: (personId: string, reaction: Reaction) => void;
   onControl: (message: ControlMessage) => void;
   onDisconnected: (reason: DisconnectReason | undefined) => void;
+  /** Chat news from the server (F03). */
+  onChat?: ((event: ChatEvent) => void) | undefined;
+  /** Back after a short drop: chat catches up on what it missed (F03 design 3.4). */
+  onReconnected?: (() => void) | undefined;
+}
+
+/** A chat packet from the server, or undefined when it isn't one. */
+function decodeChat(payload: Uint8Array): ChatEvent | undefined {
+  try {
+    const value = JSON.parse(new TextDecoder().decode(payload)) as Partial<ChatEvent>;
+    return typeof value.seq === "number" && typeof value.type === "string" ? (value as ChatEvent) : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function newRoom(prefs: DevicePrefs): Room {
@@ -74,12 +91,19 @@ function listen(room: Room, bump: () => void, handlers: RoomHandlers, setConnect
   for (const event of changes) room.on(event, bump);
   room.on(RoomEvent.TrackSubscribed, playAudio).on(RoomEvent.TrackUnsubscribed, stopAudio);
   room.on(RoomEvent.Reconnecting, () => setConnection("reconnecting"));
-  room.on(RoomEvent.Reconnected, () => setConnection("connected"));
+  room.on(RoomEvent.Reconnected, () => {
+    setConnection("connected");
+    handlers.onReconnected?.();
+  });
   room.on(RoomEvent.Disconnected, (reason) => handlers.onDisconnected(reason));
   room.on(RoomEvent.DataReceived, (payload, participant?: Participant, _kind?, topic?: string) => {
     if (topic === REACTION_TOPIC && participant) {
       const reaction = decodeReaction(payload);
       if (reaction && gate(participant.identity)) handlers.onReaction(participant.identity, reaction);
+    }
+    if (topic === CHAT_TOPIC && !participant) {
+      const event = decodeChat(payload);
+      if (event) handlers.onChat?.(event);
     }
     if (topic === CONTROL_TOPIC && !participant) {
       try {

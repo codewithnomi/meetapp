@@ -15,7 +15,7 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   off?: boolean;
   /** A count shown on the corner, e.g. unread messages. It is hidden from screen readers, so `label`
    * must include it ("Chat, 3 unread"). */
-  badge?: number;
+  badge?: number | string;
   /** md = 44px (meeting controls), sm = 34px (dense lists). */
   size?: "sm" | "md";
   /** Set false to drop the tooltip (e.g. when a visible label sits next to it). */

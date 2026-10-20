@@ -758,6 +758,35 @@
       "body": "Everyone, including people in the lobby, will leave at once.",
       "cancel": "Cancel",
       "confirm": "End meeting"
+    },
+    "chat": {
+      "button": "Chat",
+      "buttonUnread": "Chat, {{count}} unread",
+      "title": "Chat",
+      "close": "Close chat",
+      "messages": "Messages",
+      "you": "You",
+      "edited": "{{time}} · Edited",
+      "deleted": "This message was deleted",
+      "pinned": "Pinned",
+      "pinPosition": "{{index}} of {{count}}",
+      "nextPin": "Next pinned message",
+      "pinnedNote": "{{name}} pinned a message",
+      "modeNote": {
+        "on": "{{name}} turned chat on",
+        "off": "{{name}} turned chat off",
+        "in_meeting": "{{name}} limited chat to the meeting"
+      },
+      "emptyTitle": "No messages yet",
+      "emptyHint": "Messages here are seen by everyone in the meeting.",
+      "newMessages": "New messages",
+      "sending": "Sending…",
+      "notSent": "Not sent",
+      "retry": "Retry",
+      "placeholder": "Message everyone",
+      "send": "Send",
+      "copy": "Copy",
+      "reaction": "{{emoji}}, {{count}}: {{names}}"
     }
   }
 }

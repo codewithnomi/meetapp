@@ -4,7 +4,7 @@
 // happened (removed, ended, …) and shows that message.
 import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 import {
@@ -17,6 +17,7 @@ import {
   type Joined,
 } from "../../features/meetings/index.ts";
 import { CallControls, type Panel } from "./CallControls.tsx";
+import { ChatArea } from "./ChatArea.tsx";
 import { Panels } from "./Panels.tsx";
 import { Stage } from "./Stage.tsx";
 import { DevicesPanel } from "./DevicesPanel.tsx";
@@ -110,6 +111,9 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const call: CallState = { ...useCall(visit, props), visit };
   const { room, me } = call;
   const view = useView();
+  const { setOpen } = call.chat;
+  // While the chat is open, nothing counts as unread (AC-F03-07).
+  useEffect(() => setOpen(view.panel === "chat"), [setOpen, view.panel]);
   const context = {
     people: room.people,
     lobby: call.lobby,
@@ -141,6 +145,7 @@ function Controls({ screen }: { screen: Screen }) {
       may={room.may}
       elapsed={elapsed}
       count={room.people.length}
+      unread={call.chat.state.unread}
       panel={view.panel}
       onPanel={view.setPanel}
       onMicrophone={actions.microphone}
@@ -201,6 +206,7 @@ function ScreenPanel({ screen }: { screen: Screen }) {
         onClose={close}
       />
     );
+  if (view.panel === "chat") return <ChatArea chat={call.chat} visit={call.visit} onClose={close} />;
   return <Panels panel={view.panel} context={context} onClose={close} onOptions={onOptions} />;
 }
 

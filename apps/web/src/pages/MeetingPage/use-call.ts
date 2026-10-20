@@ -16,6 +16,7 @@ import {
   type Joined,
   type Reaction,
 } from "../../features/meetings/index.ts";
+import { useChat, type Chat } from "../../features/meetings/chat/index.ts";
 import { useCallEvents, usePeopleAnnouncements } from "./call-events.ts";
 import { useConnectionCare } from "./connection.ts";
 import { useLobby } from "./lobby.ts";
@@ -41,17 +42,21 @@ async function outcomeOf(visit: Joined): Promise<Attendance> {
 export function useCall(visit: Joined, { onLeft, onOutcome }: MeetingPageProps) {
   const [prefs, setPrefs] = useState(loadPrefs);
   const leaving = useRef(false);
-  const stopSharing = useRef(() => undefined as unknown);
-  const lobbyRefresh = useRef(() => undefined as unknown);
+  const [stopSharing, lobbyRefresh] = [useRef(() => undefined as unknown), useRef(() => undefined as unknown)];
   const events = useCallEvents({
     shareReplaced: () => stopSharing.current(),
     lobbyChanged: () => lobbyRefresh.current(),
   });
   const end = useVisit((state) => state.end);
+  // Meeting chat (F03): the room's handlers are read once at connect, so they reach the chat through a ref.
+  const chatRef = useRef<Chat>(undefined as unknown as Chat);
+  const chat = (chatRef.current = useChat(visit));
   const finish = (go: () => void) => (end(), go());
   const room = useMeetingRoom(visit, prefs, {
     onReaction: events.showReaction,
     onControl: events.onControl,
+    onChat: (event) => chatRef.current.onEvent(event),
+    onReconnected: () => void chatRef.current.catchUp().catch(() => undefined),
     onDisconnected: () => {
       if (leaving.current) return;
       // A lost connection keeps the visit, so Rejoin can use its ticket (AC-F02-29).
@@ -82,7 +87,7 @@ export function useCall(visit: Joined, { onLeft, onOutcome }: MeetingPageProps) 
   };
   useMeetingShortcuts((shortcut) => actions[shortcut]());
   const care = useConnectionCare(room.room, visit, leaving);
-  return { room, me, events, actions, lobby, prefs, setPrefs, care };
+  return { room, me, events, actions, lobby, prefs, setPrefs, care, chat };
 }
 
 export type CallState = ReturnType<typeof useCall> & { visit: Joined };

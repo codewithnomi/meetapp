@@ -89,10 +89,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-08, 29, 54, 76 (plus component tests for 11, 16, 17, 21, 23, 26, 36, 53, 66, 75).
   - **Built in T11:** the reading side, which T12 needs: `MessageBody` (our own renderer of the message document; never HTML), `ReactionChip`, `ReplyQuote`, `AttachmentCard`, `SystemNote`, `PinnedBar`, `DropArea` (with `trackDrag`), and the organisms `ChatMessage` and `ChatPanel` (ChatMessage became an organism because it uses MessageBody and ReplyQuote, which are molecules); 19 new icons. The writing side is built where it is first used: the message box, format toolbar and emoji picker in T13 (TipTap, Frimousse), message actions and polls in T14, GIF and sticker pickers and the sticker pictures in T15.
 
-- [ ] **T12: The chat panel: a first real chat (milestone).**
+- [x] **T12: The chat panel: a first real chat (milestone).**
   - Chat button and badge, panel, history and paging, sending with "Not sent" and Retry, live news, catching up after a reconnect, empty state, "New messages".
   - Covers: AC-F03-01, 02, 05, 07, 08, 09.
   - Tests: TC-F03-01, 04, 11, 15, 16, 17, 88, 89, 92 (app part).
+  - **Built in T12:** `features/meetings/chat/` (requests, a tested state reducer, `useChat`: pages, news, catching up after a reconnect or a gap, sending with retry), chat news taken only from the server in `meeting-room.ts` (participant packets on `meetapp.chat` are dropped: TC-F03-88/89), the Chat button with unread count (up to 99+) in the control bar, `ChatArea` (newest at the bottom, older pages on scrolling up, the view kept still with "New messages", pinned bar, reactions clickable, links opened outside). The message box is plain text for now; T13 brings the rich box. Desktop tests `tests/e2e/desktop/chat.spec.ts` (TC-F03-01, 04, 15, 17) pass; a first run failed only in the shared sign-up step (a code email arrived late), the second passed.
   - Milestone: the owner tries chat with two windows (`pnpm dev` + `pnpm dev:window`).
 
 - [ ] **T13: The message box: formatting, code, emoji, limits.**
