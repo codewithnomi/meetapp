@@ -22,7 +22,9 @@
   - `docs/specs/F02-meetings/requirements.md`, 54 ACs, following Microsoft Teams at the owner's request (D053);
   - reviewed by spec-reviewer, and its findings fixed.
 - **F02 verified: PASS (2026-10-20)**, see `docs/specs/F02-meetings/verification.md` (second run; the Medium security items and a clean-up bug found by the reviews were fixed with tests first). Smoothness for 100 people met on an idle Mac only; the owner accepted it (D056), to re-check before going online.
-- **Next step:** the owner merges the F02 Pull Request; then F03 In-meeting chat (`/next`).
+- **F02 merged** into main (PR #11).
+- **F03 In-meeting chat:** requirements **draft** (2026-10-20) on branch `feat/F03-chat` (`docs/specs/F03-chat/requirements.md`, 29 ACs), following Teams (D057: no private messages, guests text only, 25 MB files), reviewed by spec-reviewer and fixed. Virus scanning of chat files is a must-do before going online.
+- **Next step:** the owner approves the F03 requirements; then the F03 screen designs and design (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

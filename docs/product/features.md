@@ -57,7 +57,7 @@ You only ever need to type **`/next`**.
 - **Depends on:** F01 · **Size:** large
 
 ### F03 In-meeting chat
-- Text chat for everyone in the meeting, plus private messages to one person
+- Text chat for everyone in the meeting (no private messages inside it, as in Teams, D057)
 - Send files and images (size limit, safe file types only)
 - Chat saved with the meeting afterwards
 - **Depends on:** F02 · **Size:** small

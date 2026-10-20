@@ -7,7 +7,7 @@
 | F00 | Foundation | 0 | approved | approved | approved | approved | done | PASS 2026-10-11 (verification.md) |
 | F01 | Accounts & workspaces | 1 | approved | approved | approved | approved | done | PASS 2026-10-13 (verification.md) |
 | F02 | Meetings & calling | 1 | approved | approved | approved | approved | done | PASS 2026-10-20 (verification.md) |
-| F03 | In-meeting chat | 1 | not started | not started | not started | not started | not started | - |
+| F03 | In-meeting chat | 1 | draft | not started | not started | not started | not started | - |
 | F04 | Desktop app | 1 | not started | not started | not started | not started | not started | - |
 | F13 | Scheduling & calendar | 1 | not started | not started | not started | not started | not started | - |
 | F05 | Live transcription | 2 | not started | not started | not started | not started | not started | - |

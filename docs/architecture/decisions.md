@@ -361,3 +361,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Measured again (2026-10-20, F02's final runs, Mac busy with VS Code, Teams, Firefox and Docker):** sound delay 70 ms, joins 1.9 s (95th percentile), 25-person meeting at most 598 MB: met. Smoothness: the worst tile showed 73% (page 1) and 63% (page 2) of the frames it received: **not met** on the busy Mac. The owner chose not to re-run it on an idle Mac and accepted the earlier idle-Mac result (2026-10-20); to re-check before going online.
 - **Why:** the old numbers expected more than the senders send (15) and less memory than comparable apps use. Memory is the person's own computer while a meeting is open: nothing is stored on a server and nothing costs money.
 - **Cost:** none.
+
+### D057: Meeting chat follows Microsoft Teams (F03)
+- **Date:** 2026-10-20. **Status:** accepted (owner: "we will follow how microsoft teams is handling this").
+- **Decision:** the meeting chat is one shared conversation for everyone in the meeting: **no private messages inside it** (in Teams, private one-to-one chat is the separate Chat tab; for us a "later" item). **Guests** can chat but can't share files. Files up to **25 MB**. People can edit and delete their own messages; the organizer and co-organizers can delete anyone's. The organizer or a co-organizer sets meeting chat to On, In-meeting only, or Off.
+- **Why:** people coming from Teams find nothing new; fewer ways for unknown people to upload files; less storage.
+- **Cost:** none (files use the existing storage).
