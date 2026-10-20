@@ -152,6 +152,11 @@ You only ever need to type **`/next`**.
 ## Later ideas (not planned yet)
 Meeting **recording** (video files) · background blur / virtual backgrounds · breakout rooms · permanent team chat channels · live translation · whiteboard · end-to-end encryption · webinars · Linux desktop app.
 
+Noted by the owner during the F02 look check (2026-10-20), for after a first usable version (MVP):
+- **People search and chat outside meetings** (like Teams' Chat tab): find colleagues in the workspace and message them one to one. F03 covers chat inside a meeting only.
+- **In-call messages as toasts:** "X muted you", "Your share ended", unplugged devices and similar messages as small cards that slide in over the videos and close by themselves after a few seconds (today they are larger cards above the videos).
+- **Screen sharing like Teams:** a red border around the shared screen (seen only by the sharer), a "You're sharing" bar with **Stop sharing** in the meeting window, and a small floating sharing bar on top of other apps.
+
 ## The build order at a glance
 ```
 F00 → F01 → F02 → F03 → F04 → F13      (Phase 1: working meeting app)
