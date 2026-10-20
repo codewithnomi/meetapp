@@ -17,6 +17,7 @@ import {
 } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
 import { allTextOf, copyText, noteText, senderName, time } from "./chat-texts.ts";
+import { MessageExtras } from "./ChatExtras.tsx";
 import { openLink } from "./open-link.ts";
 
 const QUICK = [
@@ -30,6 +31,8 @@ const QUICK = [
 export interface ChatRights {
   moderate: boolean;
   createPoll: boolean;
+  /** Everyone in the call but guests (AC-F03-33). */
+  attach: boolean;
 }
 
 export interface ChatView {
@@ -165,7 +168,13 @@ export function Message({ view, message }: { view: ChatView; message: ChatMessag
             }
           : undefined
       }
-      extras={message.pollId && !message.deletedAt ? <PollMessage view={view} pollId={message.pollId} /> : undefined}
+      extras={
+        message.pollId && !message.deletedAt ? (
+          <PollMessage view={view} pollId={message.pollId} />
+        ) : (
+          <MessageExtras visit={view.visit} message={message} onFailed={view.onFailed} />
+        )
+      }
       reactions={message.reactions.map((reaction) => ({
         emoji: reaction.emoji,
         count: reaction.count,
@@ -193,7 +202,7 @@ export function Pending({ item, chat }: { item: Sending; chat: Chat }) {
       name={t("meetings.chat.you")}
       own
       time=""
-      document={item.body}
+      document={item.content.body}
       status={
         item.status === "sending"
           ? { kind: "sending", label: t("meetings.chat.sending") }
@@ -201,7 +210,7 @@ export function Pending({ item, chat }: { item: Sending; chat: Chat }) {
               kind: "failed",
               label: t("meetings.chat.notSent"),
               retryLabel: t("meetings.chat.retry"),
-              onRetry: () => chat.retry(item.body, item.clientId, item.replyToId),
+              onRetry: () => chat.retry(item.content, item.clientId, item.replyToId),
             }
       }
       onOpenLink={openLink}

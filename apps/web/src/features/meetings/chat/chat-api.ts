@@ -1,6 +1,7 @@
 // Chat requests during a call (F03 design.md section 8), each with the meeting ticket.
 import type { ChatEvent, ChatMessageView, MessageDocument, PollView } from "@meetapp/contracts";
 import { apiRequest } from "../../api/index.ts";
+import type { Outgoing } from "./chat-state.ts";
 import type { Joined } from "../visit.ts";
 
 const base = (visit: Joined) => `/api/v1/calls/${visit.call?.callId ?? ""}/chat`;
@@ -29,7 +30,7 @@ export function eventsAfter(visit: Joined, after: number): Promise<{ events: Cha
 /** Sends a message; the same `clientId` again never makes a second one (AC-F03-05). */
 export function sendMessage(
   visit: Joined,
-  message: { clientId: string; body: MessageDocument; replyToId?: string | undefined },
+  message: Outgoing & { clientId: string; replyToId?: string | undefined },
 ): Promise<ChatMessageView> {
   return apiRequest(`${base(visit)}/messages`, { method: "POST", body: message, headers: headers(visit) });
 }

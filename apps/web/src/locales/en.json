@@ -374,7 +374,10 @@
       "guestsTitle": "Guests",
       "allowGuests": "Allow guests",
       "allowGuestsHint": "People without an account can join this workspace's meetings by link, after the lobby. When off, they are told \"This meeting doesn't allow guests\"; guests already in a meeting stay.",
-      "loading": "Loading workspace settings"
+      "loading": "Loading workspace settings",
+      "chatTitle": "Meeting chat",
+      "allowGifs": "Allow GIFs",
+      "allowGifsHint": "People can search and send GIFs in this workspace's meeting chat. Their search words go to our GIF service (KLIPY); names and meetings never do."
     }
   },
   "profile": {
@@ -865,6 +868,62 @@
         "anonymousHint": "Nobody, not even you, will see who voted for what.",
         "cancel": "Cancel",
         "post": "Post poll"
+      },
+      "off": "Chat is turned off for this meeting.",
+      "files": {
+        "attach": "Attach a file",
+        "download": "Download",
+        "picture": "Picture: {{name}}, download",
+        "uploading": "Uploading {{name}}",
+        "failed": "Upload failed",
+        "remove": "Remove {{name}}",
+        "tooBig": "Files can be up to 25 MB. \"{{name}}\" is too big.",
+        "wrongKind": "This kind of file can't be sent: \"{{name}}\".",
+        "tooMany": "You can send up to 10 files a minute.",
+        "meetingFull": "This meeting has reached its file limit.",
+        "dropTitle": "Drop files to share in chat",
+        "dropHint": "Pictures, PDF, text, CSV, Word, Excel, PowerPoint · up to 25 MB each"
+      },
+      "gifs": {
+        "button": "GIF",
+        "search": "Search GIFs",
+        "loading": "Searching GIFs…",
+        "unavailable": "GIFs aren't available right now. Try again later.",
+        "attribution": "Powered by KLIPY",
+        "notice": "What you type here is sent to our GIF service to find GIFs. Your name and the meeting are not.",
+        "gotIt": "Got it",
+        "described": "GIF: {{description}}",
+        "pause": "Pause GIF",
+        "play": "Play GIF"
+      },
+      "stickers": {
+        "button": "Sticker",
+        "title": "Stickers",
+        "label": "Sticker: {{name}}",
+        "thank-you": "Thank you",
+        "great-job": "Great job",
+        "on-my-way": "On my way",
+        "be-right-back": "Be right back",
+        "agreed": "Agreed",
+        "coffee": "Coffee?",
+        "ship-it": "Ship it",
+        "welcome": "Welcome",
+        "congrats": "Congrats",
+        "good-morning": "Good morning",
+        "good-night": "Good night",
+        "sorry": "Sorry",
+        "thinking": "Thinking",
+        "lol": "LOL",
+        "wow": "Wow",
+        "yes": "Yes",
+        "no": "No",
+        "brb-coffee": "Coffee break",
+        "lunch": "Lunch",
+        "deadline": "Deadline",
+        "celebrate": "Celebrate",
+        "high-five": "High five",
+        "question": "Question",
+        "done": "Done"
       }
     }
   }

@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
 import { firstLineOf } from "./chat-texts.ts";
+import type { Attachments } from "./chat-attachments.ts";
 import { ComposerArea } from "./ChatComposerArea.tsx";
 import { Message, Pending, type ChatRights, type ChatView } from "./ChatMessages.tsx";
 
@@ -105,6 +106,9 @@ function DeleteDialog({
 
 export interface ChatAreaProps {
   chat: Chat;
+  attachments: Attachments;
+  /** Files are being dragged over the meeting window (AC-F03-29). */
+  dropping: boolean;
   visit: Joined;
   rights: ChatRights;
   onClose: () => void;
@@ -125,7 +129,20 @@ function useInteraction() {
   return { replyingTo, editing, deleting, setDeleting, done, handlers };
 }
 
-export function ChatArea({ chat, visit, rights, onClose, onFailed }: ChatAreaProps) {
+function AllMessages({ view }: { view: ChatView }) {
+  return (
+    <>
+      {view.chat.state.messages.map((message) => (
+        <Message key={message.id} view={view} message={message} />
+      ))}
+      {view.chat.state.sending.map((item) => (
+        <Pending key={item.clientId} item={item} chat={view.chat} />
+      ))}
+    </>
+  );
+}
+
+export function ChatArea({ chat, attachments, dropping, visit, rights, onClose, onFailed }: ChatAreaProps) {
   const { t } = useTranslation();
   const { messages, sending, loaded, pinned } = chat.state;
   const scroll = useStickToBottom(messages.length + sending.length, chat);
@@ -147,18 +164,20 @@ export function ChatArea({ chat, visit, rights, onClose, onFailed }: ChatAreaPro
             ? { title: t("meetings.chat.emptyTitle"), hint: t("meetings.chat.emptyHint") }
             : undefined
         }
-        messages={
-          <>
-            {messages.map((message) => (
-              <Message key={message.id} view={view} message={message} />
-            ))}
-            {sending.map((item) => (
-              <Pending key={item.clientId} item={item} chat={chat} />
-            ))}
-          </>
+        messages={<AllMessages view={view} />}
+        dropArea={
+          dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
-        composer={<ComposerArea view={view} replyingTo={act.replyingTo} editing={act.editing} onDone={act.done} />}
+        composer={
+          <ComposerArea
+            view={view}
+            attachments={attachments}
+            replyingTo={act.replyingTo}
+            editing={act.editing}
+            onDone={act.done}
+          />
+        }
       />
       <DeleteDialog
         visit={visit}

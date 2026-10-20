@@ -3,9 +3,17 @@
 // A pure reducer, so the rules are tested without a screen.
 import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
 
+/** What a message carries: text (with files), a GIF, or a sticker (design 3.2). */
+export interface Outgoing {
+  body?: MessageDocument | undefined;
+  attachmentIds?: string[] | undefined;
+  gif?: ChatMessageView["gif"] | undefined;
+  sticker?: ChatMessageView["sticker"] | undefined;
+}
+
 export interface Sending {
   clientId: string;
-  body: MessageDocument;
+  content: Outgoing;
   replyToId?: string | undefined;
   status: "sending" | "failed";
 }

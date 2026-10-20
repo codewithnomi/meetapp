@@ -55,6 +55,8 @@ export interface ChatComposerProps {
   onEscape?: (() => void) | undefined;
   /** A sent message being edited: the box starts with it (give the composer a new `key` per message). */
   initial?: RichDocument | undefined;
+  /** Pictures or files pasted into the box (AC-F03-29). */
+  onPasteFiles?: ((files: File[]) => void) | undefined;
 }
 
 const TOOLS: { mark: string; icon: IconName; label: keyof ChatComposerLabels; run: (editor: Editor) => void }[] = [
@@ -92,12 +94,15 @@ function sendKeys(send: { current: () => void }, escape: { current: (() => void)
   });
 }
 
-function useComposerEditor(
-  initial: RichDocument | undefined,
-  labels: ChatComposerLabels,
-  send: { current: () => void },
-  escape: { current: (() => void) | undefined },
-) {
+/** The latest callbacks, read by the editor when a key is pressed or files are pasted. */
+interface Latest {
+  send: { current: () => void };
+  escape: { current: (() => void) | undefined };
+  pasteFiles: { current: ((files: File[]) => void) | undefined };
+}
+
+function useComposerEditor(initial: RichDocument | undefined, labels: ChatComposerLabels, latest: Latest) {
+  const { send, escape, pasteFiles } = latest;
   const [, redraw] = useState(0);
   const editor = useEditor({
     extensions: [
@@ -116,6 +121,12 @@ function useComposerEditor(
     ],
     ...(initial ? { content: toEditorDocument(initial) as never, autofocus: "end" as const } : {}),
     editorProps: {
+      handlePaste: (_view, event) => {
+        const files = [...(event.clipboardData?.files ?? [])];
+        if (files.length === 0 || !pasteFiles.current) return false;
+        pasteFiles.current(files);
+        return true;
+      },
       attributes: { "aria-label": labels.placeholder, role: "textbox", "aria-multiline": "true", spellcheck: "true" },
     },
     onUpdate: () => redraw((n) => n + 1),
@@ -252,7 +263,8 @@ export function ChatComposer(props: ChatComposerProps) {
   const { labels, onSend, allowEmpty = false, above, onEscape } = props;
   const send = useRef<() => void>(() => undefined);
   const escape = useRef(onEscape);
-  const editor = useComposerEditor(props.initial, labels, send, escape);
+  const pasteFiles = useRef(props.onPasteFiles);
+  const editor = useComposerEditor(props.initial, labels, { send, escape, pasteFiles });
   const [formatting, setFormatting] = useState(false);
   const draft = useDraft(editor, allowEmpty);
   const submit = () => {
@@ -264,6 +276,7 @@ export function ChatComposer(props: ChatComposerProps) {
   useEffect(() => {
     send.current = submit;
     escape.current = onEscape;
+    pasteFiles.current = props.onPasteFiles;
   });
   return (
     <div className="flex flex-col gap-1.5 rounded-lg border border-line-strong bg-surface-sunken p-2">

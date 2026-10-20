@@ -73,13 +73,13 @@ describe("chat state", () => {
     const sent = message();
     const failed = run(
       emptyChat,
-      { type: "sending", item: { clientId: "c1", body: DOC, status: "sending" } },
+      { type: "sending", item: { clientId: "c1", content: { body: DOC }, status: "sending" } },
       { type: "failed", clientId: "c1", tooFast: false },
     );
-    expect(failed.sending).toEqual([{ clientId: "c1", body: DOC, status: "failed" }]);
+    expect(failed.sending).toEqual([{ clientId: "c1", content: { body: DOC }, status: "failed" }]);
     const retried = run(
       failed,
-      { type: "sending", item: { clientId: "c1", body: DOC, status: "sending" } },
+      { type: "sending", item: { clientId: "c1", content: { body: DOC }, status: "sending" } },
       { type: "sent", clientId: "c1", message: sent },
     );
     expect(retried.sending).toEqual([]);

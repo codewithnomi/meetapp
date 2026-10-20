@@ -10,6 +10,7 @@ import { Navigate } from "react-router";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import {
   WorkspaceShell,
+  useAllowGifs,
   useAllowGuests,
   useCurrentWorkspace,
   useMe,
@@ -90,6 +91,26 @@ function GuestsSwitch({ workspace }: { workspace: MyWorkspace }) {
   );
 }
 
+function GifsSwitch({ workspace }: { workspace: MyWorkspace }) {
+  const { t } = useTranslation();
+  const change = useAllowGifs(workspace.id);
+  const checked = change.isPending ? change.variables : workspace.allowGifs;
+  return (
+    <>
+      <Toggle
+        id="allow-gifs"
+        className="max-w-130"
+        label={t("workspaces.settings.allowGifs")}
+        description={t("workspaces.settings.allowGifsHint")}
+        checked={checked}
+        disabled={change.isPending}
+        onChange={(next) => change.mutate(next)}
+      />
+      <ActionErrorNotice error={change.error} onRetry={() => change.reset()} />
+    </>
+  );
+}
+
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
@@ -120,6 +141,9 @@ function SettingsContent({ workspace }: { workspace: MyWorkspace }) {
       ) : null}
       <Section id="workspace-guests-title" title={t("workspaces.settings.guestsTitle")}>
         <GuestsSwitch workspace={workspace} />
+      </Section>
+      <Section id="workspace-chat-title" title={t("workspaces.settings.chatTitle")}>
+        <GifsSwitch workspace={workspace} />
       </Section>
     </main>
   );

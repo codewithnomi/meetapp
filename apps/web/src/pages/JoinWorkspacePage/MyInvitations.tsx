@@ -1,5 +1,6 @@
 // "Invitations for <email>" on the Join screen (AC-F01-18): Join adds the workspace at once with the
 // invited role and opens it; Decline removes the invitation.
+import type { TFunction } from "i18next";
 import { RequestRow, Spinner } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice, useSession } from "../../features/auth/index.ts";
@@ -10,7 +11,7 @@ import {
   type MyInvitation,
 } from "../../features/workspaces/index.ts";
 
-function detail(t: ReturnType<typeof useTranslation>["t"], invitation: MyInvitation, language: string) {
+function detail(t: TFunction, invitation: MyInvitation, language: string) {
   const values = {
     name: invitation.inviterName ?? "",
     role: t(`workspaces.roleWords.${invitation.role}`),

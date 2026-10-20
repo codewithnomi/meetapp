@@ -1,6 +1,7 @@
 // "Invite by email" on the People screen (AC-F01-17): checks the addresses, sends one invitation each,
 // then says who got one; addresses that were refused stay in the field with the reason underneath
 // ("<email> is already a member", the daily limit, no connection).
+import type { TFunction } from "i18next";
 import { InviteForm, Notice, type InviteRole } from "@meetapp/ui";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -8,7 +9,7 @@ import { errorText } from "../../features/auth/index.ts";
 import { useInvite, type InviteOutcome } from "../../features/workspaces/index.ts";
 import { MAX_INVITES, parseEmails, type ParsedEmails } from "./invite-emails.ts";
 
-type Translate = ReturnType<typeof useTranslation>["t"];
+type Translate = TFunction;
 
 function problemText(t: Translate, parsed: Exclude<ParsedEmails, { ok: true }>): string {
   if (parsed.problem === "badEmail") return t("workspaces.people.invite.badEmail", { email: parsed.email });

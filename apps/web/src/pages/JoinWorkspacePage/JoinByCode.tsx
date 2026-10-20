@@ -1,13 +1,14 @@
 // "Join with a link or code" (AC-F01-19, 20): find the workspace (only its name and size are shown),
 // then "Ask to join" and "Request sent". Someone already in it is taken there with "You're already a
 // member".
+import type { TFunction } from "i18next";
 import { Button, Input, Notice, RequestRow } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import { useAskToJoin, useJoinLookup, type JoinLookup } from "../../features/workspaces/index.ts";
 
-type Translate = ReturnType<typeof useTranslation>["t"];
+type Translate = TFunction;
 
 /** A lookup's 404 means the link or code is wrong, off or replaced: say so plainly. */
 function lookupError(t: Translate, code: string | undefined) {

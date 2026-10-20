@@ -98,7 +98,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(cors, {
     origin: ALLOWED_ORIGINS,
     // F02: the meeting ticket has its own header, because the desktop sets authorization itself.
-    allowedHeaders: ["content-type", "authorization", "idempotency-key", "x-meeting-ticket"],
+    allowedHeaders: ["content-type", "authorization", "idempotency-key", "x-meeting-ticket", "x-file-name"],
     // The screens also change and remove things (F01: rename, roles, last workspace, cancel…).
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });

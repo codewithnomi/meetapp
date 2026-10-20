@@ -108,10 +108,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-21, 23, 26, 36, 42 (real-app tests in `chat.spec.ts`: 6 pass, plus component tests).
   - **Built in T14:** `MessageActions` (four quick reactions, Reply, the More menu), `PollCard`, `PollCreator`, editing in the message box (`toEditorDocument`: a sent message back in the editor), and in the app `ChatMessages.tsx`, `ChatComposerArea.tsx`, `chat-texts.ts` (the meeting role decides which actions show; the server checks again), "Delete this message?" before deleting, polls fetched per viewer and again after poll news (`pollVersions`). Reacting with any other emoji than the four quick ones is left for later (the "More reactions" button is not shown yet); the stored emoji keeps the list's form (e.g. 👍 with its invisible emoji mark).
 
-- [ ] **T15: Files, drag and drop, GIFs and stickers in the app.**
+- [x] **T15: Files, drag and drop, GIFs and stickers in the app.**
   - New components: `FileChip`, `GifPicker`, `StickerPicker` and the sticker pictures. Attach, chips with progress, previews, Download, drop area, paste; GIF picker searching KLIPY from the app ("Powered by KLIPY", results in KLIPY's order) with the one-time notice, reduced motion; stickers; Workspace settings: Allow GIFs.
   - Covers: AC-F03-24–29, 33, 34.
   - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61, 90 (app part), 93 (on screen).
+  - **Built in T15:** `FileChip`, `Sticker`, `GifImage`, `GifPicker`, `StickerPicker`; the app's `ChatTools` (Attach, GIF, Sticker, files waiting) and `ChatExtras` (file cards with preview links renewed every 4 minutes, GIFs, stickers); files can be chosen, pasted or dropped anywhere on the meeting window; KLIPY answers are read defensively; Workspace settings has "Allow GIFs". Bug found by the new desktop test and fixed: the backend's CORS did not allow the `x-file-name` header, so uploads from the app were blocked. Two new real-app tests (attach, drop, download, refused kinds; stickers, guests have no Attach, GIFs "not available" without a key); 8 chat desktop tests pass. A real KLIPY search is checked by the owner once a key is set.
 
 - [ ] **T16: Chat setting, removed people and after the meeting in the app.**
   - Meeting chat setting in Meeting options, notes, "Chat is turned off", the app clearing chat when a ticket ends, Open chat from the meetings list.

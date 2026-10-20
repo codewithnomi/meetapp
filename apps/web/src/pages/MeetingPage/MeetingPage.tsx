@@ -17,7 +17,9 @@ import {
   type Joined,
 } from "../../features/meetings/index.ts";
 import { CallControls, type Panel } from "./CallControls.tsx";
+import { useAttachments } from "./chat-attachments.ts";
 import { ChatArea } from "./ChatArea.tsx";
+import { useFileDrop } from "./file-drop.ts";
 import { Panels } from "./Panels.tsx";
 import { Stage } from "./Stage.tsx";
 import { DevicesPanel } from "./DevicesPanel.tsx";
@@ -112,6 +114,13 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const { room, me } = call;
   const view = useView();
   const { setOpen } = call.chat;
+  const files = useAttachments(visit);
+  const canAttach = call.me !== undefined && call.me.group !== "guest";
+  const dropping = useFileDrop(
+    canAttach,
+    (dropped) => (view.setPanel("chat"), files.add(dropped)),
+    () => view.setPanel("chat"),
+  );
   // While the chat is open, nothing counts as unread (AC-F03-07).
   useEffect(() => setOpen(view.panel === "chat"), [setOpen, view.panel]);
   const context = {
@@ -129,7 +138,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions };
+  return { t, call, view, context, share, onOptions, files, dropping };
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -211,9 +220,20 @@ function ScreenPanel({ screen }: { screen: Screen }) {
     const rights = {
       moderate: role === "organizer" || role === "co_organizer",
       createPoll: role !== undefined && role !== "attendee",
+      attach: call.me !== undefined && call.me.group !== "guest",
     };
     const onFailed = () => view.setFailed(true);
-    return <ChatArea chat={call.chat} visit={call.visit} rights={rights} onClose={close} onFailed={onFailed} />;
+    return (
+      <ChatArea
+        chat={call.chat}
+        attachments={screen.files}
+        dropping={screen.dropping && rights.attach}
+        visit={call.visit}
+        rights={rights}
+        onClose={close}
+        onFailed={onFailed}
+      />
+    );
   }
   return <Panels panel={view.panel} context={context} onClose={close} onOptions={onOptions} />;
 }

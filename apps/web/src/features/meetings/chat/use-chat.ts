@@ -1,12 +1,12 @@
 // The meeting chat for one person in a call (F03 design.md 3.2–3.4): loads the newest page and older
 // pages, applies the server's news, catches up after a reconnect or a gap, and sends messages with an
 // id made here, so a retry never makes a copy (AC-F03-05). "Not sent" after the 10-second limit.
-import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
+import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { ApiError } from "../../api/index.ts";
 import type { Joined } from "../visit.ts";
 import { eventsAfter, messagesPage, oneMessage, sendMessage } from "./chat-api.ts";
-import { chatReducer, emptyChat, missedNews, type ChatAction, type ChatState } from "./chat-state.ts";
+import { chatReducer, emptyChat, missedNews, type ChatAction, type ChatState, type Outgoing } from "./chat-state.ts";
 
 const MAX_CATCH_UP = 50;
 
@@ -78,9 +78,12 @@ export function useChat(visit: Joined) {
   );
 
   const send = useCallback(
-    (body: MessageDocument, clientId: string = crypto.randomUUID(), replyToId?: string) => {
-      dispatch({ type: "sending", item: { clientId, body, status: "sending", ...(replyToId ? { replyToId } : {}) } });
-      void sendMessage(visit, { clientId, body, ...(replyToId ? { replyToId } : {}) })
+    (content: Outgoing, clientId: string = crypto.randomUUID(), replyToId?: string) => {
+      dispatch({
+        type: "sending",
+        item: { clientId, content, status: "sending", ...(replyToId ? { replyToId } : {}) },
+      });
+      void sendMessage(visit, { clientId, ...content, ...(replyToId ? { replyToId } : {}) })
         .then((message) => dispatch({ type: "sent", clientId, message }))
         .catch((error: unknown) =>
           dispatch({ type: "failed", clientId, tooFast: error instanceof ApiError && error.code === "CHAT_TOO_FAST" }),

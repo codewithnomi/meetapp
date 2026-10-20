@@ -3,7 +3,7 @@
 // count, TC-F03-17 the empty chat. Needs the backend and Mailpit (`pnpm test`).
 import { expect, test, type Page } from "@playwright/test";
 import { controls } from "./meeting-steps.ts";
-import { hostMeeting, joinWindow, team } from "./meeting-team.ts";
+import { guestWindow, hostMeeting, joinWindow, team } from "./meeting-team.ts";
 
 test.describe.configure({ timeout: 240_000 });
 
@@ -192,4 +192,70 @@ test("TC-F03-42 [AC-F03-21] [AC-F03-22] [AC-F03-23] create a poll, vote, see res
   await host.page.getByRole("log", { name: "Messages" }).getByRole("button", { name: "Close poll" }).click();
   await expect(poll).toContainText("Closed", { timeout: 5_000 });
   await expect(poll.getByRole("radio", { name: /Tuesday/ })).toBeDisabled();
+});
+
+/** A small real PDF, as a file the page can attach or drop. */
+const PDF_TEXT = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
+
+test("TC-F03-53 TC-F03-55 TC-F03-61 [AC-F03-28] [AC-F03-29] [AC-F03-30] attach, drop and download files; wrong kinds are refused at once", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  await openChat(host.page);
+  const moLog = await openChat(mo.page);
+
+  // Attach with the button.
+  const chooser = host.page.waitForEvent("filechooser");
+  await host.page.getByRole("button", { name: "Attach a file" }).click();
+  await (await chooser).setFiles({ name: "test plan.pdf", mimeType: "application/pdf", buffer: Buffer.from(PDF_TEXT) });
+  await expect(host.page.getByText(/test plan\.pdf · \d+ KB/)).toBeVisible({ timeout: 10_000 });
+  await host.page.getByRole("button", { name: "Send (Enter)" }).click();
+  await expect(moLog.getByText("test plan.pdf")).toBeVisible({ timeout: 5_000 });
+
+  // Download saves the file (Save as is answered by the test with a folder).
+  const saved = mo.app.evaluate(({ BrowserWindow }) => {
+    return new Promise<string>((resolve) => {
+      BrowserWindow.getAllWindows()[0]?.webContents.session.once("will-download", (_event, item) => {
+        item.setSavePath(`${process.env["TMPDIR"] ?? "/tmp"}/meetapp-e2e-${String(Date.now())}.pdf`);
+        item.once("done", (_e, state) => resolve(`${state}:${item.getFilename()}`));
+      });
+    });
+  });
+  await moLog.getByRole("button", { name: "Download" }).click();
+  expect(await saved).toBe("completed:test plan.pdf");
+
+  // Drop a file anywhere on the window: the drop area shows and the file waits in the box.
+  await host.page.evaluate((text) => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([text], "dropped.pdf", { type: "application/pdf" }));
+    window.dispatchEvent(new DragEvent("dragenter", { dataTransfer: transfer, bubbles: true }));
+    window.dispatchEvent(new DragEvent("drop", { dataTransfer: transfer, bubbles: true }));
+  }, PDF_TEXT);
+  await expect(host.page.getByText(/dropped\.pdf · /)).toBeVisible({ timeout: 10_000 });
+  expect(host.page.url()).not.toContain("dropped.pdf");
+
+  // A program is refused before uploading, with words.
+  const again = host.page.waitForEvent("filechooser");
+  await host.page.getByRole("button", { name: "Attach a file" }).click();
+  await (await again).setFiles({ name: "setup.exe", mimeType: "application/octet-stream", buffer: Buffer.from("MZ") });
+  await expect(host.page.getByRole("alert")).toContainText("This kind of file can't be sent");
+});
+
+test("TC-F03-46 TC-F03-49 TC-F03-59 [AC-F03-26] [AC-F03-27] [AC-F03-33] stickers for everyone; GIFs say when they aren't available; guests have no Attach", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const guest = await guestWindow(link, "Gus Guest", host.page);
+  const hostLog = await openChat(host.page);
+  await openChat(guest.page);
+
+  await expect(guest.page.getByRole("button", { name: "Attach a file" })).toHaveCount(0);
+  await guest.page.getByRole("button", { name: "Sticker" }).click();
+  await guest.page.getByRole("button", { name: "Sticker: Thank you" }).click();
+  await expect(hostLog.getByRole("img", { name: "Sticker: Thank you" })).toBeVisible({ timeout: 5_000 });
+
+  // Without a GIF key (development), the picker says GIFs aren't available, after the one-time notice.
+  await host.page.getByRole("button", { name: "GIF" }).click();
+  await expect(host.page.getByRole("note")).toContainText("sent to our GIF service");
+  await host.page.getByRole("button", { name: "Got it" }).click();
+  await expect(host.page.getByText("GIFs aren't available right now")).toBeVisible();
 });
