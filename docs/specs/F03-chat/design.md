@@ -58,7 +58,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ### 2.3 New UI components (Atomic Design, `packages/ui`)
 - **Atoms:** `ReactionChip`, `FileChip`.
-- **Molecules:** `ChatMessage` (extended: rich body, reply quote, attachments, reactions, edited and deleted states, sending and "Not sent" states), `MessageActions`, `ReplyQuote`, `CodeBlock` (with Copy), `FileCard`, `ImagePreview`, `PollOption`, `SystemNote`, `PinnedBar`.
+- **Molecules:** `MessageBody` (our renderer, with code blocks and Copy), `MessageActions`, `ReplyQuote`, `AttachmentCard` (file card or picture preview), `PollOption`, `SystemNote`, `PinnedBar`, `DropArea`. (T11: `ChatMessage` is an organism, because it uses these molecules.)
 - **Organisms:** `ChatComposer`, `FormatToolbar`, `EmojiPicker`, `GifPicker`, `StickerPicker`, `PollCard`, `PollCreator`, `DropArea`, `ChatPanel`.
 - The design system canvas gets the new components after the look check, as in F02.
 

@@ -7,6 +7,7 @@ export * from "./Icon/index.ts";
 export * from "./IconButton/index.ts";
 export * from "./Input/index.ts";
 export * from "./LevelMeter/index.ts";
+export * from "./ReactionChip/index.ts";
 export * from "./Spinner/index.ts";
 export * from "./Toggle/index.ts";
 export * from "./Tooltip/index.ts";
