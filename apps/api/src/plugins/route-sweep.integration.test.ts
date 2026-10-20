@@ -49,6 +49,10 @@ const OPTIONAL = new Set([
   "POST /api/v1/calls/:callId/participants/:attendanceId/remove",
   "PATCH /api/v1/calls/:callId/participants/:attendanceId/role",
   "POST /api/v1/calls/:callId/mute-all",
+  "POST /api/v1/calls/:callId/chat/messages",
+  "GET /api/v1/calls/:callId/chat/messages",
+  "GET /api/v1/calls/:callId/chat/messages/:messageId",
+  "GET /api/v1/calls/:callId/chat/events",
   "PATCH /api/v1/calls/:callId",
   "POST /api/v1/calls/:callId/end",
 ]);

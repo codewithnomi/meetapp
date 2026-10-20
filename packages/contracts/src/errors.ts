@@ -33,6 +33,18 @@ export const ERROR_CODES = [
   "MEETING_FULL",
   "LOBBY_FULL",
   "GUESTS_NOT_ALLOWED",
+  // F03: meeting chat.
+  "CHAT_OFF",
+  "CHAT_TOO_FAST",
+  "CHAT_INVALID",
+  "CHAT_EDIT_ENDED",
+  "CHAT_PINS_FULL",
+  "CHAT_POLL_CLOSED",
+  "CHAT_FILE_TOO_BIG",
+  "CHAT_FILE_TYPE",
+  "CHAT_FILE_RATE",
+  "CHAT_MEETING_FILES_FULL",
+  "CHAT_GIFS_OFF",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

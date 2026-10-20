@@ -1,7 +1,7 @@
 // Unit tests for the stored message document (F03 design.md 5.2): only the allowed blocks and
 // marks pass, with the length, size, nesting and link rules.
 import { describe, expect, it } from "vitest";
-import { MAX_LINK_LENGTH, documentPlainText, messageDocumentSchema } from "./chat.ts";
+import { MAX_LINK_LENGTH, charactersOverLimit, documentPlainText, messageDocumentSchema } from "./chat.ts";
 
 const text = (value: string, marks?: unknown[]) => ({ type: "text", text: value, ...(marks ? { marks } : {}) });
 const paragraph = (...content: unknown[]) => ({ type: "paragraph", content });
@@ -71,5 +71,27 @@ describe("TC-F03-27 document shape checks", () => {
   it("TC-F03-27 [AC-F03-16] the visible text keeps code exactly", () => {
     const code = "  if (x) {\n\treturn '<b>';\n  }";
     expect(documentPlainText(messageDocumentSchema.parse(doc({ type: "codeBlock", text: code })))).toBe(code);
+  });
+});
+
+describe("TC-F03-05 message limits", () => {
+  const plain = (value: string) => ({
+    v: 1 as const,
+    blocks: [{ type: "paragraph" as const, content: [{ type: "text" as const, text: value }] }],
+  });
+  it("TC-F03-05 [AC-F03-03] 4,000 fits, 4,001 is 1 too many", () => {
+    expect(charactersOverLimit(plain("a".repeat(4000)))).toBe(0);
+    expect(charactersOverLimit(plain("a".repeat(4001)))).toBe(1);
+  });
+  it("TC-F03-05 [AC-F03-03] [AC-F03-17] a code block counts toward the limit", () => {
+    const withCode = {
+      v: 1 as const,
+      blocks: [...plain("a".repeat(3990)).blocks, { type: "codeBlock" as const, text: "b".repeat(20) }],
+    };
+    // 3,990 + the line break between the blocks + 20 = 4,011.
+    expect(charactersOverLimit(withCode)).toBe(11);
+  });
+  it("TC-F03-05 [AC-F03-03] empty and spaces-only messages have no visible text", () => {
+    expect(documentPlainText(plain("   ")).trim()).toBe("");
   });
 });

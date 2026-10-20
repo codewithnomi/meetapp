@@ -670,7 +670,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 - **Level:** security
 - **Given** a decoded LiveKit pass for each role and group
 - **When** the pass permissions are checked and a participant tries to publish data on topic `meetapp.chat`
-- **Then** `canPublishData` is limited to the reaction topic (or the packet is dropped); the server remains the only sender on `meetapp.chat`; chat mode Off cannot be bypassed by publishing straight to the room
+- **Then** the pass has no room admin rights; LiveKit can't limit data by topic (checked in T1), so the app drops every `meetapp.chat` packet sent by a participant; the server remains the only trusted sender on `meetapp.chat`; chat mode Off cannot be bypassed by publishing straight to the room, because nothing published by a participant is shown or stored
 
 ### TC-F03-90: GIF search sends no personal data, security
 - **Covers:** AC-F03-24, AC-F03-27

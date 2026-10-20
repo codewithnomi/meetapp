@@ -22,6 +22,11 @@ const SECRET_FIELDS = [
   "lookupToken",
   "link",
   "deviceKey",
+  // F03: chat text (message documents, their visible text, poll questions and answers, links, GIF searches).
+  "plainText",
+  "question",
+  "href",
+  "description",
 ];
 const NAME_FIELDS = ["name", "firstName", "lastName", "displayName", "guestName"];
 const SENSITIVE = [...SECRET_FIELDS, ...NAME_FIELDS];

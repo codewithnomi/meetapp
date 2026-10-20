@@ -15,6 +15,8 @@ import { createRecordRepository } from "./modules/calls/record.repository.ts";
 import { createRecordService } from "./modules/calls/record.service.ts";
 import { createRejoinService } from "./modules/calls/rejoin.service.ts";
 import { createWebhookService } from "./modules/calls/webhook.service.ts";
+import { createChatRepository } from "./modules/chat/chat.repository.ts";
+import { createChatService } from "./modules/chat/chat.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
@@ -62,6 +64,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     controls: createControlsService(callsDeps),
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
+    chat: createChatService({ calls: callsDeps, chat: createChatRepository(db) }),
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,

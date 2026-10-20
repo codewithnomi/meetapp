@@ -102,6 +102,11 @@ export function documentPlainText(document: MessageDocument): string {
     .join("\n");
 }
 
+/** How many visible characters a document has over the limit; 0 when it fits (AC-F03-03). */
+export function charactersOverLimit(document: MessageDocument): number {
+  return Math.max(0, [...documentPlainText(document)].length - MAX_MESSAGE_CHARS);
+}
+
 export const messageDocumentSchema = z
   .strictObject({ v: z.literal(1), blocks: z.array(blockSchema).min(1).max(200) })
   .superRefine((document, context) => {
@@ -119,3 +124,65 @@ export const messageDocumentSchema = z
   })
   .meta({ id: "MessageDocument" });
 export type MessageDocument = z.infer<typeof messageDocumentSchema>;
+
+/** How many messages one page of history holds (AC-F03-02). */
+export const CHAT_PAGE_SIZE = 50;
+
+export const chatParamsSchema = z.object({ callId: z.string() });
+export const chatMessageParamsSchema = z.object({ callId: z.string(), messageId: z.string() });
+
+/** Sending a text message; `clientId` makes a repeated send return the saved message (AC-F03-05). */
+export const sendMessageBodySchema = z
+  .object({ clientId: z.uuid(), body: messageDocumentSchema })
+  .meta({ id: "SendChatMessage" });
+
+/** Older messages: `before` is the cursor of the oldest message already shown. */
+export const messagesQuerySchema = z.object({
+  before: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(CHAT_PAGE_SIZE).default(CHAT_PAGE_SIZE),
+});
+
+export const eventsQuerySchema = z.object({ after: z.coerce.number().int().min(0).default(0) });
+
+export const chatMessageSchema = z
+  .object({
+    id: z.uuid(),
+    /** Pass as `before` to get the messages older than this one. */
+    cursor: z.string(),
+    kind: z.enum(["text", "gif", "sticker", "poll", "system"]),
+    sender: z.object({
+      attendanceId: z.uuid().nullable(),
+      name: z.string(),
+      group: z.enum(["member", "external", "guest"]),
+      userId: z.uuid().nullable(),
+    }),
+    body: messageDocumentSchema.nullable(),
+    createdAt: z.iso.datetime({ offset: true }),
+    editedAt: z.iso.datetime({ offset: true }).nullable(),
+    deletedAt: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .meta({ id: "ChatMessage" });
+export type ChatMessageView = z.infer<typeof chatMessageSchema>;
+
+export const messagesPageSchema = z
+  .object({ messages: z.array(chatMessageSchema), hasMore: z.boolean() })
+  .meta({ id: "ChatMessagesPage" });
+
+/** News delivered on `meetapp.chat` and kept a day for catching up (design 3.4). */
+export const chatEventSchema = z
+  .object({
+    seq: z.number().int().positive(),
+    type: z.string(),
+    id: z.uuid().optional(),
+    message: chatMessageSchema.optional(),
+  })
+  .meta({ id: "ChatEvent" });
+export type ChatEvent = z.infer<typeof chatEventSchema>;
+
+export const eventsPageSchema = z
+  .object({
+    events: z.array(chatEventSchema),
+    /** True when events older than `after` were already cleaned: reload the pins and visible pages. */
+    gap: z.boolean(),
+  })
+  .meta({ id: "ChatEventsPage" });

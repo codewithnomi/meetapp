@@ -34,10 +34,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-27, 94; the database rules in `packages/db/src/chat.integration.test.ts` (TC-F03-10, 35, 73 database parts). TC-F03-32 moved to T3: it needs the send route.
   - **Built in T2:** migration `0005_chat` (only new tables, and new columns with defaults: safe on existing data) with a 3-pin trigger; `packages/contracts/src/chat.ts` (the message document); `modules/chat/chat.permissions.ts`; shared test rows in `packages/db/src/test-fixtures.ts`.
 
-- [ ] **T3: Sending, reading and delivering messages.**
+- [x] **T3: Sending, reading and delivering messages.**
   - Send (with `clientId`), history pages, one message, catching up (`chat/events`), the LiveKit broadcaster on `meetapp.chat`, large events by id, rate limits.
   - Covers: AC-F03-01, 02, 03, 05, 06.
-  - Tests: TC-F03-03, 05, 06, 10, 13, 32, 88 (server part), 89, 92 (server part).
+  - Tests: TC-F03-03, 05, 06, 10, 13, 32, 92 (server part). TC-F03-88 and 89 move to T12: LiveKit can't limit data by topic (T1), so the protection is the app ignoring participant packets; the server side is only that news is sent by the server.
+  - **Built in T3:** `modules/chat/` service, repository and routes (send with `clientId`, history pages by time and id, one message, missed events), `sendChat` on the call server, the 10-in-10-seconds limit, chat error codes, log cleaning for chat text, the route and meeting sweeps extended. The 1-day clean-up of `chat_events` comes with the other clean-up jobs in T8. The attachment-only part of TC-F03-06 comes in T6.
 
 - [ ] **T4: Editing, deleting, reactions, replies and pins.**
   - Covers: AC-F03-10, 11, 13, 14, 19, 20.
@@ -61,7 +62,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - [ ] **T8: Chat setting, who can chat, after the meeting, deletion.**
   - `chatMode` in Meeting options, the room metadata and note, `chat_mode_at_end`, Off on every writing route, lobby and removed people, after-meeting routes, meeting deletion and the account deletion step, the readable-chats function for AI later.
   - Covers: AC-F03-35–44.
-  - Tests: TC-F03-62, 64, 65, 67, 68, 70, 71, 73, 74, 91.
+  - Tests: TC-F03-62, 64, 65, 67, 68, 70, 71, 73, 74, 91; the `chat_events` clean-up (TC-F03-92, kept 1 day).
 
 - [ ] **T9: Backend security sweeps.**
   - Outsider sweep generated from the router, other workspace and other meeting, logs without chat text, names and poll text stored as plain text.
@@ -83,7 +84,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - [ ] **T12: The chat panel: a first real chat (milestone).**
   - Chat button and badge, panel, history and paging, sending with "Not sent" and Retry, live news, catching up after a reconnect, empty state, "New messages".
   - Covers: AC-F03-01, 02, 05, 07, 08, 09.
-  - Tests: TC-F03-01, 04, 11, 15, 16, 17, 92 (app part).
+  - Tests: TC-F03-01, 04, 11, 15, 16, 17, 88, 89, 92 (app part).
   - Milestone: the owner tries chat with two windows (`pnpm dev` + `pnpm dev:window`).
 
 - [ ] **T13: The message box: formatting, code, emoji, limits.**
