@@ -74,6 +74,8 @@ describe("making a meeting", () => {
       allowAttendeeMic: true,
       allowAttendeeCamera: true,
       coOrganizerIds: [],
+      // F03: meeting chat is On by default (AC-F03-35).
+      chatMode: "on",
     });
     const lifetime = Date.parse(meeting.expiresAt) - before;
     expect(lifetime).toBeGreaterThanOrEqual(MEETING_LIFETIME_MS - 1000);

@@ -1,6 +1,7 @@
 // Meetings (F02 design.md sections 3 and 6): making a meeting, its details and options, and the
 // workspace's guest switch. Titles and names are plain text everywhere (AC-F02-51).
 import { z } from "zod";
+import { CHAT_MODES } from "./chat.ts";
 
 export const MEETING_KINDS = ["meet_now", "link"] as const;
 /** Who skips the lobby, and who presents (AC-F02-16, AC-F02-36). */
@@ -23,6 +24,8 @@ export const meetingOptionsSchema = z
     allowAttendeeMic: z.boolean(),
     allowAttendeeCamera: z.boolean(),
     coOrganizerIds: z.array(z.uuid()).max(MAX_CO_ORGANIZERS),
+    /** Meeting chat: on, only during the call, or off (AC-F03-35–38). */
+    chatMode: z.enum(CHAT_MODES),
   })
   .meta({ id: "MeetingOptions" });
 

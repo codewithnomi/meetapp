@@ -63,10 +63,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-43, 47, 48 (TC-F03-90 is the app's own KLIPY request, tested in T15).
   - **Built in T7:** `GET …/chat/gif-settings` (key, address, per-person-per-meeting `customerId`), GIF messages accepted only with `https://static.klipy.com/…` addresses, a 24-sticker name list in `packages/contracts` (`STICKERS`; the pictures come in T11), one kind per message (text and files, or a GIF, or a sticker), and `allowGifs` in workspace settings and in each workspace the app lists.
 
-- [ ] **T8: Chat setting, who can chat, after the meeting, deletion.**
+- [x] **T8: Chat setting, who can chat, after the meeting, deletion.**
   - `chatMode` in Meeting options, the room metadata and note, `chat_mode_at_end`, Off on every writing route, lobby and removed people, after-meeting routes, meeting deletion and the account deletion step, the readable-chats function for AI later.
   - Covers: AC-F03-35–44.
   - Tests: TC-F03-62, 64, 65, 67, 68, 70, 71, 73, 74, 91; the `chat_events` clean-up (TC-F03-92, kept 1 day).
+  - **Built in T8:** `chatMode` in Meeting options (also in the room's shared state), with a note and `chat_mode_changed` news when changed during a call; `chat-after.*` (reading, links and organizer deletes after the meeting, under `/api/v1/meetings/:meetingId/chat/…`; "took part" means let into a call, not removed; the latest ended call's setting decides); `chatForAi` (the reading rule, text marked as data, for F06/F07); `chat-upkeep.*` (minute-by-minute clean-up inside the call jobs: news older than a day, files of deleted messages, files never sent within an hour; `forgetPerson` and `exportFor` for account deletion and data requests, used by support until F10 builds account deletion; `beforeMeetingDeleted` for F06/F10 to call before deleting a meeting record, so its files go too).
 
 - [ ] **T9: Backend security sweeps.**
   - Outsider sweep generated from the router, other workspace and other meeting, logs without chat text, names and poll text stored as plain text.

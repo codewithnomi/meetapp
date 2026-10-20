@@ -151,5 +151,14 @@ export async function roomOfFive(t: AuthTestApp, label: string) {
       .where(eq(callAttendances.id, attendee.attendanceId));
   }
   const callId = host.call?.callId ?? "";
-  return { meeting, organizer, host, co, presenter, attendees, callId };
+  return {
+    meeting,
+    organizer,
+    host,
+    co,
+    presenter,
+    attendees,
+    callId,
+    people: { coPerson, presenterPerson, first, second },
+  };
 }

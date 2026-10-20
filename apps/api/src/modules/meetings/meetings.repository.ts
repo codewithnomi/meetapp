@@ -24,6 +24,7 @@ export interface MeetingOptionsChange {
   whoCanPresent?: Meeting["whoCanPresent"] | undefined;
   allowAttendeeMic?: boolean | undefined;
   allowAttendeeCamera?: boolean | undefined;
+  chatMode?: Meeting["chatMode"] | undefined;
   expiresAt?: Date | undefined;
 }
 

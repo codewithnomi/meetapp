@@ -69,9 +69,9 @@ export function roleOf(attendance: CallAttendance, row: MeetingRow): MeetingRole
 
 /** The room's shared state, read by every app (design.md 3.6). */
 export function roomMetadata(row: MeetingRow, call: Call): string {
-  const { lobbyBypass, whoCanPresent, allowAttendeeMic, allowAttendeeCamera } = row.meeting;
+  const { lobbyBypass, whoCanPresent, allowAttendeeMic, allowAttendeeCamera, chatMode } = row.meeting;
   return JSON.stringify({
-    options: { lobbyBypass, whoCanPresent, allowAttendeeMic, allowAttendeeCamera },
+    options: { lobbyBypass, whoCanPresent, allowAttendeeMic, allowAttendeeCamera, chatMode },
     locked: call.locked,
     endsAt: new Date(call.startedAt.getTime() + CALL_LIMIT_MS).toISOString(),
   });

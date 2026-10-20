@@ -73,3 +73,8 @@ export const gifSettingsSchema = z
     customerId: z.string(),
   })
   .meta({ id: "GifSettings" });
+
+/** After-meeting routes take the meeting instead of the call (AC-F03-42). */
+export const meetingChatParamsSchema = z.object({ meetingId: z.string() });
+export const meetingChatMessageParamsSchema = z.object({ meetingId: z.string(), messageId: z.string() });
+export const meetingAttachmentParamsSchema = z.object({ meetingId: z.string(), attachmentId: z.string() });

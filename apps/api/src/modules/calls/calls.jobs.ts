@@ -46,7 +46,13 @@ async function abandoned(deps: CallsDeps, call: Call, now: Date): Promise<boolea
   return !present.some((attendance) => attendance.status === "admitted" && within(attendance.admittedAt));
 }
 
-export function createCallJobs(deps: CallsDeps, { keepSimulated = false } = {}) {
+interface CallJobOptions {
+  keepSimulated?: boolean;
+  /** More clean-up for the same minute-by-minute job (F03 chat); its failure doesn't stop the calls' one. */
+  alsoCleanUp?: () => Promise<void>;
+}
+
+export function createCallJobs(deps: CallsDeps, { keepSimulated = false, alsoCleanUp }: CallJobOptions = {}) {
   return {
     cleanUp: async (): Promise<void> => {
       const now = deps.now();
@@ -60,6 +66,7 @@ export function createCallJobs(deps: CallsDeps, { keepSimulated = false } = {}) 
           await deps.events.endCall(call.id, "last_left", now).catch(() => undefined);
         }
       }
+      await alsoCleanUp?.().catch(() => undefined);
     },
     /** 10 minutes before 30 hours, everyone is told (once, AC-F02-39). */
     endingSoon: async (callId: string): Promise<void> => {

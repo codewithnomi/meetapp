@@ -22,6 +22,10 @@ import { createChatActionsRepository } from "./modules/chat/chat-actions.reposit
 import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
 import { createChatPollsRepository } from "./modules/chat/chat-polls.repository.ts";
 import { createChatPollsService } from "./modules/chat/chat-polls.service.ts";
+import { createChatAfterRepository } from "./modules/chat/chat-after.repository.ts";
+import { createChatAfterService } from "./modules/chat/chat-after.service.ts";
+import { createChatUpkeepRepository } from "./modules/chat/chat-upkeep.repository.ts";
+import { createChatUpkeepService } from "./modules/chat/chat-upkeep.service.ts";
 import { createChatFilesRepository } from "./modules/chat/chat-files.repository.ts";
 import { createChatFilesService, type FileStorage } from "./modules/chat/chat-files.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
@@ -77,6 +81,8 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     chatActions: createChatActionsService(chatDeps),
     chatPolls: createChatPollsService(chatDeps),
     chatFiles: createChatFilesService(chatDeps, storage),
+    chatAfter: createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) }),
+    chatUpkeep: createChatUpkeepService({ ...chatDeps, upkeep: createChatUpkeepRepository(db), storage }),
     chatDeps,
   };
 }
@@ -84,12 +90,19 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
   const shared = { ...callsDeps, repository: callsDeps.meetings };
+  const chat = chatPieces(wiring, callsDeps);
   const callJobs = createCallJobs(callsDeps, {
     keepSimulated: wiring.config.CALLS_KEEP_SIMULATED_PEOPLE === "true",
+    // Chat's own clean-up runs in the same minute-by-minute job (F03 design 3.4, 6).
+    alsoCleanUp: () => chat.chatUpkeep.cleanUp(),
   });
   const { config, db } = wiring;
+  const onChange = async (meetingId: string, change: { chatModeBy?: string } = {}) => {
+    await refreshCall(callsDeps, meetingId);
+    if (change.chatModeBy) await chat.chatUpkeep.modeChanged(meetingId, change.chatModeBy);
+  };
   return {
-    meetings: createMeetingsService({ ...shared, onChange: (meetingId) => refreshCall(callsDeps, meetingId) }),
+    meetings: createMeetingsService({ ...shared, onChange }),
     lookups: createLookupService(shared),
     join: createJoinService(callsDeps),
     lobby: createLobbyService(callsDeps),
@@ -97,7 +110,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     controls: createControlsService(callsDeps),
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
-    ...chatPieces(wiring, callsDeps),
+    ...chat,
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,
