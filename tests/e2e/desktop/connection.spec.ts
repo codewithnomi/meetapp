@@ -161,7 +161,8 @@ test("TC-F02-91 [AC-F02-46] an unreachable or slow backend shows Can't reach Mee
   await me.page.route("**/api/v1/workspaces/*/meetings", async (route) => {
     keys.push(route.request().headers()["idempotency-key"] ?? "");
     if (keys.length === 1) await new Promise((done) => setTimeout(done, 11_000));
-    await route.continue();
+    // The app gave up on the slow request after 10 s (and the window may be closed by now): nothing to pass on.
+    await route.continue().catch(() => undefined);
   });
   await me.page.getByRole("button", { name: "Meetings" }).click();
   await me.page.getByRole("button", { name: "Meet now" }).click();

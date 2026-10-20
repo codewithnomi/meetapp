@@ -43,6 +43,7 @@ Plain-English version first, technical names in brackets.
 | Design tokens | One shared color/spacing file → CSS for desktop/web, Dart theme for mobile | Same look and themes everywhere |
 | Mobile app | Flutter (Dart language) | Looks exactly the same on iPhone and Android (D019) |
 | Call server | LiveKit (open source) | Built for big meetings; we host it ourselves, so it's cheaper |
+| Calling in the app | livekit-client (D055) | LiveKit's own library for joining calls from the desktop and web app |
 | Backend | Node.js + Fastify | Fast, same language as the apps |
 | Database | PostgreSQL + pgvector | One database for normal data **and** AI search |
 | Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app |

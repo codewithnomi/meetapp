@@ -10,6 +10,7 @@ import {
   LOBBY_WAIT_MS,
   MAX_IN_CALL,
   OUTCOME_MS,
+  asTheyAreNow,
   callAccess,
   lobbyChanged,
   notFound,
@@ -20,6 +21,7 @@ import { admitWaiting, waitingInOrder, type AttendanceStatus } from "./attendanc
 import type { MeetingRow } from "../meetings/meetings.repository.ts";
 import { can, type CallAction } from "./calls.permissions.ts";
 import { reenter } from "./rejoin.service.ts";
+import { isUsable } from "../meetings/meetings.service.ts";
 import { IN_CALL_STATUSES, placesTaken, runningCall } from "./calls.repository.ts";
 
 const FINAL: readonly AttendanceStatus[] = ["left", "denied", "removed", "timed_out", "turned_away"];
@@ -46,7 +48,10 @@ export async function actor(deps: CallsDeps, callId: string, ticketHash: string,
   const attendance = await deps.attendances.byTicket(ticketHash);
   if (!attendance || attendance.callId !== callId || !inCall(attendance.status)) throw notFound();
   const row = await deps.meetings.find(attendance.meetingId);
-  if (!row || !can(roleOf(attendance, row), action)) throw notFound();
+  // Checked on every action: an organizer or member removed from the workspace loses their powers at once.
+  if (!row || !isUsable(row, deps.now()) || !can(roleOf(await asTheyAreNow(deps, row, attendance), row), action)) {
+    throw notFound();
+  }
   const wait = await deps.limiter.take(RATE_RULES.callActions, ticketHash);
   if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many actions. Wait a moment.", wait);
   return { attendance, row };

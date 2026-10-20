@@ -18,6 +18,9 @@ Words used in MeetApp's documents and code, in plain English.
 | **Meeting ID and passcode** | A 12-digit number and a 6-character code that lead to a meeting, as an alternative to its link. |
 | **Participant** | Anyone in a meeting. |
 | **Meet now** | Starting a meeting straight away, without planning it. |
+| **Attendance** | One person's single visit to a call, from the lobby to leaving (`call_attendances`); a Rejoin makes a new one. |
+| **Meeting ticket** | The secret the app gets when it asks to join; it proves which attendance is asking (sent as `X-Meeting-Ticket`, only its fingerprint is stored). |
+| **Call pass** | The short-lived permission (10 minutes) the backend gives the app to connect to the call server for one call, with that person's rights. |
 | **Meeting link** | A web address that leads to one meeting; anyone with it can ask to join (people outside the workspace wait in the lobby). |
 | **Allow guests** | A workspace setting (owner and admins, in Workspace settings): when off, people without an account can't join the workspace's meetings. |
 | **Pin** | Keeping one person large on your own screen; others don't see it. |

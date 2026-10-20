@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-11
+updated: 2026-10-20
 ---
 
 # Privacy & Legal Requirements

@@ -110,13 +110,39 @@ describe("device changes", () => {
     renderHook(() => useDeviceChanges(asRoom(room), onGone));
     await flush();
     room.active = { audiooutput: "usb-spk" };
-    await act(async () => void room.emit("activeDeviceChanged"));
+    await act(async () => void room.emit("activeDeviceChanged", "audiooutput", "usb-spk"));
     await flush();
     room.active = { audiooutput: "default" };
     FakeRoom.localDevices = { audiooutput: [{ deviceId: "default", label: "MacBook speakers" }] };
     await act(async () => void room.emit("mediaDevicesChanged"));
     await flush();
     expect(onGone).toHaveBeenCalledWith({ kind: "speakers", gone: "USB speakers", now: "MacBook speakers" });
+  });
+
+  it("TC-F02-61 [AC-F02-31] speakers switched by the call library before the list change are still reported", async () => {
+    const room = new FakeRoom();
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "usb-spk", label: "USB speakers" }] };
+    const onGone = vi.fn<(gone: DeviceGone) => void>();
+    renderHook(() => useDeviceChanges(asRoom(room), onGone));
+    await act(async () => void room.emit("activeDeviceChanged", "audiooutput", "usb-spk"));
+    await flush();
+    FakeRoom.localDevices = { audiooutput: [{ deviceId: "default", label: "MacBook speakers" }] };
+    await act(async () => void room.emit("activeDeviceChanged", "audiooutput", "default"));
+    await flush();
+    expect(onGone).toHaveBeenCalledWith({ kind: "speakers", gone: "USB speakers", now: "MacBook speakers" });
+  });
+
+  it("TC-F02-61 [AC-F02-31] a device becoming active is only remembered, never taken for a gone one", async () => {
+    const room = new FakeRoom();
+    FakeRoom.localDevices = { audioinput: [{ deviceId: "default", label: "Built-in mic" }] };
+    const onGone = vi.fn();
+    renderHook(() => useDeviceChanges(asRoom(room), onGone));
+    await flush();
+    room.active = { audioinput: "not-listed-yet" };
+    await act(async () => void room.emit("activeDeviceChanged", "audioinput", "not-listed-yet"));
+    await flush();
+    expect(onGone).not.toHaveBeenCalled();
+    expect(room.switchActiveDevice).not.toHaveBeenCalled();
   });
 
   it("TC-F02-31 [AC-F02-31] stops listening when the screen closes", () => {

@@ -174,7 +174,7 @@ Rules that apply (docs/architecture/security.md): S1, S2, S3, S4, S5, S6, S10, S
   - passcodes or the secret part of links;
   - audio or video.
 - **AC-F02-53 (S6):** WHEN audio, video or screens are sent, THEN they are encrypted between the app and the call server (the standard for calls), and the connection that sets up calls is encrypted everywhere except on this computer during development. End-to-end encryption, where even the call server can't see the media, is not part of F02.
-- **AC-F02-54 (S17, D040):** WHEN the app asks for the camera, microphone or screen, THEN the desktop app allows it only for MeetApp's own screens and only those three. Everything else stays refused, and the desktop's safety settings stay on (context isolation, sandbox, no Node.js in the page). Screen sharing starts only after the person picks a screen or window from MeetApp's own list with previews. A missing macOS screen-recording permission is explained.
+- **AC-F02-54 (S17, D040):** WHEN the app asks for the camera, microphone or screen, THEN the desktop app allows it only for MeetApp's own screens and only those three; the only other permission is writing to the clipboard for MeetApp's own Copy buttons (reading it stays refused). Everything else stays refused, and the desktop's safety settings stay on (context isolation, sandbox, no Node.js in the page). Screen sharing starts only after the person picks a screen or window from MeetApp's own list with previews. A missing macOS screen-recording permission is explained.
 - **Privacy:** what F02 stores is added to privacy-legal.md:
   - meeting records with participant names and times, and guests' names;
   - link and passcode, stored so they can't be read back from the database.

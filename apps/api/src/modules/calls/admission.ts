@@ -7,6 +7,7 @@ import type { RateLimiter } from "../../plugins/rate-limit.ts";
 import type { LiveKitProvider } from "../../providers/livekit.ts";
 import type { LookupTokens } from "../meetings/lookup-token.ts";
 import type { MeetingSecretBox } from "../meetings/meeting-secrets.ts";
+import { groupOf } from "../meetings/lookup.service.ts";
 import type { MeetingRow, MeetingsRepository } from "../meetings/meetings.repository.ts";
 import type { AttendancesRepository } from "./attendances.repository.ts";
 import type { CallEventsRepository } from "./call-events.repository.ts";
@@ -40,6 +41,20 @@ export interface CallsDeps {
 }
 
 export const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
+
+/**
+ * The person as they are now (S2): a member removed from the workspace counts as from outside from then
+ * on, and a role given for their old group no longer applies. Guests stay guests.
+ */
+export async function asTheyAreNow<T extends Pick<CallAttendance, "userId" | "participantGroup" | "roleOverride">>(
+  deps: Pick<CallsDeps, "meetings">,
+  row: MeetingRow,
+  person: T,
+): Promise<T> {
+  if (person.participantGroup === "guest") return person;
+  const group = await groupOf(deps.meetings, row.meeting.workspaceId, person.userId ?? undefined);
+  return group === person.participantGroup ? person : { ...person, participantGroup: group, roleOverride: null };
+}
 
 export function roleOf(attendance: CallAttendance, row: MeetingRow): MeetingRole {
   const userId = attendance.userId ?? undefined;

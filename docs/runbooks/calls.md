@@ -29,7 +29,7 @@ Fills a meeting with simulated people and measures the app (TC-F02-25, 41, 92; t
 1. Close `pnpm dev` (the test starts its own backend) and leave the Mac idle for about 15 minutes: the simulated people run on this Mac, and other work lowers every number.
 2. Run `pnpm test:load`. It:
    - starts the normal services, plus a second call server on port 7890 that sends no reports to the backend (`infra/load/`), so the simulated people aren't removed;
-   - starts the backend pointed at that call server and builds the app;
+   - starts the backend pointed at that call server, with `CALLS_KEEP_SIMULATED_PEOPLE=true` so the once-a-minute clean-up leaves the simulated people (`sim_…`) in the call (the backend refuses this setting in production), and builds the app;
    - runs `tests/load`: 99 simulated people with video (LiveKit's `lk perf load-test`, Docker image pinned in `infra/load/docker-compose.load.yml`) plus the app as the 100th; then 24 plus the app for 5 minutes;
    - stops the backend and the second call server.
 3. Read the numbers in `tests/load/test-results/load-results.json` (and a picture, `hundred-people.png`). The simulated people's own log is next to it (`lk-100.log`, `lk-25.log`).

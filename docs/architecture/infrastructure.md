@@ -1,6 +1,6 @@
 ---
 status: accepted (stage 1–2) / proposed (stage 3)
-updated: 2026-10-11
+updated: 2026-10-20
 ---
 
 # Infrastructure Plan

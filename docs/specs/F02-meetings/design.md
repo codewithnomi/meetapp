@@ -2,7 +2,7 @@
 feature: F02
 title: Meetings & calling
 status: approved
-updated: 2026-10-14
+updated: 2026-10-20
 ---
 
 # F02 Meetings & calling: Design (HOW)
@@ -354,7 +354,7 @@ Every query that reads a meeting goes through its workspace or a ticket for it (
   4. If macOS screen recording isn't allowed (`getMediaAccessStatus("screen")`), the picker shows the "Allow screen recording" card instead.
 - **Call server address:**
   - Join and attendance answers include `serverUrl`, so the app is never hard-coded to it.
-  - The content security policy's `connect-src` is built from the same setting (`LIVEKIT_HOST`/`LIVEKIT_PORT`: `ws://` on this computer in development, `wss://` online).
+  - The content security policy's `connect-src` is built from the same settings (`LIVEKIT_PUBLIC_URL` online, `wss://`; in development `ws://127.0.0.1:<LIVEKIT_PORT>`, `apps/desktop/src/main/settings.ts`).
 - **Device key** (`device-key.ts`): a random 32-byte key made once and kept in the app's settings. It is sent with joins so a removed guest from the same app waits in the lobby (AC-35). The backend stores only its fingerprint.
 - **The meeting ticket** stays in the page's memory only and is gone when the window closes. It grants rights in one call only, unlike the sign-in token (F01) that stays in the main process.
 

@@ -2,7 +2,7 @@
 feature: F02
 title: Meetings & calling
 status: approved
-updated: 2026-10-14
+updated: 2026-10-20
 ---
 
 # F02 Meetings & calling: Test Cases
@@ -811,8 +811,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F02-14 [AC-F02-03] link and 
 - **Covers:** AC-F02-54
 - **Level:** e2e
 - **Given** the desktop app
-- **When** the app's own page asks for camera and mic, for screen, for notifications, geolocation, USB/HID/serial, clipboard-read; and a foreign page or frame (another origin) asks for camera
-- **Then** camera/mic (media) are allowed for `app://meetapp` only (and the dev server in development); speaker selection works from the app page; everything else and every foreign origin is refused
+- **When** the app's own page asks for camera and mic, for screen, for writing to the clipboard (Copy), for notifications, geolocation, USB/HID/serial, clipboard-read; and a foreign page or frame (another origin) asks for camera or the clipboard
+- **Then** camera/mic (media) and clipboard writing are allowed for `app://meetapp` only (and the dev server in development); speaker selection works from the app page; everything else (clipboard reading included) and every foreign origin is refused
 
 ### TC-F02-112: Screen sharing only through our picker
 - **Covers:** AC-F02-54, AC-F02-25

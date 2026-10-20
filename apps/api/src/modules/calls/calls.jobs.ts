@@ -37,20 +37,29 @@ async function repairCall(deps: CallsDeps, call: Call, now: Date, keepSimulated:
   }
 }
 
+/** A call with no room: ended once a minute has passed since it started and since anyone was let in. */
+async function abandoned(deps: CallsDeps, call: Call, now: Date): Promise<boolean> {
+  const within = (at: Date | null | undefined) =>
+    at !== null && at !== undefined && now.getTime() - at.getTime() <= START_GRACE_MS;
+  if (within(call.startedAt)) return false;
+  const present = await deps.attendances.presentIn(call.id);
+  return !present.some((attendance) => attendance.status === "admitted" && within(attendance.admittedAt));
+}
+
 export function createCallJobs(deps: CallsDeps, { keepSimulated = false } = {}) {
   return {
     cleanUp: async (): Promise<void> => {
       const now = deps.now();
       await deps.events.timeOutWaiting(new Date(now.getTime() - LOBBY_WAIT_MS));
+      await deps.events.forgetEventsBefore(new Date(now.getTime() - EVENTS_KEPT_MS));
       const rooms = new Set(await deps.livekit.runningRooms());
       for (const call of await deps.events.runningCalls()) {
-        // One call that fails to repair doesn't stop the others; the next round tries it again.
+        // One call that fails doesn't stop the others; the next round tries it again.
         if (rooms.has(call.id)) await repairCall(deps, call, now, keepSimulated).catch(() => undefined);
-        else if (now.getTime() - call.startedAt.getTime() > START_GRACE_MS) {
-          await deps.events.endCall(call.id, "last_left", now);
+        else if (await abandoned(deps, call, now)) {
+          await deps.events.endCall(call.id, "last_left", now).catch(() => undefined);
         }
       }
-      await deps.events.forgetEventsBefore(new Date(now.getTime() - EVENTS_KEPT_MS));
     },
     /** 10 minutes before 30 hours, everyone is told (once, AC-F02-39). */
     endingSoon: async (callId: string): Promise<void> => {

@@ -97,6 +97,27 @@ async function checkKind(
   else known.delete(kind);
 }
 
+/**
+ * The device that just became active is remembered once the list shows it. If the one it replaced has
+ * left the list (the call library may switch before telling us the list changed), that one is gone.
+ */
+async function rememberDevice(
+  kind: MediaDeviceKind,
+  deviceId: string,
+  known: Map<DeviceKind, InUse>,
+  onGone: (gone: DeviceGone) => void,
+) {
+  if (kind !== "videoinput" && kind !== "audioinput" && kind !== "audiooutput") return;
+  const devices = await Room.getLocalDevices(kind, false).catch(() => []);
+  const device = devices.find((d) => d.deviceId === deviceId);
+  const before = known.get(kind);
+  if (before && before.id !== deviceId && before.id !== "default" && !devices.some((d) => d.deviceId === before.id)) {
+    onGone({ kind: kindName(kind), gone: before.label, now: device?.label ?? "" });
+  }
+  if (device) known.set(kind, { id: deviceId, label: device.label });
+  else known.delete(kind);
+}
+
 async function checkDevices(room: Room, known: Map<DeviceKind, InUse>, onGone: (gone: DeviceGone) => void) {
   for (const kind of ["videoinput", "audioinput", "audiooutput"] as const) await checkKind(room, kind, known, onGone);
 }
@@ -108,15 +129,19 @@ export function useDeviceChanges(room: Room | undefined, onGone: (gone: DeviceGo
     // One check at a time, so one unplug is announced once. A device chosen after joining (the speakers
     // are set once connected) is remembered when it becomes active, before it can be unplugged.
     let queue = Promise.resolve();
-    const check = () => {
-      queue = queue.then(() => checkDevices(room, known, onGone)).catch(() => undefined);
+    const later = (work: () => Promise<void>) => {
+      queue = queue.then(work).catch(() => undefined);
     };
+    const check = () => later(() => checkDevices(room, known, onGone));
+    // A device becoming active is never itself taken for a gone one (the list may not show it yet).
+    const remember = (kind: MediaDeviceKind, deviceId: string) =>
+      later(() => rememberDevice(kind, deviceId, known, onGone));
     check();
     room.on(RoomEvent.MediaDevicesChanged, check);
-    room.on(RoomEvent.ActiveDeviceChanged, check);
+    room.on(RoomEvent.ActiveDeviceChanged, remember);
     return () => {
       room.off(RoomEvent.MediaDevicesChanged, check);
-      room.off(RoomEvent.ActiveDeviceChanged, check);
+      room.off(RoomEvent.ActiveDeviceChanged, remember);
     };
     // `onGone` is read when a change happens.
   }, [room]);

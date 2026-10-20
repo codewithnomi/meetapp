@@ -7,15 +7,18 @@ import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
-import { OUTCOME_MS, notFound, type CallsDeps } from "./admission.ts";
+import { OUTCOME_MS, asTheyAreNow, notFound, type CallsDeps } from "./admission.ts";
 import { afterEntry, decide, entryFor } from "./join.service.ts";
 import { moveAttendance } from "./attendances.repository.ts";
 import { startCall } from "./calls.repository.ts";
 
 /** A waiting person who had been let in into a call that closed: in again if the rules allow, else waiting. */
-export async function reenter(deps: CallsDeps, attendance: CallAttendance): Promise<CallAttendance> {
-  const row = await deps.meetings.find(attendance.meetingId);
-  if (!row || !isUsable(row, deps.now())) return attendance;
+export async function reenter(deps: CallsDeps, waiting: CallAttendance): Promise<CallAttendance> {
+  const row = await deps.meetings.find(waiting.meetingId);
+  if (!row || !isUsable(row, deps.now())) return waiting;
+  // Decided again as they are now (a member may have been removed from the workspace meanwhile).
+  const attendance = await asTheyAreNow(deps, row, waiting);
+  const person = { participantGroup: attendance.participantGroup, roleOverride: attendance.roleOverride };
   const entry = await deps.calls.locked(row.meeting.id, async (tx) => {
     const { running, enters, now } = await entryFor(deps, tx, row, attendance).catch(() => ({
       running: undefined,
@@ -23,7 +26,7 @@ export async function reenter(deps: CallsDeps, attendance: CallAttendance): Prom
       now: deps.now(),
     }));
     if (!enters) {
-      await moveAttendance(tx, attendance.id, ["waiting"], { status: "waiting", admittedAt: null });
+      await moveAttendance(tx, attendance.id, ["waiting"], { status: "waiting", admittedAt: null, ...person });
       return undefined;
     }
     const call = running ?? (await startCall(tx, row.meeting));
@@ -31,6 +34,7 @@ export async function reenter(deps: CallsDeps, attendance: CallAttendance): Prom
       status: "admitted",
       callId: call.id,
       admittedAt: now,
+      ...person,
     });
     return moved ? { call, started: !running } : undefined;
   });
@@ -91,10 +95,16 @@ async function rejoin(deps: CallsDeps, attendanceId: string, ticketHash: string,
   });
 }
 
-async function enter(deps: CallsDeps, old: CallAttendance) {
-  const row = await deps.meetings.find(old.meetingId);
+async function enter(deps: CallsDeps, before: CallAttendance) {
+  const row = await deps.meetings.find(before.meetingId);
   if (!row) throw notFound();
   if (!isUsable(row, deps.now())) throw new AppError(410, "MEETING_EXPIRED", "This meeting has expired.");
+  // Under today's rules: a member removed from the workspace comes back as from outside, a guest only
+  // while guests are allowed.
+  const old = await asTheyAreNow(deps, row, before);
+  if (old.participantGroup === "guest" && !row.allowGuests) {
+    throw new AppError(403, "GUESTS_NOT_ALLOWED", "This meeting doesn't allow guests.");
+  }
   const ticket = newTicket();
   const entry = await decide(deps, { row, group: old.participantGroup, base: freshFrom(deps, old, ticket), ticket });
   const answer = {
