@@ -111,7 +111,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - After the meeting, only organizer and co-organizer delete exists, on the `/meetings/:meetingId/…` route.
 
 ### 3.6 Reactions, replies, pins (AC-12–14, 19, 20)
-- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions` removes, with `{ emoji }` in the body, normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. At most 20 different ones per person per message. Who reacted is shown when pointing at a chip (names only; a guest's typed name).
+- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions/:emoji` (URL-encoded) removes; the emoji is normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. At most 20 different ones per person per message. Who reacted is shown when pointing at a chip (names only; a guest's typed name).
 - **Replies:** `replyToId` is stored; the quote is built on reading, so edits and deletes show up in it.
 - **Pins:** `POST …/pins` (`{ messageId }`) and `DELETE …/pins/:messageId`; at most 3, checked inside one transaction; the app asks which to unpin when full.
 

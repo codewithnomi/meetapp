@@ -8,7 +8,6 @@ import { ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { joined, meetingWithTeam, withTicket, type Joined } from "../../test-support/meetings-setup.ts";
 import { errorCode } from "../../test-support/workspaces-setup.ts";
-import { createChatRepository } from "./chat.repository.ts";
 import { createChatService, MAX_PACKET_BYTES } from "./chat.service.ts";
 
 let t: AuthTestApp;
@@ -51,7 +50,7 @@ function recordedChat(unlimited = false) {
     },
   };
   const limiter = unlimited ? { ...real.limiter, take: async () => undefined } : real.limiter;
-  const chat = createChatService({ calls: { ...real, livekit, limiter }, chat: createChatRepository(t.database.db) });
+  const chat = createChatService({ ...t.accounts.chatDeps, calls: { ...real, livekit, limiter } });
   return { chat, packets };
 }
 

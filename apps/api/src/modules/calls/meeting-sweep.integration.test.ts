@@ -27,6 +27,8 @@ const PAYLOAD = {
   role: "presenter",
   // F03: a valid chat message, so only the caller decides the answer.
   clientId: "00000000-0000-4000-8000-000000000001",
+  messageId: "00000000-0000-4000-8000-000000000002",
+  emoji: "👍",
   body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: "Hijacked" }] }] },
   locked: true,
 };

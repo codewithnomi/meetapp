@@ -2,6 +2,8 @@
 // guest, and calls with the meeting ticket. Each call uses its own network address, so the per-address
 // limits of one step don't touch another.
 import { randomBytes } from "node:crypto";
+import { callAttendances } from "@meetapp/db";
+import { eq } from "drizzle-orm";
 import type { AuthTestApp } from "./auth-app.ts";
 import { newPerson, seedWorkspace, type Person } from "./workspaces-setup.ts";
 
@@ -125,4 +127,29 @@ export const statusOf = async (t: AuthTestApp, person: Joined) =>
 export async function freshMinute(): Promise<void> {
   const intoMinute = Date.now() % 60_000;
   if (intoMinute > 40_000) await new Promise((done) => setTimeout(done, 60_000 - intoMinute + 200));
+}
+
+/** A call with the organizer, a co-organizer, a presenter and two attendees. */
+export async function roomOfFive(t: AuthTestApp, label: string) {
+  const { meeting, organizer, members } = await meetingWithTeam(t, label, 4);
+  const [coPerson, presenterPerson, first, second] = members;
+  if (!coPerson || !presenterPerson || !first || !second) throw new Error("people missing");
+  await t.app.inject({
+    method: "PATCH",
+    url: `/api/v1/meetings/${meeting.id}/options`,
+    payload: { coOrganizerIds: [coPerson.id] },
+    headers: { origin: "app://meetapp", authorization: `Bearer ${organizer.token}` },
+  });
+  const host = await joined(t, meeting, organizer);
+  const co = await joined(t, meeting, coPerson);
+  const presenter = await joined(t, meeting, presenterPerson);
+  const attendees = [await joined(t, meeting, first), await joined(t, meeting, second)];
+  for (const attendee of attendees) {
+    await t.database.db
+      .update(callAttendances)
+      .set({ roleOverride: "attendee" })
+      .where(eq(callAttendances.id, attendee.attendanceId));
+  }
+  const callId = host.call?.callId ?? "";
+  return { meeting, organizer, host, co, presenter, attendees, callId };
 }

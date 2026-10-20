@@ -40,9 +40,10 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-03, 05, 06, 10, 13, 32, 92 (server part). TC-F03-88 and 89 move to T12: LiveKit can't limit data by topic (T1), so the protection is the app ignoring participant packets; the server side is only that news is sent by the server.
   - **Built in T3:** `modules/chat/` service, repository and routes (send with `clientId`, history pages by time and id, one message, missed events), `sendChat` on the call server, the 10-in-10-seconds limit, chat error codes, log cleaning for chat text, the route and meeting sweeps extended. The 1-day clean-up of `chat_events` comes with the other clean-up jobs in T8. The attachment-only part of TC-F03-06 comes in T6.
 
-- [ ] **T4: Editing, deleting, reactions, replies and pins.**
+- [x] **T4: Editing, deleting, reactions, replies and pins.**
   - Covers: AC-F03-10, 11, 13, 14, 19, 20.
-  - Tests: TC-F03-18, 19, 20, 24, 25, 35.
+  - Tests: TC-F03-18, 19, 20, 24, 25, 35 (during the call). The after-meeting delete route of TC-F03-20 comes with the after-meeting routes in T8; the GIF and file parts of TC-F03-19 with T6 and T7.
+  - **Built in T4:** `chat-actions.repository.ts`, `chat-actions.service.ts`, `chat-actions.routes.ts`, `chat-access.ts` (shared rights, delivery and message views with quotes and reactions), `emoji.ts` (emojibase-data 17.0.0 list, D058). "Own" means the same account (any join) or the same guest join; an organizer may still remove their own message from an earlier call. Removing a reaction is `DELETE …/reactions/:emoji`.
 
 - [ ] **T5: Polls.**
   - Create, vote, results only after voting, anonymous voter keys, close, auto-close when the call ends, deleting a poll message.

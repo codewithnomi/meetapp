@@ -18,13 +18,25 @@ const olderThan = (cursor: Cursor) =>
   );
 
 /** The next event number for a meeting; the meeting row is locked so numbers never repeat. */
-async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
+export async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
   await executor.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${meetingId} for update`);
   const [row] = await executor
     .select({ last: sql<number>`coalesce(max(${chatEvents.seq}), 0)::int` })
     .from(chatEvents)
     .where(eq(chatEvents.meetingId, meetingId));
   return (row?.last ?? 0) + 1;
+}
+
+/** Keeps a piece of chat news for catching up, and returns its number (design 3.4). */
+export async function recordEvent(
+  executor: Executor,
+  where: { workspaceId: string; meetingId: string },
+  type: string,
+  payload: Record<string, unknown>,
+): Promise<number> {
+  const seq = await nextSeq(executor, where.meetingId);
+  await executor.insert(chatEvents).values({ ...where, seq, type, payload });
+  return seq;
 }
 
 /**

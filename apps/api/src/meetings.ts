@@ -17,6 +17,8 @@ import { createRejoinService } from "./modules/calls/rejoin.service.ts";
 import { createWebhookService } from "./modules/calls/webhook.service.ts";
 import { createChatRepository } from "./modules/chat/chat.repository.ts";
 import { createChatService } from "./modules/chat/chat.service.ts";
+import { createChatActionsRepository } from "./modules/chat/chat-actions.repository.ts";
+import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
@@ -48,6 +50,12 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
   };
 }
 
+/** Meeting chat (F03): messages, and what people do to them. */
+function chatPieces(calls: CallsDeps, db: Database) {
+  const chatDeps = { calls, chat: createChatRepository(db), actions: createChatActionsRepository(db) };
+  return { chat: createChatService(chatDeps), chatActions: createChatActionsService(chatDeps), chatDeps };
+}
+
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
   const shared = { ...callsDeps, repository: callsDeps.meetings };
@@ -64,7 +72,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     controls: createControlsService(callsDeps),
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
-    chat: createChatService({ calls: callsDeps, chat: createChatRepository(db) }),
+    ...chatPieces(callsDeps, db),
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,

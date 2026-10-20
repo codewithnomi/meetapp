@@ -1,7 +1,7 @@
 // Controls inside a call (F02 T8; design.md section 3.6; AC-F02-23, 25, 27, 33–38, 40, 50). Real routes
 // and database; where a real participant would be needed, the call server's side is recorded. Own
 // database; needs the `pnpm dev` services.
-import { callAttendances, calls, workspaces } from "@meetapp/db";
+import { calls, workspaces } from "@meetapp/db";
 import { TokenVerifier } from "livekit-server-sdk";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -9,7 +9,15 @@ import { ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { localConfig } from "../../test-support/integration.ts";
 import { recordingLiveKit, webhookBody, webhookSignature } from "../../test-support/livekit-events.ts";
-import { join, joined, meetingWithTeam, statusOf, withTicket, type Joined } from "../../test-support/meetings-setup.ts";
+import {
+  join,
+  joined,
+  meetingWithTeam,
+  roomOfFive,
+  statusOf,
+  withTicket,
+  type Joined,
+} from "../../test-support/meetings-setup.ts";
 import { errorCode } from "../../test-support/workspaces-setup.ts";
 import { createControlsService, refreshCall } from "./controls.service.ts";
 import { createWebhookService } from "./webhook.service.ts";
@@ -22,31 +30,6 @@ afterAll(async () => {
   await t.close();
 }, 60_000);
 
-/** A call with the organizer, a co-organizer, a presenter and two attendees. */
-async function roomOfFive(label: string) {
-  const { meeting, organizer, members } = await meetingWithTeam(t, label, 4);
-  const [coPerson, presenterPerson, first, second] = members;
-  if (!coPerson || !presenterPerson || !first || !second) throw new Error("people missing");
-  await t.app.inject({
-    method: "PATCH",
-    url: `/api/v1/meetings/${meeting.id}/options`,
-    payload: { coOrganizerIds: [coPerson.id] },
-    headers: { origin: "app://meetapp", authorization: `Bearer ${organizer.token}` },
-  });
-  const host = await joined(t, meeting, organizer);
-  const co = await joined(t, meeting, coPerson);
-  const presenter = await joined(t, meeting, presenterPerson);
-  const attendees = [await joined(t, meeting, first), await joined(t, meeting, second)];
-  for (const attendee of attendees) {
-    await t.database.db
-      .update(callAttendances)
-      .set({ roleOverride: "attendee" })
-      .where(eq(callAttendances.id, attendee.attendanceId));
-  }
-  const callId = host.call?.callId ?? "";
-  return { meeting, organizer, host, co, presenter, attendees, callId };
-}
-
 function recordedControls() {
   const { livekit, recorded } = recordingLiveKit(t.accounts.callsDeps.livekit);
   return { controls: createControlsService({ ...t.accounts.callsDeps, livekit }), recorded, livekit };
@@ -57,7 +40,7 @@ const statusOfError = (work: Promise<unknown>) =>
 
 describe("roles decide", { timeout: 30_000 }, () => {
   it("TC-F02-67 [AC-F02-33] [AC-F02-35] [AC-F02-36] [AC-F02-37] [AC-F02-38] every control checks the caller's role and the target's", async () => {
-    const room = await roomOfFive("roles");
+    const room = await roomOfFive(t, "roles");
     const { controls } = recordedControls();
     const [attendee, other] = room.attendees;
     if (!attendee || !other) throw new Error("people missing");
@@ -100,7 +83,7 @@ describe("roles decide", { timeout: 30_000 }, () => {
   });
 
   it("TC-F02-46 [AC-F02-23] hands carry the time raised; own and presenters' lowering work, an attendee can't lower another's", async () => {
-    const room = await roomOfFive("hands");
+    const room = await roomOfFive(t, "hands");
     const { controls, recorded } = recordedControls();
     const [first, second] = room.attendees;
     if (!first || !second) throw new Error("people missing");
@@ -115,7 +98,7 @@ describe("roles decide", { timeout: 30_000 }, () => {
   });
 
   it("TC-F02-68 [AC-F02-33] mute tells the person who muted them; Mute all spares the person who pressed it", async () => {
-    const room = await roomOfFive("mute");
+    const room = await roomOfFive(t, "mute");
     const { controls, recorded } = recordedControls();
     const [first] = room.attendees;
     if (!first) throw new Error("people missing");
@@ -132,7 +115,7 @@ describe("roles decide", { timeout: 30_000 }, () => {
   });
 
   it("TC-F02-70 [AC-F02-34] [AC-F02-36] option and role changes reach everyone's rights at once", async () => {
-    const room = await roomOfFive("rights");
+    const room = await roomOfFive(t, "rights");
     const { recorded, livekit } = recordedControls();
     const deps = { ...t.accounts.callsDeps, livekit };
     const [attendee] = room.attendees;
@@ -163,7 +146,7 @@ describe("roles decide", { timeout: 30_000 }, () => {
   });
 
   it("TC-F02-50 [AC-F02-25] the newest screen share wins; only the earlier sharer is told", async () => {
-    const room = await roomOfFive("share");
+    const room = await roomOfFive(t, "share");
     const { livekit, recorded } = recordingLiveKit(t.accounts.callsDeps.livekit, {
       people: () => [room.host.attendanceId, room.presenter.attendanceId],
       screens: (identity) => [{ sid: `TR_${identity.slice(0, 6)}` }],
@@ -230,7 +213,7 @@ describe("remove, lock and end", { timeout: 30_000 }, () => {
   });
 
   it("TC-F02-78 [AC-F02-38] End meeting sends everyone away, the lobby too; a later join starts a new call", async () => {
-    const room = await roomOfFive("end");
+    const room = await roomOfFive(t, "end");
     const waiting = await joined(t, room.meeting);
     const [attendee] = room.attendees;
     if (!attendee) throw new Error("attendee missing");

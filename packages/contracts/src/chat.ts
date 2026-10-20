@@ -133,7 +133,7 @@ export const chatMessageParamsSchema = z.object({ callId: z.string(), messageId:
 
 /** Sending a text message; `clientId` makes a repeated send return the saved message (AC-F03-05). */
 export const sendMessageBodySchema = z
-  .object({ clientId: z.uuid(), body: messageDocumentSchema })
+  .object({ clientId: z.uuid(), body: messageDocumentSchema, replyToId: z.uuid().optional() })
   .meta({ id: "SendChatMessage" });
 
 /** Older messages: `before` is the cursor of the oldest message already shown. */
@@ -160,12 +160,27 @@ export const chatMessageSchema = z
     createdAt: z.iso.datetime({ offset: true }),
     editedAt: z.iso.datetime({ offset: true }).nullable(),
     deletedAt: z.iso.datetime({ offset: true }).nullable(),
+    /** The quoted message (AC-F03-14): its sender and first line, built when read, so edits show. */
+    replyTo: z.object({ id: z.uuid(), senderName: z.string(), firstLine: z.string(), deleted: z.boolean() }).nullable(),
+    /** Emoji with their counts, the names of who reacted, and whether "you" did (AC-F03-13). */
+    reactions: z.array(
+      z.object({ emoji: z.string(), count: z.number().int(), names: z.array(z.string()), mine: z.boolean() }),
+    ),
+    /** A note such as "Aisha Khan pinned a message" (kind "system"). */
+    system: z
+      .object({ event: z.enum(["pinned", "chat_mode"]), name: z.string(), mode: z.enum(CHAT_MODES).optional() })
+      .nullable(),
   })
   .meta({ id: "ChatMessage" });
 export type ChatMessageView = z.infer<typeof chatMessageSchema>;
 
 export const messagesPageSchema = z
-  .object({ messages: z.array(chatMessageSchema), hasMore: z.boolean() })
+  .object({
+    messages: z.array(chatMessageSchema),
+    hasMore: z.boolean(),
+    /** Pinned messages, oldest pin first (only on the first page). */
+    pinned: z.array(chatMessageSchema).optional(),
+  })
   .meta({ id: "ChatMessagesPage" });
 
 /** News delivered on `meetapp.chat` and kept a day for catching up (design 3.4). */
@@ -186,3 +201,9 @@ export const eventsPageSchema = z
     gap: z.boolean(),
   })
   .meta({ id: "ChatEventsPage" });
+
+export const editMessageBodySchema = z.object({ body: messageDocumentSchema }).meta({ id: "EditChatMessage" });
+export const reactionBodySchema = z.object({ emoji: z.string().min(1).max(40) }).meta({ id: "ChatReaction" });
+export const pinBodySchema = z.object({ messageId: z.uuid() }).meta({ id: "PinChatMessage" });
+export const pinnedListSchema = z.object({ pinned: z.array(chatMessageSchema) }).meta({ id: "PinnedChatMessages" });
+export const reactionParamsSchema = chatMessageParamsSchema.extend({ emoji: z.string().min(1).max(40) });
