@@ -1,0 +1,168 @@
+// Making meetings and changing their options (F02 design.md section 3.1; AC-F02-01–07, 36). The
+// organizer and co-organizers manage a meeting; only the organizer names co-organizers, and only people
+// in the meeting's workspace (none in a personal workspace). Anyone else gets the same 404 as for a
+// meeting that doesn't exist (S1, S2).
+import type { MeetingDetails } from "@meetapp/contracts";
+import { AppError } from "../../plugins/errors.ts";
+import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
+import type { Membership } from "../workspaces/workspaces.permissions.ts";
+import { extendedExpiry, firstExpiry, isExpired } from "./expiry.ts";
+import type { LookupTokens } from "./lookup-token.ts";
+import {
+  MEETING_KEY_VERSION,
+  newLinkPart,
+  newMeetingNumber,
+  newPasscode,
+  type MeetingSecretBox,
+} from "./meeting-secrets.ts";
+import type { Meeting, MeetingOptionsChange, MeetingRow, MeetingsRepository } from "./meetings.repository.ts";
+
+export interface MeetingsServiceDeps {
+  repository: MeetingsRepository;
+  secrets: MeetingSecretBox;
+  lookupTokens: LookupTokens;
+  limiter: RateLimiter;
+  now?: () => Date;
+  /** Told after a change of the options or co-organizers, so a running call gets the new rights (F02 T8). */
+  onChange?: (meetingId: string) => Promise<void>;
+}
+
+interface Caller {
+  id: string;
+  name: string;
+}
+
+export interface MeetingUpdate extends Omit<MeetingOptionsChange, "expiresAt"> {
+  coOrganizerIds?: string[] | undefined;
+}
+
+const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
+const forbidden = () => new AppError(403, "FORBIDDEN", "Only the organizer can name co-organizers.");
+const badCoOrganizers = () =>
+  new AppError(400, "BAD_REQUEST", "Co-organizers must be other people in the meeting's workspace.");
+
+export function detailsOf(row: MeetingRow, secrets: MeetingSecretBox): MeetingDetails {
+  const { meeting } = row;
+  return {
+    id: meeting.id,
+    workspaceId: meeting.workspaceId,
+    kind: meeting.kind,
+    title: meeting.title,
+    link: secrets.linkOf(secrets.open(meeting.linkSecretEnc, meeting.keyVersion)),
+    meetingNumber: meeting.meetingNumber,
+    passcode: secrets.open(meeting.passcodeEnc, meeting.keyVersion),
+    organizer: { id: meeting.organizerId, name: row.organizerName },
+    options: {
+      lobbyBypass: meeting.lobbyBypass,
+      whoCanPresent: meeting.whoCanPresent,
+      allowAttendeeMic: meeting.allowAttendeeMic,
+      allowAttendeeCamera: meeting.allowAttendeeCamera,
+      coOrganizerIds: row.coOrganizerIds,
+    },
+    expiresAt: meeting.expiresAt.toISOString(),
+  };
+}
+
+/** A meeting still works: not expired and its organizer still in its workspace (AC-F02-04, 07). */
+export const isUsable = (row: MeetingRow, now: Date) => row.organizerIsMember && !isExpired(row.meeting.expiresAt, now);
+
+interface NewMeetingRequest {
+  caller: Caller;
+  membership: Membership;
+  kind: Meeting["kind"];
+  title: string | undefined;
+}
+
+async function createMeeting(deps: Required<Omit<MeetingsServiceDeps, "onChange">>, request: NewMeetingRequest) {
+  const { repository, secrets, lookupTokens, limiter, now } = deps;
+  const { caller, membership, kind, title } = request;
+  const wait = await limiter.take(RATE_RULES.meetingCreates, caller.id);
+  if (wait !== undefined) {
+    throw new AppError(429, "TOO_MANY_ATTEMPTS", "You've made many meetings. Try again later.", wait);
+  }
+  const linkPart = newLinkPart();
+  const passcode = newPasscode();
+  const sealed = { linkSecretEnc: secrets.seal(linkPart), passcodeEnc: secrets.seal(passcode) };
+  const meeting = await repository.insert(() => {
+    const meetingNumber = newMeetingNumber();
+    return {
+      workspaceId: membership.workspaceId,
+      organizerId: caller.id,
+      kind,
+      title: title ?? `Meeting with ${caller.name}`,
+      meetingNumber,
+      linkLookup: secrets.linkLookup(linkPart),
+      passcodeCheck: secrets.passcodeCheck(meetingNumber, passcode),
+      keyVersion: MEETING_KEY_VERSION,
+      expiresAt: firstExpiry(now()),
+      ...sealed,
+    };
+  });
+  const row = await repository.find(meeting.id);
+  if (!row) throw notFound();
+  return withLookupToken(detailsOf(row, secrets), lookupTokens, caller.id);
+}
+
+/** The creator's answer carries a lookup token, so the app can go straight to the pre-join. */
+function withLookupToken(details: MeetingDetails, tokens: MeetingsServiceDeps["lookupTokens"], userId: string) {
+  return { ...details, lookupToken: tokens.issue({ meetingId: details.id, userId }) };
+}
+
+/** Co-organizers are distinct members of the workspace, not the organizer; none in Personal (AC-F02-36). */
+async function checkCoOrganizers(
+  repository: MeetingsServiceDeps["repository"],
+  row: MeetingRow,
+  userIds: string[],
+): Promise<string[]> {
+  const unique = [...new Set(userIds)];
+  if (unique.length === 0) return unique;
+  if (row.workspaceKind === "personal" || unique.includes(row.meeting.organizerId)) throw badCoOrganizers();
+  const members = await repository.membersAmong(row.meeting.workspaceId, unique);
+  if (members.length !== unique.length) throw badCoOrganizers();
+  return unique;
+}
+
+export function createMeetingsService({
+  repository,
+  secrets,
+  lookupTokens,
+  limiter,
+  now = () => new Date(),
+  onChange = async () => {},
+}: MeetingsServiceDeps) {
+  /** The meeting, for its organizer or a co-organizer who is still in the workspace; else 404. */
+  async function managed(caller: Caller, meetingId: string): Promise<MeetingRow & { isOrganizer: boolean }> {
+    const row = await repository.find(meetingId);
+    if (!row?.organizerIsMember) throw notFound();
+    const isOrganizer = row.meeting.organizerId === caller.id;
+    const isCoOrganizer =
+      row.coOrganizerIds.includes(caller.id) &&
+      (await repository.membersAmong(row.meeting.workspaceId, [caller.id])).length === 1;
+    if (!isOrganizer && !isCoOrganizer) throw notFound();
+    return { ...row, isOrganizer };
+  }
+
+  return {
+    create: (caller: Caller, membership: Membership, kind: Meeting["kind"], title?: string) =>
+      createMeeting({ repository, secrets, lookupTokens, limiter, now }, { caller, membership, kind, title }),
+    /** A repeated "create" (same Idempotency-Key): the first meeting's answer again, with a new lookup token. */
+    repeatCreate: async (caller: Caller, meetingId: string) =>
+      withLookupToken(detailsOf(await managed(caller, meetingId), secrets), lookupTokens, caller.id),
+    get: async (caller: Caller, meetingId: string): Promise<MeetingDetails> =>
+      detailsOf(await managed(caller, meetingId), secrets),
+    update: async (caller: Caller, meetingId: string, change: MeetingUpdate): Promise<MeetingDetails> => {
+      const row = await managed(caller, meetingId);
+      const { coOrganizerIds, ...options } = change;
+      if (coOrganizerIds !== undefined) {
+        if (!row.isOrganizer) throw forbidden();
+        await repository.setCoOrganizers(meetingId, await checkCoOrganizers(repository, row, coOrganizerIds));
+      }
+      const expiresAt = extendedExpiry(row.meeting.kind, row.meeting.expiresAt, now());
+      await repository.update(meetingId, { ...options, expiresAt });
+      await onChange(meetingId);
+      return detailsOf(await managed(caller, meetingId), secrets);
+    },
+  };
+}
+
+export type MeetingsService = ReturnType<typeof createMeetingsService>;

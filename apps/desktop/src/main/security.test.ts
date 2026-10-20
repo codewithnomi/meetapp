@@ -94,6 +94,16 @@ describe("contentSecurityPolicy", () => {
     expect(parts).toContain(`script-src 'self' 'nonce-${DEV_CSP_NONCE}'`);
   });
 
+  it("TC-F02-113 [AC-F02-54] the call server is allowed in connect-src, and nothing else is added", () => {
+    const local = contentSecurityPolicy({ apiUrl: API, callServerUrl: "ws://127.0.0.1:7880" }).split("; ");
+    expect(local).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880");
+    const online = contentSecurityPolicy({ apiUrl: API, callServerUrl: "wss://calls.example.com" }).split("; ");
+    expect(online).toContain(
+      "connect-src 'self' http://127.0.0.1:3000 wss://calls.example.com https://calls.example.com",
+    );
+    expect(contentSecurityPolicy({ apiUrl: API, callServerUrl: "not a url" })).toBe(PRODUCTION);
+  });
+
   it("TC-F00-61 [AC-F00-24] never allows unsafe-inline or eval for scripts", () => {
     for (const dev of [undefined, DEV]) {
       const csp = contentSecurityPolicy({ apiUrl: API, devServerUrl: dev });

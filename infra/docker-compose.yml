@@ -8,9 +8,21 @@ name: meetapp
 services:
   livekit:
     image: livekit/livekit-server:v1.13.9@sha256:d0c04791bf63ca8dcea123571827d56ba9504bd57c8d5de60ee03b5408cc3154
-    command: ["--config", "/etc/livekit.yaml", "--node-ip", "127.0.0.1"]
+    # The webhook address depends on API_PORT, which a yaml file can't read: the settings are copied
+    # with the address filled in, then the server starts on the copy (F02 design section 7).
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        sed "s|__MEETAPP_WEBHOOK_URL__|http://host.docker.internal:$${MEETAPP_API_PORT}/api/v1/livekit/webhook|"
+        /etc/livekit.yaml > /tmp/livekit.yaml &&
+        exec /livekit-server --config /tmp/livekit.yaml --node-ip 127.0.0.1
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set in .env}: ${LIVEKIT_API_SECRET:?set in .env}"
+      LIVEKIT_WEBHOOK_API_KEY: "${LIVEKIT_API_KEY:?set in .env}"
+      MEETAPP_API_PORT: "${API_PORT:?set in .env}"
+    # Docker Desktop (Mac) knows host.docker.internal already; Linux (CI) needs this line.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./livekit.yaml:/etc/livekit.yaml:ro
     ports:

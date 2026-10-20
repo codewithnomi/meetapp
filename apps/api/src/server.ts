@@ -43,9 +43,11 @@ const accounts = createAccounts({
   log,
   trustedOrigins: ALLOWED_ORIGINS,
   storage,
+  livekit,
 });
 
 const expiryJob = await accounts.startExpiryJob();
+const callJobs = await accounts.startCallJobs();
 
 const app = await buildApp(config, {
   healthChecks: { database: database.ping, cache: cache.ping, callServer: livekit.ping, storage: storage.ping },
@@ -63,6 +65,7 @@ async function shutDown(): Promise<void> {
     await app.close();
     await Promise.allSettled([
       expiryJob.close(),
+      callJobs.close(),
       emails.close(),
       database.close(),
       cache.close(),

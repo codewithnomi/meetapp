@@ -37,6 +37,10 @@ function workspaceRules(repository: WorkspacesRepository) {
       if (!workspace) throw limitReached("you");
       return { workspace, switchTo: workspace.id };
     },
+    async setAllowGuests(membership: Membership, allowGuests: boolean): Promise<void> {
+      ensureAllowed(membership, "manageGuests");
+      await repository.setAllowGuests(membership.workspaceId, allowGuests);
+    },
     async rename(membership: Membership, name: string): Promise<void> {
       ensureAllowed(membership, "rename");
       await repository.rename(membership.workspaceId, name);

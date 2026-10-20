@@ -12,6 +12,7 @@ import type { Auth } from "../plugins/auth.ts";
 import { loggerOptions } from "../plugins/logging.ts";
 import { createCacheProvider } from "../providers/cache.ts";
 import { createEmailProvider } from "../providers/email.ts";
+import { createLiveKitProvider } from "../providers/livekit.ts";
 import { createStorageProvider } from "../providers/storage.ts";
 import { localConfig } from "./integration.ts";
 
@@ -68,6 +69,7 @@ export async function startAuthTestApp(options: TestAppOptions = {}): Promise<Au
     log,
     trustedOrigins: ALLOWED_ORIGINS,
     storage,
+    livekit: createLiveKitProvider(config),
   });
   const { auth } = accounts;
   const app = await buildApp(config, {

@@ -15,7 +15,15 @@ const DESKTOP = fileURLToPath(new URL("../../../apps/desktop", import.meta.url))
  * Shell settings that must not reach the tested app: VS Code sets ELECTRON_RUN_AS_NODE (Electron would
  * start as plain Node.js), and the others would change what is tested or send crash reports.
  */
-const LEFT_OUT = new Set(["ELECTRON_RUN_AS_NODE", "MEETAPP_RENDERER_URL", "VITE_API_URL", "SENTRY_DSN"]);
+const LEFT_OUT = new Set([
+  "ELECTRON_RUN_AS_NODE",
+  "MEETAPP_RENDERER_URL",
+  "VITE_API_URL",
+  "SENTRY_DSN",
+  // F02: the call server's address changes the security policy; a test that needs it passes it.
+  "LIVEKIT_PORT",
+  "LIVEKIT_PUBLIC_URL",
+]);
 
 export interface RunningApp {
   app: ElectronApplication;
@@ -33,10 +41,20 @@ export function freshProfile(): string {
 
 const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms).unref());
 
-/** Quits the app and waits until its process has really ended; force-stops it after 10 s. */
+/**
+ * Quits the app and waits until its process has really ended; force-stops it after 10 s. Closing an app
+ * twice (a test's own clean-up and the shared one below) does nothing the second time: Playwright can't
+ * reach a closed app's process any more.
+ */
 export async function closeApp(app: ElectronApplication): Promise<void> {
-  started.delete(app);
-  const child = app.process();
+  if (!started.delete(app)) return;
+  // An app that was killed from outside has lost its Playwright connection: `process()` then throws.
+  let child: ReturnType<ElectronApplication["process"]>;
+  try {
+    child = app.process();
+  } catch {
+    return;
+  }
   const ended = () => child.exitCode !== null || child.signalCode !== null;
   if (ended()) return;
   const exited = new Promise<void>((done) => child.once("exit", () => done()));
@@ -50,14 +68,24 @@ test.afterEach(async () => {
   await Promise.all([...started].map(closeApp));
 });
 
+/**
+ * Chromium's stand-in camera and microphone (a test picture and a beep), with no permission prompt:
+ * meeting tests use them so no real camera or microphone is ever turned on (F02).
+ */
+export const FAKE_MEDIA = ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"];
+
 export async function launch(
   profile: string = freshProfile(),
   extraEnv: Record<string, string> = {},
+  switches: string[] = [],
 ): Promise<RunningApp> {
   const env: Record<string, string> = { ...extraEnv, MEETAPP_USER_DATA_DIR: profile };
+  // `pnpm test:load` points the app at its own call server (the security policy allows only that one).
+  const loadServer = process.env["MEETAPP_E2E_LIVEKIT_PORT"];
+  if (loadServer) env["LIVEKIT_PORT"] = loadServer;
   for (const [key, value] of Object.entries(process.env))
     if (value !== undefined && !(key in env) && !LEFT_OUT.has(key)) env[key] = value;
-  const app = await _electron.launch({ args: [DESKTOP], cwd: DESKTOP, env });
+  const app = await _electron.launch({ args: [DESKTOP, ...switches], cwd: DESKTOP, env });
   started.add(app);
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");
@@ -88,11 +116,13 @@ export function recordRequests(page: Page): string[] {
 }
 
 /**
- * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4): the
- * platform name and the sign-in calls main makes for the page. Anything else is a leak.
+ * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4, F02
+ * design section 5): the platform name, the sign-in calls main makes for the page, camera/mic/screen
+ * access with the share picker, and the device key. Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth"],
+  meetapp: ["platform", "auth", "media", "deviceKey"],
+  media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
   auth: [
     "startProviderSignIn",
     "finishProviderSignIn",
@@ -111,11 +141,15 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `window.meetapp.auth`. */
-export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; auth: string[] }> {
+/** What the page sees on `window.meetapp`: its keys, and the keys of `meetapp.media` and `meetapp.auth`. */
+export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; media: string[]; auth: string[] }> {
   return page.evaluate(() => {
-    const bridge = (window as { meetapp?: { auth?: object } }).meetapp ?? {};
-    return { meetapp: Object.keys(bridge), auth: Object.keys(bridge.auth ?? {}) };
+    const bridge = (window as { meetapp?: { auth?: object; media?: object } }).meetapp ?? {};
+    return {
+      meetapp: Object.keys(bridge),
+      media: Object.keys(bridge.media ?? {}),
+      auth: Object.keys(bridge.auth ?? {}),
+    };
   });
 }
 
@@ -155,17 +189,17 @@ function accountFile(): string {
 }
 
 /** Creates an account through the app's bridge, with the code from the fake inbox. */
-async function signUpThroughBridge(page: Page, email: string): Promise<void> {
+async function signUpThroughBridge(page: Page, email: string, name = "E2E Person"): Promise<void> {
   const since = new Date();
   const started = await page.evaluate(
-    ([address, password]) =>
+    ([address, password, person]) =>
       (window as unknown as WindowWithBridge).meetapp.auth.startSignUp({
         email: address,
-        name: "E2E Person",
+        name: person,
         password,
         termsAccepted: true,
       }),
-    [email, TEST_PASSWORD] as const,
+    [email, TEST_PASSWORD, name] as const,
   );
   const code = await codeFor(email, since);
   await page.evaluate(([id, value]) => (window as unknown as WindowWithBridge).meetapp.auth.finishSignUp(id, value), [
@@ -204,20 +238,26 @@ export async function launchSignedIn(profile: string = freshProfile(), extraEnv:
 
 /**
  * Like launchSignedIn, but with an account of its own (for tests that change the account's state, such as
- * its last-used workspace). Returns the app, the page and the account's email.
+ * its last-used workspace). Returns the app, the page and the account's email. `name` is the display name
+ * (tests with several people give each their own, to tell the tiles apart).
  */
-export async function launchNewAccount(profile: string = freshProfile(), email = `e2e-${randomUUID()}@example.test`) {
+export async function launchNewAccount(
+  profile: string = freshProfile(),
+  email = `e2e-${randomUUID()}@example.test`,
+  switches: string[] = [],
+  name = "E2E Person",
+) {
   test.skip(!API_URL || !MAILPIT, "needs the backend and Mailpit; runs from `pnpm test`");
-  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
-  await signUpThroughBridge(running.page, email);
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" }, switches);
+  await signUpThroughBridge(running.page, email, name);
   await running.page.reload();
   await expect(running.page.getByRole("heading", { level: 1, name: "Personal" })).toBeVisible();
   return { ...running, email };
 }
 
 /** A second window for an existing account (made by launchNewAccount): signs in with its password. */
-export async function launchAs(email: string, profile: string = freshProfile()) {
-  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
+export async function launchAs(email: string, profile: string = freshProfile(), switches: string[] = []) {
+  const running = await launch(profile, { VITE_API_URL: API_URL ?? "" }, switches);
   await running.page.evaluate(
     ([address, password]) => (window as unknown as WindowWithBridge).meetapp.auth.signInWithPassword(address, password),
     [email, TEST_PASSWORD] as const,

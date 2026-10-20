@@ -32,6 +32,21 @@ export const RATE_RULES = {
   invitationPage: { name: "invitation-page", limit: 60, windowSeconds: 60 * 60 },
   /** Google/Microsoft desktop hand-off starts per network address: 20 an hour. */
   handOffStarts: { name: "hand-off-starts", limit: 20, windowSeconds: 60 * 60 },
+  /** New meetings per person: 50 an hour (F02, AC-F02-05). */
+  meetingCreates: { name: "meeting-creates", limit: 50, windowSeconds: 60 * 60 },
+  /** Wrong meeting links or IDs+passcodes: 20 a minute per person (or app) and per address (AC-F02-48). */
+  meetingLookupPerPerson: { name: "meeting-lookup-person", limit: 20, windowSeconds: 60 },
+  meetingLookupPerAddress: { name: "meeting-lookup-address", limit: 20, windowSeconds: 60 },
+  /** Wrong passcodes for one meeting ID, from anyone: 20 a minute, then that ID waits (design section 3.2). */
+  meetingIdWrongPasscodes: { name: "meeting-id-wrong", limit: 20, windowSeconds: 60 },
+  /** Joins per network address and per lookup token: 10 a minute, so one person can't fill a lobby (S5). */
+  meetingJoinsPerAddress: { name: "meeting-joins-address", limit: 10, windowSeconds: 60 },
+  meetingJoinsPerToken: { name: "meeting-joins-token", limit: 10, windowSeconds: 60 },
+  /** Actions in a call (admit, mute, remove, hand…) per meeting ticket: 30 a minute; status asks don't count. */
+  callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
+  /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
+   * database or the call server (S5; F02 verification). */
+  attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */

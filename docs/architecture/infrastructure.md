@@ -1,6 +1,6 @@
 ---
 status: accepted (stage 1–2) / proposed (stage 3)
-updated: 2026-10-11
+updated: 2026-10-20
 ---
 
 # Infrastructure Plan
@@ -13,6 +13,7 @@ Owner's machine: Apple M4, 16 GB RAM, macOS 26. Good for development and for loc
 | Piece | Runs as | Notes |
 |---|---|---|
 | Call server (LiveKit) | Docker container | Dev keys, only reachable from this Mac |
+| Load-test call server and the `lk` load tool | Docker containers, started only by `pnpm test:load` (`infra/load/`) | A second LiveKit on 127.0.0.1:7890 that sends no reports to the backend, plus simulated people (F02 T18) |
 | Database (PostgreSQL + pgvector) | Docker container | Data kept in a Docker volume |
 | Cache / job queue (Redis) | Docker container | Persistence on, so queued jobs survive restarts |
 | File storage (**RustFS**, replaces MinIO, D035) | Docker container | Works exactly like Cloudflare R2 (same "S3" API), so switching later needs no code change |
@@ -52,6 +53,7 @@ Container images ──► GitHub Container Registry (free)
 | Domain, DNS, HTTPS | Buy a domain (~$10–15/year); Cloudflare free plan for DNS, HTTPS certificates and attack protection |
 | Infrastructure as code | **OpenTofu** (free) describes all servers in files, so they can be rebuilt exactly and changes are reviewed in Pull Requests |
 | Deploying | CI builds container images, then deploys to staging automatically and to production with one approval |
+| Network addresses behind a proxy | The backend's per-address limits (joins, lookups) read the socket address. Behind Cloudflare or a load balancer, set Fastify's `trustProxy` to the proxy's exact address ranges (never `true`), so limits apply per person and can't be dodged with a forged `X-Forwarded-For` (F02 security review) |
 | Secrets | GitHub encrypted secrets for CI; a secrets manager (e.g. Infisical, open source) for servers |
 | Database | Start self-managed with automatic backups + point-in-time restore; move to managed Postgres when revenue allows |
 | Monitoring | operations.md: Sentry, Grafana, uptime checks, status page |

@@ -63,7 +63,9 @@
       "createAccount": "Create an account",
       "legal": "By continuing you agree to the Terms and the Privacy Policy. Meetings with AI notes show a notice to everyone.",
       "placeholder": "aisha@aria.com",
-      "subtitleProviders": "Use your work account, or your email."
+      "subtitleProviders": "Use your work account, or your email.",
+      "noAccountMeeting": "Got a meeting link or ID?",
+      "joinMeeting": "Join a meeting"
     },
     "password": {
       "title": "Enter your password",
@@ -215,7 +217,9 @@
       "home": "Home",
       "settings": "Settings",
       "people": "People",
-      "requests": "Requests and invitations"
+      "requests": "Requests and invitations",
+      "meetings": "Meetings",
+      "workspace": "Workspace settings"
     },
     "create": {
       "title": "Create a company workspace",
@@ -357,6 +361,20 @@
       "sentTitle": "Request sent",
       "sentText": "We'll tell you when the owner or an admin of {{name}} approves it. Requests expire after 14 days.",
       "loading": "Loading your invitations"
+    },
+    "settings": {
+      "title": "Workspace settings",
+      "subtitle": "Settings for {{name}}. Only its owner and admins can change them.",
+      "nameTitle": "Name",
+      "name": "Workspace name",
+      "nameRule": "Use 2 to 60 characters.",
+      "save": "Save name",
+      "saving": "Saving name",
+      "saved": "Name saved. Everyone in the workspace sees it within a minute.",
+      "guestsTitle": "Guests",
+      "allowGuests": "Allow guests",
+      "allowGuestsHint": "People without an account can join this workspace's meetings by link, after the lobby. When off, they are told \"This meeting doesn't allow guests\"; guests already in a meeting stay.",
+      "loading": "Loading workspace settings"
     }
   },
   "profile": {
@@ -418,6 +436,328 @@
     "data": {
       "title": "Your data",
       "text": "To get a copy of your data or delete your account, email {{email}}. We reply within 30 days."
+    }
+  },
+  "meetings": {
+    "title": "Meetings",
+    "subtitle": "Start a meeting now, make a link for later, or join one. Meetings you make belong to {{workspace}}.",
+    "start": {
+      "label": "Start a meeting",
+      "meetNow": "Meet now",
+      "meetNowText": "Start a meeting right away. Share its link from inside.",
+      "starting": "Starting the meeting",
+      "getLink": "Get a meeting link",
+      "getLinkText": "Make a link to share for later. Nobody joins until it's used.",
+      "titleLabel": "Title (optional)",
+      "getLinkButton": "Get link",
+      "making": "Making the link"
+    },
+    "join": {
+      "title": "Join a meeting",
+      "with": "Join with",
+      "byId": "Meeting ID",
+      "byLink": "Link",
+      "meetingId": "Meeting ID",
+      "meetingIdHint": "12 digits",
+      "passcode": "Passcode",
+      "passcodeHint": "6 letters and digits",
+      "link": "Meeting link",
+      "linkPlaceholder": "Paste the link here",
+      "join": "Join",
+      "finding": "Finding the meeting",
+      "guestNote": "No account? Guests can join from the sign-in screen with the link, or the ID and passcode.",
+      "meetingIdExample": "284 615 903 172",
+      "passcodeExample": "h3Tq9z"
+    },
+    "guest": {
+      "title": "Join a meeting",
+      "subtitle": "Use the link, or the meeting ID and passcode, that the organizer sent you.",
+      "back": "Back to sign-in"
+    },
+    "ready": {
+      "title": "Your meeting link is ready",
+      "close": "Close",
+      "link": "Link",
+      "copyLink": "Copy link",
+      "meetingId": "Meeting ID",
+      "copyId": "Copy ID",
+      "passcode": "Passcode",
+      "copyPasscode": "Copy passcode",
+      "details": "All details",
+      "copyAll": "Copy all details",
+      "copied": "{{what}} copied",
+      "copyFailed": "Couldn't copy. Select the text and copy it yourself.",
+      "note": "People in {{workspace}} join directly. Others wait in the lobby until someone lets them in. The link stops working 60 days after it was last used or changed.",
+      "options": "Meeting options",
+      "done": "Done",
+      "allDetails": "{{title}}\nLink: {{link}}\nMeeting ID: {{id}}\nPasscode: {{passcode}}"
+    },
+    "options": {
+      "title": "Meeting options",
+      "close": "Close",
+      "lobby": "Who can skip the lobby?",
+      "lobbyHint": "Guests always wait until someone with an account is in the meeting.",
+      "present": "Who can present?",
+      "presentHint": "Presenters can share their screen, let people in, mute and remove others.",
+      "audience": {
+        "everyone": "Everyone",
+        "workspace": "People in my workspace",
+        "organizers": "Only me and co-organizers"
+      },
+      "coOrganizers": "Co-organizers",
+      "coHint": "Only you, the organizer, can change this. Up to 10 people from this workspace.",
+      "coHintOthers": "Only the organizer can change this.",
+      "addCo": "Add a person from this workspace",
+      "addCoNamed": "Add {{name}} as co-organizer",
+      "removeCo": "Remove {{name}} as co-organizer",
+      "someone": "Someone",
+      "allowMic": "Allow mic for attendees",
+      "allowMicHint": "When off, attendees stay muted until you turn it back on or make them presenters.",
+      "allowCamera": "Allow camera for attendees",
+      "allowCameraHint": "When off, attendees can't turn their camera on.",
+      "guestsNote": "Whether guests can join is set for the whole workspace by its owner and admins.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saving": "Saving",
+      "lock": "Lock the meeting",
+      "lockHint": "Nobody new can join. People who leave can't come back, except you and co-organizers."
+    },
+    "preJoin": {
+      "missing": "Join a meeting",
+      "cancel": "Cancel",
+      "join": "Join now",
+      "joining": "Joining",
+      "straightIn": "You're in this workspace, so you'll go straight in.",
+      "lobby": "You'll wait in the lobby until someone in the meeting lets you in.",
+      "yourName": "Your name",
+      "nameRule": "Type a name of 1 to 60 characters.",
+      "terms": "By joining, you agree to the Terms and the Privacy Policy.",
+      "signedInAs": "Signed in as {{name}}",
+      "asGuest": "Joining as a guest",
+      "you": "You"
+    },
+    "errors": {
+      "notFound": "We couldn't find that meeting. Check the link, or the ID and passcode.",
+      "expired": "This meeting has expired. Ask the organizer for a new one.",
+      "locked": "This meeting is locked. Ask the organizer to unlock it.",
+      "full": "This meeting is full (100 people). Try again when someone leaves.",
+      "noGuests": "This meeting doesn't allow guests. Sign in with an account to join, or ask the organizer."
+    },
+    "devices": {
+      "label": "Your camera and sound",
+      "camera": "Camera",
+      "microphone": "Microphone",
+      "speakers": "Speakers",
+      "noCamera": "No camera found",
+      "noMicrophone": "No microphone found",
+      "defaultSpeakers": "Your computer's speakers",
+      "micOff": "Turn microphone off",
+      "micOn": "Turn microphone on",
+      "cameraOff": "Turn camera off",
+      "cameraOn": "Turn camera on",
+      "muted": "Muted",
+      "level": "Microphone level",
+      "testSpeakers": "Test speakers",
+      "remembered": "These choices are remembered on this computer.",
+      "problems": {
+        "camera": {
+          "missing": "No camera found. Plug one in, or join without video.",
+          "busy": "Your camera is in use by another app. Close that app, or join without video.",
+          "denied": "MeetApp isn't allowed to use the camera: open System Settings → Privacy & Security → Camera and turn on MeetApp."
+        },
+        "microphone": {
+          "missing": "No microphone found. Plug one in, or join without sound.",
+          "busy": "Your microphone is in use by another app. Close that app, or join muted.",
+          "denied": "MeetApp isn't allowed to use the microphone: open System Settings → Privacy & Security → Microphone and turn on MeetApp."
+        }
+      }
+    },
+    "lobby": {
+      "joiningAs": "Joining as {{name}}",
+      "waiting": "Someone in the meeting will let you in soon.",
+      "leave": "Leave"
+    },
+    "call": {
+      "inside": "You're in the meeting.",
+      "you": "{{name}} (you)",
+      "external": "{{name}} (External)",
+      "guest": "{{name}} (Guest)",
+      "roles": {
+        "organizer": "Organizer",
+        "co_organizer": "Co-organizer",
+        "presenter": "Presenter",
+        "attendee": "Attendee"
+      },
+      "muted": "Muted",
+      "speaking": "Speaking",
+      "handRaised": "Hand raised",
+      "weak": "Weak connection",
+      "pinned": "Pinned for you",
+      "unpin": "Unpin",
+      "speakerView": "Speaker view",
+      "galleryPage": "Participants' video, page {{page}} of {{pages}}",
+      "more": "+ {{count}} more",
+      "pageText": "Page {{page}} of {{pages}} · {{count}} people",
+      "pages": "Gallery pages",
+      "previousPage": "Previous page",
+      "nextPage": "Next page",
+      "controls": "Meeting controls",
+      "mute": "Mute ({{keys}})",
+      "unmute": "Unmute ({{keys}})",
+      "micNotAllowed": "Microphones are off for attendees",
+      "cameraOff": "Turn camera off ({{keys}})",
+      "cameraOn": "Turn camera on ({{keys}})",
+      "cameraNotAllowed": "Cameras are off for attendees",
+      "raiseHand": "Raise your hand ({{keys}})",
+      "lowerHand": "Lower your hand ({{keys}})",
+      "share": "Share screen",
+      "react": "React",
+      "reactions": {
+        "like": "Like",
+        "love": "Love",
+        "applause": "Applause",
+        "laugh": "Laugh",
+        "surprised": "Surprised"
+      },
+      "moreOptions": "More options",
+      "leave": "Leave",
+      "moreLeave": "More ways to leave",
+      "end": "End meeting",
+      "people": "Participants, {{count}}",
+      "info": "Meeting info",
+      "peopleTitle": "Participants ({{count}})",
+      "closePeople": "Close participants",
+      "findPerson": "Find a participant",
+      "inMeeting": "In the meeting ({{count}})",
+      "noMatch": "Nobody matches your search.",
+      "isSpeaking": "{{name}}, speaking",
+      "micOnState": "Microphone on",
+      "cameraOnState": "Camera on",
+      "cameraOffState": "Camera off",
+      "closeInfo": "Close meeting info",
+      "loadingInfo": "Loading meeting info",
+      "copy": "Copy",
+      "copied": "Copied",
+      "organizer": "Organizer",
+      "layout": "Layout",
+      "gallery": "Gallery",
+      "speaker": "Speaker",
+      "joined": "{{name}} joined",
+      "left": "{{name}} left",
+      "raised": "{{name}} raised a hand",
+      "mutedYou": "{{name}} muted you",
+      "mutedYouBody": "You can unmute yourself when you want to talk.",
+      "dismiss": "OK",
+      "stopShare": "Stop sharing",
+      "shareNotAllowed": "Only presenters can share",
+      "endingSoon": "The meeting ends in 10 minutes",
+      "endingSoonBody": "Meetings last at most 30 hours. Start a new one to keep talking.",
+      "shareEnded": "Your share ended",
+      "shareEndedBody": "Someone else started sharing, so your share stopped.",
+      "unmuteNow": "Unmute",
+      "failed": "That didn't work",
+      "failedBody": "The person may have left, or your role changed. Try again.",
+      "lobby": "Lobby",
+      "waitingBar": "{{count}} people are waiting in the lobby:",
+      "viewLobby": "View lobby",
+      "admitAll": "Admit all",
+      "waitingTitle": "Waiting in the lobby ({{count}})",
+      "admit": "Admit",
+      "deny": "Deny",
+      "admitNamed": "Admit {{name}}",
+      "denyNamed": "Deny {{name}}",
+      "muteAll": "Mute all",
+      "actionsFor": "Actions for {{name}}",
+      "lobbyArrived": "{{name}} is waiting in the lobby",
+      "actions": {
+        "mute": "Mute",
+        "lowerHand": "Lower hand",
+        "make": {
+          "presenter": "Make a presenter",
+          "attendee": "Make an attendee"
+        },
+        "pin": "Pin for me",
+        "remove": "Remove from meeting"
+      },
+      "connecting": "Connecting…",
+      "connectingBody": "Joining the call. This takes a moment.",
+      "reconnecting": "Reconnecting…",
+      "reconnectingBody": "Your connection dropped. MeetApp is trying to bring you back.",
+      "weakTitle": "Your connection is weak.",
+      "weakBody": "Others may see you in lower quality.",
+      "deviceGone": "{{gone}} disconnected.",
+      "deviceNow": "Now using {{now}}.",
+      "devices": "Device settings",
+      "closeDevices": "Close device settings",
+      "noiseSuppression": "Noise suppression",
+      "noiseSuppressionHint": "Cuts background noise like typing and fans.",
+      "unreachable": "Can't reach MeetApp. Check your connection.",
+      "retry": "Retry",
+      "deviceKinds": {
+        "camera": "Your camera",
+        "microphone": "Your microphone",
+        "speakers": "Your speakers"
+      }
+    },
+    "ended": {
+      "home": "Back to home",
+      "tryAgain": "Try again",
+      "someone": "Someone",
+      "denied": {
+        "title": "You've been denied entry",
+        "body": "Someone in the meeting didn't let you in."
+      },
+      "timedOut": {
+        "title": "Nobody let you in",
+        "body": "You waited 15 minutes in the lobby. You can try again."
+      },
+      "removed": {
+        "title": "You were removed from the meeting",
+        "body": "{{name}} removed you. If you join again, you'll wait in the lobby."
+      },
+      "ended": {
+        "title": "The meeting has ended",
+        "body": "The meeting was ended for everyone."
+      },
+      "locked": {
+        "title": "This meeting is locked",
+        "body": "Nobody new can join right now. Ask the organizer to unlock it."
+      },
+      "noGuests": {
+        "title": "This meeting doesn't allow guests",
+        "body": "Sign in with an account to join, or ask the organizer."
+      },
+      "left": {
+        "title": "You left the meeting",
+        "body": "You can join again with the link, or the ID and passcode."
+      },
+      "rejoin": "Rejoin",
+      "lost": {
+        "title": "You've lost connection",
+        "body": "We couldn't reconnect in 30 seconds. Check your network, then rejoin."
+      }
+    },
+    "share": {
+      "title": "Choose what to share",
+      "close": "Close",
+      "note": "Everyone in the meeting will see it. If someone else is sharing, your share replaces theirs. Sound from your computer isn't shared.",
+      "kind": "Share",
+      "screen": "Whole screen",
+      "window": "One window",
+      "screens": "Screens",
+      "windows": "Windows",
+      "finding": "Finding screens and windows",
+      "none": "Nothing to share was found.",
+      "blockedTitle": "Allow screen recording",
+      "blockedBody": "Open System Settings → Privacy & Security → Screen & System Audio Recording, turn on MeetApp, then restart it.",
+      "cancel": "Cancel",
+      "share": "Share"
+    },
+    "end": {
+      "title": "End the meeting for everyone?",
+      "body": "Everyone, including people in the lobby, will leave at once.",
+      "cancel": "Cancel",
+      "confirm": "End meeting"
     }
   }
 }

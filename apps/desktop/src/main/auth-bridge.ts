@@ -9,7 +9,7 @@ import type { TokenStore } from "./auth-token.ts";
 import { isInsideApp, isTokenRoute } from "./security.ts";
 
 /** Only the app's own page, in the window's top frame: never an embedded frame or another site. */
-function fromAppPage(event: IpcMainInvokeEvent, appUrl: string): boolean {
+export function fromAppPage(event: IpcMainInvokeEvent, appUrl: string): boolean {
   const frame = event.senderFrame;
   return frame !== null && frame === event.sender.mainFrame && isInsideApp(frame.url, appUrl);
 }

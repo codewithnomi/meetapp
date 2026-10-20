@@ -25,6 +25,8 @@ export const ROLE_TABLE: Record<WorkspaceAction, readonly MemberRole[]> = {
   transfer: OWNER_ONLY,
   // The owner hands over first (409 OWNER_MUST_TRANSFER).
   leave: ["admin", "member"],
+  // F02 (AC-F02-06, 40): in a personal workspace its one user is the owner, so they decide.
+  manageGuests: OWNER_AND_ADMINS,
 };
 
 /** Not allowed in a personal workspace at all (AC-F01-14): 409 PERSONAL_WORKSPACE. */

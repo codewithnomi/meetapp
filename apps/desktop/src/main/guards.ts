@@ -1,14 +1,44 @@
-// Applies the security rules to Electron (AC-F00-24, S17): every permission, device and screen-share
-// request is refused (camera and microphone arrive with F02, through an allow-list), downloads are
-// refused, pages can't leave the app or open windows, and the dev server's pages get the CSP.
+// Applies the security rules to Electron (AC-F00-24, S17; F02 AC-F02-54, D040 updated): camera,
+// microphone and screen capture only for the app's own page, screen sharing only through our picker
+// (media-permissions.ts); every other permission and every device request is refused; downloads are
+// refused, pages can't leave the app or open windows, and the dev server's pages get the CSP. Electron
+// keeps only the last handler set, so this is the one place they are set.
 import type { Event, Session, WebContents } from "electron";
+import { allowsCheck, allowsRequest, shareAnswer, type SharePicker } from "./media-permissions.ts";
 import { canOpenExternally, isInsideApp } from "./security.ts";
 
-export function lockDownSession(session: Session, csp: string, devServerUrl: string | undefined): void {
-  session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  session.setPermissionCheckHandler(() => false);
+export interface LockDown {
+  csp: string;
+  devServerUrl: string | undefined;
+  /** The app's own page (app://meetapp, or the dev server in development). */
+  appUrl: string;
+  picker: SharePicker;
+}
+
+function mediaRules(session: Session, { appUrl, picker }: LockDown): void {
+  session.setPermissionRequestHandler((_contents, permission, callback, details) => {
+    const mediaTypes = "mediaTypes" in details ? details.mediaTypes : undefined;
+    callback(
+      allowsRequest({ permission, url: details.requestingUrl, mediaTypes, isMainFrame: details.isMainFrame }, appUrl),
+    );
+  });
+  session.setPermissionCheckHandler((_contents, permission, requestingOrigin, details) =>
+    allowsCheck(
+      { permission, url: details.requestingUrl ?? requestingOrigin, isMainFrame: details.isMainFrame },
+      appUrl,
+    ),
+  );
+  session.setDisplayMediaRequestHandler((request, callback) => {
+    const frame = request.frame;
+    const fromTopFrame = frame !== null && frame === frame.top;
+    callback(shareAnswer(picker, { securityOrigin: request.securityOrigin, fromTopFrame }, appUrl));
+  });
+}
+
+export function lockDownSession(session: Session, lock: LockDown): void {
+  const { csp, devServerUrl } = lock;
+  mediaRules(session, lock);
   session.setDevicePermissionHandler(() => false);
-  session.setDisplayMediaRequestHandler((_request, callback) => callback({}));
   const cancel = (event: Event) => event.preventDefault();
   session.on("select-hid-device", (event, _details, callback) => {
     cancel(event);

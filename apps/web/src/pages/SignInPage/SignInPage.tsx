@@ -59,6 +59,12 @@ function EmailStep({ initial, onContinue }: { initial: string; onContinue: (emai
           {t("auth.signIn.createAccount")}
         </Link>
       </p>
+      <p className="m-0 text-center text-[13px] text-ink-muted">
+        {t("auth.signIn.noAccountMeeting")}{" "}
+        <Link to="/join-meeting" className={TEXT_LINK}>
+          {t("auth.signIn.joinMeeting")}
+        </Link>
+      </p>
       <p className="m-0 text-center text-[12px] leading-4 text-ink-muted">{t("auth.signIn.legal")}</p>
     </form>
   );

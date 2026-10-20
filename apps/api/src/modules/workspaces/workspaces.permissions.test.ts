@@ -29,6 +29,7 @@ const DESIGN_TABLE: Record<WorkspaceAction, [boolean, boolean, boolean]> = {
   removeAdmin: [true, false, false],
   transfer: [true, false, false],
   leave: [false, true, true],
+  manageGuests: [true, true, false],
 };
 
 const ROLES: MemberRole[] = ["owner", "admin", "member"];
@@ -66,9 +67,10 @@ describe("TC-F01-56 [AC-F01-21] [AC-F01-32] role table", () => {
     expect(() => ensureAllowed(company("owner"), "transfer")).not.toThrow();
   });
 
-  it("TC-F01-38 [AC-F01-14] the personal workspace allows only seeing itself (409 PERSONAL_WORKSPACE)", () => {
+  it("TC-F01-38 [AC-F01-14] [AC-F02-06] the personal workspace allows only seeing itself and the guest switch (409 PERSONAL_WORKSPACE)", () => {
     const personal: Membership = { ...company("owner"), kind: "personal" };
-    expect(allowedActions(personal)).toEqual(["viewMembers"]);
+    // F02 (AC-F02-06): the personal workspace's own user decides whether guests may join its meetings.
+    expect(allowedActions(personal)).toEqual(["viewMembers", "manageGuests"]);
     for (const action of ["rename", "transfer", "inviteMember", "manageJoinLink"] as const) {
       expect(() => ensureAllowed(personal, action)).toThrow(expect.objectContaining({ code: "PERSONAL_WORKSPACE" }));
     }

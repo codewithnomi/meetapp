@@ -23,38 +23,42 @@ meetapp/
 ├── infra/
 │   ├── docker-compose.yml         Local services: LiveKit, Postgres, Redis, RustFS storage, Mailpit
 │   ├── livekit.yaml               Local call-server settings
+│   ├── load/                      `pnpm test:load` only: a second call server (127.0.0.1:7890, no webhooks) and the pinned `lk` load tool (F02)
 │   └── monitoring/                Gatus, Prometheus, Alloy, Loki, Tempo, Grafana dashboards + alerts
 │
 ├── apps/
 │   ├── desktop/                   Electron shell (F04)
 │   │   ├── CLAUDE.md              Rules for this app
 │   │   └── src/
-│   │       ├── main/              Window, security, app:// files, settings, Sentry, sign-in token and calls (F01: auth-token.ts keeps the token, auth-client.ts makes the sign-in calls and adds the bearer header, auth-actions.ts the list behind `window.meetapp.auth`, auth-bridge.ts the window bridge, provider-sign-in.ts the Google/Microsoft browser step) (later: deep links, updates, notifications)
+│   │       ├── main/              Window, security, app:// files, settings, Sentry, sign-in token and calls (F01: auth-token.ts keeps the token, auth-client.ts makes the sign-in calls and adds the bearer header, auth-actions.ts the list behind `window.meetapp.auth`, auth-bridge.ts the window bridge, provider-sign-in.ts the Google/Microsoft browser step); F02: media-permissions.ts (camera and mic for our own page, screen only through our picker), media-actions.ts and media-bridge.ts (`window.meetapp.media`), device-key.ts (`window.meetapp.deviceKey`) (later: deep links, updates, notifications)
 │   │       └── preload/           The only bridge between app pages and the computer
+│   │   (scripts/second-window.ts: `pnpm dev:window`, a second window with its own sign-in)
 │   │
 │   ├── web/                       React app: pages and app wiring (loaded inside desktop)
 │   │   ├── CLAUDE.md
 │   │   └── src/
 │   │       ├── app/               Routing, providers (theme, query, i18n), error boundary
 │   │       ├── pages/             One folder per screen: MeetingPage/, HomePage/ …
-│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); later meetings/, chat/, ask-ai/. Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
-│   │       │   └── meetings/      hooks (useJoinMeeting), api calls, state stores
+│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02); later chat/, ask-ai/. Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
+│   │       │   └── meetings/      API hooks (useCreateMeeting, useJoinMeeting…), the visit store (visit.ts), devices, pre-join; call/ holds the call itself (useMeetingRoom with livekit-client, people, reactions, sharing, shortcuts)
 │   │       └── locales/           Translation files: en.json …
 │   │
 │   ├── api/                       Backend (Fastify)
 │   │   ├── CLAUDE.md
 │   │   └── src/
 │   │       ├── server.ts          Starts the server
+│   │       ├── meetings.ts        Wires the meeting and call modules together (F02)
 │   │       ├── config/            Settings from .env, validated at start
-│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, auth-adapter.ts stores session tokens as SHA-256 fingerprints (D048), session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01)
+│   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, auth-adapter.ts stores session tokens as SHA-256 fingerprints (D048), session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01); meeting-ticket.ts (the X-Meeting-Ticket header, F02)
 │   │       ├── modules/           One folder per business area:
 │   │       │   ├── accounts/  workspaces/  invitations/  join-requests/   (F01; invitations/page/ is the invitation web page, accounts/page/ the Google/Microsoft hand-off page)
-│   │       │   └── meetings/
-│   │       │       ├── meetings.routes.ts       HTTP endpoints only
-│   │       │       ├── meetings.service.ts      Business rules
-│   │       │       ├── meetings.repository.ts   Database access only
-│   │       │       ├── meetings.schemas.ts      Zod input/output (or from packages/contracts)
-│   │       │       └── meetings.test.ts
+│   │       │   ├── meetings/  Making meetings, options, lookups by link or ID+passcode, expiry, the record (F02)
+│   │       │   │   ├── meetings.routes.ts       HTTP endpoints only
+│   │       │   │   ├── meetings.service.ts      Business rules
+│   │       │   │   ├── meetings.repository.ts   Database access only
+│   │       │   │   └── meetings.*.test.ts
+│   │       │   └── calls/     Joining, the lobby, in-call controls, ending (F02): calls.permissions.ts (the role table),
+│   │       │                  livekit-webhook.routes.ts (joins and leaves from the call server), calls.jobs.ts (timeouts, the 30-hour limit)
 │   │       ├── test-support/      Test-only helpers: the test backend (auth-app.ts), fake Google/Microsoft, Mailpit, photos, workspace/invitation/join/sweep set-ups. modules/test-support/ holds test-only routes, registered only when NODE_ENV is "test"
 │   │       ├── emails/            Email templates (HTML + text, words in emails/locales/) and the email outbox queue (F01)
 │   │       ├── jobs/              Background jobs (BullMQ)
@@ -84,14 +88,14 @@ meetapp/
 │   ├── core/                      Shared non-UI logic: API client, utilities, constants (created when first needed)
 │   └── config/                    Shared ESLint, TypeScript, Prettier, Vitest settings
 │
-├── tools/                       Dev scripts: preflight, dev runner and checks, test runner, monitoring + alert notifier (notifier.ts) + its read-only database login (monitoring-db.ts), license check, structure check, flags, seed and its local-only guard (seed-guard.ts)
+├── tools/                       Dev scripts: preflight, dev runner and checks, test runner, load tests (load.ts, `pnpm test:load`), monitoring + alert notifier (notifier.ts) + its read-only database login (monitoring-db.ts), license check, structure check, flags, seed and its local-only guard (seed-guard.ts)
 ├── coverage/                    (generated by `pnpm test`, git-ignored) test coverage report: open coverage/index.html
 └── tests/
     ├── e2e/                       Playwright end-to-end tests (real app flows)
     │   ├── desktop/               Real-window tests; shared steps in desktop.ts and workspace-steps.ts
     │   └── gallery/               Screenshot + accessibility check of every Storybook story and the invitation page (pnpm test:visual)
     ├── fixtures/                  Files that deliberately break rules, used to test the checks
-    └── load/                      Load tests (100-person meetings; later, not created yet)
+    └── load/                      Load tests (100- and 25-person meetings, `pnpm test:load`; numbers in tests/load/test-results)
 ```
 
 ## 2. Naming rules

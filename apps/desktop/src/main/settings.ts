@@ -12,6 +12,8 @@ export interface DesktopSettings {
   /** Tests start each run with a fresh profile folder; ignored in the packaged app. */
   userDataDir: string | undefined;
   sentryDsn: string | undefined;
+  /** The call server (F02), for the content security policy; the backend's join answers say the same. */
+  callServerUrl: string;
 }
 
 const DEFAULT_API_URL = "http://127.0.0.1:3000";
@@ -41,6 +43,20 @@ function safeApiUrl(value: string | undefined): string {
   }
 }
 
+const DEFAULT_CALL_PORT = "7880";
+
+/** LIVEKIT_PUBLIC_URL when it is wss://; otherwise the call server on this computer (as the backend does). */
+function callServerUrl(env: NodeJS.ProcessEnv, packaged: boolean): string {
+  const port = filled(env["LIVEKIT_PORT"]) ?? "";
+  const local = `ws://127.0.0.1:${/^\d{2,5}$/.test(port) && !packaged ? port : DEFAULT_CALL_PORT}`;
+  const value = packaged ? undefined : filled(env["LIVEKIT_PUBLIC_URL"]);
+  try {
+    return value && new URL(value).protocol === "wss:" ? value : local;
+  } catch {
+    return local;
+  }
+}
+
 export function readSettings(env: NodeJS.ProcessEnv, mainDir: string, packaged = false): DesktopSettings {
   const devServerUrl = filled(env["MEETAPP_RENDERER_URL"]);
   return {
@@ -50,5 +66,6 @@ export function readSettings(env: NodeJS.ProcessEnv, mainDir: string, packaged =
     preloadPath: resolve(mainDir, "../preload/preload.cjs"),
     userDataDir: packaged ? undefined : filled(env["MEETAPP_USER_DATA_DIR"]),
     sentryDsn: filled(env["SENTRY_DSN"]),
+    callServerUrl: callServerUrl(env, packaged),
   };
 }

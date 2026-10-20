@@ -17,22 +17,27 @@
   - set `trustProxy`;
   - write the real Terms and Privacy documents and link them.
 - **Process (owner, 2026-10-13):** while building a feature, run only each task's quick tests and checks; the full suite, desktop tests and screenshots run once, at the feature's verification.
-- **Next step:** the owner merges the F01 Pull Request; then `/next` starts F02 Meetings & calling (requirements). **Watch:** in the first full run after T1, TC-F00-72 (flag shown again within 30 s) failed once and the next full run passed; if it fails again, investigate before continuing. Offered earlier: make F02's first build step a bare two-person call demo (owner to decide when F02 starts).
+- **F01 merged** into main (PR #8, 2026-10-13).
+- **F02 Meetings & calling:** requirements **approved** by the owner (2026-10-14) on branch `feat/F02-meetings`:
+  - `docs/specs/F02-meetings/requirements.md`, 54 ACs, following Microsoft Teams at the owner's request (D053);
+  - reviewed by spec-reviewer, and its findings fixed.
+- **F02 verified: PASS (2026-10-20)**, see `docs/specs/F02-meetings/verification.md` (second run; the Medium security items and a clean-up bug found by the reviews were fixed with tests first). Smoothness for 100 people met on an idle Mac only; the owner accepted it (D056), to re-check before going online.
+- **Next step:** the owner merges the F02 Pull Request; then F03 In-meeting chat (`/next`).
 
 ## Open questions (need the owner's answer)
-0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". This matches the approved design system. Keep it, or change the design system to use only the label (recommended: only the label)?
+0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
 0d. **Theme switch: chosen option is faint (optional, design system):** in the Light / Dark / Same-as-computer switch, the chosen option differs only by a slightly lighter background and a soft shadow. It may be hard to see for people with low vision. Keep it as designed, or make the chosen option stronger in the design system (recommended: stronger)?
 1. **App name:** is "MeetApp" final, or a working name?
 2. **Pricing:** free plan limits (e.g. 40-minute meetings? number of participants?) and paid plan price?
 3. **Recording:** should meetings be recorded (video files)? It costs storage. Or only transcripts?
 4. **AI on/off:** should AI transcription be on for every meeting, or only when the host turns it on?
 5. **Languages:** which spoken languages must transcription support at launch? (English only? Urdu? others?)
-6. **Guests:** can people without an account join a meeting via link?
 7. **Data location / privacy:** any customers needing data stored in a specific country?
 8. **Local AI:** which minimum computer should "Local AI mode" support?
 9. **Quality targets:** are the numbers in `docs/product/quality-targets.md` OK?
 
 ## Answered
+- **Guests (F02, 2026-10-14):** yes, as in Teams: guests join by link or by ID and passcode, wait in the lobby, and the workspace's owner or admins can switch guests off (D053, AC-F02-11, 40).
 - **Ports on this Mac (2026-10-10):** MeetApp moved to spare ports in the local `.env`: database 5433, cache 6380, backend 3010 (`VITE_API_URL` http://127.0.0.1:3010). The owner's own PostgreSQL, Redis and Open WebUI keep running.
 - **GitHub MCP:** connected (token stored on the owner's computer only).
 - **Code repository:** https://github.com/codewithnomi/meetapp (private). The first upload went straight to `main`; every change after that goes through a branch + Pull Request.
@@ -47,6 +52,20 @@
 - **Decisions:** owner accepted all decisions D001–D019.
 
 ## Session log
+
+### 2026-10-16 to 2026-10-20: Session 5 (F02 fixes, final runs, second verification)
+- T-fix-3 to T-fix-8 done: connection, place, Rejoin and device bugs; meeting-screen accessibility; app unit tests (coverage over 80%); the postponed desktop tests (they found real bugs: Copy refused by the desktop rules, focus lost after dialogs, unplugged speakers and cameras); documentation.
+- Final runs (T-fix-8): the full suite, `pnpm check`, the container check (production needs a wss call-server address; the local call server has no https), new screenshots (the side panel now stays beside the videos in narrow windows; small tiles shrink their picture).
+- Load test (2026-10-20): sound 70 ms, joins 1.9 s, 25 people at most 598 MB met; smoothness 73%/63% against 90% on a busy Mac (met on an idle Mac on 2026-10-15). The owner chose not to re-run it (D056 updated).
+- Owner's look check: "looks good". Ideas for after a first usable version noted in features.md (call toasts, a Teams-style share border and Stop sharing bar, people search and chat).
+- Design system updated with the F02 components and icons (D029).
+- Second /spec-verify (2026-10-20): the reviews found a removed member or organizer keeping in-call powers and rejoining as a member (Medium), a call ended too early on a slow first connection, docs gaps; all fixed with tests before the verdict.
+
+### 2026-10-14 to 2026-10-16: Session 4 (F02 Meetings & calling: build and first verification)
+- F02 requirements, screen designs, design, tests (114 cases) and tasks (19 steps) approved; D053 (follow Teams), D054, D055 accepted; D052 extended (tests only where needed per task, the rest at /spec-verify).
+- Built T1–T19 on `feat/F02-meetings`: call server set-up, meetings and lookups, joining and the lobby, meeting tickets, in-call controls, the record, security sweeps, desktop media permissions and the screen picker, the meeting components, Meetings, pre-join, lobby and meeting screens, connection and device handling, Workspace settings (Allow guests), the load test (`pnpm test:load`, D056 targets set with the owner), docs.
+- Owner reports: the control bar was hidden (fixed: the meeting screen fits the window); a hosting budget for 10 testers was estimated (about €10–15 a month on one Hetzner server, or free with limits on LiveKit Cloud; nothing bought).
+- First /spec-verify (2026-10-16): FAIL (verification.md). Fixed since: T-fix-1 (a removed co-organizer lost no powers: High), T-fix-2 (status-ask limit and other security items), T-fix-3 (connection, place, Rejoin and other bugs), T-fix-4 (meeting screen states, focus, button names), and the documentation (T-fix-7). Under way: coverage (T-fix-5) and the postponed screen tests (T-fix-6).
 
 ### 2026-10-11: Session 3 (F00 merged; F01 requirements draft)
 - Owner merged PR #3: **F00 is in `main`.** New branch `feat/F01-accounts`.

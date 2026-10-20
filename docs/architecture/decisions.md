@@ -217,7 +217,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:**
   - **Crash reports (Sentry, only with `SENTRY_DSN`):** no Sentry bridge in the pages (no injected preload, no `sentry-ipc://` scheme); native crash dumps off (they hold raw memory that can't be cleaned); console messages never collected; addresses in reports cut to their origin; every data category off (D036).
   - **Development settings** (`MEETAPP_RENDERER_URL`, `MEETAPP_USER_DATA_DIR`, `VITE_API_URL`) are ignored by the packaged app; a dev server must be on this computer, and the backend must be on this computer or use https.
-  - **Extra guards:** redirects and frame navigation checked like navigation; device, screen-share and download requests refused; `form-action 'none'` added to the CSP; app:// answers only for host `meetapp` and never follows a shortcut out of the screens' folder; `app.enableSandbox()`.
+  - **Extra guards:** redirects and frame navigation checked like navigation; download requests refused (camera, microphone and screen: see the F02 update below); screen-share requests refused (**updated by F02 T10, 2026-10-15:** camera, microphone and screen capture are allowed only for the app's own page in the window's top frame; the screen goes only to the source chosen in our picker, once, within 10 seconds, never with computer sound; speaker choice allowed for the same page; **added 2026-10-19 (F02 verification):** writing to the clipboard (`clipboard-sanitized-write`, for the Copy buttons) for the same page, never reading it; every other permission and every other site still refused; the CSP's `connect-src` adds the call server); `form-action 'none'` added to the CSP; app:// answers only for host `meetapp` and never follows a shortcut out of the screens' folder; `app.enableSandbox()`.
   - **Lint tools are devDependencies** of `@meetapp/config`, so `pnpm audit --prod` reports only what ships. `handlebars` is forced to ≥ 4.7.10 (2 critical fixes).
   - **Accepted for now (development tools only, never shipped):** `braces` ≤ 3.0.3 inside the lint plugin (slowdown risk, no fixed version exists yet); an old `esbuild` inside drizzle-kit (the issue only affects esbuild's own dev server, which we don't run). Re-checked by `/deps-update`.
 - **Why:** the security audit of T15 found these; none were critical in our code, all were small to fix now.
@@ -314,4 +314,50 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** while a feature's tasks are being built, each task runs only its own tests plus typecheck and lint. The whole suite (unit, integration, desktop windows) and the screenshot checks run once, at `/spec-verify`, before the Pull Request. Tests are still written with each task, and GitHub still checks every push.
 - **Why:** in F01 each full run took 15–25 minutes and many runs were made; the owner wants faster development and fewer tokens. A break is still caught before the feature is marked done, at most one feature late.
 - **Cost:** none (less time and fewer tokens).
+- **Extended 2026-10-15 (owner):** during a feature, focus on finishing tasks. A task writes and runs only the tests it needs to move on (its main logic, plus typecheck and lint). Small UI tests (component tests for looks and states, story checks, screenshots, accessibility scans) are written and run at the end of the feature, at `/spec-verify`, since the screens aren't required for the MVP yet.
 
+### D053: F02 meetings follow Microsoft Teams
+- **Date:** 2026-10-14. **Status:** accepted (owner: "same as Microsoft Teams" for the lobby, guests, link expiry and host roles).
+- **Decision:** a Teams organization is a MeetApp workspace. Meetings follow Teams' documented behaviour:
+  - **Ways in:** Meet now and meeting links; join by link or by meeting ID and passcode.
+  - **Lobby:** workspace members skip it by default; external people and guests wait. Guests can't start a meeting alone, and the workspace's owner or admins can switch guests off.
+  - **Roles:** organizer, co-organizers (up to 10, named by the organizer, workspace members only), presenters (everyone by default) and attendees.
+  - **Lifetimes:** Meet now expires 60 days after creation; link meetings 60 days after the last join or change. A meeting lasts at most 30 hours, and the lobby wait is 15 minutes.
+  - **Records:** a meeting's record is visible to its participants.
+- **Sources:** Microsoft Learn "Limits and specifications for Microsoft Teams" (meeting expiration, 30 hours), "Roles in Microsoft Teams meetings", "Add co-organizers", "Manage lobby options" (checked 2026-10-14).
+- **Why:** the owner wants people coming from Teams to find nothing new, as for accounts (D047).
+- **Cost:** none.
+
+
+### D054: How meetings are built (F02)
+- **Date:** 2026-10-14. **Status:** accepted (owner approved F02 design.md, 2026-10-14).
+- **Decision:**
+  - **The backend decides who gets in; LiveKit enforces it.** Every join goes through our API: link or ID+passcode, lobby, lock, guests, the 100 limit and expiry. Only then does the API issue a one-room LiveKit pass (10 minutes for the first use) whose rights come from the meeting role (`canPublishSources`). Rooms are made only by the backend (`auto_create: false`).
+  - **The lobby is polling, not a call connection:** waiting apps ask the API every 2 seconds. People in the lobby never touch the call server and never see who is inside.
+  - **A meeting ticket per join** (random, stored only as a fingerprint) authenticates every in-call action, so members and guests use the same rules. Same account twice = two attendances.
+  - **Shared state** is set only by the backend: participant attributes (role, group, hand), room metadata (options, lock, end time) and server data messages. Apps trust control messages only from the server. Reactions are the one thing apps send to each other.
+  - **LiveKit webhooks** fill the meeting record (joins, leaves, end) and refuse reused passes. A cleanup job every minute repairs anything a lost webhook missed.
+  - **Link and passcode** are stored encrypted, with HMAC columns for lookups (as D050).
+- **Why:** a changed or hacked app can't skip the rules (S1, S4). Polling for the lobby keeps it simple and works without a second real-time channel. Server-only state means one source of truth.
+- **Cost:** none.
+
+### D055: New libraries for F02
+- **Date:** 2026-10-14. **Status:** accepted (owner approved F02 design.md, 2026-10-14); each is vetted with `/add-dependency` before it's added.
+- **Decision:**
+  - `livekit-client`: the calling engine in the app;
+  - `@livekit/components-react`: its React hooks only, already named in frontend.md, with all visuals from our own components;
+  - the `livekit/livekit-cli` Docker image (pinned): simulated participants for the 100-person load test, development only.
+- **Why:** they come from the makers of the call server we use (D004), are free and Apache-2.0, and are widely used.
+- **Cost:** none.
+- **Vetted (T1, 2026-10-14):** livekit-client 2.22.3 (Apache-2.0; the newer 2.22.4 is under two weeks old), @livekit/components-react 2.9.24 (Apache-2.0), livekit/livekit-cli image v2.18.8 (Apache-2.0, 22 Sep 2026, pinned by digest when added in T18). The backend's livekit-server-sdk (2.19.1) is already in use since F00. Each is installed in the task that first uses it.
+- **Built (T14, T18):** only `livekit-client` 2.22.3 was added to the app; `@livekit/components-react` was **not** added, because our own hooks in `apps/web/src/features/meetings/call` cover what the meeting screen needs. The `livekit/livekit-cli` image is pinned by digest in `infra/load/docker-compose.load.yml`.
+
+### D056: How smooth and how light a big meeting must be (F02 load tests)
+- **Date:** 2026-10-15. **Status:** accepted (owner: "handle this as MS Teams is handling this").
+- **Decision:**
+  - **Smoothness:** like Teams, each video is sent at the size and speed its tile needs; small gallery tiles get the small, 15-frames-a-second version. A tile counts as smooth when it shows at least 90% of the frames it receives (measured 5 seconds after a page appears). The load test also records the frames received, so a slow sender and a slow app are told apart.
+  - **Memory:** the desktop app stays under **700 MB** in a 25-person video meeting (was 600 MB). Teams uses about 800 MB to 1 GB in such a meeting.
+- **Measured (2026-10-15, owner's MacBook):** 25-person meeting 470–650 MB over 5 minutes; 100-person meeting: tiles 14.5–15 frames a second from 15 received, sound delay 63 ms, joins 1.2 s (95th percentile).
+- **Measured again (2026-10-20, F02's final runs, Mac busy with VS Code, Teams, Firefox and Docker):** sound delay 70 ms, joins 1.9 s (95th percentile), 25-person meeting at most 598 MB: met. Smoothness: the worst tile showed 73% (page 1) and 63% (page 2) of the frames it received: **not met** on the busy Mac. The owner chose not to re-run it on an idle Mac and accepted the earlier idle-Mac result (2026-10-20); to re-check before going online.
+- **Why:** the old numbers expected more than the senders send (15) and less memory than comparable apps use. Memory is the person's own computer while a meeting is open: nothing is stored on a server and nothing costs money.
+- **Cost:** none.

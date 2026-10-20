@@ -1,7 +1,16 @@
 // Workspaces: database access only (F01 design.md section 5). Every read of workspace data filters by
 // workspace id (S2). The personal workspace is created with every account (AC-F01-14); the database
 // allows only one per person, so creating it twice is harmless.
-import { joinRequests, memberRemovals, user, workspaceMembers, workspaces, type Executor } from "@meetapp/db";
+import {
+  joinRequests,
+  meetingCoOrganizers,
+  meetings,
+  memberRemovals,
+  user,
+  workspaceMembers,
+  workspaces,
+  type Executor,
+} from "@meetapp/db";
 import type { MemberRole, WorkspaceSummary } from "@meetapp/contracts";
 import { and, asc, count, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import type { Membership } from "./workspaces.permissions.ts";
@@ -54,6 +63,7 @@ const summary = {
   name: workspaces.name,
   kind: workspaces.kind,
   role: workspaceMembers.role,
+  allowGuests: workspaces.allowGuests,
 };
 
 export function createWorkspacesRepository(executor: Executor) {
@@ -135,8 +145,11 @@ function changes(executor: Executor) {
           .returning({ id: workspaces.id, name: workspaces.name });
         if (!created) throw new Error("the new workspace row was not returned");
         await tx.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
-        return { id: created.id, name: created.name, kind: "company", role: "owner" };
+        return { id: created.id, name: created.name, kind: "company", role: "owner", allowGuests: true };
       }),
+    setAllowGuests: async (workspaceId: string, allowGuests: boolean): Promise<void> => {
+      await executor.update(workspaces).set({ allowGuests }).where(eq(workspaces.id, workspaceId));
+    },
     rename: async (workspaceId: string, name: string): Promise<void> => {
       await executor.update(workspaces).set({ name }).where(eq(workspaces.id, workspaceId));
     },
@@ -168,11 +181,24 @@ const notOwner = (workspaceId: string, userId: string) =>
   );
 
 /** Leaving, removal and hand-over: each is one transaction, and none ever makes a second owner. */
+/** Someone who is no longer a member stops being a co-organizer of the workspace's meetings (AC-F02-36). */
+async function dropCoOrganizerRoles(tx: Executor, workspaceId: string, userId: string): Promise<void> {
+  const ofWorkspace = tx.select({ id: meetings.id }).from(meetings).where(eq(meetings.workspaceId, workspaceId));
+  await tx
+    .delete(meetingCoOrganizers)
+    .where(and(eq(meetingCoOrganizers.userId, userId), inArray(meetingCoOrganizers.meetingId, ofWorkspace)));
+}
+
 function membershipEnds(executor: Executor) {
   return {
     /** The membership goes; what they made stays with the workspace (AC-F01-23). */
-    leave: async (workspaceId: string, userId: string): Promise<boolean> =>
-      (await executor.delete(workspaceMembers).where(notOwner(workspaceId, userId)).returning()).length > 0,
+    leave: (workspaceId: string, userId: string): Promise<boolean> =>
+      executor.transaction(async (tx) => {
+        const gone = await tx.delete(workspaceMembers).where(notOwner(workspaceId, userId)).returning();
+        if (gone.length === 0) return false;
+        await dropCoOrganizerRoles(tx, workspaceId, userId);
+        return true;
+      }),
     /** Removes someone with role `role` and records it for the "removed earlier" badge (AC-F01-21). */
     remove: (workspaceId: string, userId: string, role: MemberRole, removedBy: string): Promise<boolean> =>
       executor.transaction(async (tx) => {
@@ -182,6 +208,7 @@ function membershipEnds(executor: Executor) {
           .returning();
         if (gone.length === 0) return false;
         await tx.insert(memberRemovals).values({ workspaceId, userId, removedBy });
+        await dropCoOrganizerRoles(tx, workspaceId, userId);
         return true;
       }),
     transfer: async (workspaceId: string, fromUserId: string, toUserId: string, limit: number) => {

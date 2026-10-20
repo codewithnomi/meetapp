@@ -157,8 +157,8 @@ function inviteeSide({ repository, memberRole, limiter, now = () => new Date() }
       const role = row.role === "admin" && can(senderRole, "inviteAdmin") ? "admin" : "member";
       if (!(await repository.accept(invitationId, { workspaceId: row.workspaceId, userId, role }))) throw gone();
       const joined = (await memberRole(row.workspaceId, userId)) ?? role;
-      const workspace = { id: row.workspaceId, name: row.workspaceName, kind: "company" as const, role: joined };
-      return { workspace, switchTo: row.workspaceId };
+      const { workspaceId: id, workspaceName: name, allowGuests } = row;
+      return { workspace: { id, name, kind: "company" as const, role: joined, allowGuests }, switchTo: id };
     },
     /** What the web page shows for a link's token (AC-F01-18): the same "invalid" for every unusable one. */
     async page(token: string, address: string): Promise<InvitationPage> {

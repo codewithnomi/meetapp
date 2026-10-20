@@ -28,7 +28,29 @@ const PUBLIC = new Set([
   "GET /api/v1/flags",
   "GET /invite/:token",
   "GET /metrics", // F00: scraped by local monitoring only (operations.md)
+  "POST /api/v1/livekit/webhook", // F02: the call server's reports, checked by signature (TC-F02-106)
   "OPTIONS *", // CORS preflight
+]);
+/** Open to guests, and to signed-in people as themselves (F02: finding and joining meetings). */
+const OPTIONAL = new Set([
+  "POST /api/v1/meeting-lookups",
+  "POST /api/v1/meetings/join",
+  // The meeting ticket authenticates these (X-Meeting-Ticket); the ticket sweep checks them (TC-F02-100).
+  "GET /api/v1/attendances/:attendanceId",
+  "DELETE /api/v1/attendances/:attendanceId",
+  "POST /api/v1/attendances/:attendanceId/rejoin",
+  "GET /api/v1/calls/:callId/lobby",
+  "POST /api/v1/calls/:callId/lobby/admit",
+  "POST /api/v1/calls/:callId/lobby/deny",
+  "GET /api/v1/calls/:callId/meeting",
+  "POST /api/v1/calls/:callId/hand",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/lower-hand",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/mute",
+  "POST /api/v1/calls/:callId/participants/:attendanceId/remove",
+  "PATCH /api/v1/calls/:callId/participants/:attendanceId/role",
+  "POST /api/v1/calls/:callId/mute-all",
+  "PATCH /api/v1/calls/:callId",
+  "POST /api/v1/calls/:callId/end",
 ]);
 /** Routes that exist only while testing (modules/test-support). */
 const TEST_ONLY = new Set(["GET /api/v1/__test__/whoami", "POST /__test__/error"]);
@@ -73,16 +95,20 @@ describe("TC-F01-76 route sweep", () => {
 
   it("TC-F01-76 [AC-F01-31, AC-F01-32] every public route is on the list; everything else is signed-in", () => {
     for (const route of routes) {
-      if (PUBLIC.has(key(route)) || TEST_ONLY.has(key(route))) continue;
+      if (PUBLIC.has(key(route)) || OPTIONAL.has(key(route)) || TEST_ONLY.has(key(route))) continue;
       expect(route.url, key(route)).toMatch(/^\/api\/v1\//);
       expect(route.access, `${key(route)} must not be public`).not.toBe("public");
     }
     for (const route of routes.filter((r) => r.access === "public"))
       expect(PUBLIC.has(key(route)), key(route)).toBe(true);
+    for (const route of routes.filter((r) => r.access === "optional"))
+      expect(OPTIONAL.has(key(route)), key(route)).toBe(true);
   });
 
   it("TC-F01-76 [AC-F01-31, AC-F01-33] every signed-in route refuses no, expired, broken and revoked sessions with 401", async () => {
-    const guarded = routes.filter((route) => !PUBLIC.has(key(route)) && !TEST_ONLY.has(key(route)));
+    const guarded = routes.filter(
+      (route) => !PUBLIC.has(key(route)) && !OPTIONAL.has(key(route)) && !TEST_ONLY.has(key(route)),
+    );
     for (const route of guarded) {
       for (const [label, headers] of Object.entries(badSessions)) {
         const answer = await t.app.inject({

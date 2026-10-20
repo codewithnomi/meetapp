@@ -17,7 +17,7 @@ const TOO_BIG = Buffer.concat([TINY_PNG, Buffer.alloc(5 * 1024 * 1024)]);
 const RULE = "Use a JPEG, PNG or WebP image up to 5 MB.";
 
 async function openProfile(page: Page) {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(title(page, "Settings")).toBeVisible();
 }
 

@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-11
+updated: 2026-10-20
 ---
 
 # Privacy & Legal Requirements
@@ -36,6 +36,20 @@ updated: 2026-10-11
 | Join link and code | encrypted (AES-256-GCM), found through a keyed hash | until switched off or replaced |
 | Requests to join | plain fields | waiting up to 14 days, then expired |
 | Attempt counters (wrong passwords, codes sent, sign-ups) | in Redis under a keyed hash of the email or address | 15 minutes to 24 hours |
+
+### What meetings and calls store (F02)
+| Data | Kept as | How long |
+|---|---|---|
+| Meetings: title, organizer, options, co-organizers, 12-digit meeting ID | plain fields | until the meeting expires (60 days; for link meetings, 60 days after the last join or change); deleting expired meetings comes with F06/F10 (S9) |
+| Meeting link and passcode | encrypted (AES-256-GCM), found through a keyed hash (HMAC) | as the meeting |
+| Meeting record: who took part (name shown, member / external / guest), when each joined and left, how the call ended | plain fields; a deleted account's link is removed and only the name stays | how long comes with F06/F10 (S9) |
+| Guests: the name they typed | plain field, shown as text only | as the meeting record |
+| Guests' "same app" fingerprint (to keep a removed guest out of the call) | HMAC of the meeting ID and a random key made on their computer, so one guest's meetings can't be linked | as the meeting record |
+| Meeting tickets (the in-meeting pass) | SHA-256 fingerprint only, on the attendance; the app keeps the ticket in memory | works until the person leaves (30 minutes more for reading the outcome); the fingerprint stays with the meeting record |
+| Call-server reports already handled | report ID and time | 1 day |
+| Audio, video and screen shares | **never stored**: passed between people by the call server only | — |
+
+The computer's camera, microphone and screen are used only while a person chooses to (pre-join preview, call, sharing). The app remembers the chosen devices on that computer only. Logs and traces never contain meeting links, passcodes, tickets, call passes or guest names (tested: TC-F02-108, 109).
 
 Until export and deletion are built into the app, people ask through `SUPPORT_EMAIL` (shown in Settings → Profile and account → "Your data"), and we reply within 30 days. Logs never contain passwords, codes, tokens, invitation or join links, or request bodies (tested: TC-F01-81, 82).
 

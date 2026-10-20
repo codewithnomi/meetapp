@@ -2,6 +2,22 @@
 // check: it imports the story files directly. The check against Storybook's built `index.json`
 // runs in the T13 pipeline.
 import { describe, expect, it } from "vitest";
+import * as ActionMenuStories from "./atoms/ActionMenu/ActionMenu.stories.tsx";
+import * as LevelMeterStories from "./atoms/LevelMeter/LevelMeter.stories.tsx";
+import * as DeviceSelectStories from "./molecules/DeviceSelect/DeviceSelect.stories.tsx";
+import * as LobbyRowStories from "./molecules/LobbyRow/LobbyRow.stories.tsx";
+import * as MessageCardStories from "./molecules/MessageCard/MessageCard.stories.tsx";
+import * as ParticipantRowStories from "./molecules/ParticipantRow/ParticipantRow.stories.tsx";
+import * as SidePanelStories from "./molecules/SidePanel/SidePanel.stories.tsx";
+import * as ControlBarStories from "./organisms/ControlBar/ControlBar.stories.tsx";
+import * as DevicePanelStories from "./organisms/DevicePanel/DevicePanel.stories.tsx";
+import * as GalleryStories from "./organisms/Gallery/Gallery.stories.tsx";
+import * as MeetingInfoPanelStories from "./organisms/MeetingInfoPanel/MeetingInfoPanel.stories.tsx";
+import * as MeetingOptionsFormStories from "./organisms/MeetingOptionsForm/MeetingOptionsForm.stories.tsx";
+import * as ParticipantPanelStories from "./organisms/ParticipantPanel/ParticipantPanel.stories.tsx";
+import * as SharePickerStories from "./organisms/SharePicker/SharePicker.stories.tsx";
+import * as VideoTileStories from "./organisms/VideoTile/VideoTile.stories.tsx";
+import * as MeetingLayoutStories from "./templates/MeetingLayout/MeetingLayout.stories.tsx";
 import * as AvatarStories from "./atoms/Avatar/Avatar.stories.tsx";
 import * as BadgeStories from "./atoms/Badge/Badge.stories.tsx";
 import * as ButtonStories from "./atoms/Button/Button.stories.tsx";
@@ -136,6 +152,42 @@ describe("TC-F00-27 [AC-F00-13] every molecule has stories for every state", () 
       expect(story(mod, "Hover").parameters?.pseudo?.["hover"]).toBe(true);
       // In a radio group only one option can have focus, so the story targets the chosen one.
       expect(story(mod, "Focused").parameters?.pseudo?.["focusVisible"]).toEqual(['[aria-checked="true"]']);
+    },
+  );
+});
+
+// F02 (TC-F02-86): the meeting's building blocks. Each has its level's title and a Normal story; the
+// ones that can be pressed or typed in also show Hover and Focused.
+const F02: [string, string, StoryModule, boolean][] = [
+  ["Atoms", "ActionMenu", ActionMenuStories as unknown as StoryModule, true],
+  ["Atoms", "LevelMeter", LevelMeterStories as unknown as StoryModule, false],
+  ["Molecules", "DeviceSelect", DeviceSelectStories as unknown as StoryModule, true],
+  ["Molecules", "LobbyRow", LobbyRowStories as unknown as StoryModule, true],
+  ["Molecules", "MessageCard", MessageCardStories as unknown as StoryModule, true],
+  ["Molecules", "ParticipantRow", ParticipantRowStories as unknown as StoryModule, true],
+  ["Molecules", "SidePanel", SidePanelStories as unknown as StoryModule, true],
+  ["Organisms", "ControlBar", ControlBarStories as unknown as StoryModule, true],
+  ["Organisms", "DevicePanel", DevicePanelStories as unknown as StoryModule, true],
+  ["Organisms", "Gallery", GalleryStories as unknown as StoryModule, false],
+  ["Organisms", "MeetingInfoPanel", MeetingInfoPanelStories as unknown as StoryModule, true],
+  ["Organisms", "MeetingOptionsForm", MeetingOptionsFormStories as unknown as StoryModule, false],
+  ["Organisms", "ParticipantPanel", ParticipantPanelStories as unknown as StoryModule, true],
+  ["Organisms", "SharePicker", SharePickerStories as unknown as StoryModule, false],
+  ["Organisms", "VideoTile", VideoTileStories as unknown as StoryModule, false],
+  ["Templates", "MeetingLayout", MeetingLayoutStories as unknown as StoryModule, false],
+];
+
+describe("TC-F02-86 [AC-F02-43] every meeting building block has its stories", () => {
+  it.each(F02)("TC-F02-86 [AC-F02-43] %s/%s has its title and a Normal story", (level, name, mod) => {
+    expect(mod.default.title).toBe(`${level}/${name}`);
+    expect(mod["Normal"]).toBeTypeOf("object");
+  });
+
+  it.each(F02.filter(([, , , pressable]) => pressable))(
+    "TC-F02-86 [AC-F02-44] %s/%s shows Hover and Focused",
+    (_level, _name, mod) => {
+      expect(story(mod, "Hover").parameters?.pseudo?.["hover"]).toBe(true);
+      expect(story(mod, "Focused").parameters?.pseudo?.["focusVisible"]).toBe(true);
     },
   );
 });

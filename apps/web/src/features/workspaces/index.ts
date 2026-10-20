@@ -22,5 +22,6 @@ export {
 } from "./join.ts";
 export { ME_KEY, useMe, type MyWorkspace } from "./me.ts";
 export { useMemberChange, useMembers, type MemberChange } from "./people.ts";
+export { useAllowGuests, useRenameWorkspace } from "./settings.ts";
 export { useWorkspaceName } from "./workspace-name.ts";
 export { WorkspaceShell, type AppScreen } from "./WorkspaceShell.tsx";

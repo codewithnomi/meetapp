@@ -31,14 +31,43 @@ const PROVIDER_KEYS = [
 
 /** The shared local values from .env.example: fine on a Mac, never online (anyone can read them). */
 const LOCAL_ONLY_SECRET = /local_dev/i;
-const SECRETS = ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY"] as const;
+const SECRETS = ["BETTER_AUTH_SECRET", "DATA_ENCRYPTION_KEY", "LIVEKIT_API_SECRET"] as const;
+
+const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
+
+/**
+ * The call server's address for the app (F02 design section 5, AC-F02-53): wss anywhere; plain ws only
+ * on this computer and never in production.
+ */
+export function isAllowedCallServerUrl(value: string, environment: string): boolean {
+  if (!URL.canParse(value)) return false;
+  const { protocol, hostname } = new URL(value);
+  if (protocol === "wss:") return true;
+  return protocol === "ws:" && environment !== "production" && LOCAL_HOSTS.has(hostname);
+}
 
 /** https anywhere; plain http only on this computer and only outside production (desktop tests). */
 function isAllowedAuthority(value: string, environment: string): boolean {
   if (!URL.canParse(value)) return false;
   const { protocol, hostname } = new URL(value);
   if (protocol === "https:") return true;
-  return protocol === "http:" && environment !== "production" && (hostname === "127.0.0.1" || hostname === "localhost");
+  return protocol === "http:" && environment !== "production" && LOCAL_HOSTS.has(hostname);
+}
+
+/** Values fine on this computer that production refuses: the example secrets, the load test's switch. */
+function productionProblems(config: {
+  NODE_ENV: string;
+  CALLS_KEEP_SIMULATED_PEOPLE: string;
+  [name: string]: unknown;
+}): [string, string][] {
+  if (config.NODE_ENV !== "production") return [];
+  const problems: [string, string][] = SECRETS.filter((name) => LOCAL_ONLY_SECRET.test(String(config[name]))).map(
+    (name) => [name, "is the local example value; set a real secret"],
+  );
+  if (config.CALLS_KEEP_SIMULATED_PEOPLE === "true") {
+    problems.push(["CALLS_KEEP_SIMULATED_PEOPLE", "is for load tests on this computer only, never in production"]);
+  }
+  return problems;
 }
 
 export const configSchema = z
@@ -57,6 +86,10 @@ export const configSchema = z
     LIVEKIT_HOST: host,
     LIVEKIT_API_KEY: text,
     LIVEKIT_API_SECRET: text,
+    // Where the app connects to the call server; empty means ws://127.0.0.1:<LIVEKIT_PORT> (development).
+    LIVEKIT_PUBLIC_URL: optional,
+    // `pnpm test:load` only: the clean-up leaves the simulator's people ("sim_…") in calls. Never in production.
+    CALLS_KEEP_SIMULATED_PEOPLE: withDefault("false").pipe(z.enum(["true", "false"])),
     STORAGE_PORT: port,
     STORAGE_HOST: host,
     STORAGE_ACCESS_KEY: text,
@@ -93,11 +126,19 @@ export const configSchema = z
         message: "must be https (http only on this computer, and never in production)",
       });
     }
-    for (const name of SECRETS) {
-      if (config.NODE_ENV === "production" && LOCAL_ONLY_SECRET.test(config[name])) {
-        context.addIssue({ code: "custom", path: [name], message: "is the local example value; set a real secret" });
-      }
+    const callServer = config.LIVEKIT_PUBLIC_URL;
+    if (
+      (callServer === undefined && config.NODE_ENV === "production") ||
+      (callServer !== undefined && !isAllowedCallServerUrl(callServer, config.NODE_ENV))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["LIVEKIT_PUBLIC_URL"],
+        message: "must be wss:// (ws:// only on this computer, and never in production)",
+      });
     }
+    for (const [name, message] of productionProblems(config))
+      context.addIssue({ code: "custom", path: [name], message });
     for (const [id, secretKey] of PROVIDER_KEYS) {
       if ((config[id] === undefined) !== (config[secretKey] === undefined)) {
         context.addIssue({
@@ -114,6 +155,17 @@ export type Config = z.infer<typeof configSchema>;
 /** Which sign-in providers are switched on (design.md section 3). */
 export function signInProviders(config: Config): { google: boolean; microsoft: boolean } {
   return { google: config.GOOGLE_CLIENT_ID !== undefined, microsoft: config.MICROSOFT_CLIENT_ID !== undefined };
+}
+
+/** The call server's address as the app reaches it (sent with every pass, F02 design section 5). */
+export function callServerUrl(config: Config): string {
+  return config.LIVEKIT_PUBLIC_URL ?? `ws://127.0.0.1:${String(config.LIVEKIT_PORT)}`;
+}
+
+/** Where the backend reaches the call server's admin API: https online (S6), plain http only on this computer. */
+export function callServerAdminUrl(config: Config): string {
+  const scheme = config.NODE_ENV === "production" ? "https" : "http";
+  return `${scheme}://${config.LIVEKIT_HOST}:${String(config.LIVEKIT_PORT)}`;
 }
 
 export class ConfigError extends Error {

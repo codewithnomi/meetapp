@@ -1,0 +1,31 @@
+# `pnpm test:load` (F02 T18): a call server of its own on port 7890 (no reports to the backend), and
+# LiveKit's load tool (`lk perf load-test`), which runs inside the call server's network and adds the
+# simulated people. Started and stopped by tools/load.ts; the normal services keep running.
+name: meetapp-load
+
+services:
+  livekit-load:
+    image: livekit/livekit-server:v1.13.9@sha256:d0c04791bf63ca8dcea123571827d56ba9504bd57c8d5de60ee03b5408cc3154
+    command: ["--config", "/etc/livekit.yaml", "--node-ip", "127.0.0.1"]
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?set in .env}: ${LIVEKIT_API_SECRET:?set in .env}"
+    volumes:
+      - ./livekit.load.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "127.0.0.1:7890:7880"
+      - "127.0.0.1:7891:7891"
+      - "127.0.0.1:7892:7892/udp"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:7880"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  lk:
+    image: livekit/livekit-cli:v2.18.8@sha256:04eff828f8edd810b996c18456a6260ba0698a60f8ea309d0f015c2b09696413
+    profiles: ["tool"]
+    network_mode: "service:livekit-load"
+    environment:
+      LIVEKIT_URL: "http://127.0.0.1:7880"
+      LIVEKIT_API_KEY: "${LIVEKIT_API_KEY:?set in .env}"
+      LIVEKIT_API_SECRET: "${LIVEKIT_API_SECRET:?set in .env}"

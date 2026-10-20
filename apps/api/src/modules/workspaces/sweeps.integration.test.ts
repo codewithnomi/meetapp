@@ -107,8 +107,10 @@ describe("TC-F01-79 member sweep", () => {
       ["POST", `/requests/${ids.request}/reject`],
       ["POST", "/invitations", { email: "new-admin@example.test", role: "admin" }],
       ["DELETE", `/invitations/${ids.invitation}`],
+      // F02 (TC-F02-102): the Allow guests switch is for the owner and admins.
+      ["PATCH", "/settings", { allowGuests: false }],
     ];
-    expect(await refusals(people.member, calls)).toBe(14);
+    expect(await refusals(people.member, calls)).toBe(15);
   });
 
   it("TC-F01-79 [AC-F01-22, AC-F01-32] an admin is refused the owner-only actions", SLOW, async () => {

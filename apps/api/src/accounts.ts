@@ -1,6 +1,6 @@
 // Puts the accounts pieces together (F01): Better Auth, the rate limiter, and the accounts, sign-up,
-// passwords, desktop sign-in, workspaces, invitations and join services. Used by server.ts and by the integration tests,
-// so both run the same wiring.
+// passwords, desktop sign-in, workspaces, invitations and join services, plus meetings (F02). Used by
+// server.ts and by the integration tests, so both run the same wiring.
 import type { Database } from "@meetapp/db";
 import type { FastifyBaseLogger } from "fastify";
 import type { Redis } from "ioredis";
@@ -29,6 +29,8 @@ import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
 import { createRateLimiter } from "./plugins/rate-limit.ts";
+import type { LiveKitProvider } from "./providers/livekit.ts";
+import { createMeetingPieces } from "./meetings.ts";
 
 export interface AccountsWiring {
   config: Config;
@@ -39,9 +41,11 @@ export interface AccountsWiring {
   trustedOrigins: string[];
   /** Where profile photos are kept (F00 storage). */
   storage: PhotoStorage;
+  /** The call server (F02). */
+  livekit: LiveKitProvider;
 }
 
-export function createAccounts({ config, db, redis, outbox, log, trustedOrigins, storage }: AccountsWiring) {
+export function createAccounts({ config, db, redis, outbox, log, trustedOrigins, storage, livekit }: AccountsWiring) {
   const auth = createAuth({ config, db, outbox, log, trustedOrigins });
   const limiter = createRateLimiter({
     store: redis,
@@ -87,6 +91,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
+    ...createMeetingPieces({ config, db, livekit }, limiter),
   };
 }
 

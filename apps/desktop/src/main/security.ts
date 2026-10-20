@@ -45,6 +45,15 @@ export interface CspOptions {
   apiUrl: string;
   /** The Vite dev server in development; its live-reload connection and inline styles are allowed. */
   devServerUrl?: string | undefined;
+  /** The call server (F02): ws:// on this computer in development, wss:// online. */
+  callServerUrl?: string | undefined;
+}
+
+/** The call server's address, plus its http(s) twin, which the call library uses to check the connection. */
+function callServerSources(url: string | undefined): string[] {
+  const origin = url ? originOf(url.replace(/^ws/, "http")) : undefined;
+  if (!origin) return [];
+  return [origin.replace(/^http/, "ws"), origin];
 }
 
 /** Development only; must equal DEV_CSP_NONCE in apps/web/vite.config.ts (checked by a test). */
@@ -54,10 +63,15 @@ export const DEV_CSP_NONCE = "meetapp-dev";
  * Content Security Policy: only the app's own scripts, styles and fonts; no inline scripts. In development
  * the dev server's own live-reload scripts are allowed through their nonce.
  */
-export function contentSecurityPolicy({ apiUrl, devServerUrl }: CspOptions): string {
+export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl }: CspOptions): string {
   const api = originOf(apiUrl) ?? "";
   const dev = devServerUrl ? originOf(devServerUrl) : undefined;
-  const connect = dev ? `'self' ${api} ${dev.replace(/^http/, "ws")}` : `'self' ${api}`;
+  const connect = [
+    "'self'",
+    api,
+    ...callServerSources(callServerUrl),
+    ...(dev ? [dev.replace(/^http/, "ws")] : []),
+  ].join(" ");
   return [
     "default-src 'self'",
     dev ? `script-src 'self' 'nonce-${DEV_CSP_NONCE}'` : "script-src 'self'",

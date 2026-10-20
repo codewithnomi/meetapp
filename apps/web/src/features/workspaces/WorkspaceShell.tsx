@@ -12,7 +12,7 @@ import type { MyWorkspace } from "./me.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
-export type AppScreen = "home" | "people" | "requests" | "settings" | "join";
+export type AppScreen = "home" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
 
 export interface WorkspaceShellProps {
   screen: AppScreen;
@@ -22,17 +22,25 @@ export interface WorkspaceShellProps {
 
 const ICONS: Record<Exclude<AppScreen, "join">, IconName> = {
   home: "home",
+  meetings: "camera",
   people: "users",
   requests: "send",
+  workspace: "lock",
   settings: "sliders",
 };
 
 function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: Omit<WorkspaceShellProps, "children">) {
   const { t } = useTranslation();
   const company = current?.kind === "company";
-  const screens: Exclude<AppScreen, "join">[] = company
-    ? ["home", "people", "requests", "settings"]
-    : ["home", "settings"];
+  // Workspace settings: the owner and admins (in Personal, its user).
+  const manages = current !== undefined && current.role !== "member";
+  const screens: Exclude<AppScreen, "join">[] = [
+    "home",
+    "meetings",
+    ...(company ? (["people", "requests"] as const) : []),
+    ...(manages ? (["workspace"] as const) : []),
+    "settings",
+  ];
   return screens.map((id): AppNavItem => ({
     id,
     label: t(`workspaces.nav.${id}`),

@@ -46,13 +46,13 @@ You only ever need to type **`/next`**.
 - **Depends on:** F00 · **Size:** large
 
 ### F02 Meetings & calling
-- **Start now** or get a meeting link to share; join by link or code
+- **Meet now** or get a meeting link to share; join by link, or by meeting ID and passcode (works like Microsoft Teams, D053)
 - Pre-join screen: check camera, mic and speakers; pick devices; join muted
 - Audio + video for up to **100 people**; grid view, speaker view, pin someone
 - **Screen sharing** (whole screen or one window)
 - Mute / camera off, raise hand, emoji reactions, who's-speaking highlight
-- **Host controls:** waiting room, admit/deny, mute others, remove someone, lock meeting, end for all
-- Guests without an account can join by link (if the host allows)
+- **Organizer controls** with co-organizers and presenters: lobby, admit/deny, mute others, remove someone, lock meeting, end for all
+- Guests without an account can join by link (unless the workspace's owner or an admin turns guests off)
 - Noise suppression, automatic reconnect on bad network, connection-quality indicator
 - **Depends on:** F01 · **Size:** large
 
@@ -151,6 +151,11 @@ You only ever need to type **`/next`**.
 
 ## Later ideas (not planned yet)
 Meeting **recording** (video files) · background blur / virtual backgrounds · breakout rooms · permanent team chat channels · live translation · whiteboard · end-to-end encryption · webinars · Linux desktop app.
+
+Noted by the owner during the F02 look check (2026-10-20), for after a first usable version (MVP):
+- **People search and chat outside meetings** (like Teams' Chat tab): find colleagues in the workspace and message them one to one. F03 covers chat inside a meeting only.
+- **In-call messages as toasts:** "X muted you", "Your share ended", unplugged devices and similar messages as small cards that slide in over the videos and close by themselves after a few seconds (today they are larger cards above the videos).
+- **Screen sharing like Teams:** a red border around the shared screen (seen only by the sharer), a "You're sharing" bar with **Stop sharing** in the meeting window, and a small floating sharing bar on top of other apps.
 
 ## The build order at a glance
 ```

@@ -30,6 +30,8 @@ interface RequestOptions {
   fetcher?: typeof fetch;
   /** How long to wait for an answer; 10 s unless a call needs longer (a photo upload). */
   timeoutMs?: number;
+  /** Still sent when the window is closing (leaving a meeting as the app closes, F02). */
+  keepalive?: boolean;
 }
 
 async function errorOf(response: Response): Promise<ApiError> {
@@ -55,12 +57,14 @@ export const apiFileUrl = (path: string | null | undefined, apiUrl: string = API
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {}, apiUrl = API_URL, fetcher = fetch, timeoutMs = TIME_LIMIT_MS } = options;
+  const keepalive = options.keepalive === true ? { keepalive: true } : {};
   let response: Response;
   try {
     response = await fetcher(`${apiUrl}${path}`, {
       method,
       ...bodyAndType(body, headers),
       signal: AbortSignal.timeout(timeoutMs),
+      ...keepalive,
     });
   } catch {
     throw new ApiError("NETWORK_ERROR", 0);

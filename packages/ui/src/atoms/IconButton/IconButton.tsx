@@ -20,6 +20,12 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   size?: "sm" | "md";
   /** Set false to drop the tooltip (e.g. when a visible label sits next to it). */
   tooltip?: boolean;
+  /**
+   * True when `label` already says what pressing will do ("Mute" / "Unmute"): then the button doesn't also
+   * report "pressed", which would read as "Unmute, pressed" (F02 UI review). Keep false for buttons with a
+   * fixed name, such as an open panel.
+   */
+  labelIsAction?: boolean;
 }
 
 const VARIANTS = {
@@ -44,9 +50,11 @@ export function IconButton({
   tooltip = true,
   className,
   type = "button",
+  labelIsAction = false,
   ...rest
 }: IconButtonProps) {
-  const pressed = active === undefined && off === undefined ? undefined : active === true || off === true;
+  const toggles = !labelIsAction && (active !== undefined || off !== undefined);
+  const pressed = toggles ? active === true || off === true : undefined;
   const button = (
     <button
       {...rest}

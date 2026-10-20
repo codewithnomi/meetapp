@@ -2,7 +2,8 @@
 // (or stops at once with the Docker message), runs all unit and integration tests with one merged
 // coverage report (business logic at least 80%), then the real desktop-window tests against a running
 // backend. Prints a short summary and fails if any part failed. CI runs the two parts as separate jobs:
-// `--only vitest` and `--only desktop`.
+// `--only vitest` and `--only desktop`; with `--only desktop`, anything after `--` goes to Playwright
+// (e.g. `-- meeting-roles.spec.ts` runs one file).
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createServer, type AddressInfo } from "node:net";
@@ -28,6 +29,15 @@ function startApi(extraEnv: Record<string, string>): ChildProcess {
     ["--env-file-if-exists=../../.env", "--import", "./src/instrumentation.ts", "src/server.ts"],
     { cwd: join(ROOT, "apps/api"), stdio: "ignore", env: { ...process.env, ...extraEnv, NODE_ENV: "test" } },
   );
+}
+
+/**
+ * On Linux (CI) the call server reaches the backend through Docker's bridge, not 127.0.0.1, so the
+ * backend listens on every address there; that machine is thrown away after the run. On the Mac
+ * Docker Desktop forwards to 127.0.0.1 and nothing changes (AC-F00-23, F02 design section 7).
+ */
+function callServerReach(): Record<string, string> {
+  return process.platform === "linux" && process.env["CI"] === "true" ? { API_HOST: "0.0.0.0" } : {};
 }
 
 /** A port nothing listens on right now (for the desktop tests' fake Microsoft sign-in). */
@@ -87,13 +97,18 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
   // A key of its own for this run: the attempt counters (e.g. 50 sign-ups an hour from this computer)
   // are kept under it, so counts left by earlier runs in the same hour can't block this one. The same
   // trick as the backend's own tests (test-support/auth-app.ts).
-  const api = startApi({ ...fakeMicrosoft(apiUrl, providerPort), DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}` });
+  const api = startApi({
+    ...fakeMicrosoft(apiUrl, providerPort),
+    ...callServerReach(),
+    DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}`,
+  });
   try {
     if (!(await waitForApi(apiUrl))) {
       process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);
       return false;
     }
-    return run("pnpm", ["test:e2e"], {
+    const passed = process.argv.indexOf("--");
+    return run("pnpm", ["test:e2e", ...(passed >= 0 ? process.argv.slice(passed + 1) : [])], {
       VITE_API_URL: apiUrl,
       MEETAPP_E2E_API_URL: apiUrl,
       MEETAPP_E2E_API_PID: String(api.pid),

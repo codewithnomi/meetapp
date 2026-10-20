@@ -10,7 +10,7 @@ const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const title = (page: Page, name: string) => page.getByRole("heading", { level: 1, name });
 
 async function openSettings(page: Page) {
-  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(title(page, "Settings")).toBeVisible();
 }
 

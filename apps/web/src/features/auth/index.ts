@@ -1,5 +1,5 @@
 export { authBridge, type AuthBridge, type SignedInUser, type SignInProvider, type SignUpForm } from "./auth-bridge.ts";
-export { errorText } from "./auth-errors.ts";
+export { errorText, type ErrorText } from "./auth-errors.ts";
 export { SESSION_KEY, useAuthAction, useSession, useSignOut, useSignOutEverywhere } from "./session.ts";
 export { ActionErrorNotice } from "./ActionErrorNotice.tsx";
 export {

@@ -16,6 +16,10 @@ import { createFlagsService, type FlagsSource } from "./modules/flags/flags.serv
 import { healthRoutes } from "./modules/health/health.routes.ts";
 import { createHealthService, type HealthCheck } from "./modules/health/health.service.ts";
 import { joinRequestsRoutes } from "./modules/join-requests/join-requests.routes.ts";
+import { callsRoutes } from "./modules/calls/calls.routes.ts";
+import { controlsRoutes } from "./modules/calls/controls.routes.ts";
+import { liveKitWebhookRoutes } from "./modules/calls/livekit-webhook.routes.ts";
+import { meetingsRoutes } from "./modules/meetings/meetings.routes.ts";
 import { invitationsRoutes } from "./modules/invitations/invitations.routes.ts";
 import { workspacesRoutes } from "./modules/workspaces/workspaces.routes.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
@@ -49,7 +53,7 @@ const NO_FLAGS: FlagsSource = { list: async () => [] };
 export interface RouteSummary {
   method: string;
   url: string;
-  access: "public" | "signed-in" | undefined;
+  access: "public" | "signed-in" | "optional" | undefined;
 }
 
 const ROUTES = new WeakMap<FastifyInstance, RouteSummary[]>();
@@ -88,7 +92,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   // The desktop's main process adds the token (authorization); creating things sends an idempotency key (F01).
   await app.register(cors, {
     origin: ALLOWED_ORIGINS,
-    allowedHeaders: ["content-type", "authorization", "idempotency-key"],
+    // F02: the meeting ticket has its own header, because the desktop sets authorization itself.
+    allowedHeaders: ["content-type", "authorization", "idempotency-key", "x-meeting-ticket"],
     // The screens also change and remove things (F01: rename, roles, last workspace, cancel…).
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
@@ -98,24 +103,32 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
 
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
-  if (options.accounts) {
-    const { auth, limiter, service, signUp, passwords, desktopSignIn, providers } = options.accounts;
-    const { workspaces, invitations, joinLink, joinRequests, membershipLookup, idempotency } = options.accounts;
-    await app.register(authRoutes, { auth, limiter });
-    await app.register(accountsRoutes, { accounts: service });
-    await app.register(profileRoutes, { profile: options.accounts.profile });
-    await app.register(signUpRoutes, { signUp, accounts: service });
-    await app.register(passwordsRoutes, { passwords, accounts: service });
-    await app.register(desktopSignInRoutes, {
-      desktopSignIn,
-      accounts: service,
-      enabled: providers,
-      secureCookies: config.APP_PUBLIC_URL.startsWith("https:"),
-    });
-    await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
-    await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
-    await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
-  }
+  if (options.accounts) await registerAccountRoutes(app, config, options.accounts);
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
+}
+
+/** Sign-in, accounts, workspaces and meetings (F01, F02). */
+async function registerAccountRoutes(app: FastifyInstance, config: Config, accounts: Accounts): Promise<void> {
+  const { auth, limiter, service, signUp, passwords, desktopSignIn, providers } = accounts;
+  const { workspaces, invitations, joinLink, joinRequests, membershipLookup, idempotency } = accounts;
+  await app.register(authRoutes, { auth, limiter });
+  await app.register(accountsRoutes, { accounts: service });
+  await app.register(profileRoutes, { profile: accounts.profile });
+  await app.register(signUpRoutes, { signUp, accounts: service });
+  await app.register(passwordsRoutes, { passwords, accounts: service });
+  await app.register(desktopSignInRoutes, {
+    desktopSignIn,
+    accounts: service,
+    enabled: providers,
+    secureCookies: config.APP_PUBLIC_URL.startsWith("https:"),
+  });
+  await app.register(workspacesRoutes, { workspaces, lookup: membershipLookup, idempotency });
+  await app.register(invitationsRoutes, { invitations, lookup: membershipLookup });
+  await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
+  const { meetings, lookups, join, lobby, rejoin, record, webhooks, controls } = accounts;
+  await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
+  await app.register(callsRoutes, { join, lobby, rejoin, record });
+  await app.register(liveKitWebhookRoutes, { webhooks });
+  await app.register(controlsRoutes, { controls });
 }
