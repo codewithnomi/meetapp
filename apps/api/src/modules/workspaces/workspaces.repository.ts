@@ -11,7 +11,7 @@ import {
   workspaces,
   type Executor,
 } from "@meetapp/db";
-import type { MemberRole, WorkspaceSummary } from "@meetapp/contracts";
+import type { MemberRole, WorkspaceSettings, WorkspaceSummary } from "@meetapp/contracts";
 import { and, asc, count, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import type { Membership } from "./workspaces.permissions.ts";
 
@@ -64,6 +64,7 @@ const summary = {
   kind: workspaces.kind,
   role: workspaceMembers.role,
   allowGuests: workspaces.allowGuests,
+  allowGifs: workspaces.allowGifs,
 };
 
 export function createWorkspacesRepository(executor: Executor) {
@@ -145,10 +146,11 @@ function changes(executor: Executor) {
           .returning({ id: workspaces.id, name: workspaces.name });
         if (!created) throw new Error("the new workspace row was not returned");
         await tx.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
-        return { id: created.id, name: created.name, kind: "company", role: "owner", allowGuests: true };
+        const switches = { allowGuests: true, allowGifs: true };
+        return { id: created.id, name: created.name, kind: "company", role: "owner", ...switches };
       }),
-    setAllowGuests: async (workspaceId: string, allowGuests: boolean): Promise<void> => {
-      await executor.update(workspaces).set({ allowGuests }).where(eq(workspaces.id, workspaceId));
+    setSettings: async (workspaceId: string, settings: WorkspaceSettings): Promise<void> => {
+      await executor.update(workspaces).set(settings).where(eq(workspaces.id, workspaceId));
     },
     rename: async (workspaceId: string, name: string): Promise<void> => {
       await executor.update(workspaces).set({ name }).where(eq(workspaces.id, workspaceId));

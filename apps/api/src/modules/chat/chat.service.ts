@@ -1,7 +1,8 @@
 // Sending, reading and delivering chat messages (F03 design.md 3.2–3.4). Every request is checked
 // against the caller's place in this call (ticket, role, chat setting) on the server; the message is
 // saved first, then the call server delivers the news to everyone in the room.
-import { documentPlainText, type MessageDocument } from "@meetapp/contracts";
+import { createHmac } from "node:crypto";
+import { documentPlainText, type ChatMessageView, type MessageDocument, type StickerName } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
@@ -25,6 +26,26 @@ interface SendInput {
   body?: MessageDocument | undefined;
   replyToId?: string | undefined;
   attachmentIds?: string[] | undefined;
+  gif?: GifInput | undefined;
+  sticker?: StickerName | undefined;
+}
+
+type GifInput = NonNullable<ChatMessageView["gif"]>;
+const gifsOff = () => new AppError(403, "CHAT_GIFS_OFF", "GIFs are turned off in this workspace.");
+
+/** What kind of message this is: text with files, a GIF, or a sticker; never two at once. */
+function contentOf(input: SendInput, row: { allowGifs: boolean }) {
+  const attachmentIds = [...new Set(input.attachmentIds ?? [])];
+  const plainText = input.body ? documentPlainText(input.body) : "";
+  const hasText = plainText.trim() !== "" || attachmentIds.length > 0;
+  if ([hasText, input.gif !== undefined, input.sticker !== undefined].filter(Boolean).length !== 1) throw invalid();
+  if (input.gif) {
+    // KLIPY GIFs only while the workspace allows them (AC-F03-27).
+    if (!row.allowGifs) throw gifsOff();
+    return { kind: "gif" as const, gif: input.gif, plainText: input.gif.description, attachmentIds };
+  }
+  if (input.sticker) return { kind: "sticker" as const, sticker: input.sticker, plainText: "", attachmentIds };
+  return { kind: "text" as const, body: input.body ?? null, plainText, attachmentIds };
 }
 
 async function takeMessageTurn(deps: ChatDeps, ticketHash: string): Promise<void> {
@@ -36,10 +57,8 @@ async function takeMessageTurn(deps: ChatDeps, ticketHash: string): Promise<void
 
 async function send(deps: ChatDeps, callId: string, ticketHash: string, input: SendInput) {
   const { attendance, row } = await chatActor(deps, callId, ticketHash, "send");
-  const attachmentIds = [...new Set(input.attachmentIds ?? [])];
-  const plainText = input.body ? documentPlainText(input.body) : "";
-  // Text, files, or both; an empty message is refused (AC-F03-03).
-  if (plainText.trim() === "" && attachmentIds.length === 0) throw invalid();
+  // Text, files, or both, or a GIF, or a sticker; an empty message is refused (AC-F03-03).
+  const { attachmentIds, ...content } = contentOf(input, row);
   // Guests send no files (AC-F03-33).
   if (attachmentIds.length > 0) await chatActor(deps, callId, ticketHash, "attach");
   // A reply quotes a message of this meeting only (AC-F03-14).
@@ -49,9 +68,7 @@ async function send(deps: ChatDeps, callId: string, ticketHash: string, input: S
     .insertMessage(
       {
         ...sentBy({ attendance, row }, callId),
-        kind: "text",
-        body: input.body ?? null,
-        plainText,
+        ...content,
         replyToId: input.replyToId ?? null,
         clientId: input.clientId,
       },
@@ -69,8 +86,21 @@ async function send(deps: ChatDeps, callId: string, ticketHash: string, input: S
   return view;
 }
 
+/** What the app needs to search KLIPY itself (D059): the key and a random per-meeting id. */
+async function gifSettings(deps: ChatDeps, callId: string, ticketHash: string) {
+  const { row, attendance } = await chatActor(deps, callId, ticketHash, "send");
+  if (!row.allowGifs) throw gifsOff();
+  const customerId = createHmac("sha256", deps.voterSecret)
+    .update(`gif:${row.meeting.id}:${attendance.id}`)
+    .digest("hex")
+    .slice(0, 32);
+  const { apiUrl, key } = deps.gifService;
+  return { available: key !== undefined, apiUrl, key: key ?? "", customerId };
+}
+
 export function createChatService(deps: ChatDeps) {
   return {
+    gifSettings: (callId: string, ticketHash: string) => gifSettings(deps, callId, ticketHash),
     send: (callId: string, ticketHash: string, input: SendInput) => send(deps, callId, ticketHash, input),
     page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) => {
       const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");

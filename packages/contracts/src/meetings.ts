@@ -56,7 +56,12 @@ export const updateMeetingBodySchema = meetingOptionsSchema
   .meta({ id: "UpdateMeeting" });
 
 /** The workspace's guest switch (AC-F02-40): owner and admins. */
-export const workspaceSettingsBodySchema = z.object({ allowGuests: z.boolean() }).meta({ id: "WorkspaceSettings" });
+/** Workspace settings: the guest switch (AC-F02-40) and the GIF switch (AC-F03-27); send either or both. */
+export const workspaceSettingsBodySchema = z
+  .object({ allowGuests: z.boolean().optional(), allowGifs: z.boolean().optional() })
+  .refine((body) => body.allowGuests !== undefined || body.allowGifs !== undefined, "nothing to change")
+  .meta({ id: "WorkspaceSettings" });
+export type WorkspaceSettings = z.infer<typeof workspaceSettingsBodySchema>;
 
 /** The app's device key (32 random bytes, base64url): guests' "same app" (design section 5). */
 export const deviceKeySchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);

@@ -57,10 +57,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-12 (a failed store leaves no row or file), 50, 51, 52, 56, 57, 58, 60, 84, 85, 86. The 1-hour clean-up of unsent files and the removal of deleted messages' files from storage come with the clean-up jobs in T8; after-meeting links with the after-meeting routes in T8.
   - **Built in T6:** `chat-files.ts` (content checks with file-type 22.1.1; Office files with a macro part refused; text only as .txt/.csv, valid UTF-8, no page code; pictures re-saved by sharp, upright, without hidden details, with a 480 px preview; 40-million-pixel and 300-frame limits), `chat-files.repository.ts` (500 MB per meeting counted with the meeting row locked), `chat-files.service.ts` and routes (upload as the request body with `X-File-Name`; files given to a message in the same save; signed 5-minute links to `/api/v1/chat-files/:token` answered with `attachment`, `nosniff`, `no-store` and a sandbox policy). Design changed (owner told): no multipart library, downloads through our backend instead of storage links. New "download" right: everyone in the call but guests.
 
-- [ ] **T7: GIFs, stickers and the GIF switch.**
+- [x] **T7: GIFs, stickers and the GIF switch.**
   - The `gif-settings` route (key, `GIF_API_URL`, per-meeting `customer_id`), GIF messages checked for `static.klipy.com` addresses, sticker messages, `allowGifs` in workspace settings.
   - Covers: AC-F03-24, 26, 27.
-  - Tests: TC-F03-43, 47, 48, 90.
+  - Tests: TC-F03-43, 47, 48 (TC-F03-90 is the app's own KLIPY request, tested in T15).
+  - **Built in T7:** `GET …/chat/gif-settings` (key, address, per-person-per-meeting `customerId`), GIF messages accepted only with `https://static.klipy.com/…` addresses, a 24-sticker name list in `packages/contracts` (`STICKERS`; the pictures come in T11), one kind per message (text and files, or a GIF, or a sticker), and `allowGifs` in workspace settings and in each workspace the app lists.
 
 - [ ] **T8: Chat setting, who can chat, after the meeting, deletion.**
   - `chatMode` in Meeting options, the room metadata and note, `chat_mode_at_end`, Off on every writing route, lobby and removed people, after-meeting routes, meeting deletion and the account deletion step, the readable-chats function for AI later.

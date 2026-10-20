@@ -24,6 +24,8 @@ export interface ChatDeps {
   files: ChatFilesRepository;
   /** Signs the 5-minute download links (design section 6). */
   fileLinkSecret: string;
+  /** KLIPY's address and key, handed to apps that search GIFs themselves (D059). */
+  gifService: { apiUrl: string; key: string | undefined };
   /** Keys the poll voter hash (design 3.7): never stored with the votes. */
   voterSecret: string;
 }
@@ -123,6 +125,8 @@ function viewOf(message: ChatMessage, extras: Extras) {
         }
       : null,
     reactions: message.deletedAt ? [] : extras.reactions,
+    gif: message.deletedAt ? null : ((message.gif as ChatMessageView["gif"]) ?? null),
+    sticker: message.deletedAt ? null : ((message.sticker as ChatMessageView["sticker"]) ?? null),
     attachments: message.deletedAt ? [] : extras.attachments,
     pollId: message.deletedAt ? null : (extras.pollId ?? null),
     system: (message.system as ChatMessageView["system"]) ?? null,

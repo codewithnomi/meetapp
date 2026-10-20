@@ -6,6 +6,52 @@ import { z } from "zod";
 export const CHAT_MODES = ["on", "in_meeting", "off"] as const;
 export type ChatMode = (typeof CHAT_MODES)[number];
 
+/** MeetApp's own sticker set (AC-F03-26): names only; the pictures are built into the app. */
+export const STICKERS = [
+  "thank-you",
+  "great-job",
+  "on-my-way",
+  "be-right-back",
+  "agreed",
+  "coffee",
+  "ship-it",
+  "welcome",
+  "congrats",
+  "good-morning",
+  "good-night",
+  "sorry",
+  "thinking",
+  "lol",
+  "wow",
+  "yes",
+  "no",
+  "brb-coffee",
+  "lunch",
+  "deadline",
+  "celebrate",
+  "high-five",
+  "question",
+  "done",
+] as const;
+export type StickerName = (typeof STICKERS)[number];
+
+/** GIF images may come only from KLIPY's image host (D059, design section 7). */
+export const GIF_IMAGE_ORIGIN = "https://static.klipy.com";
+const gifAddress = z
+  .string()
+  .max(2000)
+  .refine((value) => value.startsWith(`${GIF_IMAGE_ORIGIN}/`), "GIFs come from the GIF service only");
+
+/** A GIF as KLIPY returned it: its id, a description for screen readers and its addresses, unchanged. */
+export const gifSchema = z.strictObject({
+  id: z.string().min(1).max(100),
+  description: z.string().max(200),
+  url: gifAddress,
+  stillUrl: gifAddress.optional(),
+  width: z.number().int().positive().max(4000),
+  height: z.number().int().positive().max(4000),
+});
+
 /** Visible characters a message may have, code included (AC-F03-03). */
 export const MAX_MESSAGE_CHARS = 4000;
 /** Stored size of one message document, in bytes (design 5.2). */
@@ -138,6 +184,8 @@ export const sendMessageBodySchema = z
     /** May be left out when the message only carries files. */
     body: messageDocumentSchema.optional(),
     replyToId: z.uuid().optional(),
+    gif: gifSchema.optional(),
+    sticker: z.enum(STICKERS).optional(),
     /** Files uploaded first (up to 10 per message, AC-F03-28). */
     attachmentIds: z.array(z.uuid()).max(10).optional(),
   })
@@ -173,6 +221,8 @@ export const chatMessageSchema = z
     reactions: z.array(
       z.object({ emoji: z.string(), count: z.number().int(), names: z.array(z.string()), mine: z.boolean() }),
     ),
+    gif: gifSchema.nullable(),
+    sticker: z.enum(STICKERS).nullable(),
     /** Files sent with the message; links come from the attachment link route. */
     attachments: z.array(
       z.object({
@@ -232,62 +282,4 @@ export const pinBodySchema = z.object({ messageId: z.uuid() }).meta({ id: "PinCh
 export const pinnedListSchema = z.object({ pinned: z.array(chatMessageSchema) }).meta({ id: "PinnedChatMessages" });
 export const reactionParamsSchema = chatMessageParamsSchema.extend({ emoji: z.string().min(1).max(40) });
 
-/** Poll limits (AC-F03-21). */
-export const POLL_LIMITS = { question: 200, option: 100, minOptions: 2, maxOptions: 10 } as const;
-
-export const createPollBodySchema = z
-  .object({
-    clientId: z.uuid(),
-    question: z.string().trim().min(1).max(POLL_LIMITS.question),
-    options: z
-      .array(z.string().trim().min(1).max(POLL_LIMITS.option))
-      .min(POLL_LIMITS.minOptions)
-      .max(POLL_LIMITS.maxOptions),
-    multiple: z.boolean(),
-    anonymous: z.boolean(),
-  })
-  .meta({ id: "CreatePoll" });
-
-export const pollParamsSchema = z.object({ callId: z.string(), pollId: z.string() });
-export const voteBodySchema = z
-  .object({ optionIds: z.array(z.uuid()).min(1).max(POLL_LIMITS.maxOptions) })
-  .meta({ id: "PollVote" });
-
-/**
- * A poll as one person may see it. Counts come only to those who voted, the creator, the organizer and
- * co-organizers (owner, 2026-10-20, as in Teams); names only for polls that aren't anonymous.
- */
-export const pollSchema = z
-  .object({
-    id: z.uuid(),
-    messageId: z.uuid(),
-    question: z.string(),
-    multiple: z.boolean(),
-    anonymous: z.boolean(),
-    closed: z.boolean(),
-    version: z.number().int(),
-    creatorName: z.string(),
-    yourChoice: z.array(z.uuid()),
-    results: z
-      .object({
-        voters: z.number().int(),
-        options: z.array(
-          z.object({ id: z.uuid(), votes: z.number().int(), percent: z.number().int(), names: z.array(z.string()) }),
-        ),
-      })
-      .nullable(),
-    options: z.array(z.object({ id: z.uuid(), text: z.string() })),
-  })
-  .meta({ id: "Poll" });
-export type PollView = z.infer<typeof pollSchema>;
-
-export const attachmentParamsSchema = z.object({ callId: z.string(), attachmentId: z.string() });
-export const attachmentLinkQuerySchema = z.object({ preview: z.enum(["true", "false"]).default("false") });
-export const uploadedSchema = z
-  .object({ id: z.uuid(), fileName: z.string(), mediaType: z.string(), sizeBytes: z.number().int() })
-  .meta({ id: "ChatUpload" });
-/** A download link to our own backend, valid 5 minutes (AC-F03-31). */
-export const attachmentLinkSchema = z
-  .object({ url: z.string(), expiresAt: z.iso.datetime({ offset: true }) })
-  .meta({ id: "ChatFileLink" });
-export const fileTokenParamsSchema = z.object({ token: z.string().max(300) });
+export * from "./chat-extras.ts";

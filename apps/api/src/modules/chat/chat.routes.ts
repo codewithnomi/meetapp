@@ -6,6 +6,7 @@ import {
   chatParamsSchema,
   eventsPageSchema,
   eventsQuerySchema,
+  gifSettingsSchema,
   messagesPageSchema,
   messagesQuerySchema,
   sendMessageBodySchema,
@@ -19,6 +20,14 @@ import type { ChatService } from "./chat.service.ts";
 const BASE = "/api/v1/calls/:callId/chat";
 
 export const chatRoutes: FastifyPluginAsyncZod<{ chat: ChatService }> = async (app, { chat }) => {
+  app.get(
+    `${BASE}/gif-settings`,
+    chatRoute("What the app needs to search GIFs (KLIPY) itself", {
+      params: chatParamsSchema,
+      response: { 200: gifSettingsSchema },
+    }),
+    (request) => chat.gifSettings(idParam(request.params.callId), ticketOf(request)),
+  );
   app.post(
     `${BASE}/messages`,
     chatRoute("Send a message to everyone in the meeting", {

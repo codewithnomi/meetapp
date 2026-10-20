@@ -34,6 +34,8 @@ export interface MeetingRow {
   workspaceKind: "personal" | "company";
   /** The workspace lets guests join its meetings (AC-F02-40). */
   allowGuests: boolean;
+  /** The workspace allows GIFs in meeting chat (AC-F03-27). */
+  allowGifs: boolean;
   /** False when the organizer left (or was removed from) the meeting's workspace (AC-F02-07). */
   organizerIsMember: boolean;
   coOrganizerIds: string[];
@@ -81,6 +83,7 @@ async function findMeeting(executor: Executor, meetingId: string): Promise<Meeti
       organizerName: user.name,
       workspaceKind: workspaces.kind,
       allowGuests: workspaces.allowGuests,
+      allowGifs: workspaces.allowGifs,
       membership: workspaceMembers.id,
     })
     .from(meetings)
@@ -97,6 +100,7 @@ async function findMeeting(executor: Executor, meetingId: string): Promise<Meeti
     organizerName: row.organizerName,
     workspaceKind: row.workspaceKind,
     allowGuests: row.allowGuests,
+    allowGifs: row.allowGifs,
     organizerIsMember: row.membership !== null,
     coOrganizerIds: await coOrganizersOf(executor, meetingId, row.meeting.workspaceId),
   };

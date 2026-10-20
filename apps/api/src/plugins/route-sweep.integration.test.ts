@@ -55,6 +55,7 @@ const OPTIONAL = new Set([
   "GET /api/v1/calls/:callId/chat/messages",
   "GET /api/v1/calls/:callId/chat/messages/:messageId",
   "GET /api/v1/calls/:callId/chat/events",
+  "GET /api/v1/calls/:callId/chat/gif-settings",
   "PATCH /api/v1/calls/:callId/chat/messages/:messageId",
   "DELETE /api/v1/calls/:callId/chat/messages/:messageId",
   "POST /api/v1/calls/:callId/chat/messages/:messageId/reactions",

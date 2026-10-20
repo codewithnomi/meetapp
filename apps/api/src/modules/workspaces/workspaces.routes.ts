@@ -35,8 +35,8 @@ const CREATE = {
 
 const SETTINGS = {
   schema: {
-    summary: "Workspace settings: Allow guests",
-    description: `Owner and admins (in a personal workspace, its user). Off: guests can't join the workspace's meetings (F02). ${NOT_A_MEMBER}`,
+    summary: "Workspace settings: Allow guests, Allow GIFs",
+    description: `Owner and admins (in a personal workspace, its user). Guests off: guests can't join the workspace's meetings (F02). GIFs off: no GIFs in its meetings' chat (F03). ${NOT_A_MEMBER}`,
     tags,
     params: workspaceParamsSchema,
     body: workspaceSettingsBodySchema,
@@ -117,7 +117,7 @@ export const workspacesRoutes: FastifyPluginAsyncZod<{
   });
 
   app.patch("/api/v1/workspaces/:workspaceId/settings", SETTINGS, async (request, reply) => {
-    await workspaces.setAllowGuests(memberOf(request), request.body.allowGuests);
+    await workspaces.setSettings(memberOf(request), request.body);
     return reply.status(204).send();
   });
 

@@ -70,6 +70,7 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     files: createChatFilesRepository(db),
     voterSecret: keyFor(config, "chat-poll-voters-v1"),
     fileLinkSecret: keyFor(config, "chat-file-links-v1"),
+    gifService: { apiUrl: config.GIF_API_URL, key: config.GIF_API_KEY },
   };
   return {
     chat: createChatService(chatDeps),

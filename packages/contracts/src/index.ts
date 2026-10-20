@@ -85,6 +85,7 @@ export {
   meetingTitleSchema,
   updateMeetingBodySchema,
   workspaceSettingsBodySchema,
+  type WorkspaceSettings,
   type MeetingDetails,
 } from "./meetings.ts";
 export {
@@ -109,6 +110,11 @@ export {
 export {
   CHAT_MODES,
   CHAT_PAGE_SIZE,
+  GIF_IMAGE_ORIGIN,
+  STICKERS,
+  gifSchema,
+  gifSettingsSchema,
+  type StickerName,
   attachmentLinkQuerySchema,
   attachmentLinkSchema,
   attachmentParamsSchema,
