@@ -15,6 +15,7 @@ function message(overrides: Partial<ChatMessageView> = {}): ChatMessageView {
   return {
     id,
     cursor: `c${String(n)}`,
+    clientId: `client-${String(n)}`,
     kind: "text",
     sender: { attendanceId: "someone", name: "Bilal Ahmed", group: "member", userId: null },
     body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: `m${String(n)}` }] }] },
@@ -84,6 +85,16 @@ describe("chat state", () => {
     );
     expect(retried.sending).toEqual([]);
     expect(retried.messages.map((m) => m.id)).toEqual([sent.id]);
+  });
+
+  it("TC-F03-11 [AC-F03-05] the server's copy arriving before the answer replaces the sending copy, never shown twice", () => {
+    const state = run(
+      emptyChat,
+      { type: "sending", item: { clientId: "c9", content: { body: DOC }, status: "sending" } },
+      { type: "event", event: created(1, message({ clientId: "c9" })), mine: true },
+    );
+    expect(state.sending).toEqual([]);
+    expect(state.messages).toHaveLength(1);
   });
 
   it("TC-F03-92 [AC-F03-01] a gap in the news numbers is noticed", () => {

@@ -27,6 +27,9 @@ const QUICK = [
   ["😮", "surprised"],
 ] as const;
 
+/** The invisible "show as emoji" mark (FE0F) aside, the server keeps it on some emoji. */
+const sameEmoji = (a: string, b: string) => a.replaceAll("\uFE0F", "") === b.replaceAll("\uFE0F", "");
+
 /** What the viewer may do in the chat, from their meeting role (the server checks again). */
 export interface ChatRights {
   moderate: boolean;
@@ -86,7 +89,11 @@ function Actions({
   own: boolean;
 }) {
   const { t } = useTranslation();
-  const react = (emoji: string) => () => void setReaction(view.place, message.id, emoji, true).catch(view.onFailed);
+  // One reaction per person (D061): another emoji replaces it, the same one takes it back.
+  const react = (emoji: string) => () => {
+    const mine = message.reactions.some((reaction) => reaction.mine && sameEmoji(reaction.emoji, emoji));
+    void setReaction(view.place, message.id, emoji, !mine).catch(view.onFailed);
+  };
   const more = moreActions(t, view, message, own);
   if (view.readOnly) {
     return more.length > 0 ? (
@@ -159,7 +166,33 @@ function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
   );
 }
 
-export function Message({ view, message }: { view: ChatView; message: ChatMessageView }) {
+/** The reactions under a message; read-only chat only shows them. */
+function reactionChips(t: TFunction, view: ChatView, message: ChatMessageView) {
+  return message.reactions.map((reaction) => ({
+    emoji: reaction.emoji,
+    count: reaction.count,
+    mine: reaction.mine,
+    label: t("meetings.chat.reaction", {
+      emoji: reaction.emoji,
+      count: reaction.count,
+      names: reaction.names.join(", "),
+    }),
+    onToggle: view.readOnly
+      ? undefined
+      : () => void setReaction(view.place, message.id, reaction.emoji, !reaction.mine).catch(view.onFailed),
+  }));
+}
+
+export function Message({
+  view,
+  message,
+  continued = false,
+}: {
+  view: ChatView;
+  message: ChatMessageView;
+  /** Continues the same person's group from the same minute (AC-F03-48). */
+  continued?: boolean;
+}) {
   const { t } = useTranslation();
   if (message.kind === "system") return <SystemNote text={noteText(t, message)} />;
   const name = senderName(t, message, view.place.attendanceId);
@@ -170,6 +203,7 @@ export function Message({ view, message }: { view: ChatView; message: ChatMessag
       id={message.id}
       name={name}
       own={own}
+      continued={continued}
       time={message.editedAt ? t("meetings.chat.edited", { time: shown }) : shown}
       document={message.body}
       deletedText={message.deletedAt ? t("meetings.chat.deleted") : undefined}
@@ -189,19 +223,7 @@ export function Message({ view, message }: { view: ChatView; message: ChatMessag
           <MessageExtras place={view.place} message={message} onFailed={view.onFailed} />
         )
       }
-      reactions={message.reactions.map((reaction) => ({
-        emoji: reaction.emoji,
-        count: reaction.count,
-        mine: reaction.mine,
-        label: t("meetings.chat.reaction", {
-          emoji: reaction.emoji,
-          count: reaction.count,
-          names: reaction.names.join(", "),
-        }),
-        onToggle: view.readOnly
-          ? undefined
-          : () => void setReaction(view.place, message.id, reaction.emoji, !reaction.mine).catch(view.onFailed),
-      }))}
+      reactions={reactionChips(t, view, message)}
       actions={message.deletedAt ? undefined : <Actions view={view} message={message} name={name} own={own} />}
       onOpenLink={openLink}
       onCopyCode={copyText}

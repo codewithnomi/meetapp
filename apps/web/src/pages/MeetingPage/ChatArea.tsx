@@ -8,7 +8,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
-import { firstLineOf } from "./chat-texts.ts";
+import { continuesGroup, firstLineOf } from "./chat-texts.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ComposerArea } from "./ChatComposerArea.tsx";
 import { Message, Pending, type ChatRights, type ChatView } from "./ChatMessages.tsx";
@@ -138,8 +138,8 @@ type Interaction = ReturnType<typeof useInteraction>;
 function AllMessages({ view }: { view: ChatView }) {
   return (
     <>
-      {view.chat.state.messages.map((message) => (
-        <Message key={message.id} view={view} message={message} />
+      {view.chat.state.messages.map((message, index, all) => (
+        <Message key={message.id} view={view} message={message} continued={continuesGroup(all[index - 1], message)} />
       ))}
       {view.chat.state.sending.map((item) => (
         <Pending key={item.clientId} item={item} chat={view.chat} />

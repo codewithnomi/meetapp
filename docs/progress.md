@@ -44,6 +44,7 @@
 - **F03 T14 done:** reply, react, edit, delete (asked first), pin and polls work in the meeting; 6 real-app chat tests pass.
 - **F03 T15 done:** files (attach, paste, drag and drop anywhere, download), GIFs (KLIPY, searched from the app) and stickers in the meeting chat; Workspace "Allow GIFs" switch; uploads from the app were blocked by a missing CORS header, now fixed; 8 real-app chat tests pass.
 - **F03 T16 done:** "Meeting chat" On / In-meeting only / Off in Meeting options, with the notes and the "Chat is turned off" message; a removed person's window drops the chat; the Meetings screen has a new **Recent meetings** list with Open chat for reading past chats (not in the design before; design.md 2.2 updated); 10 real-app chat tests pass.
+- **F03 look fixes (owner, after T16, D061):** Teams-style chat: one reaction per person, bigger emoji-only messages, grouped bubbles in the same minute, hover bar kept inside the panel, no sideways scroll, no double message while sending. 11 real-app chat tests pass.
 - **Next step:** F03 T17, the chat load test (`/next`).
 
 ## Open questions (need the owner's answer)

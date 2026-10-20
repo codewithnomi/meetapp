@@ -88,6 +88,8 @@ function applyEvent(state: ChatState, event: ChatEvent, mine: boolean): ChatStat
   return {
     ...state,
     lastSeq,
+    // The server's copy can arrive before the "sent" answer: the "sending" copy goes at once.
+    sending: state.sending.filter((item) => item.clientId !== message.clientId),
     messages: merge(state.messages, [message]),
     pinned: message.deletedAt ? pinned.filter((p) => p.id !== message.id) : pinned,
     unread: isNew && !state.open && !mine && message.kind !== "system" ? state.unread + 1 : state.unread,

@@ -105,6 +105,7 @@ function viewOf(message: ChatMessage, extras: Extras) {
   const view: ChatMessageView = {
     id: message.id,
     cursor: cursorOf(message),
+    clientId: message.clientId,
     kind: message.kind,
     sender: {
       attendanceId: message.senderAttendanceId,

@@ -101,7 +101,6 @@ async function react(deps: ChatDeps, request: OnMessage, value: string) {
   await takeReactionTurn(deps, request.ticketHash);
   const person = { attendanceId: actor.attendance.id, name: actor.attendance.displayName };
   const seq = await deps.actions.addReaction(actor.message, person, emoji);
-  if (seq === "full") throw invalid();
   if (seq !== undefined) await reactionsChanged(deps, request.callId, seq, actor);
 }
 

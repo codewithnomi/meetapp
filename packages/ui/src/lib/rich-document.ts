@@ -158,3 +158,19 @@ function editorBlock(part: Block): EditorNode {
 export function toEditorDocument(document: RichDocument): EditorNode {
   return { type: "doc", content: document.blocks.map(editorBlock) };
 }
+
+const MAX_BIG_EMOJI = 3;
+const EMOJI = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
+
+/** 1–3 emoji and nothing else (spaces aside), so the message shows them larger (AC-F03-47). */
+export function emojiOnly(document: RichDocument): boolean {
+  const [only, ...rest] = document.blocks;
+  if (!only || rest.length > 0 || only.type !== "paragraph") return false;
+  const parts = only.content ?? [];
+  if (parts.some((part) => part.type !== "text" || (part.marks?.length ?? 0) > 0)) return false;
+  const text = parts.map((part) => (part.type === "text" ? part.text : "")).join("");
+  const symbols = [...new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(text)]
+    .map((piece) => piece.segment)
+    .filter((piece) => piece.trim() !== "");
+  return symbols.length > 0 && symbols.length <= MAX_BIG_EMOJI && symbols.every((piece) => EMOJI.test(piece));
+}

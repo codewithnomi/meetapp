@@ -193,8 +193,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 - **Covers:** AC-F03-13
 - **Level:** integration
 - **Given** a message
-- **When** M2 adds 20 different emoji, then a 21st, then text that is not in the emoji list (`"hello"`, `"<b>"`, a non-NFC form of an emoji), and the same emoji twice
-- **Then** 20 are accepted, the 21st and non-emoji are refused `CHAT_INVALID`, the non-NFC form is normalised to the same emoji, the repeat does not double count; the guest may react; `reactions_changed` is broadcast
+- **When** M2 reacts 👍, then ❤️, then text that is not in the emoji list (`"hello"`, `"<b>"`, a non-NFC form of an emoji), and the same emoji twice
+- **Then** ❤️ replaces 👍 (M2 has one reaction), non-emoji is refused `CHAT_INVALID`, the non-NFC form is normalised to the same emoji, the repeat does not double count; the guest may react; `reactions_changed` is broadcast
 
 ### TC-F03-25: Reply quote built on reading
 - **Covers:** AC-F03-14
@@ -770,3 +770,10 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 | AC-F03-46 | TC-F03-77, 78 |
 
 **Total: 95 test cases.** Every AC (AC-F03-01 to AC-F03-46) appears in at least one row above. Every rule in the "Security & privacy" sections has a security case: S1/S2 (79, 80), S5 (13, 43, 60), S10 (87, 40), S11 (81, 82, 83), S12 (84, 85, 86, 56), S14 (91, 81), S17 (93, 90), LiveKit server-only events (88, 89), GIF privacy (43, 90), spell check privacy (34).
+
+### TC-F03-95: Emoji-only messages and grouped messages
+- **Covers:** AC-F03-47, AC-F03-48
+- **Level:** unit
+- **Given** the emoji check and the grouping rule
+- **When** given "👍", "🎉🎉🎉", "👍 ok", four emoji, formatted text; and messages by the same person in the same minute, the next minute, another person, a note in between
+- **Then** only 1–3 emoji alone are "emoji only"; same person and minute continue the group, the rest start a new one

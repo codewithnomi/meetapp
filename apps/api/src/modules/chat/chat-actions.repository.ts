@@ -9,11 +9,10 @@ import {
   type Database,
   type Executor,
 } from "@meetapp/db";
-import { and, count, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { recordEvent } from "./chat.repository.ts";
 
 /** Most different emoji one person may add to one message (AC-F03-13). */
-const MAX_REACTIONS_PER_PERSON = 20;
 const CHECK_VIOLATION = "23514";
 
 export type Change<T> = { row: T; seq: number } | undefined;
@@ -46,11 +45,11 @@ async function addReaction(
   message: ChatMessage,
   person: { attendanceId: string; name: string },
   emoji: string,
-): Promise<number | "full" | undefined> {
+): Promise<number | undefined> {
   return db.transaction(async (tx) => {
+    // One reaction per person, as in Teams (D061): a different emoji replaces the earlier one.
     const mine = and(eq(chatReactions.messageId, message.id), eq(chatReactions.attendanceId, person.attendanceId));
-    const [taken] = await tx.select({ n: count() }).from(chatReactions).where(mine);
-    if ((taken?.n ?? 0) >= MAX_REACTIONS_PER_PERSON) return "full";
+    await tx.delete(chatReactions).where(and(mine, ne(chatReactions.emoji, emoji)));
     const [added] = await tx
       .insert(chatReactions)
       .values({

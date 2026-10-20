@@ -38,11 +38,13 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Panel parts, top to bottom:** pinned bar (up to 3, "1 of 2", AC-19), message list (`role="log"`), "New messages" button (AC-08), composer.
 - **Message list:**
   - loads the newest 50, then 50 more when scrolled to the top (AC-02);
-  - messages are not grouped by sender; each shows with name, avatar or initials, time, "(External)" or "(Guest)" (AC-01);
+  - each group shows the name, avatar or initials, time, "(External)" or "(Guest)" (AC-01); a person's messages in the same minute join that group as connected bubbles without repeating them (AC-48, D061);
+  - a message of only 1–3 emoji shows at 32 px without a bubble (AC-47);
+  - the list never scrolls sideways: long words wrap, code blocks scroll inside themselves;
   - shows system notes ("Aisha Khan pinned a message", "… turned chat off") centred and small;
   - while scrolled up, new messages don't move the view; the button appears (AC-08);
   - empty: "No messages yet" (AC-09).
-- **Pointing at a message, or Tab to it:** a small toolbar with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
+- **Pointing at a message, or Tab to it:** a small toolbar, above the message and kept inside the panel (on the right for own messages, on the left for others), with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
 - **Composer:**
   - a rich text box (section 5.1) with the Format toolbar (shown or hidden by the Format button);
   - buttons: Format, Emoji, GIF, Sticker, Attach (not for guests), Create a poll (organizer, co-organizers, presenters), Send;
@@ -113,7 +115,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - After the meeting, only organizer and co-organizer delete exists, on the `/meetings/:meetingId/…` route.
 
 ### 3.6 Reactions, replies, pins (AC-12–14, 19, 20)
-- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions/:emoji` (URL-encoded) removes; the emoji is normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. At most 20 different ones per person per message. Who reacted is shown when pointing at a chip (names only; a guest's typed name).
+- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions/:emoji` (URL-encoded) removes; the emoji is normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. One per person per message, as in Teams: adding a different emoji replaces the person's earlier one in the same step, with one `reactions_changed` (D061). Who reacted is shown when pointing at a chip (names only; a guest's typed name).
 - **Replies:** `replyToId` is stored; the quote is built on reading, so edits and deletes show up in it.
 - **Pins:** `POST …/pins` (`{ messageId }`) and `DELETE …/pins/:messageId`; at most 3, checked inside one transaction; the app asks which to unpin when full.
 

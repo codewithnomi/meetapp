@@ -49,7 +49,7 @@ export function ChatPanel(props: ChatPanelProps) {
           aria-live="polite"
           aria-relevant="additions"
           onScroll={onScroll}
-          className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-y-auto pt-5"
+          className="flex min-h-0 flex-1 flex-col gap-3.5 overflow-x-hidden overflow-y-auto pt-10"
         >
           {loadingOlder ? <p className="m-0 self-center text-[12px] text-ink-muted">{loadingOlder}</p> : null}
           {empty ? (

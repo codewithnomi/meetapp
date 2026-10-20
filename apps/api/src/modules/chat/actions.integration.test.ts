@@ -128,35 +128,13 @@ describe("editing and deleting", { timeout: 30_000 }, () => {
 });
 
 describe("reactions and replies", { timeout: 30_000 }, () => {
-  it("TC-F03-24 [AC-F03-13] 20 different emoji per person, known emoji only, no double count", async () => {
+  it("TC-F03-24 [AC-F03-13] one reaction per person (another replaces it), known emoji only, no double count", async () => {
     const r = await room("react");
     const { chat, actions, packets } = services();
     const message = await sender(chat, r.callId)(r.host, "Ship it?");
     const on = (who: Joined) => ({ callId: r.callId, ticketHash: hashOf(who), messageId: message.id });
-    const twenty = [
-      "👍",
-      "❤️",
-      "😂",
-      "😮",
-      "🎉",
-      "🙏",
-      "✅",
-      "👀",
-      "🔥",
-      "💯",
-      "😀",
-      "😃",
-      "😄",
-      "😁",
-      "😅",
-      "🙂",
-      "😉",
-      "😊",
-      "😍",
-      "🤔",
-    ];
-    for (const emoji of twenty) expect(await statusOfError(actions.react(on(r.attendee), emoji))).toBe(200);
-    expect(await statusOfError(actions.react(on(r.attendee), "🥳"))).toBe("CHAT_INVALID");
+    expect(await statusOfError(actions.react(on(r.attendee), "👍"))).toBe(200);
+    expect(await statusOfError(actions.react(on(r.attendee), "❤️"))).toBe(200);
     for (const bad of ["hello", "<b>", "👍👍"]) {
       expect(await statusOfError(actions.react(on(r.other), bad))).toBe("CHAT_INVALID");
     }
@@ -166,6 +144,8 @@ describe("reactions and replies", { timeout: 30_000 }, () => {
     const [view] = (await chat.page(r.callId, hashOf(r.other), { limit: 50 })).messages;
     const heart = view?.reactions.find((reaction) => reaction.emoji.startsWith("❤"));
     expect(heart?.count).toBe(2);
+    // The attendee's 👍 was replaced by their ❤️.
+    expect(view?.reactions.map((reaction) => reaction.emoji)).toHaveLength(1);
     expect(heart?.mine).toBe(true);
     expect(types(packets)).toContain("reactions_changed");
   });

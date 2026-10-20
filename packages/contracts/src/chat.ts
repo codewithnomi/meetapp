@@ -204,6 +204,8 @@ export const chatMessageSchema = z
     id: z.uuid(),
     /** Pass as `before` to get the messages older than this one. */
     cursor: z.string(),
+    /** The id the sender's app made, so it can swap its "sending" copy for this one. */
+    clientId: z.string(),
     kind: z.enum(["text", "gif", "sticker", "poll", "system"]),
     sender: z.object({
       attendanceId: z.uuid().nullable(),

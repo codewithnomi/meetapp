@@ -377,3 +377,40 @@ test("TC-F03-69 TC-F03-72 [AC-F03-40] [AC-F03-42] a removed person loses the cha
   await expect(mo.page.getByRole("heading", { name: "Recent meetings" })).toBeVisible();
   await expect(openChatOf(mo.page, title)).toHaveCount(0);
 });
+
+test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, one reaction each, and actions kept inside the panel", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  const hostLog = await openChat(host.page);
+  await openChat(mo.page);
+  // Send within one minute, so the messages group (not too close to the next minute).
+  while (new Date().getSeconds() > 45) await host.page.waitForTimeout(1_000);
+  await send(host.page, "hello");
+  await send(host.page, "hi");
+  await send(host.page, "🎉");
+  await expect(hostLog.getByText("🎉")).toBeVisible({ timeout: 5_000 });
+  // One name and time for the group.
+  await expect(hostLog.getByText("You", { exact: true })).toHaveCount(1);
+  expect(await hostLog.getByText("🎉").evaluate((node) => getComputedStyle(node).fontSize)).toBe("32px");
+
+  // The actions bar of a short own message stays inside the list; nothing scrolls sideways.
+  const message = hostLog.getByRole("article").filter({ has: host.page.getByText("hi", { exact: true }) });
+  await message.hover();
+  const bar = message.getByRole("group", { name: /^Actions for / });
+  const [barBox, logBox] = [await bar.boundingBox(), await hostLog.boundingBox()];
+  expect(barBox && logBox && barBox.x >= logBox.x && barBox.x + barBox.width <= logBox.x + logBox.width).toBe(true);
+  expect(await hostLog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+
+  // One reaction per person: another emoji replaces it, the same one takes it back.
+  await bar.getByRole("button", { name: "React with thumbs up" }).click();
+  await expect(message.getByRole("button", { name: /👍/ })).toBeVisible({ timeout: 5_000 });
+  await message.hover();
+  await bar.getByRole("button", { name: "React with heart" }).click();
+  await expect(message.getByRole("button", { name: /❤/ })).toBeVisible({ timeout: 5_000 });
+  await expect(message.getByRole("button", { name: /👍/ })).toHaveCount(0);
+  await message.hover();
+  await host.page.screenshot({ path: `${process.env["TMPDIR"] ?? "/tmp"}/meetapp-chat-look.png` });
+  await bar.getByRole("button", { name: "React with heart" }).click();
+  await expect(message.getByRole("button", { name: /❤/ })).toHaveCount(0, { timeout: 5_000 });
+});

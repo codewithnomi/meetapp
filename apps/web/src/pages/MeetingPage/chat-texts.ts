@@ -11,6 +11,16 @@ export function senderName(t: TFunction, message: ChatMessageView, viewerId: str
   return group === "member" ? name : t(`meetings.call.${group}`, { name });
 }
 
+/** Same person, same minute, no note in between: shown as a connected bubble without name and time (AC-F03-48). */
+export function continuesGroup(previous: ChatMessageView | undefined, message: ChatMessageView): boolean {
+  if (!previous || previous.kind === "system" || message.kind === "system") return false;
+  return (
+    previous.sender.attendanceId === message.sender.attendanceId &&
+    time(previous.createdAt) === time(message.createdAt) &&
+    previous.createdAt.slice(0, 10) === message.createdAt.slice(0, 10)
+  );
+}
+
 export function noteText(t: TFunction, message: ChatMessageView): string {
   const system = message.system;
   if (!system) return "";

@@ -47,7 +47,9 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 
 ### Emoji, reactions and replies
 - **AC-F03-12:** WHEN a person opens the emoji picker in the message box, THEN they can search and insert any standard emoji (with skin tones), and the most recently used ones appear first.
-- **AC-F03-13:** WHEN a person (including a guest) reacts to a message with an emoji, THEN everyone sees the emoji and its count under the message within 1 second; pointing at it shows who reacted; choosing the same emoji again removes their reaction. A person can add up to 20 different reactions to one message.
+- **AC-F03-47:** WHEN a message is only emoji (1 to 3, no other text), THEN it shows larger, without a bubble; emoji inside text keep the text size (owner, 2026-10-20, D061).
+- **AC-F03-48:** WHEN the same person sends messages one after another within the same minute, THEN they show as connected bubbles under one name and time, as in Teams; a new minute, another sender, or a note in between starts a new group with its name and time (owner, 2026-10-20, D061).
+- **AC-F03-13:** WHEN a person (including a guest) reacts to a message with an emoji, THEN everyone sees the emoji and its count under the message within 1 second; pointing at it shows who reacted; choosing the same emoji again removes their reaction. As in Teams, a person has one reaction per message: choosing a different emoji replaces theirs (owner, 2026-10-20, D061).
 - **AC-F03-14:** WHEN a person chooses **Reply** on a message, THEN their new message shows a short quote of the original (sender's name and the first line); choosing the quote scrolls to the original. WHEN the original is deleted, THEN the quote shows "This message was deleted".
 
 ### Formatting and code

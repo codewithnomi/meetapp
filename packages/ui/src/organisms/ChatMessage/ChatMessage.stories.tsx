@@ -41,3 +41,9 @@ export const NotSent: Story = {
   args: { own: true, name: "You", status: { kind: "failed", label: "Not sent", retryLabel: "Retry", onRetry: fn() } },
 };
 export const Sending: Story = { args: { own: true, name: "You", status: { kind: "sending", label: "Sending…" } } };
+/** The same person's next message in the same minute: no name, time or picture (AC-F03-48). */
+export const Continued: Story = { args: { continued: true } };
+/** Only emoji: larger, without a bubble (AC-F03-47). */
+export const EmojiOnly: Story = {
+  args: { document: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: "🎉👍" }] }] } },
+};

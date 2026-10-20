@@ -35,6 +35,8 @@ export interface MessageBodyProps {
   onCopyCode: (text: string) => void;
   /** "Copy" (translated). */
   copyLabel: string;
+  /** Only emoji: shown larger (AC-F03-47). */
+  big?: boolean | undefined;
 }
 
 /** Only web links are ever links (AC-F03-04). */
@@ -157,9 +159,14 @@ function CodeBlock({ text, onCopy, copyLabel }: { text: string; onCopy: (text: s
   );
 }
 
-export function MessageBody({ document, onOpenLink, onCopyCode, copyLabel }: MessageBodyProps) {
+export function MessageBody({ document, onOpenLink, onCopyCode, copyLabel, big = false }: MessageBodyProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-1.5 text-[14px] leading-5.5 [overflow-wrap:anywhere]">
+    <div
+      className={cx(
+        "flex min-w-0 flex-col gap-1.5 [overflow-wrap:anywhere]",
+        big ? "text-[32px] leading-10" : "text-[14px] leading-5.5",
+      )}
+    >
       {document.blocks.map((block, index) => {
         switch (block.type) {
           case "paragraph":

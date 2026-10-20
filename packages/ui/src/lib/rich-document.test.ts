@@ -1,6 +1,7 @@
 // The message box's content turned into the stored document (F03 TC-F03-31, 28, 05 app parts).
 import { describe, expect, it } from "vitest";
-import { toRichDocument, visibleText } from "./rich-document.ts";
+import type { RichDocument } from "../molecules/MessageBody/index.ts";
+import { emojiOnly, toRichDocument, visibleText } from "./rich-document.ts";
 
 // Test nodes are loose on purpose (some are not valid TipTap nodes), so they are typed as `never`.
 const text = (value: string, marks?: object[]) => ({ type: "text", text: value, ...(marks ? { marks } : {}) }) as never;
@@ -92,5 +93,18 @@ describe("TC-F03-21 a sent message back in the box for editing", () => {
       ],
     };
     expect(toRichDocument(toEditorDocument(document))).toEqual(document);
+  });
+});
+
+const plain = (text: string, marks?: { type: "bold" }[]): RichDocument => ({
+  v: 1,
+  blocks: [{ type: "paragraph", content: [{ type: "text", text, ...(marks ? { marks } : {}) }] }],
+});
+
+describe("emojiOnly", () => {
+  it("TC-F03-95 [AC-F03-47] 1 to 3 emoji alone show larger; with text, more than 3, or formatted they don't", () => {
+    for (const text of ["👍", "🎉🎉🎉", "👍🏽 ❤️", "👨‍👩‍👧"]) expect(emojiOnly(plain(text))).toBe(true);
+    for (const text of ["👍 ok", "🎉🎉🎉🎉", "hi", "1"]) expect(emojiOnly(plain(text))).toBe(false);
+    expect(emojiOnly(plain("👍", [{ type: "bold" }]))).toBe(false);
   });
 });

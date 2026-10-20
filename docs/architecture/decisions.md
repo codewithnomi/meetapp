@@ -389,3 +389,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** one chat per meeting; the backend checks and saves every action, then LiveKit delivers server-only events on topic `meetapp.chat`; messages are a strict JSON document drawn by our own renderer (never HTML); files are checked by content, cleaned and kept in private storage with 5-minute links; spell check is Electron's built-in one with bundled dictionaries.
 - **Why:** the app can't skip the rules, nothing typed can run as code, and no new server is needed.
 - **Cost:** none.
+
+### D061: Chat looks and reacts like Teams (F03)
+- **Date:** 2026-10-20. **Status:** accepted (owner asked for it after trying the chat).
+- **Decision:** one reaction per person per message (a different emoji replaces it; the same one removes it); messages of only 1–3 emoji show larger without a bubble; a person's messages within the same minute are grouped as connected bubbles under one name and time. Replaces the earlier "up to 20 reactions per person" and "messages are not grouped".
+- **Why:** the owner wants the chat to behave as in Microsoft Teams, which people already know.
+- **Cost:** none.
