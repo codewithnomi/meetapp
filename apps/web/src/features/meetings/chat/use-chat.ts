@@ -2,10 +2,20 @@
 // pages, applies the server's news, catches up after a reconnect or a gap, and sends messages with an
 // id made here, so a retry never makes a copy (AC-F03-05). "Not sent" after the 10-second limit.
 import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
-import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { ApiError } from "../../api/index.ts";
 import type { Joined } from "../visit.ts";
-import { eventsAfter, messagesPage, oneMessage, sendMessage } from "./chat-api.ts";
+import {
+  callPlace,
+  eventsAfter,
+  messagesPage,
+  oneMessage,
+  pastPlace,
+  recentMeetingChats,
+  sendMessage,
+  type ChatPlace,
+} from "./chat-api.ts";
 import { chatReducer, emptyChat, missedNews, type ChatAction, type ChatState, type Outgoing } from "./chat-state.ts";
 
 const MAX_CATCH_UP = 50;
@@ -56,25 +66,57 @@ function applyNews({ visit, latest, dispatch, catchUp }: NewsContext, event: Cha
   } else apply();
 }
 
-export function useChat(visit: Joined) {
-  const [state, dispatch] = useReducer(chatReducer, emptyChat);
+/** The newest page (loaded at the start) and older pages, from a call or a past meeting. */
+function usePages(place: ChatPlace, initial: ChatState) {
+  const [state, dispatch] = useReducer(chatReducer, initial);
   const latest = useRef<ChatState>(state);
   latest.current = state;
 
   const loadNewest = useCallback(async () => {
-    const page = await messagesPage(visit);
+    const page = await messagesPage(place);
     dispatch({ type: "page", messages: page.messages, hasMore: page.hasMore, pinned: page.pinned, older: false });
-  }, [visit]);
-
-  const catchUp = useCallback(() => catchUpOn(visit, latest, dispatch, loadNewest), [visit, loadNewest]);
+  }, [place]);
 
   useEffect(() => {
     void loadNewest().catch(() => undefined);
   }, [loadNewest]);
 
+  const loadOlder = useCallback(async () => {
+    const oldest = latest.current.messages[0];
+    if (!oldest || !latest.current.hasMore) return;
+    const page = await messagesPage(place, oldest.cursor);
+    dispatch({ type: "page", messages: page.messages, hasMore: page.hasMore, older: true });
+  }, [place]);
+  return { state, dispatch, latest, loadNewest, loadOlder };
+}
+
+/** Pages keep these in the query cache; they go when the call screen closes (AC-F03-40, 41). */
+const CALL_CHAT_QUERIES = ["chat-preview", "chat-poll"];
+
+/** Leaving, being removed or the call ending forgets file links, previews and polls held in memory. */
+function useForgetOnLeave() {
+  const queries = useQueryClient();
+  useEffect(
+    () => () => {
+      for (const key of CALL_CHAT_QUERIES) queries.removeQueries({ queryKey: [key] });
+    },
+    [queries],
+  );
+}
+
+export function useChat(visit: Joined) {
+  useForgetOnLeave();
+  const place = useMemo(() => callPlace(visit), [visit]);
+  const { state, dispatch, latest, loadNewest, loadOlder } = usePages(place, emptyChat);
+
+  const catchUp = useCallback(
+    () => catchUpOn(visit, latest, dispatch, loadNewest),
+    [visit, latest, dispatch, loadNewest],
+  );
+
   const onEvent = useCallback(
     (event: ChatEvent) => applyNews({ visit, latest, dispatch, catchUp }, event),
-    [visit, catchUp],
+    [visit, latest, dispatch, catchUp],
   );
 
   const send = useCallback(
@@ -89,18 +131,33 @@ export function useChat(visit: Joined) {
           dispatch({ type: "failed", clientId, tooFast: error instanceof ApiError && error.code === "CHAT_TOO_FAST" }),
         );
     },
-    [visit],
+    [visit, dispatch],
   );
 
-  const loadOlder = useCallback(async () => {
-    const oldest = latest.current.messages[0];
-    if (!oldest || !latest.current.hasMore) return;
-    const page = await messagesPage(visit, oldest.cursor);
-    dispatch({ type: "page", messages: page.messages, hasMore: page.hasMore, older: true });
-  }, [visit]);
-
-  const setOpen = useCallback((open: boolean) => dispatch({ type: "open", open }), []);
-  return { state, onEvent, send, retry: send, loadOlder, catchUp, setOpen };
+  const setOpen = useCallback((open: boolean) => dispatch({ type: "open", open }), [dispatch]);
+  return { place, state, onEvent, send, retry: send, loadOlder, catchUp, setOpen };
 }
 
 export type Chat = ReturnType<typeof useChat>;
+
+const nothing = () => undefined;
+const openChat: ChatState = { ...emptyChat, open: true };
+
+/** A past meeting's chat, read-only (AC-F03-42): pages only, nothing live; "catch up" reloads the newest. */
+export function usePastChat(meetingId: string): Chat {
+  const place = useMemo(() => pastPlace(meetingId), [meetingId]);
+  const { state, loadNewest, loadOlder } = usePages(place, openChat);
+  return {
+    place,
+    state,
+    onEvent: nothing,
+    send: nothing,
+    retry: nothing,
+    loadOlder,
+    catchUp: loadNewest,
+    setOpen: nothing,
+  };
+}
+
+/** Past meetings whose chat the viewer may open, for the meetings list (AC-F03-42). */
+export const useRecentMeetingChats = () => useQuery({ queryKey: ["meeting-chats"], queryFn: recentMeetingChats });

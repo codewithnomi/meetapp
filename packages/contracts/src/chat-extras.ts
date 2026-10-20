@@ -77,4 +77,23 @@ export const gifSettingsSchema = z
 /** After-meeting routes take the meeting instead of the call (AC-F03-42). */
 export const meetingChatParamsSchema = z.object({ meetingId: z.string() });
 export const meetingChatMessageParamsSchema = z.object({ meetingId: z.string(), messageId: z.string() });
+export const meetingPollParamsSchema = z.object({ meetingId: z.string(), pollId: z.string() });
+
+/** Past meetings whose chat the person may open (AC-F03-42). */
+export const recentMeetingChatsSchema = z
+  .object({
+    meetings: z.array(
+      z.object({
+        id: z.uuid(),
+        workspaceId: z.uuid(),
+        title: z.string(),
+        lastJoinedAt: z.iso.datetime(),
+        /** Organizer or co-organizer: may still remove messages (AC-F03-11). */
+        organizer: z.boolean(),
+      }),
+    ),
+  })
+  .meta({ id: "RecentMeetingChats" });
+export type RecentMeetingChats = z.infer<typeof recentMeetingChatsSchema>;
+
 export const meetingAttachmentParamsSchema = z.object({ meetingId: z.string(), attachmentId: z.string() });

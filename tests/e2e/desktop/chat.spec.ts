@@ -2,8 +2,20 @@
 // window quickly with name and time, TC-F03-04 a late joiner sees earlier messages, TC-F03-15 the unread
 // count, TC-F03-17 the empty chat. Needs the backend and Mailpit (`pnpm test`).
 import { expect, test, type Page } from "@playwright/test";
-import { controls } from "./meeting-steps.ts";
-import { guestWindow, hostMeeting, joinWindow, team } from "./meeting-team.ts";
+import { randomUUID } from "node:crypto";
+import { LINK, admitAll, controls, joinByLink } from "./meeting-steps.ts";
+import {
+  actOn,
+  guestWindow,
+  hostMeeting,
+  joinWindow,
+  knock,
+  openOptions,
+  saveOptions,
+  team,
+  windowFor,
+  type Team,
+} from "./meeting-team.ts";
 
 test.describe.configure({ timeout: 240_000 });
 
@@ -258,4 +270,110 @@ test("TC-F03-46 TC-F03-49 TC-F03-59 [AC-F03-26] [AC-F03-27] [AC-F03-33] stickers
   await expect(host.page.getByRole("note")).toContainText("sent to our GIF service");
   await host.page.getByRole("button", { name: "Got it" }).click();
   await expect(host.page.getByText("GIFs aren't available right now")).toBeVisible();
+});
+
+const setChat = async (page: Page, mode: "on" | "in_meeting" | "off") => {
+  const dialog = await openOptions(page);
+  await dialog.getByRole("combobox", { name: "Meeting chat" }).selectOption(mode);
+  await saveOptions(page, dialog);
+};
+
+test("TC-F03-63 [AC-F03-35] [AC-F03-37] chat Off, On and In-meeting only reach everyone with a note; messages stay readable", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  await openChat(host.page);
+  const moLog = await openChat(mo.page);
+  await send(mo.page, "said before chat was off");
+  await expect(moLog.getByText("said before chat was off")).toBeVisible({ timeout: 5_000 });
+
+  await setChat(host.page, "off");
+  await expect(moLog.getByText("Olivia Owner turned chat off")).toBeVisible({ timeout: 2_000 });
+  await expect(mo.page.getByRole("status").filter({ hasText: "Chat is turned off for this meeting." })).toBeVisible();
+  await expect(mo.page.getByRole("textbox", { name: "Message everyone" })).toHaveCount(0);
+  await expect(moLog.getByText("said before chat was off")).toBeVisible();
+
+  await setChat(host.page, "on");
+  await expect(moLog.getByText("Olivia Owner turned chat on")).toBeVisible({ timeout: 2_000 });
+  await expect(mo.page.getByRole("textbox", { name: "Message everyone" })).toBeVisible();
+
+  await setChat(host.page, "in_meeting");
+  await expect(moLog.getByText("Olivia Owner limited chat to the meeting")).toBeVisible({ timeout: 2_000 });
+  await expect(mo.page.getByRole("textbox", { name: "Message everyone" })).toBeVisible();
+});
+
+/** The organizer makes a meeting with a title no other test uses, and joins it. */
+async function titledMeeting(who: Team, title: string) {
+  const host = await windowFor(who.owner);
+  await host.page.getByRole("button", { name: "Meetings" }).click();
+  await host.page.getByLabel("Title (optional)").fill(title);
+  await host.page.getByRole("button", { name: "Get link" }).click();
+  const dialog = host.page.getByRole("dialog", { name: "Your meeting link is ready" });
+  const link = (await dialog.getByText(LINK).textContent()) ?? "";
+  await dialog.getByRole("button", { name: "Done" }).click();
+  await joinByLink(host.page, link);
+  return { host, link };
+}
+
+const openChatOf = (page: Page, title: string) => page.getByRole("button", { name: `Open chat of ${title}` });
+const toMeetings = async (page: Page) => {
+  await page.getByRole("button", { name: "Back to home" }).click();
+  await page.getByRole("button", { name: "Meetings" }).click();
+};
+
+test("TC-F03-69 TC-F03-72 [AC-F03-40] [AC-F03-42] a removed person loses the chat; afterwards others open it read-only from the meetings list", async () => {
+  const who = await team();
+  const title = `Chat review ${randomUUID().slice(0, 8)}`;
+  const { host, link } = await titledMeeting(who, title);
+  const mo = await joinWindow(who.member, link);
+  const xena = await knock(who.outsider, link);
+  await admitAll(host.page, who.outsider.name);
+  await expect(controls(xena.page)).toBeVisible({ timeout: 20_000 });
+  const hostLog = await openChat(host.page);
+  await openChat(mo.page);
+  await openChat(xena.page);
+  await send(xena.page, "notes from Xena");
+  await expect(hostLog.getByText("notes from Xena")).toBeVisible({ timeout: 5_000 });
+
+  // Removed: Mo's window leaves the meeting (and its chat) within 2 seconds.
+  await actOn(host.page, "Mo Member", "Remove from meeting");
+  await expect(mo.page.getByRole("heading", { name: "You were removed from the meeting" })).toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(mo.page.getByRole("log", { name: "Messages" })).toHaveCount(0);
+  await openChat(host.page);
+  await send(host.page, "after Mo left");
+  await expect(mo.page.getByText("after Mo left")).toHaveCount(0);
+
+  // The organizer ends the meeting.
+  await controls(host.page).getByRole("button", { name: "More ways to leave" }).click();
+  await host.page.getByRole("menuitem", { name: "End meeting" }).click();
+  await host.page.getByRole("dialog").getByRole("button", { name: "End meeting" }).click();
+  await expect(xena.page.getByRole("heading", { name: "The meeting has ended" })).toBeVisible({ timeout: 20_000 });
+
+  // Xena (external, took part) reads it read-only, with nothing to write, react or edit.
+  await toMeetings(xena.page);
+  await openChatOf(xena.page, title).click();
+  const xenaLog = xena.page.getByRole("log", { name: "Messages" });
+  await expect(xenaLog.getByText("notes from Xena")).toBeVisible({ timeout: 10_000 });
+  await expect(xenaLog.getByText("after Mo left")).toBeVisible();
+  await expect(xena.page.getByRole("textbox", { name: "Message everyone" })).toHaveCount(0);
+  // Only Copy text is left on a message.
+  await (await onMessage(xena.page, "after Mo left")).getByRole("button", { name: "More actions" }).click();
+  await expect(xena.page.getByRole("menuitem")).toHaveText(["Copy text"]);
+  await xena.page.keyboard.press("Escape");
+  await expect(xena.page.getByRole("button", { name: "Reply" })).toHaveCount(0);
+  await expect(xena.page.getByRole("button", { name: /^React with / })).toHaveCount(0);
+
+  // The organizer still sees Delete on others' messages.
+  await toMeetings(host.page);
+  await openChatOf(host.page, title).click();
+  await (await onMessage(host.page, "notes from Xena")).getByRole("button", { name: "More actions" }).click();
+  await expect(host.page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
+  await expect(host.page.getByRole("menuitem", { name: "Edit" })).toHaveCount(0);
+
+  // Mo, who was removed, has no Open chat for it.
+  await toMeetings(mo.page);
+  await expect(mo.page.getByRole("heading", { name: "Recent meetings" })).toBeVisible();
+  await expect(openChatOf(mo.page, title)).toHaveCount(0);
 });

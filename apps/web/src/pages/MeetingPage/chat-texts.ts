@@ -1,12 +1,12 @@
 // Words and small helpers for the meeting chat (F03): names as shown, notes, times, first lines.
 import type { ChatMessageView } from "@meetapp/contracts";
 import type { TFunction } from "i18next";
-import type { Joined } from "../../features/meetings/index.ts";
 
 export const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-export function senderName(t: TFunction, message: ChatMessageView, visit: Joined): string {
-  if (message.sender.attendanceId === visit.attendanceId) return t("meetings.chat.you");
+/** "You" for the viewer's own messages in a call (`viewerId` is unknown after the meeting). */
+export function senderName(t: TFunction, message: ChatMessageView, viewerId: string | undefined): string {
+  if (viewerId !== undefined && message.sender.attendanceId === viewerId) return t("meetings.chat.you");
   const { name, group } = message.sender;
   return group === "member" ? name : t(`meetings.call.${group}`, { name });
 }

@@ -3,6 +3,7 @@
 // "Save as" in the desktop app; GIFs are searched at KLIPY by the app itself, as KLIPY requires (D059).
 import { apiFileUrl, apiRequest } from "../../api/index.ts";
 import type { Joined } from "../visit.ts";
+import type { ChatPlace } from "./chat-api.ts";
 
 const base = (visit: Joined) => `/api/v1/calls/${visit.call?.callId ?? ""}/chat`;
 
@@ -42,12 +43,10 @@ export function uploadFile(visit: Joined, file: File, onProgress: (percent: numb
 }
 
 /** A 5-minute address for a sent file or its preview (AC-F03-31). */
-export async function fileAddress(visit: Joined, attachmentId: string, preview: boolean): Promise<string> {
+export async function fileAddress(place: ChatPlace, attachmentId: string, preview: boolean): Promise<string> {
   const link = await apiRequest<{ url: string }>(
-    `${base(visit)}/attachments/${attachmentId}/link${preview ? "?preview=true" : ""}`,
-    {
-      headers: { "x-meeting-ticket": visit.ticket },
-    },
+    `${place.path}/attachments/${attachmentId}/link${preview ? "?preview=true" : ""}`,
+    { headers: place.headers },
   );
   return apiFileUrl(link.url) ?? "";
 }
@@ -57,8 +56,8 @@ interface FilesBridge {
 }
 
 /** Saves a file with "Save as" in the desktop app; a browser downloads it (it is always an attachment). */
-export async function saveFile(visit: Joined, attachmentId: string): Promise<void> {
-  const url = await fileAddress(visit, attachmentId, false);
+export async function saveFile(place: ChatPlace, attachmentId: string): Promise<void> {
+  const url = await fileAddress(place, attachmentId, false);
   const bridge = (window as FilesBridge).meetapp?.files;
   if (bridge) await bridge.save(url);
   else window.open(url, "_blank", "noopener,noreferrer");

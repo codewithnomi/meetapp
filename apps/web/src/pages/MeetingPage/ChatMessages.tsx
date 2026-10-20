@@ -13,9 +13,9 @@ import {
   setReaction,
   votePoll,
   type Chat,
+  type ChatPlace,
   type Sending,
 } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
 import { allTextOf, copyText, noteText, senderName, time } from "./chat-texts.ts";
 import { MessageExtras } from "./ChatExtras.tsx";
 import { openLink } from "./open-link.ts";
@@ -37,8 +37,10 @@ export interface ChatRights {
 
 export interface ChatView {
   chat: Chat;
-  visit: Joined;
+  place: ChatPlace;
   rights: ChatRights;
+  /** Chat is off, or the meeting has ended: read only; organizers may still remove messages (AC-F03-35, 42). */
+  readOnly: boolean;
   onReply: (message: ChatMessageView) => void;
   onEdit: (message: ChatMessageView) => void;
   onDelete: (message: ChatMessageView) => void;
@@ -47,18 +49,19 @@ export interface ChatView {
 
 function moreActions(t: TFunction, view: ChatView, message: ChatMessageView, own: boolean): MenuAction[] {
   const pinned = view.chat.state.pinned.some((p) => p.id === message.id);
-  const pin = () => void setPinned(view.visit, message.id, !pinned).catch(view.onFailed);
+  const pin = () => void setPinned(view.place, message.id, !pinned).catch(view.onFailed);
+  const writing = !view.readOnly;
   return [
-    ...(own && message.kind === "text"
+    ...(writing && own && message.kind === "text"
       ? [{ id: "edit", label: t("meetings.chat.actions.edit"), onSelect: () => view.onEdit(message) }]
       : []),
     ...(message.body
       ? [{ id: "copy", label: t("meetings.chat.actions.copy"), onSelect: () => copyText(allTextOf(message)) }]
       : []),
-    ...(view.rights.moderate
+    ...(writing && view.rights.moderate
       ? [{ id: "pin", label: t(pinned ? "meetings.chat.actions.unpin" : "meetings.chat.actions.pin"), onSelect: pin }]
       : []),
-    ...(own || view.rights.moderate
+    ...((writing && own) || view.rights.moderate
       ? [
           {
             id: "delete",
@@ -83,7 +86,18 @@ function Actions({
   own: boolean;
 }) {
   const { t } = useTranslation();
-  const react = (emoji: string) => () => void setReaction(view.visit, message.id, emoji, true).catch(view.onFailed);
+  const react = (emoji: string) => () => void setReaction(view.place, message.id, emoji, true).catch(view.onFailed);
+  const more = moreActions(t, view, message, own);
+  if (view.readOnly) {
+    return more.length > 0 ? (
+      <MessageActions
+        label={t("meetings.chat.actions.label", { name })}
+        quickReactions={[]}
+        moreLabel={t("meetings.chat.actions.more")}
+        more={more}
+      />
+    ) : null;
+  }
   return (
     <MessageActions
       label={t("meetings.chat.actions.label", { name })}
@@ -94,7 +108,7 @@ function Actions({
       }))}
       reply={{ label: t("meetings.chat.actions.reply"), onReply: () => view.onReply(message) }}
       moreLabel={t("meetings.chat.actions.more")}
-      more={moreActions(t, view, message, own)}
+      more={more}
     />
   );
 }
@@ -105,11 +119,11 @@ function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
   const queries = useQueryClient();
   const version = view.chat.state.pollVersions[pollId] ?? 0;
   const key = ["chat-poll", pollId, version];
-  const poll = useQuery<PollView>({ queryKey: key, queryFn: () => pollOf(view.visit, pollId) });
+  const poll = useQuery<PollView>({ queryKey: key, queryFn: () => pollOf(view.place, pollId) });
   if (!poll.data) return null;
   const p = poll.data;
   const vote = (optionIds: string[]) =>
-    void votePoll(view.visit, pollId, optionIds).then((next) => queries.setQueryData(key, next), view.onFailed);
+    void votePoll(view.place, pollId, optionIds).then((next) => queries.setQueryData(key, next), view.onFailed);
   const kind = t(p.multiple ? "meetings.chat.poll.several" : "meetings.chat.poll.one");
   const names = t(p.anonymous ? "meetings.chat.poll.anonymous" : "meetings.chat.poll.named");
   return (
@@ -134,10 +148,10 @@ function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
       closedLabel={p.closed ? t("meetings.chat.poll.closed") : undefined}
       onVote={vote}
       close={
-        view.rights.moderate
+        view.rights.moderate && !view.readOnly
           ? {
               label: t("meetings.chat.poll.close"),
-              onClose: () => void closePoll(view.visit, pollId).catch(view.onFailed),
+              onClose: () => void closePoll(view.place, pollId).catch(view.onFailed),
             }
           : undefined
       }
@@ -148,8 +162,8 @@ function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
 export function Message({ view, message }: { view: ChatView; message: ChatMessageView }) {
   const { t } = useTranslation();
   if (message.kind === "system") return <SystemNote text={noteText(t, message)} />;
-  const name = senderName(t, message, view.visit);
-  const own = message.sender.attendanceId === view.visit.attendanceId;
+  const name = senderName(t, message, view.place.attendanceId);
+  const own = message.sender.attendanceId === view.place.attendanceId;
   const shown = time(message.createdAt);
   return (
     <ChatMessage
@@ -172,7 +186,7 @@ export function Message({ view, message }: { view: ChatView; message: ChatMessag
         message.pollId && !message.deletedAt ? (
           <PollMessage view={view} pollId={message.pollId} />
         ) : (
-          <MessageExtras visit={view.visit} message={message} onFailed={view.onFailed} />
+          <MessageExtras place={view.place} message={message} onFailed={view.onFailed} />
         )
       }
       reactions={message.reactions.map((reaction) => ({
@@ -184,7 +198,9 @@ export function Message({ view, message }: { view: ChatView; message: ChatMessag
           count: reaction.count,
           names: reaction.names.join(", "),
         }),
-        onToggle: () => void setReaction(view.visit, message.id, reaction.emoji, !reaction.mine).catch(view.onFailed),
+        onToggle: view.readOnly
+          ? undefined
+          : () => void setReaction(view.place, message.id, reaction.emoji, !reaction.mine).catch(view.onFailed),
       }))}
       actions={message.deletedAt ? undefined : <Actions view={view} message={message} name={name} own={own} />}
       onOpenLink={openLink}

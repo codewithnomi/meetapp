@@ -53,8 +53,10 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Chat off:** the composer is replaced by the note "Chat is turned off for this meeting" (AC-35).
 
 ### 2.2 After the meeting
-- **Meetings list:** a past meeting row (F02's list of recent meetings) gets **Open chat** when the person may read it (AC-42). F06 later moves this into the meetings library.
-- The chat opens read-only: no composer, no edit or delete (except organizer and co-organizer delete, AC-11), files still downloadable.
+- **Meetings list:** F02 has no list of past meetings, so T16 adds **Recent meetings** to the Meetings screen: up to 20 past meetings the person took part in and may still read, newest first, each with **Open chat** (AC-42). It comes from `GET /me/meeting-chats`, which applies the after-meeting reading rules (3.1) to each meeting. F06 later moves this into the meetings library.
+- The chat opens read-only beside the list: no composer, no reactions, reply or edit; Copy text stays; the organizer and co-organizers keep Delete (AC-11); files still download, and polls show their final result (`GET /meetings/:meetingId/chat/polls/:pollId`). Pinning is only during the call (8: "after the meeting, only delete").
+- **In the call, chat Off:** the room's shared settings carry `chatMode`, so every app swaps the composer for the note at once; reactions, reply, edit and pin are hidden, and the organizers keep Delete.
+- **Leaving:** when the call screen closes (left, removed, ended), the app drops the chat, its file links, previews and polls from memory.
 
 ### 2.3 New UI components (Atomic Design, `packages/ui`)
 - **Atoms:** `ReactionChip`, `FileChip`.
@@ -71,7 +73,8 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | attach files | same, but not guests (AC-33) |
 | edit own message | the sender, only while the call the message was sent in (`chat_messages.call_id`) is running; otherwise `CHAT_EDIT_ENDED` |
 | delete own message | same as edit |
-| delete anyone's message, pin, unpin | organizer, co-organizers (during or after) |
+| delete anyone's message | organizer, co-organizers (during or after) |
+| pin, unpin | organizer, co-organizers (during the call) |
 | create a poll | organizer, co-organizers, presenters (during a call) |
 | close a poll | its creator, organizer, co-organizers |
 | change chat mode | organizer, co-organizers (Meeting options, before or during) |
@@ -202,7 +205,8 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | `POST /calls/:callId/chat/attachments`, `GET …/attachments/:id/link` | members and external people in call | upload, download link |
 | `GET /calls/:callId/chat/gif-settings` | ticket, GIFs allowed, chat on | the KLIPY key and a per-meeting `customer_id` for the app's own search |
 | `GET /meetings/:meetingId/chat/messages`, `GET …/attachments/:id/link`, `GET …/polls/:id` | signed in, 3.1 | after the meeting |
-| `DELETE /meetings/:meetingId/chat/messages/:id`, `POST`/`DELETE …/pins` | organizer, co-organizers | after the meeting |
+| `GET /me/meeting-chats` | signed in | past meetings whose chat the person may open (up to 20), with whether they are an organizer there (T16) |
+| `DELETE /meetings/:meetingId/chat/messages/:id` | organizer, co-organizers | after the meeting |
 | `PATCH /meetings/:id/options` (F02, extended) | organizer, co-organizers | `chatMode` |
 | `PATCH /workspaces/:workspaceId/settings` (F02, extended) | owner, admin | `allowGifs` |
 

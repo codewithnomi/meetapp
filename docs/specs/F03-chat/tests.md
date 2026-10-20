@@ -546,8 +546,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 - **Covers:** AC-F03-42
 - **Level:** e2e
 - **Given** an ended meeting
-- **When** M2 opens the meetings list and chooses Open chat
-- **Then** the chat opens read-only (no composer, no edit or delete), files download, organizer sees Delete and Pin on others' messages; a person who may not read it sees no Open chat
+- **When** M2 opens the meetings list (Recent meetings) and chooses Open chat
+- **Then** the chat opens read-only (no composer, reactions, reply, edit or delete; Copy text stays), files download, organizer sees Delete on others' messages; a person who may not read it (removed) sees no Open chat
 
 ### TC-F03-73: Meeting deletion removes chat
 - **Covers:** AC-F03-43

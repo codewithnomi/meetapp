@@ -523,7 +523,14 @@
       "save": "Save",
       "saving": "Saving",
       "lock": "Lock the meeting",
-      "lockHint": "Nobody new can join. People who leave can't come back, except you and co-organizers."
+      "lockHint": "Nobody new can join. People who leave can't come back, except you and co-organizers.",
+      "chat": "Meeting chat",
+      "chatHint": "\"In-meeting only\": after the meeting, only organizers can read the chat.",
+      "chatMode": {
+        "on": "On",
+        "in_meeting": "In-meeting only",
+        "off": "Off"
+      }
     },
     "preJoin": {
       "missing": "Join a meeting",
@@ -925,6 +932,14 @@
         "question": "Question",
         "done": "Done"
       }
+    },
+    "recent": {
+      "title": "Recent meetings",
+      "empty": "Meetings you take part in show here, so you can read their chat afterwards.",
+      "joined": "Joined {{date}}",
+      "openChat": "Open chat",
+      "openChatFor": "Open chat of {{title}}",
+      "failed": "That didn't work. Check your connection and try again."
     }
   }
 }

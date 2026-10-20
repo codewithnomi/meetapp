@@ -4,8 +4,7 @@ import type { ChatMessageView } from "@meetapp/contracts";
 import { AttachmentCard, GifImage, Sticker } from "@meetapp/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { fileAddress, saveFile } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import { fileAddress, saveFile, type ChatPlace } from "../../features/meetings/chat/index.ts";
 
 type Attachment = ChatMessageView["attachments"][number];
 
@@ -28,16 +27,16 @@ const KINDS: Record<string, string> = {
 const kindOf = (attachment: Attachment) =>
   KINDS[attachment.mediaType] ?? (attachment.fileName.split(".").pop() ?? "").toUpperCase();
 
-function File({ visit, attachment, onFailed }: { visit: Joined; attachment: Attachment; onFailed: () => void }) {
+function File({ place, attachment, onFailed }: { place: ChatPlace; attachment: Attachment; onFailed: () => void }) {
   const { t } = useTranslation();
   const preview = useQuery({
     queryKey: ["chat-preview", attachment.id],
-    queryFn: () => fileAddress(visit, attachment.id, true),
+    queryFn: () => fileAddress(place, attachment.id, true),
     enabled: attachment.hasPreview,
     staleTime: LINK_FRESH_MS,
     refetchInterval: LINK_FRESH_MS,
   });
-  const download = () => void saveFile(visit, attachment.id).catch(onFailed);
+  const download = () => void saveFile(place, attachment.id).catch(onFailed);
   return (
     <AttachmentCard
       fileName={attachment.fileName}
@@ -54,11 +53,11 @@ function File({ visit, attachment, onFailed }: { visit: Joined; attachment: Atta
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 export function MessageExtras({
-  visit,
+  place,
   message,
   onFailed,
 }: {
-  visit: Joined;
+  place: ChatPlace;
   message: ChatMessageView;
   onFailed: () => void;
 }) {
@@ -69,7 +68,7 @@ export function MessageExtras({
       {message.attachments.length > 0 ? (
         <div className="flex flex-col gap-1.5">
           {message.attachments.map((attachment) => (
-            <File key={attachment.id} visit={visit} attachment={attachment} onFailed={onFailed} />
+            <File key={attachment.id} place={place} attachment={attachment} onFailed={onFailed} />
           ))}
         </div>
       ) : null}

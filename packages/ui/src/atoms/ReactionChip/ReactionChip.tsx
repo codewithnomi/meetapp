@@ -20,7 +20,7 @@ export function ReactionChip({ emoji, count, mine, label, className, ...rest }: 
       aria-pressed={mine}
       title={label}
       className={cx(
-        "inline-flex h-6.5 cursor-pointer items-center gap-1 rounded-full border px-2 text-[12px] font-semibold",
+        "inline-flex h-6.5 cursor-pointer items-center disabled:cursor-default gap-1 rounded-full border px-2 text-[12px] font-semibold",
         mine ? "border-accent bg-accent-soft text-accent-text" : "border-line bg-surface text-ink",
         FOCUS_RING,
         className,

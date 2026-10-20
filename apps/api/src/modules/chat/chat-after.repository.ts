@@ -1,7 +1,7 @@
 // What the after-meeting chat needs to know (F03 design.md 3.1 and 3.8): who took part in a meeting,
 // whether anyone was removed, and the chat setting at the end of its latest call. Database access only.
 import { callAttendances, calls, type CallAttendance, type Database } from "@meetapp/db";
-import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, max } from "drizzle-orm";
 
 export function createChatAfterRepository(db: Database) {
   return {
@@ -18,6 +18,15 @@ export function createChatAfterRepository(db: Database) {
           ),
         )
         .orderBy(desc(callAttendances.admittedAt)),
+    /** The meetings this person was let into, most recent first (for "Open chat" in the meetings list). */
+    meetingsJoinedBy: (userId: string, limit: number) =>
+      db
+        .select({ meetingId: callAttendances.meetingId, lastJoinedAt: max(callAttendances.admittedAt) })
+        .from(callAttendances)
+        .where(and(eq(callAttendances.userId, userId), isNotNull(callAttendances.admittedAt)))
+        .groupBy(callAttendances.meetingId)
+        .orderBy(desc(max(callAttendances.admittedAt)))
+        .limit(limit),
     /** The latest ended call's setting, or undefined while a call runs or before any ended. */
     afterState: async (meetingId: string) => {
       const [running] = await db

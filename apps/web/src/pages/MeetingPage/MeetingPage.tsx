@@ -226,9 +226,8 @@ function ScreenPanel({ screen }: { screen: Screen }) {
     return (
       <ChatArea
         chat={call.chat}
-        attachments={screen.files}
+        writing={{ visit: call.visit, attachments: screen.files, off: call.room.state.options?.chatMode === "off" }}
         dropping={screen.dropping && rights.attach}
-        visit={call.visit}
         rights={rights}
         onClose={close}
         onFailed={onFailed}

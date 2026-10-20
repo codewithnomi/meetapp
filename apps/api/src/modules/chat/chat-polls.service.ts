@@ -48,7 +48,7 @@ async function namesOf(deps: ChatDeps, attendanceIds: string[]): Promise<Map<str
 }
 
 /** The poll as this person may see it (AC-F03-22). */
-async function viewPoll(deps: ChatDeps, poll: ChatPoll, actor: Actor): Promise<PollView> {
+export async function viewPoll(deps: ChatDeps, poll: ChatPoll, actor: Actor): Promise<PollView> {
   const options = await deps.polls.options(poll.id);
   const votes = await deps.polls.votes(poll.id);
   const key = voterKey(deps, poll, actor);

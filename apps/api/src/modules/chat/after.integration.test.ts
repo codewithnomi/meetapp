@@ -167,6 +167,47 @@ describe("after the meeting", { timeout: 90_000 }, () => {
     expect((await readAfter(r.people.first, r.meeting.id)).statusCode).toBe(404);
   });
 
+  it("TC-F03-71 [AC-F03-23] [AC-F03-42] the meetings list offers Open chat only where reading is allowed; polls read afterwards", async () => {
+    const r = await roomOfFive(t, "recent");
+    const poll = await withTicket(t, r.host.ticket, {
+      method: "POST",
+      url: `/api/v1/calls/${r.callId}/chat/polls`,
+      payload: {
+        clientId: randomUUID(),
+        question: "Lunch?",
+        options: ["yes", "no"],
+        multiple: false,
+        anonymous: false,
+      },
+    });
+    const pollId = poll.json<{ id: string }>().id;
+    const recentOf = async (person: Person) =>
+      (await t.app.inject({ method: "GET", url: "/api/v1/me/meeting-chats", headers: headers(person) }))
+        .json<{ meetings: { id: string; title: string }[] }>()
+        .meetings.map((m) => m.id);
+    // While the call runs, nobody has an after-meeting chat for it.
+    expect(await recentOf(r.people.first)).not.toContain(r.meeting.id);
+    await endCall(r.host, r.callId);
+    expect(await recentOf(r.people.first)).toContain(r.meeting.id);
+    expect(await recentOf(await newPerson(t, "recent-outsider"))).toEqual([]);
+    const pollAfter = (person: Person) =>
+      t.app.inject({
+        method: "GET",
+        url: `/api/v1/meetings/${r.meeting.id}/chat/polls/${pollId}`,
+        headers: headers(person),
+      });
+    const seen = (await pollAfter(r.organizer)).json<{ closed: boolean; results: unknown }>();
+    expect(seen.closed).toBe(true);
+    expect(seen.results).not.toBeNull();
+    expect((await pollAfter(await newPerson(t, "poll-outsider"))).statusCode).toBe(404);
+    const organizerList = await t.app.inject({
+      method: "GET",
+      url: "/api/v1/me/meeting-chats",
+      headers: headers(r.organizer),
+    });
+    expect(organizerList.json<{ meetings: { organizer: boolean }[] }>().meetings[0]?.organizer).toBe(true);
+  });
+
   it("TC-F03-91 [AC-F03-42] the helper for AI gives chat only to those who may read it, marked as data", async () => {
     const r = await roomOfFive(t, "ai");
     await send(r.host, r.callId, {

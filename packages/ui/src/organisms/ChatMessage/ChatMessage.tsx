@@ -25,7 +25,8 @@ export interface ChatMessageProps {
   replyTo?: Omit<ReplyQuoteProps, "composing"> | undefined;
   /** Files, a GIF, a sticker or a poll, drawn by their own components. */
   extras?: ReactNode;
-  reactions?: (Omit<ReactionChipProps, "onClick"> & { onToggle: () => void })[];
+  /** Without `onToggle` (read-only chat) the chips only show the reactions. */
+  reactions?: (Omit<ReactionChipProps, "onClick"> & { onToggle?: (() => void) | undefined })[];
   /** The pointing/keyboard toolbar (reply, react, more). */
   actions?: ReactNode;
   status?:
@@ -80,7 +81,7 @@ function Reactions({ reactions }: { reactions: NonNullable<ChatMessageProps["rea
   return (
     <div className="flex flex-wrap gap-1.5">
       {reactions.map(({ onToggle, ...chip }) => (
-        <ReactionChip key={chip.emoji} {...chip} onClick={onToggle} />
+        <ReactionChip key={chip.emoji} {...chip} onClick={onToggle} disabled={!onToggle} />
       ))}
     </div>
   );

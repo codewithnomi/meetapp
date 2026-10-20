@@ -1,7 +1,7 @@
 // MeetingOptionsForm (organism): the "Meeting options" dialog of the approved screen, for the organizer
 // and co-organizers (AC-F02-02, 34, 36, 37): who can skip the lobby, who can present, the co-organizers
-// (only the organizer changes them, up to 10, from the workspace), the attendees' mic and camera, and the
-// lock; a note about guests; Cancel and Save. The page holds the values and saves them. All words
+// (only the organizer changes them, up to 10, from the workspace), meeting chat (F03 AC-F03-35–37), the
+// attendees' mic and camera, and the lock; a note about guests; Cancel and Save. The page holds the values and saves them. All words
 // arrive as props.
 import { useId } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
@@ -44,6 +44,8 @@ export interface MeetingOptionsFormProps {
   closeLabel: string;
   lobbyBypass: Choice;
   whoCanPresent: Choice;
+  /** Meeting chat: On, In-meeting only, Off (F03). */
+  chatMode?: Choice | undefined;
   coOrganizers: CoOrganizers;
   allowMic: Switch;
   allowCamera: Switch;
@@ -153,6 +155,7 @@ export function MeetingOptionsForm(props: MeetingOptionsFormProps) {
     >
       <DeviceSelect {...lobbyBypass} />
       <DeviceSelect {...whoCanPresent} />
+      {props.chatMode ? <DeviceSelect {...props.chatMode} /> : null}
       <CoOrganizerList coOrganizers={coOrganizers} />
       <Switches allowMic={props.allowMic} allowCamera={props.allowCamera} lock={props.lock} />
       <p className="m-0 text-[13px] leading-4.5 text-ink-muted">{guestsNote}</p>

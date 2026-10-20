@@ -114,10 +114,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61, 90 (app part), 93 (on screen).
   - **Built in T15:** `FileChip`, `Sticker`, `GifImage`, `GifPicker`, `StickerPicker`; the app's `ChatTools` (Attach, GIF, Sticker, files waiting) and `ChatExtras` (file cards with preview links renewed every 4 minutes, GIFs, stickers); files can be chosen, pasted or dropped anywhere on the meeting window; KLIPY answers are read defensively; Workspace settings has "Allow GIFs". Bug found by the new desktop test and fixed: the backend's CORS did not allow the `x-file-name` header, so uploads from the app were blocked. Two new real-app tests (attach, drop, download, refused kinds; stickers, guests have no Attach, GIFs "not available" without a key); 8 chat desktop tests pass. A real KLIPY search is checked by the owner once a key is set.
 
-- [ ] **T16: Chat setting, removed people and after the meeting in the app.**
+- [x] **T16: Chat setting, removed people and after the meeting in the app.**
   - Meeting chat setting in Meeting options, notes, "Chat is turned off", the app clearing chat when a ticket ends, Open chat from the meetings list.
   - Covers: AC-F03-35, 37, 40, 41, 42.
   - Tests: TC-F03-63, 66, 69, 72.
+  - **Built in T16:** "Meeting chat" (On, In-meeting only, Off) in Meeting options; the room's shared settings carry the setting, so the box gives way to "Chat is turned off for this meeting" at once, and reactions, reply, edit and pin hide (organizers keep Delete); the reading parts now take a "chat place" (a running call with its ticket, or a past meeting, signed in), so the same screens show both; leaving the call drops chat file links, previews and polls from memory. Not in the design and added (design.md 2.2 updated): F02 had no past-meetings list, so the Meetings screen gets **Recent meetings** with Open chat, from a new `GET /me/meeting-chats`, and polls read afterwards through `GET /meetings/:id/chat/polls/:pollId`. Pinning after the meeting was dropped from the design's table, which already said "after the meeting, only delete" (8). New tests: a backend test for the list and polls afterwards, a unit test for the notes (TC-66), two real-app tests (TC-63; TC-69 with TC-72); 10 chat desktop tests pass.
 
 - [ ] **T17: Load test.**
   - `pnpm test:load` sends messages from the simulated people's side and measures delivery to the desktop app.

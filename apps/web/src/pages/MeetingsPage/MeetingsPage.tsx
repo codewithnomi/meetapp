@@ -2,8 +2,8 @@
 // opens its pre-join; Get a meeting link makes one (with an optional title) and shows the link-ready
 // dialog without joining; Join a meeting finds one by ID and passcode or by link. Meetings belong to
 // the open workspace. Each press of Meet now or Get link uses one Idempotency-Key, so a double click
-// makes one meeting (AC-F02-46).
-import { Button, Icon, Input } from "@meetapp/ui";
+// makes one meeting (AC-F02-46). Recent meetings offer Open chat for a past meeting's chat (AC-F03-42).
+import { Button, Icon, Input, Notice } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
@@ -21,6 +21,7 @@ import {
   type AppScreen,
 } from "../../features/workspaces/index.ts";
 import { GET_LINK_ID, LinkReadyDialog } from "./LinkReadyDialog.tsx";
+import { PastChat, RecentMeetings, type PastMeeting } from "./RecentMeetings.tsx";
 
 export interface MeetingsPageProps {
   onNavigate: (screen: AppScreen) => void;
@@ -142,37 +143,69 @@ function GetLinkCard({ workspaceId, onCreated }: { workspaceId: string; onCreate
   );
 }
 
-export function MeetingsPage({ onNavigate, onPreJoin }: MeetingsPageProps) {
+/** The start cards, joining, and the recent meetings with Open chat. */
+function MeetingsMain({
+  onPreJoin,
+  onCreated,
+  onOpenPast,
+  failed,
+}: {
+  onPreJoin: MeetingsPageProps["onPreJoin"];
+  onCreated: (meeting: MeetingCreated) => void;
+  onOpenPast: (meeting: PastMeeting) => void;
+  failed: boolean;
+}) {
   const { t } = useTranslation();
+  const { current } = useCurrentWorkspace();
+  const nameOf = useWorkspaceName();
+  return (
+    <main className="flex max-w-260 min-w-0 flex-1 flex-col gap-8 px-6 py-10 sm:px-12">
+      <header className="flex flex-col gap-1">
+        <h1 tabIndex={-1} className="m-0 text-title text-ink outline-none">
+          {t("meetings.title")}
+        </h1>
+        <p className="m-0 text-ink-muted">{t("meetings.subtitle", { workspace: current ? nameOf(current) : "" })}</p>
+      </header>
+      {current ? (
+        <section
+          aria-label={t("meetings.start.label")}
+          className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4"
+        >
+          <MeetNowCard workspaceId={current.id} onPreJoin={onPreJoin} />
+          <GetLinkCard workspaceId={current.id} onCreated={onCreated} />
+        </section>
+      ) : null}
+      <JoinMeetingForm onFound={onPreJoin} note={t("meetings.join.guestNote")} />
+      {failed ? <Notice tone="danger">{t("meetings.recent.failed")}</Notice> : null}
+      <RecentMeetings onOpen={onOpenPast} />
+    </main>
+  );
+}
+
+export function MeetingsPage({ onNavigate, onPreJoin }: MeetingsPageProps) {
   const { current } = useCurrentWorkspace();
   const nameOf = useWorkspaceName();
   const [ready, setReady] = useState<MeetingCreated>();
   const [optionsFor, setOptionsFor] = useState<string>();
-  const workspaceName = current ? nameOf(current) : "";
+  const [past, setPast] = useState<PastMeeting>();
+  const [failed, setFailed] = useState(false);
   return (
     <WorkspaceShell screen="meetings" onNavigate={onNavigate}>
-      <main className="flex max-w-260 flex-col gap-8 px-6 py-10 sm:px-12">
-        <header className="flex flex-col gap-1">
-          <h1 tabIndex={-1} className="m-0 text-title text-ink outline-none">
-            {t("meetings.title")}
-          </h1>
-          <p className="m-0 text-ink-muted">{t("meetings.subtitle", { workspace: workspaceName })}</p>
-        </header>
-        {current ? (
-          <section
-            aria-label={t("meetings.start.label")}
-            className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4"
-          >
-            <MeetNowCard workspaceId={current.id} onPreJoin={onPreJoin} />
-            <GetLinkCard workspaceId={current.id} onCreated={setReady} />
-          </section>
+      <div className="flex min-h-0 flex-1">
+        <MeetingsMain
+          onPreJoin={onPreJoin}
+          onCreated={setReady}
+          onOpenPast={(meeting) => (setFailed(false), setPast(meeting))}
+          failed={failed}
+        />
+        {past ? (
+          <PastChat key={past.id} meeting={past} onClose={() => setPast(undefined)} onFailed={() => setFailed(true)} />
         ) : null}
-        <JoinMeetingForm onFound={onPreJoin} note={t("meetings.join.guestNote")} />
-      </main>
+      </div>
       {ready ? (
         <LinkReadyDialog
           meeting={ready}
-          workspaceName={workspaceName}
+          workspaceName={current ? nameOf(current) : ""}
           onClose={() => setReady(undefined)}
           onOptions={() => {
             setOptionsFor(ready.id);

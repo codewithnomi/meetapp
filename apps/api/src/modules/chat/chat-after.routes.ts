@@ -6,7 +6,10 @@ import {
   meetingAttachmentParamsSchema,
   meetingChatMessageParamsSchema,
   meetingChatParamsSchema,
+  meetingPollParamsSchema,
   messagesPageSchema,
+  pollSchema,
+  recentMeetingChatsSchema,
   messagesQuerySchema,
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
@@ -20,6 +23,15 @@ const WHO =
 const route = <S extends object>(summary: string, schema: S) => ({
   schema: { summary, description: WHO, tags: ["chat"], ...schema },
 });
+
+const RECENT = {
+  schema: {
+    summary: "Past meetings whose chat you may open, most recent first (up to 20)",
+    description: "Only meetings you were let into and weren't removed from, as the after-meeting rules allow.",
+    tags: ["chat"],
+    response: { 200: recentMeetingChatsSchema },
+  },
+};
 
 export const chatAfterRoutes: FastifyPluginAsyncZod<{ after: ChatAfterService }> = async (app, { after }) => {
   app.get(
@@ -46,6 +58,13 @@ export const chatAfterRoutes: FastifyPluginAsyncZod<{ after: ChatAfterService }>
         request.query.preview === "true",
       ),
   );
+  app.get(
+    `${BASE}/polls/:pollId`,
+    route("A poll's final result", { params: meetingPollParamsSchema, response: { 200: pollSchema } }),
+    (request) =>
+      after.poll(signedInUser(request).id, idParam(request.params.meetingId), idParam(request.params.pollId)),
+  );
+  app.get("/api/v1/me/meeting-chats", RECENT, (request) => after.recent(signedInUser(request).id));
   app.delete(
     `${BASE}/messages/:messageId`,
     route("Remove a message (organizer and co-organizers)", { params: meetingChatMessageParamsSchema }),

@@ -1,6 +1,7 @@
 // The meeting chat beside the videos (F03, approved "Chat" screen): the newest messages at the bottom,
 // older ones loaded when scrolling up, the view kept still while reading older messages with a "New
 // messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
+// Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
 import { Button, ChatPanel, Dialog } from "@meetapp/ui";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -67,12 +68,12 @@ function usePinnedBar(pinned: ChatMessageView[]) {
 
 /** "Delete this message?" before anything is removed (AC-F03-10). */
 function DeleteDialog({
-  visit,
+  chat,
   message,
   onClose,
   onFailed,
 }: {
-  visit: Joined;
+  chat: Chat;
   message: ChatMessageView | undefined;
   onClose: () => void;
   onFailed: () => void;
@@ -93,7 +94,8 @@ function DeleteDialog({
         <Button
           variant="danger"
           onClick={() => {
-            if (message) void deleteMessage(visit, message.id).catch(onFailed);
+            // During a call the news shows the deletion; afterwards the chat is read again.
+            if (message) void deleteMessage(chat.place, message.id).then(() => chat.catchUp(), onFailed);
             onClose();
           }}
         >
@@ -106,11 +108,13 @@ function DeleteDialog({
 
 export interface ChatAreaProps {
   chat: Chat;
-  attachments: Attachments;
+  /** In a call: the message box, or "Chat is turned off" when `off`. Absent after the meeting. */
+  writing?: { visit: Joined; attachments: Attachments; off: boolean } | undefined;
   /** Files are being dragged over the meeting window (AC-F03-29). */
   dropping: boolean;
-  visit: Joined;
   rights: ChatRights;
+  /** The panel's title; "Chat" by default, the meeting's title after it. */
+  title?: string | undefined;
   onClose: () => void;
   onFailed: () => void;
 }
@@ -129,6 +133,8 @@ function useInteraction() {
   return { replyingTo, editing, deleting, setDeleting, done, handlers };
 }
 
+type Interaction = ReturnType<typeof useInteraction>;
+
 function AllMessages({ view }: { view: ChatView }) {
   return (
     <>
@@ -142,17 +148,40 @@ function AllMessages({ view }: { view: ChatView }) {
   );
 }
 
-export function ChatArea({ chat, attachments, dropping, visit, rights, onClose, onFailed }: ChatAreaProps) {
+/** The message box, or the note that chat is off; nothing after the meeting. */
+function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaProps["writing"]; act: Interaction }) {
+  const { t } = useTranslation();
+  if (!writing) return null;
+  if (writing.off)
+    return (
+      <p role="status" className="m-0 rounded-md bg-surface-sunken p-3 text-center text-[13px] text-ink-muted">
+        {t("meetings.chat.off")}
+      </p>
+    );
+  return (
+    <ComposerArea
+      view={view}
+      visit={writing.visit}
+      attachments={writing.attachments}
+      replyingTo={act.replyingTo}
+      editing={act.editing}
+      onDone={act.done}
+    />
+  );
+}
+
+export function ChatArea({ chat, writing, dropping, rights, title, onClose, onFailed }: ChatAreaProps) {
   const { t } = useTranslation();
   const { messages, sending, loaded, pinned } = chat.state;
   const scroll = useStickToBottom(messages.length + sending.length, chat);
   const pinBar = usePinnedBar(pinned);
   const act = useInteraction();
-  const view: ChatView = { chat, visit, rights, onFailed, ...act.handlers };
+  const readOnly = !writing || writing.off;
+  const view: ChatView = { chat, place: chat.place, rights, readOnly, onFailed, ...act.handlers };
   return (
     <>
       <ChatPanel
-        title={t("meetings.chat.title")}
+        title={title ?? t("meetings.chat.title")}
         closeLabel={t("meetings.chat.close")}
         onClose={onClose}
         listLabel={t("meetings.chat.messages")}
@@ -169,22 +198,9 @@ export function ChatArea({ chat, attachments, dropping, visit, rights, onClose, 
           dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
-        composer={
-          <ComposerArea
-            view={view}
-            attachments={attachments}
-            replyingTo={act.replyingTo}
-            editing={act.editing}
-            onDone={act.done}
-          />
-        }
+        composer={<Composer view={view} writing={writing} act={act} />}
       />
-      <DeleteDialog
-        visit={visit}
-        message={act.deleting}
-        onClose={() => act.setDeleting(undefined)}
-        onFailed={onFailed}
-      />
+      <DeleteDialog chat={chat} message={act.deleting} onClose={() => act.setDeleting(undefined)} onFailed={onFailed} />
     </>
   );
 }

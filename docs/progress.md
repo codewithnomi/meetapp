@@ -43,7 +43,8 @@
 - **F03 T13 done:** the rich message box (formatting, shortcuts, code blocks, links, emoji, character limit, sending-too-fast note); 4 real-app chat tests pass.
 - **F03 T14 done:** reply, react, edit, delete (asked first), pin and polls work in the meeting; 6 real-app chat tests pass.
 - **F03 T15 done:** files (attach, paste, drag and drop anywhere, download), GIFs (KLIPY, searched from the app) and stickers in the meeting chat; Workspace "Allow GIFs" switch; uploads from the app were blocked by a missing CORS header, now fixed; 8 real-app chat tests pass.
-- **Next step:** F03 T16, chat setting, removed people and after-meeting chat in the app (`/next`).
+- **F03 T16 done:** "Meeting chat" On / In-meeting only / Off in Meeting options, with the notes and the "Chat is turned off" message; a removed person's window drops the chat; the Meetings screen has a new **Recent meetings** list with Open chat for reading past chats (not in the design before; design.md 2.2 updated); 10 real-app chat tests pass.
+- **Next step:** F03 T17, the chat load test (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

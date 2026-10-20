@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { createPoll, editMessage, type Outgoing, type UploadProblem } from "../../features/meetings/chat/index.ts";
 import { firstLineOf } from "./chat-texts.ts";
 import type { ChatView } from "./ChatMessages.tsx";
+import type { Joined } from "../../features/meetings/index.ts";
 
 const RECENT_KEY = "meetapp.chat.recentEmoji";
 const MAX_RECENT = 8;
@@ -93,7 +94,7 @@ function useEmojiSettings() {
   };
 }
 
-function PollButton({ view }: { view: ChatView }) {
+function PollButton({ visit, onFailed }: { visit: Joined; onFailed: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -119,8 +120,8 @@ function PollButton({ view }: { view: ChatView }) {
         labels={labels}
         onPost={(poll) => {
           setBusy(true);
-          void createPoll(view.visit, poll)
-            .then(() => setOpen(false), view.onFailed)
+          void createPoll(visit, poll)
+            .then(() => setOpen(false), onFailed)
             .finally(() => setBusy(false));
         }}
       />
@@ -130,6 +131,7 @@ function PollButton({ view }: { view: ChatView }) {
 
 export interface ComposerAreaProps {
   view: ChatView;
+  visit: Joined;
   attachments: Attachments;
   replyingTo: ChatMessageView | undefined;
   editing: ChatMessageView | undefined;
@@ -168,7 +170,7 @@ function Notes({ view, attachments }: { view: ChatView; attachments: Attachments
 /** Above the text: the reply or edit quote, files waiting, and an open GIF or sticker picker. */
 function Above({ props, picker, onPicked }: { props: ComposerAreaProps; picker: OpenPicker; onPicked: () => void }) {
   const { t } = useTranslation();
-  const { view, attachments, replyingTo, editing, onDone } = props;
+  const { view, visit, attachments, replyingTo, editing, onDone } = props;
   const quote = editing ?? replyingTo;
   const sendExtra = (content: Outgoing) => (view.chat.send(content, undefined, replyingTo?.id), onPicked(), onDone());
   return (
@@ -185,16 +187,16 @@ function Above({ props, picker, onPicked }: { props: ComposerAreaProps; picker: 
         />
       ) : null}
       <WaitingFiles attachments={attachments} />
-      {picker === "gif" ? <GifPanel visit={view.visit} onPick={(gif) => sendExtra({ gif })} /> : null}
+      {picker === "gif" ? <GifPanel visit={visit} onPick={(gif) => sendExtra({ gif })} /> : null}
       {picker === "sticker" ? <StickerPanel onPick={(sticker) => sendExtra({ sticker })} /> : null}
     </>
   );
 }
 
 /** Saves an edit, or sends the text with the files waiting (AC-F03-10, 28). */
-function sendFrom({ view, attachments, replyingTo, editing }: ComposerAreaProps, body: MessageDocument) {
+function sendFrom({ view, visit, attachments, replyingTo, editing }: ComposerAreaProps, body: MessageDocument) {
   if (editing) {
-    void editMessage(view.visit, editing.id, body).catch(view.onFailed);
+    void editMessage(visit, editing.id, body).catch(view.onFailed);
     return;
   }
   const attachmentIds = attachments.readyIds;
@@ -208,9 +210,9 @@ function sendFrom({ view, attachments, replyingTo, editing }: ComposerAreaProps,
 
 export function ComposerArea(props: ComposerAreaProps) {
   const { t } = useTranslation();
-  const { view, attachments, replyingTo, editing, onDone } = props;
+  const { view, visit, attachments, replyingTo, editing, onDone } = props;
   const emoji = useEmojiSettings();
-  const gifs = useGifSettings(view.visit);
+  const gifs = useGifSettings(visit);
   const [picker, setPicker] = useState<OpenPicker>();
   const labels = Object.fromEntries(
     COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
@@ -225,7 +227,7 @@ export function ComposerArea(props: ComposerAreaProps) {
         onOpen={setPicker}
         onFiles={attachments.add}
       />
-      {view.rights.createPoll ? <PollButton view={view} /> : null}
+      {view.rights.createPoll ? <PollButton visit={visit} onFailed={view.onFailed} /> : null}
     </>
   );
   return (
