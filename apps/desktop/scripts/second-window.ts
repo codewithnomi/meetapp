@@ -12,6 +12,8 @@ const RENDERER_URL = "http://127.0.0.1:5173";
 const envFile = fileURLToPath(new URL("../../../.env", import.meta.url));
 
 try {
+  // Only checks that the local dev server (this computer) answers: nothing leaves the Mac.
+  // nosemgrep: typescript.react.security.react-insecure-request.react-insecure-request
   await fetch(RENDERER_URL);
 } catch {
   process.stderr.write("Start `pnpm dev` first; this opens one more window next to it.\n");
