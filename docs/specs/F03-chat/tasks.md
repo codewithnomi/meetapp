@@ -77,10 +77,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 
 ## Desktop and app
 
-- [ ] **T10: Desktop: spell check, Save as, drop safety, content policy.**
+- [x] **T10: Desktop: spell check, Save as, drop safety, content policy.**
   - `spellcheck.ts` (bundled dictionaries, right-click menu), `downloads.ts`, the GIF and file storage hosts in `img-src`, dropped files never navigate the window.
   - Covers: AC-F03-18; AC-F03-31 (Save as).
-  - Tests: TC-F03-33, 34, 93.
+  - Tests: TC-F03-33, 34, 93 (rules and policy as unit tests; the parts that need the chat panel on screen, typing in the message box and dropping onto it, run with T13 and T15).
+  - **Built in T10:** `chat-desktop.ts` (rules), `chat-bridge.ts` (Electron wiring), `meetapp.files.save` in the preload, downloads allowed only for chat file links, KLIPY in the security policy (`GIF_API_URL` in development only). Windows dictionaries ship with F04's installer (design 5.1).
 
 - [ ] **T11: Building blocks in the gallery.**
   - `/new-component` for the atoms, molecules and organisms in design 2.3, with stories, keyboard and axe checks; our own message renderer; the sticker set.
@@ -96,7 +97,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - [ ] **T13: The message box: formatting, code, emoji, limits.**
   - TipTap with the Format toolbar and shortcuts, paste cleaning, Frimousse, counter, Enter/Shift+Enter, links opened outside.
   - Covers: AC-F03-03, 04, 06, 12, 15, 16, 17.
-  - Tests: TC-F03-07, 09, 14, 22, 28, 30, 31, 81, 83.
+  - Tests: TC-F03-07, 09, 14, 22, 28, 30, 31, 33 (on screen), 34 (on screen), 81, 83.
 
 - [ ] **T14: Reactions, replies, edit, delete, pins and polls in the app.**
   - Covers: AC-F03-10, 11, 13, 14, 19, 20, 21, 22, 23.
@@ -105,7 +106,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - [ ] **T15: Files, drag and drop, GIFs and stickers in the app.**
   - Attach, chips with progress, previews, Download, drop area, paste; GIF picker searching KLIPY from the app ("Powered by KLIPY", results in KLIPY's order) with the one-time notice, reduced motion; stickers; Workspace settings: Allow GIFs.
   - Covers: AC-F03-24–29, 33, 34.
-  - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61, 90 (app part).
+  - Tests: TC-F03-44, 45, 46, 49, 53, 55, 59, 61, 90 (app part), 93 (on screen).
 
 - [ ] **T16: Chat setting, removed people and after the meeting in the app.**
   - Meeting chat setting in Meeting options, notes, "Chat is turned off", the app clearing chat when a ticket ends, Open chat from the meetings list.

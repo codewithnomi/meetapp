@@ -28,8 +28,7 @@ apps/api/src/modules/chat/                routes, service, repository, document 
                                           poll logic, GIF settings, broadcaster, clean-up jobs
 apps/web/src/features/meetings/chat/      chat panel, composer, message list, pickers, polls, hooks
 packages/ui/src/…                         new components (section 2.3)
-apps/desktop/src/main/spellcheck.ts       spell check and its right-click menu
-apps/desktop/src/main/downloads.ts        "Save as" for chat files
+apps/desktop/src/main/chat-desktop.ts     spell-check menu and file-saving rules (chat-bridge.ts wires them)
 packages/ui/src/assets/stickers/          our own sticker set (SVG)
 ```
 
@@ -154,7 +153,8 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **TipTap** (open source, MIT, built on ProseMirror) for the composer: bold, italic, underline, strikethrough, bullet and numbered lists, quote, link, inline code, code block; Markdown-style typing (three backticks, `**`, `-`), Cmd/Ctrl+B/I/U. Pasted content keeps only these (AC-17). Vetted in T1 (D058).
 - **Links:** the Link button and pasted addresses accept only `http`/`https`; plain addresses typed in text become links on display (AC-04).
 - **Emoji picker:** **Frimousse** (MIT, small, unstyled, with search and skin tones), styled with our tokens. "Recently used" kept in the app's local settings. Frimousse normally downloads its emoji list from a public CDN (jsDelivr); we set `emojibaseUrl` to a copy bundled with the app (**emojibase-data**, MIT), so nothing is fetched. The backend checks reactions against the same list. Vetted in T1 (D058).
-- **Spell check (AC-18):** Electron's built-in spell checker (on Mac it uses macOS's own; on Windows Hunspell dictionaries that Electron normally downloads from Google's servers. We point `setSpellCheckerDictionaryDownloadURL` at dictionaries bundled with the app, so nothing is fetched; T1 confirms this works, and the no-network test runs on both Mac and Windows). Language follows the app language. The right-click menu (built in `spellcheck.ts` from Electron's `context-menu` event) shows suggestions, "Add to dictionary", and Cut/Copy/Paste. macOS auto-correct works on its own when the user has it on.
+- **Spell check (AC-18):** Electron's built-in spell checker. On Mac it uses macOS's own. On Windows it uses Hunspell dictionaries that Electron would normally download from Google; `setSpellCheckerDictionaryDownloadURL` points to `app://meetapp/dictionaries/` instead, so nothing is fetched from outside (T10). The Windows dictionary files are added when the Windows installer is built (F04); until then Windows has no spell check rather than an outside download. The right-click menu (built in `chat-bridge.ts` from Electron's `context-menu` event, rules in `chat-desktop.ts`) shows suggestions, "Add to dictionary", and Cut/Copy/Paste.
+- **Saving files (T10):** the page asks `window.meetapp.files.save(url)`; main accepts only our backend's `/api/v1/chat-files/…` links and saves them with Electron's "Save as" dialog; every other download stays refused.
 
 ### 5.2 The stored document (checked by Zod in `packages/contracts/src/chat.ts`)
 - `{ v: 1, blocks: Block[] }` where a block is `paragraph`, `bulletList`, `orderedList` (items are lists of paragraphs, 3 levels deep at most), `quote`, or `codeBlock` (`{ language?, text }`).
