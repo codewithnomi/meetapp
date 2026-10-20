@@ -19,6 +19,7 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 - **Production refuses the example secrets** (D050), so the container check passes throwaway ones of its own.
 - **Production needs the call server over wss/https (F02):** the container check passes a stand-in `LIVEKIT_PUBLIC_URL=wss://…` and a throwaway `LIVEKIT_API_SECRET`. The local call server has no https, so in the container the health answer reports `callServer: down`; so the check leaves that one entry out and requires every other entry (database, cache, storage) to be `ok`; its last line says the call server link was not checked.
 - **Semgrep:** state `authTagLength` for AES-GCM; a safe pass-through gets `// nosemgrep: <rule>` with the reason on the line above.
+- **Semgrep runs only in CI (F02):** the local checks don't run it, so a finding showed up only on the Pull Request (a `fetch` of the local dev server over http in `apps/desktop/scripts/second-window.ts`, a false alarm). Before opening a Pull Request, run the same scan locally: `docker run --rm -v "$PWD:/src:ro" -w /src <SEMGREP_IMAGE from ci.yml> semgrep scan --config p/javascript --config p/typescript --config p/nodejs --config p/secrets --metrics=off --error --exclude tests/fixtures --exclude coverage`.
 
 ## Rules
 - Never skip, delete or loosen a test, rule, threshold or scan to make CI pass.
