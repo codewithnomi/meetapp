@@ -63,7 +63,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 ### Polls
 - **AC-F03-21:** WHEN the organizer, a co-organizer or a presenter creates a poll (a question up to 200 characters, 2 to 10 answers up to 100 characters each, one answer or several allowed, votes anonymous or with names), THEN it appears in the chat for everyone within 2 seconds.
 - **AC-F03-22:** WHEN a person in the meeting (including a guest) votes, THEN their vote counts once; they can change it until the poll is closed; everyone sees the result (counts and percentages) update within 2 seconds; with an anonymous poll, nobody, not even the creator, can see who voted for what.
-- **AC-F03-23:** WHEN the creator, the organizer or a co-organizer closes the poll (or the meeting ends), THEN no more votes are accepted and the final result stays in the chat, also after the meeting (AC-F03-41). Attendees can vote but not create polls; the server refuses it.
+- **AC-F03-23:** WHEN the creator, the organizer or a co-organizer closes the poll (or the meeting ends), THEN no more votes are accepted and the final result stays in the chat, also after the meeting (AC-F03-42). Attendees can vote but not create polls; the server refuses it.
 
 ### GIFs and stickers
 - **AC-F03-24:** WHEN a person opens the GIF picker and types search words, THEN results from the GIF service appear within 2 seconds, limited to the service's family-safe rating; the chosen GIF is sent as a message and plays for everyone.
@@ -73,31 +73,32 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 
 ### Files and pictures
 - **AC-F03-28:** WHEN a person attaches a file of an allowed type up to 25 MB, THEN it is sent with the message; pictures (PNG, JPEG, GIF, WebP) show a small preview, other files show their name, size and a **Download** button. Allowed types: pictures above, PDF, plain text, CSV, and Word, Excel and PowerPoint documents. WHEN a preview can't be shown, THEN the file name and **Download** show instead.
-- **AC-F03-29:** WHEN the file is larger than 25 MB, or its real content is not an allowed type (whatever its name says), THEN it is refused with "Files can be up to 25 MB" or "This kind of file can't be sent", and nothing is stored.
-- **AC-F03-30:** WHEN someone downloads or previews a file, THEN it works only for people allowed to see that message; a download link copied out of the app stops working within 5 minutes. WHEN a person loses access (removed, guest left), THEN they get no new links. Files are never opened or run by the app; downloaded files are saved where the person chooses.
-- **AC-F03-31:** WHEN a picture is shared, THEN the stored copy has its location and camera details removed.
-- **AC-F03-32:** WHEN a guest is in the meeting, THEN no attach button is shown to them, and the server refuses any upload from a guest.
-- **AC-F03-33:** WHEN a person tries to send more than 10 files in one minute, THEN it is refused with "You can send up to 10 files a minute"; WHEN the files of one meeting reach 500 MB in total, THEN further files are refused with "This meeting has reached its file limit".
+- **AC-F03-29:** WHEN a person drags one or more files from their computer over the meeting window, THEN a clear drop area appears over the chat panel ("Drop files to share in chat"; the panel opens if it was closed); WHEN they drop the files, THEN they are attached to the message box, ready to send, with the same type and size checks as AC-F03-28 and AC-F03-30; WHEN they drag back out, THEN the drop area goes away. Pasting a picture (Ctrl/Cmd+V) attaches it the same way. Guests see no drop area (AC-F03-33).
+- **AC-F03-30:** WHEN the file is larger than 25 MB, or its real content is not an allowed type (whatever its name says), THEN it is refused with "Files can be up to 25 MB" or "This kind of file can't be sent", and nothing is stored.
+- **AC-F03-31:** WHEN someone downloads or previews a file, THEN it works only for people allowed to see that message; a download link copied out of the app stops working within 5 minutes. WHEN a person loses access (removed, guest left), THEN they get no new links. Files are never opened or run by the app; downloaded files are saved where the person chooses.
+- **AC-F03-32:** WHEN a picture is shared, THEN the stored copy has its location and camera details removed.
+- **AC-F03-33:** WHEN a guest is in the meeting, THEN no attach button is shown to them, and the server refuses any upload from a guest.
+- **AC-F03-34:** WHEN a person tries to send more than 10 files in one minute, THEN it is refused with "You can send up to 10 files a minute"; WHEN the files of one meeting reach 500 MB in total, THEN further files are refused with "This meeting has reached its file limit".
 
 ### Meeting chat setting
-- **AC-F03-34:** WHEN meeting chat is **Off**, THEN nobody can send messages, files, GIFs or stickers, react, or start or vote in polls, the panel says "Chat is turned off for this meeting", and messages already sent stay readable during and after the meeting.
-- **AC-F03-35:** WHEN meeting chat is **In-meeting only** when the meeting ends, THEN afterwards only the organizer and co-organizers can open the chat (read-only); the messages stay stored with the meeting (AC-F03-42). The setting at the moment the meeting ends is the one that counts after it.
-- **AC-F03-36:** WHEN the setting changes during a meeting, THEN everyone in the meeting sees it within 2 seconds, with a note in the chat: "<name> turned chat off", "<name> turned chat on" or "<name> limited chat to the meeting".
-- **AC-F03-37:** WHEN a person who is not the organizer or a co-organizer tries to change the setting, THEN the server refuses it.
+- **AC-F03-35:** WHEN meeting chat is **Off**, THEN nobody can send messages, files, GIFs or stickers, react, or start or vote in polls, the panel says "Chat is turned off for this meeting", and messages already sent stay readable during and after the meeting.
+- **AC-F03-36:** WHEN meeting chat is **In-meeting only** when the meeting ends, THEN afterwards only the organizer and co-organizers can open the chat (read-only); the messages stay stored with the meeting (AC-F03-43). The setting at the moment the meeting ends is the one that counts after it.
+- **AC-F03-37:** WHEN the setting changes during a meeting, THEN everyone in the meeting sees it within 2 seconds, with a note in the chat: "<name> turned chat off", "<name> turned chat on" or "<name> limited chat to the meeting".
+- **AC-F03-38:** WHEN a person who is not the organizer or a co-organizer tries to change the setting, THEN the server refuses it.
 
 ### Who can chat
-- **AC-F03-38:** WHEN a person is in the lobby, THEN they can't see or send chat messages. WHEN they are let in, THEN AC-F03-02 applies.
-- **AC-F03-39:** WHEN a person is removed from the meeting, THEN within 2 seconds they stop receiving messages and can't send any, and they can't open the chat afterwards.
-- **AC-F03-40:** WHEN a guest leaves the meeting, THEN they can no longer see its chat (unless they rejoin while it is still going on, AC-F03-02).
+- **AC-F03-39:** WHEN a person is in the lobby, THEN they can't see or send chat messages. WHEN they are let in, THEN AC-F03-02 applies.
+- **AC-F03-40:** WHEN a person is removed from the meeting, THEN within 2 seconds they stop receiving messages and can't send any, and they can't open the chat afterwards.
+- **AC-F03-41:** WHEN a guest leaves the meeting, THEN they can no longer see its chat (unless they rejoin while it is still going on, AC-F03-02).
 
 ### After the meeting
-- **AC-F03-41:** WHEN a meeting has ended and chat was **On** or **Off** at the end, THEN workspace members and external people who were in it (and not removed) can open its chat read-only from their meetings list, including the files.
-- **AC-F03-42:** WHEN a meeting record is deleted or expires (whenever F06/F10 deletes meetings), THEN its chat messages and files are deleted with it.
-- **AC-F03-43:** WHEN a person deletes their account, THEN within 30 days their message text and files are removed and those messages show "Deleted user · message removed" (privacy-legal). WHEN a person asks for their data, THEN their own chat messages and files are included.
+- **AC-F03-42:** WHEN a meeting has ended and chat was **On** or **Off** at the end, THEN workspace members and external people who were in it (and not removed) can open its chat read-only from their meetings list, including the files.
+- **AC-F03-43:** WHEN a meeting record is deleted or expires (whenever F06/F10 deletes meetings), THEN its chat messages and files are deleted with it.
+- **AC-F03-44:** WHEN a person deletes their account, THEN within 30 days their message text and files are removed and those messages show "Deleted user · message removed" (privacy-legal). WHEN a person asks for their data, THEN their own chat messages and files are included.
 
 ### Accessibility and languages
-- **AC-F03-44:** WHEN a screen reader is used, THEN new messages are announced (sender and text), and the whole chat (open, write, format, send, attach, react, reply, pin, poll, GIF and sticker pickers, edit, delete) works with the keyboard only.
-- **AC-F03-45:** WHEN the app language changes, THEN every chat label and message from the app is translated; people's own messages are shown as written.
+- **AC-F03-45:** WHEN a screen reader is used, THEN new messages are announced (sender and text), and the whole chat (open, write, format, send, attach, react, reply, pin, poll, GIF and sticker pickers, edit, delete) works with the keyboard only.
+- **AC-F03-46:** WHEN the app language changes, THEN every chat label and message from the app is translated; people's own messages are shown as written.
 
 ## Security & privacy
 - S2: chat and files never cross workspaces or meetings; every request is checked on the server against the person's place in that meeting.
