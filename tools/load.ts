@@ -33,7 +33,8 @@ function startBackend(): ChildProcess {
     cwd: ROOT,
     stdio: "ignore",
     detached: true,
-    env: { ...process.env, LIVEKIT_PORT: LOAD_CALL_PORT },
+    // The clean-up would remove the simulated people: the backend never let them in.
+    env: { ...process.env, LIVEKIT_PORT: LOAD_CALL_PORT, CALLS_KEEP_SIMULATED_PEOPLE: "true" },
   });
 }
 

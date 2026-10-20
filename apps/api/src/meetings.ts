@@ -49,7 +49,9 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
   const shared = { ...callsDeps, repository: callsDeps.meetings };
-  const callJobs = createCallJobs(callsDeps);
+  const callJobs = createCallJobs(callsDeps, {
+    keepSimulated: wiring.config.CALLS_KEEP_SIMULATED_PEOPLE === "true",
+  });
   const { config, db } = wiring;
   return {
     meetings: createMeetingsService({ ...shared, onChange: (meetingId) => refreshCall(callsDeps, meetingId) }),

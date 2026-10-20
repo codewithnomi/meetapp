@@ -13,11 +13,14 @@ const CLEAN_UP = "clean-up";
 const WARNING_BEFORE_MS = 10 * 60 * 1000;
 const START_GRACE_MS = 60 * 1000;
 const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
+const SIMULATED = "sim_";
 
 /** People inside the call server who shouldn't be, and people marked inside who aren't (lost reports). */
-async function repairCall(deps: CallsDeps, call: Call, now: Date): Promise<void> {
+async function repairCall(deps: CallsDeps, call: Call, now: Date, keepSimulated: boolean): Promise<void> {
   const people = await deps.livekit.participants(call.id);
   for (const person of people) {
+    // The load test's simulated people (`lk load-test`), only when the load test asks (never in production).
+    if (keepSimulated && person.identity.startsWith(SIMULATED)) continue;
     // Someone the backend never let in (not an attendance id) goes at once.
     const attendance = isAttendanceId(person.identity) ? await deps.attendances.byId(person.identity) : undefined;
     if (!allowedIn(attendance, call.id, now)) {
@@ -34,7 +37,7 @@ async function repairCall(deps: CallsDeps, call: Call, now: Date): Promise<void>
   }
 }
 
-export function createCallJobs(deps: CallsDeps) {
+export function createCallJobs(deps: CallsDeps, { keepSimulated = false } = {}) {
   return {
     cleanUp: async (): Promise<void> => {
       const now = deps.now();
@@ -42,7 +45,7 @@ export function createCallJobs(deps: CallsDeps) {
       const rooms = new Set(await deps.livekit.runningRooms());
       for (const call of await deps.events.runningCalls()) {
         // One call that fails to repair doesn't stop the others; the next round tries it again.
-        if (rooms.has(call.id)) await repairCall(deps, call, now).catch(() => undefined);
+        if (rooms.has(call.id)) await repairCall(deps, call, now, keepSimulated).catch(() => undefined);
         else if (now.getTime() - call.startedAt.getTime() > START_GRACE_MS) {
           await deps.events.endCall(call.id, "last_left", now);
         }

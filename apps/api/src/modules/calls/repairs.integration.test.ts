@@ -75,3 +75,18 @@ describe("a Rejoin that is refused", { timeout: 30_000 }, () => {
     expect((await rejoin(person)).statusCode).toBe(404);
   });
 });
+
+describe("the load test's simulated people", { timeout: 30_000 }, () => {
+  it("T-fix-8 [AC-F02-42] are removed like anyone not let in, unless the load test's switch keeps them", async () => {
+    const { meeting, organizer } = await meetingWithTeam(t, "simulated", 0);
+    const host = await joined(t, meeting, organizer);
+    const seen = { rooms: () => [host.call?.callId ?? ""], people: () => [host.attendanceId, "sim_pub_1"] };
+    const removedWith = async (keepSimulated: boolean) => {
+      const { livekit, recorded } = recordingLiveKit(t.accounts.callsDeps.livekit, seen);
+      await createCallJobs({ ...t.accounts.callsDeps, livekit }, { keepSimulated }).cleanUp();
+      return recorded.removed;
+    };
+    expect(await removedWith(false)).toEqual(["sim_pub_1"]);
+    expect(await removedWith(true)).toEqual([]);
+  });
+});

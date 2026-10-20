@@ -61,3 +61,13 @@ describe("TC-F02-110 [AC-F02-53] the call server's address", () => {
     expect(problems.join("\n")).not.toContain(example);
   });
 });
+
+describe("the load test's switch (T-fix-8)", () => {
+  it("T-fix-8 keeping simulated people in calls is refused in production, allowed on this computer", () => {
+    const keep = { CALLS_KEEP_SIMULATED_PEOPLE: "true" };
+    const production = { ...fakeEnv("production"), LIVEKIT_PUBLIC_URL: "wss://call.example.test", ...keep };
+    expect(problemsFor(production)).toContainEqual(expect.stringContaining("CALLS_KEEP_SIMULATED_PEOPLE"));
+    expect(problemsFor({ ...fakeEnv("development"), ...keep })).toEqual([]);
+    expect(loadConfig(fakeEnv("development")).CALLS_KEEP_SIMULATED_PEOPLE).toBe("false");
+  });
+});

@@ -54,6 +54,22 @@ function isAllowedAuthority(value: string, environment: string): boolean {
   return protocol === "http:" && environment !== "production" && LOCAL_HOSTS.has(hostname);
 }
 
+/** Values fine on this computer that production refuses: the example secrets, the load test's switch. */
+function productionProblems(config: {
+  NODE_ENV: string;
+  CALLS_KEEP_SIMULATED_PEOPLE: string;
+  [name: string]: unknown;
+}): [string, string][] {
+  if (config.NODE_ENV !== "production") return [];
+  const problems: [string, string][] = SECRETS.filter((name) => LOCAL_ONLY_SECRET.test(String(config[name]))).map(
+    (name) => [name, "is the local example value; set a real secret"],
+  );
+  if (config.CALLS_KEEP_SIMULATED_PEOPLE === "true") {
+    problems.push(["CALLS_KEEP_SIMULATED_PEOPLE", "is for load tests on this computer only, never in production"]);
+  }
+  return problems;
+}
+
 export const configSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]),
@@ -72,6 +88,8 @@ export const configSchema = z
     LIVEKIT_API_SECRET: text,
     // Where the app connects to the call server; empty means ws://127.0.0.1:<LIVEKIT_PORT> (development).
     LIVEKIT_PUBLIC_URL: optional,
+    // `pnpm test:load` only: the clean-up leaves the simulator's people ("sim_…") in calls. Never in production.
+    CALLS_KEEP_SIMULATED_PEOPLE: withDefault("false").pipe(z.enum(["true", "false"])),
     STORAGE_PORT: port,
     STORAGE_HOST: host,
     STORAGE_ACCESS_KEY: text,
@@ -119,11 +137,8 @@ export const configSchema = z
         message: "must be wss:// (ws:// only on this computer, and never in production)",
       });
     }
-    for (const name of SECRETS) {
-      if (config.NODE_ENV === "production" && LOCAL_ONLY_SECRET.test(config[name])) {
-        context.addIssue({ code: "custom", path: [name], message: "is the local example value; set a real secret" });
-      }
-    }
+    for (const [name, message] of productionProblems(config))
+      context.addIssue({ code: "custom", path: [name], message });
     for (const [id, secretKey] of PROVIDER_KEYS) {
       if ((config[id] === undefined) !== (config[secretKey] === undefined)) {
         context.addIssue({
