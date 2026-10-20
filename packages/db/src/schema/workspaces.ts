@@ -42,6 +42,8 @@ export const workspaces = pgTable(
     joinLinkHmac: text("join_link_hmac").unique(),
     /** Guests (no account) may join this workspace's meetings (F02, AC-F02-40); owner and admins decide. */
     allowGuests: boolean("allow_guests").notNull().default(true),
+    /** GIFs in meeting chat (AC-F03-27). */
+    allowGifs: boolean("allow_gifs").notNull().default(true),
     ...timestamps(),
   },
   (table) => [

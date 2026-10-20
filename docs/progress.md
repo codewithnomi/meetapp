@@ -28,7 +28,8 @@
 - **F03 design:** **approved** by the owner (2026-10-20, `docs/specs/F03-chat/design.md`), reviewed by spec-reviewer and fixed; D058, D060 accepted; D059 accepted (KLIPY GIFs, loaded straight from KLIPY; no old .doc/.xls/.ppt).
 - **F03 tests and tasks:** **approved** by the owner (2026-10-20): tests.md 95 test cases (every AC covered), tasks.md 18 steps (every test case in a step).
 - **F03 building:** T1 done (libraries vetted, GIF settings). KLIPY checked on another network: free, ads optional (never asked for); the owner chose searches from each person's app, as KLIPY requires (D059 changed).
-- **Next step:** F03 T2, database tables (`/next`).
+- **F03 T2 done:** chat tables (migration 0005), message format rules, chat permissions table.
+- **Next step:** F03 T3, sending, reading and delivering messages (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

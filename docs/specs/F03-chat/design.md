@@ -93,7 +93,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 ### 3.3 Reading (AC-02, 42)
 - During the call: `GET /calls/:callId/chat/messages?before=<cursor>&limit=50` (ticket).
 - After: `GET /meetings/:meetingId/chat/messages?before=…` (signed in, 3.1).
-- Order: by `created_at`, then `id` (UUIDv7, so time-ordered). The cursor is the last `id`.
+- Order: by `created_at`, then `id`. The cursor is the last message's `created_at` and `id` together (Postgres 17 has no built-in time-ordered ids; changed in T2).
 - Each answer includes reactions (counts, and whether "you" reacted), reply quotes (sender and first line), attachments, poll states, and the pinned list on the first page.
 - Live news received while a page is loading is merged by `id`, so nothing is lost or shown twice.
 
@@ -134,14 +134,14 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | `meetings.chat_mode` | `on` / `in_meeting` / `off`, default `on` |
 | `calls.chat_mode_at_end` | the mode when that call ended (3.8) |
 | `workspaces.allow_gifs` | boolean, default true (AC-27) |
-| `chat_messages` | `id` (UUIDv7), `workspace_id`, `meeting_id`, `call_id` (the call it was sent in), `sender_attendance_id`, `sender_user_id` (empty for guests and after account deletion), `sender_name` (as shown at the time), `sender_group`, `kind` (text / gif / sticker / poll / system), `body` (JSON document, section 5.2; empty when deleted), `plain_text` (the visible text, for counting, Copy text and later search; empty when deleted), `gif` (JSON: service id, size, description, the service's image addresses), `sticker` (our sticker name), `system` (JSON: event and name), `reply_to_id`, `client_id`, `created_at`, `edited_at`, `deleted_at`, `deleted_by_attendance_id` |
+| `chat_messages` | `id`, `workspace_id`, `meeting_id`, `call_id` (the call it was sent in), `sender_attendance_id`, `sender_user_id` (empty for guests and after account deletion), `sender_name` (as shown at the time), `sender_group`, `kind` (text / gif / sticker / poll / system), `body` (JSON document, section 5.2; empty when deleted), `plain_text` (the visible text, for counting, Copy text and later search; empty when deleted), `gif` (JSON: service id, size, description, the service's image addresses), `sticker` (our sticker name), `system` (JSON: event and name), `reply_to_id`, `client_id`, `created_at`, `edited_at`, `deleted_at`, `deleted_by_attendance_id` |
 | `chat_attachments` | `id`, `workspace_id`, `meeting_id`, `message_id` (empty until sent), `uploader_attendance_id`, `file_name` (cleaned), `media_type` (from the content check), `size_bytes`, `storage_key`, `preview_key` (pictures), `width`, `height`, `status` (uploading / ready / deleted), `created_at` |
 | `chat_reactions` | `message_id`, `attendance_id`, `emoji`, `reactor_name`, `created_at`; primary key on the first three |
 | `chat_events` | `meeting_id`, `seq`, `type`, `payload`, `created_at`: recent news for catching up after a reconnect, kept 1 day |
-| `chat_pins` | `meeting_id`, `message_id`, `pinned_by_attendance_id`, `created_at`; at most 3 per meeting (checked with the meeting row locked) |
+| `chat_pins` | `meeting_id`, `message_id`, `pinned_by_attendance_id`, `created_at`; at most 3 per meeting (a trigger in migration 0005 locks the meeting row first) |
 | `chat_polls` | `id`, `message_id`, `meeting_id`, `question`, `multiple`, `anonymous`, `creator_attendance_id`, `closed_at`, `version` |
 | `chat_poll_options` | `id`, `poll_id`, `position`, `text` |
-| `chat_poll_votes` | `poll_id`, `option_id`, `voter_key`, `attendance_id` and `created_at` (both empty when anonymous); unique on `(poll_id, option_id, voter_key)` |
+| `chat_poll_votes` | `poll_id`, `option_id`, `voter_key`, `attendance_id` (empty when anonymous; for anonymous polls the row times are set to the poll's start, so votes can't be matched with join times); unique on `(poll_id, option_id, voter_key)` |
 
 - **Indexes:** `chat_messages (meeting_id, id)`, unique `(sender_attendance_id, client_id)`, `sender_user_id`, `reply_to_id`; `chat_attachments (meeting_id)`, `(message_id)`, `(status, created_at)` for clean-up.
 - **Deleting a meeting** (F06/F10) deletes its chat rows (cascade) and a job deletes its files (AC-43).

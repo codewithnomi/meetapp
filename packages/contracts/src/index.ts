@@ -106,3 +106,15 @@ export {
   participantParamsSchema,
   roleBodySchema,
 } from "./calls.ts";
+export {
+  CHAT_MODES,
+  MAX_DOCUMENT_BYTES,
+  MAX_LINK_LENGTH,
+  MAX_LIST_DEPTH,
+  MAX_MESSAGE_CHARS,
+  documentPlainText,
+  messageDocumentSchema,
+  type Block,
+  type ChatMode,
+  type MessageDocument,
+} from "./chat.ts";

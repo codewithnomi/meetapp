@@ -27,16 +27,17 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
     - KLIPY checked (on another network; the office network's Fortinet filter blocks klipy.com): free, ads optional (we never ask for them), family-safe filter per request, but searches and GIF loads must come from the person's app, not our server. The owner chose to follow that (D059 changed; design section 7, TC-F03-43 and 90 updated);
     - Electron's bundled spell-check dictionaries are checked in T10, where they are built.
 
-- [ ] **T2: Database tables (migration `0005_chat`) and the permissions table.**
+- [x] **T2: Database tables (migration `0005_chat`) and the permissions table.**
   - With `/db-migration`: `chat_messages`, `chat_attachments`, `chat_reactions`, `chat_pins`, `chat_polls`, `chat_poll_options`, `chat_poll_votes`, `chat_events`, `meetings.chat_mode`, `calls.chat_mode_at_end`, `workspaces.allow_gifs`.
   - `chat/permissions.ts` (design 3.1) and the Zod shapes in `packages/contracts/src/chat.ts`, including the message document (design 5.2).
   - Covers: AC-F03-03, 17 (shape part).
-  - Tests: TC-F03-27, 32, 94.
+  - Tests: TC-F03-27, 94; the database rules in `packages/db/src/chat.integration.test.ts` (TC-F03-10, 35, 73 database parts). TC-F03-32 moved to T3: it needs the send route.
+  - **Built in T2:** migration `0005_chat` (only new tables, and new columns with defaults: safe on existing data) with a 3-pin trigger; `packages/contracts/src/chat.ts` (the message document); `modules/chat/chat.permissions.ts`; shared test rows in `packages/db/src/test-fixtures.ts`.
 
 - [ ] **T3: Sending, reading and delivering messages.**
   - Send (with `clientId`), history pages, one message, catching up (`chat/events`), the LiveKit broadcaster on `meetapp.chat`, large events by id, rate limits.
   - Covers: AC-F03-01, 02, 03, 05, 06.
-  - Tests: TC-F03-03, 05, 06, 10, 13, 88 (server part), 89, 92 (server part).
+  - Tests: TC-F03-03, 05, 06, 10, 13, 32, 88 (server part), 89, 92 (server part).
 
 - [ ] **T4: Editing, deleting, reactions, replies and pins.**
   - Covers: AC-F03-10, 11, 13, 14, 19, 20.

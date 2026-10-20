@@ -34,6 +34,8 @@ export const attendanceStatus = pgEnum("attendance_status", [
   "timed_out",
   "turned_away",
 ]);
+/** Meeting chat setting (AC-F03-35–38): on, only during the call, or off. */
+export const chatMode = pgEnum("chat_mode", ["on", "in_meeting", "off"]);
 export const leftReason = pgEnum("left_reason", ["leave", "dropped", "removed", "ended", "locked", "guests_off"]);
 
 const workspaceRef = () =>
@@ -65,6 +67,7 @@ export const meetings = pgTable(
     whoCanPresent: meetingAudience("who_can_present").notNull().default("everyone"),
     allowAttendeeMic: boolean("allow_attendee_mic").notNull().default(true),
     allowAttendeeCamera: boolean("allow_attendee_camera").notNull().default(true),
+    chatMode: chatMode("chat_mode").notNull().default("on"),
     expiresAt: moment("expires_at").notNull(),
     ...timestamps(),
   },
@@ -107,6 +110,8 @@ export const calls = pgTable(
     endedAt: moment("ended_at"),
     endReason: callEndReason("end_reason"),
     locked: boolean("locked").notNull().default(false),
+    /** The chat setting when this call ended: decides who reads its chat afterwards (F03 design 3.8). */
+    chatModeAtEnd: chatMode("chat_mode_at_end"),
     ...timestamps(),
   },
   (table) => [
