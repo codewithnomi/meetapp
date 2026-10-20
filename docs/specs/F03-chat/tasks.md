@@ -1,7 +1,7 @@
 ---
 feature: F03
 title: In-meeting chat
-status: approved
+status: in-progress
 updated: 2026-10-20
 ---
 
@@ -13,13 +13,19 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 
 ## Backend
 
-- [ ] **T1: Libraries, the GIF service and settings.**
+- [x] **T1: Libraries, the GIF service and settings.**
   - Vet the D058 libraries with `/add-dependency`: TipTap, Frimousse, file-type, `@fastify/multipart`. Each is installed in the task that first uses it.
   - KLIPY: confirm the free terms, the family-safe filter, no ads in API results, the image host name (D059). Get a free key into `.env` (`GIF_API_KEY`, not required in development: without it the GIF picker says GIFs aren't available).
   - Check that LiveKit passes can limit data publishing by topic (design 3.4); if not, apps ignore participant packets on `meetapp.chat`.
   - Check Electron's `setSpellCheckerDictionaryDownloadURL` with bundled dictionaries.
   - New settings in `config.ts`/`.env.example`; new folders in `docs/engineering/project-structure.md`.
   - Tests: none of their own (checks recorded in design.md and D058/D059).
+  - **Done in T1 (2026-10-20):**
+    - libraries vetted, versions pinned in D058; emojibase-data added so the emoji picker downloads nothing;
+    - LiveKit has no per-topic data limit, so apps ignore participant packets on `meetapp.chat` (design 3.4);
+    - `GIF_API_KEY` (optional) and `GIF_API_URL` settings, with the config tests;
+    - **open:** KLIPY's terms couldn't be read: the office network's web filter (Fortinet) blocks klipy.com. KLIPY also says its API shows ads between GIFs; whether a partner can turn them off is unconfirmed. To check with the owner before T7 (GIFs are built against a fake service, so nothing waits);
+    - Electron's bundled spell-check dictionaries are checked in T10, where they are built.
 
 - [ ] **T2: Database tables (migration `0005_chat`) and the permissions table.**
   - With `/db-migration`: `chat_messages`, `chat_attachments`, `chat_reactions`, `chat_pins`, `chat_polls`, `chat_poll_options`, `chat_poll_votes`, `chat_events`, `meetings.chat_mode`, `calls.chat_mode_at_end`, `workspaces.allow_gifs`.

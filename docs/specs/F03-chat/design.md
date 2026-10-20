@@ -99,7 +99,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ### 3.4 Delivering news to everyone (AC-01, 13, 19–23, 37)
 - **How:** after saving, the backend calls LiveKit's `sendData` (reliable) on topic `meetapp.chat`, to everyone in the room, exactly as F02 sends `meetapp.control`.
-- **Trust:** apps accept `meetapp.chat` only when LiveKit marks it as sent by the server (no participant identity). Participants can't publish to it: LiveKit passes go out with `canPublishData` limited to the reaction topic (F02's reactions). T1 checks that per-topic limits work; if not, apps simply ignore participant packets on this topic.
+- **Trust:** apps accept `meetapp.chat` only when LiveKit marks it as sent by the server (no participant identity). Participants can still publish data (F02's reactions need it), and LiveKit has no per-topic limit (checked in T1, 2026-10-20: `canPublishData` is one yes/no), so apps ignore every `meetapp.chat` packet that comes from a participant.
 - **Events:** `message_created`, `message_edited`, `message_deleted`, `reactions_changed` (message id + new counts), `pins_changed`, `poll_created`, `poll_changed` (counts; see 3.7), `poll_closed`, `chat_mode_changed`.
 - **Size:** LiveKit's reliable packets should stay under about 15 KB. Any event larger than 14 KB (long code, edits included) is sent as `{ type, id, seq }` only; apps then fetch that message (`GET …/chat/messages/:id`).
 - **Missed news:** every chat event gets a per-meeting sequence number (`chat_events` table, kept 1 day). After a reconnect the app asks `GET …/chat/events?after=<last seq>` and applies them in order; if the gap is older than what is kept, it reloads the pinned list and the visible pages. Tested with more than 50 messages plus an edit during a drop.
@@ -151,9 +151,9 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ## 5. Message content
 ### 5.1 The editor
-- **TipTap** (open source, MIT, built on ProseMirror) for the composer: bold, italic, underline, strikethrough, bullet and numbered lists, quote, link, inline code, code block; Markdown-style typing (three backticks, `**`, `-`), Cmd/Ctrl+B/I/U. Pasted content keeps only these (AC-17). To be vetted in T1 with `/add-dependency` (D058).
+- **TipTap** (open source, MIT, built on ProseMirror) for the composer: bold, italic, underline, strikethrough, bullet and numbered lists, quote, link, inline code, code block; Markdown-style typing (three backticks, `**`, `-`), Cmd/Ctrl+B/I/U. Pasted content keeps only these (AC-17). Vetted in T1 (D058).
 - **Links:** the Link button and pasted addresses accept only `http`/`https`; plain addresses typed in text become links on display (AC-04).
-- **Emoji picker:** **Frimousse** (MIT, small, unstyled, with search and skin tones), styled with our tokens. "Recently used" kept in the app's local settings. To be vetted (D058).
+- **Emoji picker:** **Frimousse** (MIT, small, unstyled, with search and skin tones), styled with our tokens. "Recently used" kept in the app's local settings. Frimousse normally downloads its emoji list from a public CDN (jsDelivr); we set `emojibaseUrl` to a copy bundled with the app (**emojibase-data**, MIT), so nothing is fetched. The backend checks reactions against the same list. Vetted in T1 (D058).
 - **Spell check (AC-18):** Electron's built-in spell checker (on Mac it uses macOS's own; on Windows Hunspell dictionaries that Electron normally downloads from Google's servers. We point `setSpellCheckerDictionaryDownloadURL` at dictionaries bundled with the app, so nothing is fetched; T1 confirms this works, and the no-network test runs on both Mac and Windows). Language follows the app language. The right-click menu (built in `spellcheck.ts` from Electron's `context-menu` event) shows suggestions, "Add to dictionary", and Cut/Copy/Paste. macOS auto-correct works on its own when the user has it on.
 
 ### 5.2 The stored document (checked by Zod in `packages/contracts/src/chat.ts`)
@@ -166,7 +166,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ## 6. Files and pictures (AC-28–34)
 - **Upload:** `POST /calls/:callId/chat/attachments` (ticket; multipart through `@fastify/multipart`, streamed, refused past 25 MB with `CHAT_FILE_TOO_BIG`). Then `POST …/messages` with `attachmentIds`. Up to 10 files per message.
-- **Content check:** the first bytes decide the type (library **file-type**, MIT, to be vetted, D058): PNG, JPEG, GIF, WebP, PDF, DOCX/XLSX/PPTX (ZIP with the right inner parts; macro-enabled files, those with `vbaProject.bin` or a docm/xlsm/pptm content type, are refused). The old Office formats (.doc, .xls, .ppt) are not accepted: their container is shared with installers and often carries macros (owner, 2026-10-20). Plain text and CSV are accepted only when the whole file is valid UTF-8 without control characters. Anything else: `CHAT_FILE_TYPE` and nothing is kept (AC-30).
+- **Content check:** the first bytes decide the type (library **file-type**, MIT, vetted in T1, D058): PNG, JPEG, GIF, WebP, PDF, DOCX/XLSX/PPTX (ZIP with the right inner parts; macro-enabled files, those with `vbaProject.bin` or a docm/xlsm/pptm content type, are refused). The old Office formats (.doc, .xls, .ppt) are not accepted: their container is shared with installers and often carries macros (owner, 2026-10-20). Plain text and CSV are accepted only when the whole file is valid UTF-8 without control characters. Anything else: `CHAT_FILE_TYPE` and nothing is kept (AC-30).
 - **Pictures:** re-saved with **sharp** (already used for profile photos) in the same format: turned the right way up first (`.rotate()`), then saved without location, camera and other hidden details (AC-32); `limitInputPixels` (40 million) and at most 300 frames for animated GIF/WebP refuse "decompression bombs"; a preview up to 480 px wide is made. Animated GIFs keep their animation.
 - **Names:** the shown file name is cleaned (no paths, no control characters, at most 200 characters).
 - **Storage:** private bucket `chat` in RustFS (R2 later), key `workspace/meeting/attachment-id`; files are never run or opened by the app.
@@ -261,6 +261,6 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 | AC-F03-45, 46 | desktop keyboard-only run + axe + live announcements; translation keys test |
 
 ## Decisions made here
-- **D058 (proposed):** new libraries for F03: TipTap (editor), Frimousse (emoji picker), file-type (content check), `@fastify/multipart` (uploads); each vetted with `/add-dependency` in T1.
+- **D058 (accepted):** new libraries for F03: TipTap (editor), Frimousse (emoji picker) with emojibase-data bundled, file-type (content check), `@fastify/multipart` (uploads); vetted in T1.
 - **D059 (accepted by the owner, 2026-10-20):** GIF service: KLIPY's free API through our backend (GIPHY as fallback); images shown from the service's servers.
 - **D060 (proposed):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.
