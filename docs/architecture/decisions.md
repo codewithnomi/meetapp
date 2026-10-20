@@ -365,5 +365,6 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D057: Meeting chat follows Microsoft Teams (F03)
 - **Date:** 2026-10-20. **Status:** accepted (owner: "we will follow how microsoft teams is handling this").
 - **Decision:** the meeting chat is one shared conversation for everyone in the meeting: **no private messages inside it** (in Teams, private one-to-one chat is the separate Chat tab; for us a "later" item). **Guests** can chat but can't share files. Files up to **25 MB**. People can edit and delete their own messages; the organizer and co-organizers can delete anyone's. The organizer or a co-organizer sets meeting chat to On, In-meeting only, or Off.
+- **Added (owner, 2026-10-20):** as in Teams: emoji picker, reactions, replies with a quote, rich text with code blocks, pinned messages (organizer and co-organizers, up to 3), polls (organizer, co-organizers, presenters create; everyone votes), GIFs from an outside GIF service (family-safe, admins can turn it off) and a built-in sticker set. F03 grows from small to medium.
 - **Why:** people coming from Teams find nothing new; fewer ways for unknown people to upload files; less storage.
 - **Cost:** none (files use the existing storage).

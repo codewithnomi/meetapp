@@ -59,8 +59,9 @@ You only ever need to type **`/next`**.
 ### F03 In-meeting chat
 - Text chat for everyone in the meeting (no private messages inside it, as in Teams, D057)
 - Send files and images (size limit, safe file types only)
+- Emoji, reactions, replies, formatting with code blocks, pinned messages, polls, GIFs and stickers, as in Teams (D057)
 - Chat saved with the meeting afterwards
-- **Depends on:** F02 · **Size:** small
+- **Depends on:** F02 · **Size:** medium
 
 ### F04 Desktop app
 - Installable app for **Mac and Windows** (unsigned for now, D017)
