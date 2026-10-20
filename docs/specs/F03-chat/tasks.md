@@ -45,10 +45,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-18, 19, 20, 24, 25, 35 (during the call). The after-meeting delete route of TC-F03-20 comes with the after-meeting routes in T8; the GIF and file parts of TC-F03-19 with T6 and T7.
   - **Built in T4:** `chat-actions.repository.ts`, `chat-actions.service.ts`, `chat-actions.routes.ts`, `chat-access.ts` (shared rights, delivery and message views with quotes and reactions), `emoji.ts` (emojibase-data 17.0.0 list, D058). "Own" means the same account (any join) or the same guest join; an organizer may still remove their own message from an earlier call. Removing a reaction is `DELETE …/reactions/:emoji`.
 
-- [ ] **T5: Polls.**
+- [x] **T5: Polls.**
   - Create, vote, results only after voting, anonymous voter keys, close, auto-close when the call ends, deleting a poll message.
   - Covers: AC-F03-21, 22, 23.
-  - Tests: TC-F03-37, 38, 39, 40, 41.
+  - Tests: TC-F03-37, 38, 39, 40, 41 (during the call). Reading the final result after the meeting comes with the after-meeting routes in T8.
+  - **Built in T5:** `chat-polls.repository.ts`, `chat-polls.service.ts`, `chat-polls.routes.ts`; the voter key is HMAC(a key derived from `DATA_ENCRYPTION_KEY`, poll id + account, guest device fingerprint or join), so votes can't be linked across polls; when a call ends (either way) its chat setting is saved in `calls.chat_mode_at_end` and open polls close (`call-events.repository.ts`). Fixed on the way: chat news rows took the message's own id (`recordEvent`).
 
 - [ ] **T6: Files and pictures.**
   - Upload (streamed, 25 MB), content checks (no old Office files, no macros), sharp clean-up and previews, bomb limits, private storage, 5-minute links with safe headers, limits, clean-up of unsent and deleted files.

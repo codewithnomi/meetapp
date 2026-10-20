@@ -109,6 +109,12 @@ export {
 export {
   CHAT_MODES,
   CHAT_PAGE_SIZE,
+  POLL_LIMITS,
+  createPollBodySchema,
+  pollParamsSchema,
+  pollSchema,
+  voteBodySchema,
+  type PollView,
   chatEventSchema,
   editMessageBodySchema,
   pinBodySchema,

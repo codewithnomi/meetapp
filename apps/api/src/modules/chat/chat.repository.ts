@@ -35,7 +35,9 @@ export async function recordEvent(
   payload: Record<string, unknown>,
 ): Promise<number> {
   const seq = await nextSeq(executor, where.meetingId);
-  await executor.insert(chatEvents).values({ ...where, seq, type, payload });
+  // Only these two fields: callers may pass a whole message or poll row.
+  const { workspaceId, meetingId } = where;
+  await executor.insert(chatEvents).values({ workspaceId, meetingId, seq, type, payload });
   return seq;
 }
 

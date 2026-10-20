@@ -31,7 +31,8 @@
 - **F03 T2 done:** chat tables (migration 0005), message format rules, chat permissions table.
 - **F03 T3 done:** sending, reading pages, catching up after a reconnect, live delivery through the call server, the message limit; security sweeps extended.
 - **F03 T4 done:** edit and delete (own during the call; organizers any), reactions (known emoji, 20 per person), replies with live quotes, pins (3 at most, with a note).
-- **Next step:** F03 T5, polls (`/next`).
+- **F03 T5 done:** polls (create by organizers and presenters, vote and change, results after voting, anonymous without names or times, close, auto-close at the end).
+- **Next step:** F03 T6, files and pictures (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

@@ -1,6 +1,7 @@
 // Puts the meeting pieces together (F02): making and finding meetings, joining, the lobby, controls in a
 // call, the call server's reports, the record and the call jobs. Used through accounts.ts, so server.ts
 // and the integration tests run the same wiring.
+import { hkdfSync } from "node:crypto";
 import type { Database } from "@meetapp/db";
 import { callServerUrl, type Config } from "./config/config.ts";
 import type { CallsDeps } from "./modules/calls/admission.ts";
@@ -19,6 +20,8 @@ import { createChatRepository } from "./modules/chat/chat.repository.ts";
 import { createChatService } from "./modules/chat/chat.service.ts";
 import { createChatActionsRepository } from "./modules/chat/chat-actions.repository.ts";
 import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
+import { createChatPollsRepository } from "./modules/chat/chat-polls.repository.ts";
+import { createChatPollsService } from "./modules/chat/chat-polls.service.ts";
 import { createLookupService } from "./modules/meetings/lookup.service.ts";
 import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
@@ -51,9 +54,20 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
 }
 
 /** Meeting chat (F03): messages, and what people do to them. */
-function chatPieces(calls: CallsDeps, db: Database) {
-  const chatDeps = { calls, chat: createChatRepository(db), actions: createChatActionsRepository(db) };
-  return { chat: createChatService(chatDeps), chatActions: createChatActionsService(chatDeps), chatDeps };
+function chatPieces(calls: CallsDeps, db: Database, voterSecret: string) {
+  const chatDeps = {
+    calls,
+    chat: createChatRepository(db),
+    actions: createChatActionsRepository(db),
+    polls: createChatPollsRepository(db),
+    voterSecret,
+  };
+  return {
+    chat: createChatService(chatDeps),
+    chatActions: createChatActionsService(chatDeps),
+    chatPolls: createChatPollsService(chatDeps),
+    chatDeps,
+  };
 }
 
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
@@ -72,7 +86,11 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     controls: createControlsService(callsDeps),
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
-    ...chatPieces(callsDeps, db),
+    ...chatPieces(
+      callsDeps,
+      db,
+      Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", "chat-poll-voters-v1", 32)).toString("hex"),
+    ),
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,

@@ -289,7 +289,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 ### TC-F03-37: Creating polls
 - **Covers:** AC-F03-21, AC-F03-23
 - **Level:** integration
-- **Given** organizer, C1, P1, M2 (attendee) and G1 in a call
+- **Given** organizer, C1, P1, M2 (attendee) and G1 (a guest made an attendee; guests are presenters by default, as in Teams, and may then create polls) in a call
 - **When** each posts a poll; then polls with a 201-character question, 1 option, 11 options, a 101-character option, and one with `multiple` and `anonymous`
 - **Then** organizer, C1 and P1 succeed (poll message and `poll_created` broadcast); M2 and G1 are refused `NOT_FOUND`; the invalid polls get `CHAT_INVALID`; a poll after the meeting ended is refused
 

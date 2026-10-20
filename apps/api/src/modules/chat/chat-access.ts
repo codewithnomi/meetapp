@@ -7,6 +7,7 @@ import { asTheyAreNow, notFound, roleOf, type CallsDeps } from "../calls/admissi
 import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
 import type { ChatActionsRepository } from "./chat-actions.repository.ts";
+import type { ChatPollsRepository } from "./chat-polls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import type { ChatRepository, Cursor } from "./chat.repository.ts";
 
@@ -18,6 +19,9 @@ export interface ChatDeps {
   calls: CallsDeps;
   chat: ChatRepository;
   actions: ChatActionsRepository;
+  polls: ChatPollsRepository;
+  /** Keys the poll voter hash (design 3.7): never stored with the votes. */
+  voterSecret: string;
 }
 
 export const invalid = () => new AppError(400, "CHAT_INVALID", "This message can't be sent.");
@@ -84,7 +88,13 @@ function reactionsFor(rows: Reaction[], messageId: string, viewer: string | unde
   return [...byEmoji].map(([emoji, entry]) => ({ emoji, count: entry.names.length, ...entry }));
 }
 
-function viewOf(message: ChatMessage, extras: { quoted?: ChatMessage; reactions: ChatMessageView["reactions"] }) {
+interface Extras {
+  quoted?: ChatMessage;
+  reactions: ChatMessageView["reactions"];
+  pollId?: string | undefined;
+}
+
+function viewOf(message: ChatMessage, extras: Extras) {
   const view: ChatMessageView = {
     id: message.id,
     cursor: cursorOf(message),
@@ -108,6 +118,7 @@ function viewOf(message: ChatMessage, extras: { quoted?: ChatMessage; reactions:
         }
       : null,
     reactions: message.deletedAt ? [] : extras.reactions,
+    pollId: message.deletedAt ? null : (extras.pollId ?? null),
     system: (message.system as ChatMessageView["system"]) ?? null,
   };
   return view;
@@ -122,12 +133,15 @@ export async function viewsOf(
 ): Promise<ChatMessageView[]> {
   const replyIds = [...new Set(messages.flatMap((message) => (message.replyToId ? [message.replyToId] : [])))];
   const quoted = new Map((await deps.actions.quoted(meetingId, replyIds)).map((row) => [row.id, row]));
-  const reactions = await deps.actions.reactionsOf(messages.map((message) => message.id));
+  const ids = messages.map((message) => message.id);
+  const reactions = await deps.actions.reactionsOf(ids);
+  const polls = new Map((await deps.polls.byMessages(ids)).map((poll) => [poll.messageId, poll.id]));
   return messages.map((message) => {
     const quote = message.replyToId ? quoted.get(message.replyToId) : undefined;
     return viewOf(message, {
       ...(quote ? { quoted: quote } : {}),
       reactions: reactionsFor(reactions, message.id, viewer),
+      ...(polls.has(message.id) ? { pollId: polls.get(message.id) } : {}),
     });
   });
 }
