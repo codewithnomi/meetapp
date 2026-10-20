@@ -154,6 +154,7 @@ Meeting **recording** (video files) · background blur / virtual backgrounds · 
 
 Noted by the owner during the F02 look check (2026-10-20), for after a first usable version (MVP):
 - **People search and chat outside meetings** (like Teams' Chat tab): find colleagues in the workspace and message them one to one. F03 covers chat inside a meeting only.
+- **AI writing help in chat (owner, 2026-10-20):** a **Rewrite with AI** button on a message being written, with tones (Friendly, Professional, Short, Formal, Apologetic). In one-to-one chat: **Write reply with AI** (reads the conversation and drafts a reply) and ready-to-send suggestions that fit the last message (e.g. someone asks for a quick call: "Yes, please", "I'm free now", "Just a minute", "Can we do it later?"). Rewrite comes after Ask AI (F07) in the meeting chat; reply suggestions come with one-to-one chat.
 - **In-call messages as toasts:** "X muted you", "Your share ended", unplugged devices and similar messages as small cards that slide in over the videos and close by themselves after a few seconds (today they are larger cards above the videos).
 - **Screen sharing like Teams:** a red border around the shared screen (seen only by the sharer), a "You're sharing" bar with **Stop sharing** in the meeting window, and a small floating sharing bar on top of other apps.
 

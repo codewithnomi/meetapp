@@ -82,6 +82,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 ## Out of scope
 - Private messages and chat outside meetings (Teams' Chat tab), channels (features.md "later").
 - Reactions to messages, replies in threads, @mentions with notifications (F04), GIF and sticker pickers, rich text formatting.
+- AI writing help (Rewrite with AI in tones, Write reply with AI, ready-to-send suggestions): a later item in features.md; the chat box leaves room for a button next to Send.
 - Virus scanning of files: a **must-do before going online** (progress.md).
 - Full meetings library and search (F06).
 
