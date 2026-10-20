@@ -115,3 +115,46 @@ function blockLines(part: Block): string[] {
 export function visibleText(document: RichDocument): string {
   return document.blocks.flatMap(blockLines).join("\n");
 }
+
+function editorInlines(content: Paragraph["content"]): EditorNode[] {
+  return (content ?? []).map((part) =>
+    part.type === "hardBreak"
+      ? { type: "hardBreak" }
+      : {
+          type: "text",
+          text: part.text,
+          ...(part.marks
+            ? {
+                marks: part.marks.map((mark) =>
+                  mark.type === "link" ? { type: "link", attrs: { href: mark.href } } : { type: mark.type },
+                ),
+              }
+            : {}),
+        },
+  );
+}
+
+function editorBlock(part: Block): EditorNode {
+  switch (part.type) {
+    case "paragraph":
+      return { type: "paragraph", content: editorInlines(part.content) };
+    case "quote":
+      return { type: "blockquote", content: part.content.map(editorBlock) };
+    case "codeBlock":
+      return {
+        type: "codeBlock",
+        attrs: { language: part.language ?? null },
+        content: part.text ? [{ type: "text", text: part.text }] : [],
+      };
+    default:
+      return {
+        type: part.type,
+        content: part.items.map((item) => ({ type: "listItem", content: item.content.map(editorBlock) })),
+      };
+  }
+}
+
+/** A stored document back in the editor, for editing a sent message (AC-F03-10). */
+export function toEditorDocument(document: RichDocument): EditorNode {
+  return { type: "doc", content: document.blocks.map(editorBlock) };
+}

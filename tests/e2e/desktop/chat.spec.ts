@@ -111,3 +111,85 @@ test("TC-F03-07 TC-F03-22 [AC-F03-03] [AC-F03-12] the counter stops long message
   await expect(box).toContainText("🎉");
   expect(outside).toEqual([]);
 });
+
+/** Points at a message so its actions show, then presses one of them. */
+const onMessage = async (page: Page, text: string) => {
+  // The first match: a reply further down also shows the quoted words.
+  const message = page.getByRole("log", { name: "Messages" }).getByRole("article").filter({ hasText: text }).first();
+  await message.hover();
+  return message;
+};
+
+test("TC-F03-21 TC-F03-23 TC-F03-26 TC-F03-36 [AC-F03-10] [AC-F03-13] [AC-F03-14] [AC-F03-19] react, reply, edit, pin and delete", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  const hostLog = await openChat(host.page);
+  const moLog = await openChat(mo.page);
+
+  await send(mo.page, "Release checklist for Thursday");
+  await expect(hostLog).toContainText("Release checklist for Thursday", { timeout: 5_000 });
+
+  // React, as seen by the other window.
+  await (await onMessage(host.page, "Release checklist")).getByRole("button", { name: "React with thumbs up" }).click();
+  await expect(moLog.getByRole("button", { name: /^👍\uFE0F?, 1/ })).toBeVisible({ timeout: 5_000 });
+
+  // Reply with a quote.
+  await (await onMessage(host.page, "Release checklist")).getByRole("button", { name: "Reply" }).click();
+  await expect(host.page.getByText("Replying to Mo Member")).toBeVisible();
+  await send(host.page, "QA can sign off Wednesday");
+  await expect(moLog.getByRole("article").filter({ hasText: "QA can sign off" })).toContainText(
+    "Release checklist for Thursday",
+    { timeout: 5_000 },
+  );
+
+  // Edit own message.
+  await (await onMessage(mo.page, "Release checklist")).getByRole("button", { name: "More actions" }).click();
+  await mo.page.getByRole("menuitem", { name: "Edit" }).click();
+  const box = mo.page.getByRole("textbox", { name: "Message everyone" });
+  await box.press("End");
+  await mo.page.keyboard.type(" and Friday");
+  await mo.page.keyboard.press("Enter");
+  await expect(hostLog).toContainText("Release checklist for Thursday and Friday", { timeout: 5_000 });
+  await expect(hostLog).toContainText("Edited");
+
+  // The organizer pins it: the pinned bar and the note appear for everyone.
+  await (await onMessage(host.page, "and Friday")).getByRole("button", { name: "More actions" }).click();
+  await host.page.getByRole("menuitem", { name: "Pin for everyone" }).click();
+  await expect(mo.page.getByRole("button", { name: /^Pinned · / })).toBeVisible({ timeout: 5_000 });
+  await expect(moLog).toContainText("pinned a message");
+
+  // Delete asks first; then everyone sees "This message was deleted".
+  await (await onMessage(mo.page, "and Friday")).getByRole("button", { name: "More actions" }).click();
+  await mo.page.getByRole("menuitem", { name: "Delete" }).click();
+  const dialog = mo.page.getByRole("dialog", { name: "Delete this message?" });
+  await dialog.getByRole("button", { name: "Delete" }).click();
+  await expect(hostLog).toContainText("This message was deleted", { timeout: 5_000 });
+  await expect(host.page.getByRole("button", { name: /^Pinned · / })).toHaveCount(0);
+});
+
+test("TC-F03-42 [AC-F03-21] [AC-F03-22] [AC-F03-23] create a poll, vote, see results after voting, close it", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  await openChat(host.page);
+  const moLog = await openChat(mo.page);
+
+  await host.page.getByRole("button", { name: "Create a poll" }).click();
+  const dialog = host.page.getByRole("dialog", { name: "Create a poll" });
+  await dialog.getByLabel("Question").fill("Which day should we release?");
+  await dialog.getByRole("textbox", { name: "Answer 1" }).fill("Tuesday");
+  await dialog.getByRole("textbox", { name: "Answer 2" }).fill("Thursday");
+  await dialog.getByRole("button", { name: "Post poll" }).click();
+
+  const poll = moLog.getByRole("region", { name: "Which day should we release?" });
+  await expect(poll).toBeVisible({ timeout: 5_000 });
+  await expect(poll).toContainText("Vote to see the results");
+  await poll.getByRole("radio", { name: /Thursday/ }).click();
+  await expect(poll).toContainText("1 person voted", { timeout: 5_000 });
+  await expect(poll.getByRole("radio", { name: /Thursday/ })).toContainText("100% · 1");
+
+  await host.page.getByRole("log", { name: "Messages" }).getByRole("button", { name: "Close poll" }).click();
+  await expect(poll).toContainText("Closed", { timeout: 5_000 });
+  await expect(poll.getByRole("radio", { name: /Tuesday/ })).toBeDisabled();
+});

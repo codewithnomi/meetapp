@@ -1,190 +1,17 @@
 // The meeting chat beside the videos (F03, approved "Chat" screen): the newest messages at the bottom,
 // older ones loaded when scrolling up, the view kept still while reading older messages with a "New
-// messages" button (AC-F03-08), messages being sent and "Not sent" with Retry (AC-F03-05). The message
-// box here sends plain text; the rich box with formatting comes in T13.
-import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
-import { ChatComposer, ChatMessage, ChatPanel, SystemNote, type ChatComposerLabels } from "@meetapp/ui";
-import type { TFunction } from "i18next";
+// messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
+import type { ChatMessageView } from "@meetapp/contracts";
+import { Button, ChatPanel, Dialog } from "@meetapp/ui";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { setReaction, type Chat, type Sending } from "../../features/meetings/chat/index.ts";
+import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
-import { openLink } from "./open-link.ts";
+import { firstLineOf } from "./chat-texts.ts";
+import { ComposerArea } from "./ChatComposerArea.tsx";
+import { Message, Pending, type ChatRights, type ChatView } from "./ChatMessages.tsx";
 
 const NEAR_BOTTOM_PX = 40;
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-function senderName(t: TFunction, message: ChatMessageView, visit: Joined): string {
-  if (message.sender.attendanceId === visit.attendanceId) return t("meetings.chat.you");
-  const { name, group } = message.sender;
-  return group === "member" ? name : t(`meetings.call.${group}`, { name });
-}
-
-function noteText(t: TFunction, message: ChatMessageView): string {
-  const system = message.system;
-  if (!system) return "";
-  if (system.event === "pinned") return t("meetings.chat.pinnedNote", { name: system.name });
-  return t(`meetings.chat.modeNote.${system.mode ?? "on"}`, { name: system.name });
-}
-
-/** The first line of a message's text, for the pinned bar. */
-function firstLineOf(message: ChatMessageView): string {
-  const first = message.body?.blocks[0];
-  if (first?.type === "codeBlock") return first.text.split("\n")[0] ?? "";
-  if (first?.type !== "paragraph") return "…";
-  return (first.content ?? []).map((part) => (part.type === "text" ? part.text : " ")).join("");
-}
-
-function copyCode(text: string) {
-  void navigator.clipboard.writeText(text).catch(() => undefined);
-}
-
-function Message({ message, visit }: { message: ChatMessageView; visit: Joined }) {
-  const { t } = useTranslation();
-  if (message.kind === "system") return <SystemNote text={noteText(t, message)} />;
-  const name = senderName(t, message, visit);
-  const shown = time(message.createdAt);
-  return (
-    <ChatMessage
-      id={message.id}
-      name={name}
-      own={message.sender.attendanceId === visit.attendanceId}
-      time={message.editedAt ? t("meetings.chat.edited", { time: shown }) : shown}
-      document={message.body}
-      deletedText={message.deletedAt ? t("meetings.chat.deleted") : undefined}
-      replyTo={
-        message.replyTo
-          ? {
-              senderName: message.replyTo.senderName,
-              firstLine: message.replyTo.deleted ? t("meetings.chat.deleted") : message.replyTo.firstLine,
-              onShow: () => document.getElementById(`chat-message-${message.replyTo?.id ?? ""}`)?.focus(),
-            }
-          : undefined
-      }
-      reactions={message.reactions.map((reaction) => ({
-        emoji: reaction.emoji,
-        count: reaction.count,
-        mine: reaction.mine,
-        label: t("meetings.chat.reaction", {
-          emoji: reaction.emoji,
-          count: reaction.count,
-          names: reaction.names.join(", "),
-        }),
-        onToggle: () => void setReaction(visit, message.id, reaction.emoji, !reaction.mine).catch(() => undefined),
-      }))}
-      onOpenLink={openLink}
-      onCopyCode={copyCode}
-      copyLabel={t("meetings.chat.copy")}
-    />
-  );
-}
-
-function Pending({ item, chat }: { item: Sending; chat: Chat }) {
-  const { t } = useTranslation();
-  return (
-    <ChatMessage
-      id={item.clientId}
-      name={t("meetings.chat.you")}
-      own
-      time=""
-      document={item.body}
-      status={
-        item.status === "sending"
-          ? { kind: "sending", label: t("meetings.chat.sending") }
-          : {
-              kind: "failed",
-              label: t("meetings.chat.notSent"),
-              retryLabel: t("meetings.chat.retry"),
-              onRetry: () => chat.retry(item.body, item.clientId),
-            }
-      }
-      onOpenLink={openLink}
-      onCopyCode={copyCode}
-      copyLabel={t("meetings.chat.copy")}
-    />
-  );
-}
-
-const RECENT_KEY = "meetapp.chat.recentEmoji";
-const MAX_RECENT = 8;
-
-/** Recently used emoji, kept on this computer only (a per-viewer convenience). */
-function useRecentEmoji() {
-  const [recent, setRecent] = useState<string[]>(() => {
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
-      return Array.isArray(saved)
-        ? saved.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT)
-        : [];
-    } catch {
-      return [];
-    }
-  });
-  const used = (emoji: string) => {
-    const next = [emoji, ...recent.filter((item) => item !== emoji)].slice(0, MAX_RECENT);
-    setRecent(next);
-    try {
-      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    } catch {
-      // Not saved: the list still works for this session.
-    }
-  };
-  return { recent, used };
-}
-
-function Composer({ chat }: { chat: Chat }) {
-  const { t } = useTranslation();
-  const emoji = useRecentEmoji();
-  const labels = Object.fromEntries(
-    COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
-  ) as unknown as ChatComposerLabels;
-  return (
-    <>
-      {chat.state.tooFast ? (
-        <p role="alert" className="m-0 rounded-md bg-warning-soft p-2.5 text-[13px] text-ink">
-          {t("meetings.chat.tooFast")}
-        </p>
-      ) : null}
-      <ChatComposer
-        labels={labels}
-        tooManyLabel={(over) => t("meetings.chat.tooMany", { count: over })}
-        onSend={(body) => chat.send(body as MessageDocument)}
-        emoji={{
-          dataUrl: "/emojibase",
-          recent: emoji.recent,
-          labels: {
-            search: t("meetings.chat.emojiSearch"),
-            recent: t("meetings.chat.emojiRecent"),
-            loading: t("meetings.chat.emojiLoading"),
-            empty: t("meetings.chat.emojiEmpty"),
-            skinTone: t("meetings.chat.skinTone"),
-          },
-        }}
-        onEmojiUsed={emoji.used}
-      />
-    </>
-  );
-}
-
-const COMPOSER_KEYS = [
-  "placeholder",
-  "send",
-  "format",
-  "emoji",
-  "formatting",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "bulletList",
-  "orderedList",
-  "quote",
-  "link",
-  "linkAddress",
-  "applyLink",
-  "code",
-  "codeBlock",
-] as const;
 
 /** Keeps the newest message in view, unless the person is reading older ones (AC-F03-08). */
 function useStickToBottom(count: number, chat: Chat) {
@@ -237,37 +64,108 @@ function usePinnedBar(pinned: ChatMessageView[]) {
   };
 }
 
-export function ChatArea({ chat, visit, onClose }: { chat: Chat; visit: Joined; onClose: () => void }) {
+/** "Delete this message?" before anything is removed (AC-F03-10). */
+function DeleteDialog({
+  visit,
+  message,
+  onClose,
+  onFailed,
+}: {
+  visit: Joined;
+  message: ChatMessageView | undefined;
+  onClose: () => void;
+  onFailed: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <Dialog
+      open={message !== undefined}
+      onOpenChange={(open) => !open && onClose()}
+      title={t("meetings.chat.deleteTitle")}
+      description={t("meetings.chat.deleteBody")}
+      closeLabel={t("meetings.chat.cancel")}
+    >
+      <div className="flex justify-end gap-2">
+        <Button variant="secondary" onClick={onClose}>
+          {t("meetings.chat.cancel")}
+        </Button>
+        <Button
+          variant="danger"
+          onClick={() => {
+            if (message) void deleteMessage(visit, message.id).catch(onFailed);
+            onClose();
+          }}
+        >
+          {t("meetings.chat.actions.delete")}
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+
+export interface ChatAreaProps {
+  chat: Chat;
+  visit: Joined;
+  rights: ChatRights;
+  onClose: () => void;
+  onFailed: () => void;
+}
+
+/** Who is being replied to, edited or asked about deleting. */
+function useInteraction() {
+  const [replyingTo, setReplyingTo] = useState<ChatMessageView>();
+  const [editing, setEditing] = useState<ChatMessageView>();
+  const [deleting, setDeleting] = useState<ChatMessageView>();
+  const done = () => (setReplyingTo(undefined), setEditing(undefined));
+  const handlers = {
+    onReply: (message: ChatMessageView) => (setEditing(undefined), setReplyingTo(message)),
+    onEdit: (message: ChatMessageView) => (setReplyingTo(undefined), setEditing(message)),
+    onDelete: setDeleting,
+  };
+  return { replyingTo, editing, deleting, setDeleting, done, handlers };
+}
+
+export function ChatArea({ chat, visit, rights, onClose, onFailed }: ChatAreaProps) {
   const { t } = useTranslation();
   const { messages, sending, loaded, pinned } = chat.state;
   const scroll = useStickToBottom(messages.length + sending.length, chat);
   const pinBar = usePinnedBar(pinned);
+  const act = useInteraction();
+  const view: ChatView = { chat, visit, rights, onFailed, ...act.handlers };
   return (
-    <ChatPanel
-      title={t("meetings.chat.title")}
-      closeLabel={t("meetings.chat.close")}
-      onClose={onClose}
-      listLabel={t("meetings.chat.messages")}
-      listRef={scroll.list}
-      onScroll={scroll.onScroll}
-      pinned={pinBar}
-      empty={
-        loaded && messages.length === 0 && sending.length === 0
-          ? { title: t("meetings.chat.emptyTitle"), hint: t("meetings.chat.emptyHint") }
-          : undefined
-      }
-      messages={
-        <>
-          {messages.map((message) => (
-            <Message key={message.id} message={message} visit={visit} />
-          ))}
-          {sending.map((item) => (
-            <Pending key={item.clientId} item={item} chat={chat} />
-          ))}
-        </>
-      }
-      newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
-      composer={<Composer chat={chat} />}
-    />
+    <>
+      <ChatPanel
+        title={t("meetings.chat.title")}
+        closeLabel={t("meetings.chat.close")}
+        onClose={onClose}
+        listLabel={t("meetings.chat.messages")}
+        listRef={scroll.list}
+        onScroll={scroll.onScroll}
+        pinned={pinBar}
+        empty={
+          loaded && messages.length === 0 && sending.length === 0
+            ? { title: t("meetings.chat.emptyTitle"), hint: t("meetings.chat.emptyHint") }
+            : undefined
+        }
+        messages={
+          <>
+            {messages.map((message) => (
+              <Message key={message.id} view={view} message={message} />
+            ))}
+            {sending.map((item) => (
+              <Pending key={item.clientId} item={item} chat={chat} />
+            ))}
+          </>
+        }
+        newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
+        composer={<ComposerArea view={view} replyingTo={act.replyingTo} editing={act.editing} onDone={act.done} />}
+      />
+      <DeleteDialog
+        visit={visit}
+        message={act.deleting}
+        onClose={() => act.setDeleting(undefined)}
+        onFailed={onFailed}
+      />
+    </>
   );
 }

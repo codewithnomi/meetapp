@@ -1,0 +1,183 @@
+// The message box in the meeting chat (F03): replying shows the quote above the box; editing fills the
+// box with the message and Save replaces it; the poll button opens "Create a poll" for those allowed;
+// "sending too fast" is said in words (AC-F03-06, 10, 14, 21).
+import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
+import { ChatComposer, IconButton, PollCreator, ReplyQuote, type ChatComposerLabels } from "@meetapp/ui";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { createPoll, editMessage } from "../../features/meetings/chat/index.ts";
+import { firstLineOf } from "./chat-texts.ts";
+import type { ChatView } from "./ChatMessages.tsx";
+
+const RECENT_KEY = "meetapp.chat.recentEmoji";
+const MAX_RECENT = 8;
+
+/** Recently used emoji, kept on this computer only (a per-viewer convenience). */
+function useRecentEmoji() {
+  const [recent, setRecent] = useState<string[]>(() => {
+    try {
+      const saved: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+      return Array.isArray(saved)
+        ? saved.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT)
+        : [];
+    } catch {
+      return [];
+    }
+  });
+  const used = (emoji: string) => {
+    const next = [emoji, ...recent.filter((item) => item !== emoji)].slice(0, MAX_RECENT);
+    setRecent(next);
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    } catch {
+      // Not saved: the list still works for this session.
+    }
+  };
+  return { recent, used };
+}
+
+const COMPOSER_KEYS = [
+  "placeholder",
+  "send",
+  "format",
+  "emoji",
+  "formatting",
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "bulletList",
+  "orderedList",
+  "quote",
+  "link",
+  "linkAddress",
+  "applyLink",
+  "code",
+  "codeBlock",
+] as const;
+
+const POLL_KEYS = [
+  "title",
+  "description",
+  "close",
+  "question",
+  "questionHint",
+  "answers",
+  "addAnswer",
+  "multiple",
+  "anonymous",
+  "anonymousHint",
+  "cancel",
+  "post",
+] as const;
+
+function PollButton({ view }: { view: ChatView }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const words = Object.fromEntries(POLL_KEYS.map((key) => [key, t(`meetings.chat.newPoll.${key}`)]));
+  const labels = {
+    ...words,
+    answer: (n: number) => t("meetings.chat.newPoll.answer", { n }),
+    removeAnswer: (n: number) => t("meetings.chat.newPoll.removeAnswer", { n }),
+  } as unknown as Parameters<typeof PollCreator>[0]["labels"];
+  return (
+    <>
+      <IconButton
+        icon="poll"
+        label={t("meetings.chat.newPoll.button")}
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(true)}
+      />
+      <PollCreator
+        open={open}
+        onOpenChange={setOpen}
+        busy={busy}
+        labels={labels}
+        onPost={(poll) => {
+          setBusy(true);
+          void createPoll(view.visit, poll)
+            .then(() => setOpen(false), view.onFailed)
+            .finally(() => setBusy(false));
+        }}
+      />
+    </>
+  );
+}
+
+export interface ComposerAreaProps {
+  view: ChatView;
+  replyingTo: ChatMessageView | undefined;
+  editing: ChatMessageView | undefined;
+  onDone: () => void;
+}
+
+/** The emoji picker's words and the recently used emoji. */
+function useEmojiSettings() {
+  const { t } = useTranslation();
+  const emoji = useRecentEmoji();
+  return {
+    used: emoji.used,
+    settings: {
+      dataUrl: "/emojibase",
+      recent: emoji.recent,
+      labels: {
+        search: t("meetings.chat.emojiSearch"),
+        recent: t("meetings.chat.emojiRecent"),
+        loading: t("meetings.chat.emojiLoading"),
+        empty: t("meetings.chat.emojiEmpty"),
+        skinTone: t("meetings.chat.skinTone"),
+      },
+    },
+  };
+}
+
+export function ComposerArea({ view, replyingTo, editing, onDone }: ComposerAreaProps) {
+  const { t } = useTranslation();
+  const emoji = useEmojiSettings();
+  const labels = Object.fromEntries(
+    COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
+  ) as unknown as ChatComposerLabels;
+  const send = (body: MessageDocument) => {
+    if (editing) void editMessage(view.visit, editing.id, body).catch(view.onFailed);
+    else view.chat.send(body, undefined, replyingTo?.id);
+    onDone();
+  };
+  const quote = editing ?? replyingTo;
+  return (
+    <>
+      {view.chat.state.tooFast ? (
+        <p role="alert" className="m-0 rounded-md bg-warning-soft p-2.5 text-[13px] text-ink">
+          {t("meetings.chat.tooFast")}
+        </p>
+      ) : null}
+      <ChatComposer
+        key={editing?.id ?? "new"}
+        initial={editing?.body ?? undefined}
+        labels={editing ? { ...labels, send: t("meetings.chat.save") } : labels}
+        tooManyLabel={(over) => t("meetings.chat.tooMany", { count: over })}
+        onSend={(body) => send(body as MessageDocument)}
+        onEscape={quote ? onDone : undefined}
+        above={
+          quote ? (
+            <ReplyQuote
+              senderName={quote.sender.name}
+              firstLine={firstLineOf(quote)}
+              composing={{
+                title: editing
+                  ? t("meetings.chat.editing")
+                  : t("meetings.chat.replyingTo", { name: quote.sender.name }),
+                cancelLabel: t(editing ? "meetings.chat.cancelEdit" : "meetings.chat.cancelReply"),
+                onCancel: onDone,
+              }}
+            />
+          ) : undefined
+        }
+        tools={view.rights.createPoll ? <PollButton view={view} /> : undefined}
+        emoji={emoji.settings}
+        onEmojiUsed={emoji.used}
+      />
+    </>
+  );
+}

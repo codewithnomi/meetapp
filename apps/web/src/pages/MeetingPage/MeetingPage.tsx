@@ -206,7 +206,15 @@ function ScreenPanel({ screen }: { screen: Screen }) {
         onClose={close}
       />
     );
-  if (view.panel === "chat") return <ChatArea chat={call.chat} visit={call.visit} onClose={close} />;
+  if (view.panel === "chat") {
+    const role = call.me?.role;
+    const rights = {
+      moderate: role === "organizer" || role === "co_organizer",
+      createPoll: role !== undefined && role !== "attendee",
+    };
+    const onFailed = () => view.setFailed(true);
+    return <ChatArea chat={call.chat} visit={call.visit} rights={rights} onClose={close} onFailed={onFailed} />;
+  }
   return <Panels panel={view.panel} context={context} onClose={close} onOptions={onOptions} />;
 }
 

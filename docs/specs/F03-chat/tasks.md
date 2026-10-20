@@ -102,10 +102,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-07, 09, 14, 22, 28, 30, 31, 33 (on screen), 34 (on screen), 81, 83.
   - **Built in T13:** `ChatComposer` (TipTap 3.31.4: StarterKit with link and underline built in, http/https links only; Placeholder from `@tiptap/extensions`; Enter sends, Shift+Enter a new line, Enter keeps its meaning in lists and code blocks, Ctrl/Cmd+Enter always sends, Escape cancels), the Format toolbar with a link form, `EmojiPicker` (Frimousse 0.4.0; the emoji list served by the app itself from `/emojibase`, built in by a small Vite step in `apps/web/vite.config.ts`; recently used emoji kept on this computer), `lib/rich-document.ts` (what is typed becomes the stored document; anything else becomes plain text), the "too many characters" counter, and the "sending too fast" note. Typing in a rich editor can't be simulated by the unit-test browser (jsdom), so typing, shortcuts, code blocks, the counter, emoji and page code shown as text are checked in the real app (`chat.spec.ts`, 4 tests pass). As the editor works, a code block starts after typing three backticks and a space. Spell check uses the box's `spellcheck` with the T10 menu; its on-screen menu (a native menu) is checked by hand at the owner's look check.
 
-- [ ] **T14: Reactions, replies, edit, delete, pins and polls in the app.**
+- [x] **T14: Reactions, replies, edit, delete, pins and polls in the app.**
   - New components: `MessageActions`, `PollCard`, `PollCreator`.
   - Covers: AC-F03-10, 11, 13, 14, 19, 20, 21, 22, 23.
-  - Tests: TC-F03-21, 23, 26, 36, 42.
+  - Tests: TC-F03-21, 23, 26, 36, 42 (real-app tests in `chat.spec.ts`: 6 pass, plus component tests).
+  - **Built in T14:** `MessageActions` (four quick reactions, Reply, the More menu), `PollCard`, `PollCreator`, editing in the message box (`toEditorDocument`: a sent message back in the editor), and in the app `ChatMessages.tsx`, `ChatComposerArea.tsx`, `chat-texts.ts` (the meeting role decides which actions show; the server checks again), "Delete this message?" before deleting, polls fetched per viewer and again after poll news (`pollVersions`). Reacting with any other emoji than the four quick ones is left for later (the "More reactions" button is not shown yet); the stored emoji keeps the list's form (e.g. 👍 with its invisible emoji mark).
 
 - [ ] **T15: Files, drag and drop, GIFs and stickers in the app.**
   - New components: `FileChip`, `GifPicker`, `StickerPicker` and the sticker pictures. Attach, chips with progress, previews, Download, drop area, paste; GIF picker searching KLIPY from the app ("Powered by KLIPY", results in KLIPY's order) with the one-time notice, reduced motion; stickers; Workspace settings: Allow GIFs.

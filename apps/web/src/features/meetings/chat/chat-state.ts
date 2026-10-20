@@ -6,6 +6,7 @@ import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contr
 export interface Sending {
   clientId: string;
   body: MessageDocument;
+  replyToId?: string | undefined;
   status: "sending" | "failed";
 }
 
@@ -21,6 +22,8 @@ export interface ChatState {
   open: boolean;
   /** The last send was refused for sending too fast (AC-F03-06). */
   tooFast: boolean;
+  /** Each poll's version, raised by poll_changed news, so the poll is fetched again (AC-F03-22). */
+  pollVersions: Record<string, number>;
 }
 
 export const emptyChat: ChatState = {
@@ -33,6 +36,7 @@ export const emptyChat: ChatState = {
   unread: 0,
   open: false,
   tooFast: false,
+  pollVersions: {},
 };
 
 export type ChatAction =
@@ -61,6 +65,9 @@ function merge(list: ChatMessageView[], incoming: ChatMessageView[]): ChatMessag
 
 function applyEvent(state: ChatState, event: ChatEvent, mine: boolean): ChatState {
   const lastSeq = Math.max(state.lastSeq, event.seq);
+  if (event.type === "poll_changed" && event.pollId) {
+    return { ...state, lastSeq, pollVersions: { ...state.pollVersions, [event.pollId]: event.version ?? event.seq } };
+  }
   const message = event.message;
   if (!message) return { ...state, lastSeq };
   const isNew = event.type === "message_created" && !state.messages.some((m) => m.id === message.id);

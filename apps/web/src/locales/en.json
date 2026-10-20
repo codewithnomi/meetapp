@@ -810,6 +810,61 @@
         "applyLink": "Add link",
         "code": "Inline code",
         "codeBlock": "Code block"
+      },
+      "save": "Save",
+      "editing": "Editing message",
+      "replyingTo": "Replying to {{name}}",
+      "cancelEdit": "Cancel editing (Esc)",
+      "cancelReply": "Cancel reply",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete this message?",
+      "deleteBody": "Everyone will see \"This message was deleted\". Its text and any file are removed for good.",
+      "actionFailed": "That didn't work. Try again.",
+      "actions": {
+        "label": "Actions for {{name}}'s message",
+        "reply": "Reply",
+        "more": "More actions",
+        "edit": "Edit",
+        "copy": "Copy text",
+        "pin": "Pin for everyone",
+        "unpin": "Unpin",
+        "delete": "Delete",
+        "react": {
+          "thumbsUp": "React with thumbs up",
+          "heart": "React with heart",
+          "laugh": "React with laughing face",
+          "surprised": "React with surprised face"
+        }
+      },
+      "poll": {
+        "about": "Poll by {{name}} · {{kind}} · {{names}}",
+        "one": "One answer",
+        "several": "Several answers",
+        "anonymous": "Anonymous",
+        "named": "Names shown",
+        "voters_one": "{{count}} person voted",
+        "voters_other": "{{count}} people voted",
+        "result": "{{percent}}% · {{votes}}",
+        "voteToSee": "Vote to see the results",
+        "closed": "Closed",
+        "close": "Close poll"
+      },
+      "newPoll": {
+        "button": "Create a poll",
+        "title": "Create a poll",
+        "description": "Everyone in the meeting can vote.",
+        "close": "Close",
+        "question": "Question",
+        "questionHint": "Up to 200 characters",
+        "answers": "Answers (2 to 10)",
+        "answer": "Answer {{n}}",
+        "removeAnswer": "Remove answer {{n}}",
+        "addAnswer": "Add an answer",
+        "multiple": "Allow more than one answer",
+        "anonymous": "Anonymous votes",
+        "anonymousHint": "Nobody, not even you, will see who voted for what.",
+        "cancel": "Cancel",
+        "post": "Post poll"
       }
     }
   }

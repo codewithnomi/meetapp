@@ -13,7 +13,7 @@ import { IconButton } from "../../atoms/IconButton/index.ts";
 import type { IconName } from "../../atoms/Icon/index.ts";
 import { Input } from "../../atoms/Input/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
-import { toRichDocument, visibleText, type EditorNode } from "../../lib/rich-document.ts";
+import { toEditorDocument, toRichDocument, visibleText, type EditorNode } from "../../lib/rich-document.ts";
 import { EmojiPicker, type EmojiPickerProps } from "../../molecules/EmojiPicker/index.ts";
 import type { RichDocument } from "../../molecules/MessageBody/index.ts";
 
@@ -53,6 +53,8 @@ export interface ChatComposerProps {
   /** More tools after the emoji button: attach, GIF, sticker, poll. */
   tools?: ReactNode;
   onEscape?: (() => void) | undefined;
+  /** A sent message being edited: the box starts with it (give the composer a new `key` per message). */
+  initial?: RichDocument | undefined;
 }
 
 const TOOLS: { mark: string; icon: IconName; label: keyof ChatComposerLabels; run: (editor: Editor) => void }[] = [
@@ -91,6 +93,7 @@ function sendKeys(send: { current: () => void }, escape: { current: (() => void)
 }
 
 function useComposerEditor(
+  initial: RichDocument | undefined,
   labels: ChatComposerLabels,
   send: { current: () => void },
   escape: { current: (() => void) | undefined },
@@ -111,6 +114,7 @@ function useComposerEditor(
       Placeholder.configure({ placeholder: labels.placeholder }),
       sendKeys(send, escape),
     ],
+    ...(initial ? { content: toEditorDocument(initial) as never, autofocus: "end" as const } : {}),
     editorProps: {
       attributes: { "aria-label": labels.placeholder, role: "textbox", "aria-multiline": "true", spellcheck: "true" },
     },
@@ -248,7 +252,7 @@ export function ChatComposer(props: ChatComposerProps) {
   const { labels, onSend, allowEmpty = false, above, onEscape } = props;
   const send = useRef<() => void>(() => undefined);
   const escape = useRef(onEscape);
-  const editor = useComposerEditor(labels, send, escape);
+  const editor = useComposerEditor(props.initial, labels, send, escape);
   const [formatting, setFormatting] = useState(false);
   const draft = useDraft(editor, allowEmpty);
   const submit = () => {

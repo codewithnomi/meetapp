@@ -73,3 +73,24 @@ describe("TC-F03-31 the message box keeps only allowed formatting", () => {
     expect(visibleText(doc)).toBe("ab\ncd");
   });
 });
+
+describe("TC-F03-21 a sent message back in the box for editing", () => {
+  it("TC-F03-21 [AC-F03-10] the document goes into the editor and comes back unchanged", async () => {
+    const { toEditorDocument } = await import("./rich-document.ts");
+    const document = {
+      v: 1 as const,
+      blocks: [
+        {
+          type: "paragraph" as const,
+          content: [{ type: "text" as const, text: "b", marks: [{ type: "bold" as const }] }],
+        },
+        {
+          type: "orderedList" as const,
+          items: [{ content: [{ type: "paragraph" as const, content: [{ type: "text" as const, text: "one" }] }] }],
+        },
+        { type: "codeBlock" as const, text: "x = 1" },
+      ],
+    };
+    expect(toRichDocument(toEditorDocument(document))).toEqual(document);
+  });
+});

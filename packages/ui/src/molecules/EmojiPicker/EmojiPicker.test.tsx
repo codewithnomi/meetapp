@@ -5,15 +5,6 @@ import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { EmojiPicker } from "./EmojiPicker.tsx";
 
-// jsdom has no ResizeObserver; Frimousse uses one to size its list.
-vi.hoisted(() => {
-  globalThis.ResizeObserver ??= class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  };
-});
-
 const labels = {
   search: "Search emoji",
   recent: "Recently used",

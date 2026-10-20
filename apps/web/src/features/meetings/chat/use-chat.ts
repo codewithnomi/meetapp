@@ -78,9 +78,9 @@ export function useChat(visit: Joined) {
   );
 
   const send = useCallback(
-    (body: MessageDocument, clientId: string = crypto.randomUUID()) => {
-      dispatch({ type: "sending", item: { clientId, body, status: "sending" } });
-      void sendMessage(visit, { clientId, body })
+    (body: MessageDocument, clientId: string = crypto.randomUUID(), replyToId?: string) => {
+      dispatch({ type: "sending", item: { clientId, body, status: "sending", ...(replyToId ? { replyToId } : {}) } });
+      void sendMessage(visit, { clientId, body, ...(replyToId ? { replyToId } : {}) })
         .then((message) => dispatch({ type: "sent", clientId, message }))
         .catch((error: unknown) =>
           dispatch({ type: "failed", clientId, tooFast: error instanceof ApiError && error.code === "CHAT_TOO_FAST" }),
