@@ -24,7 +24,7 @@ export interface NewMember {
 }
 
 /** "a:b" with the two ids in order: one direct chat per pair per workspace (AC-F14-09). */
-const directKeyOf = (a: string, b: string) => [a, b].sort().join(":");
+export const directKeyOf = (a: string, b: string) => [a, b].sort().join(":");
 
 async function addMembers(executor: Executor, conversation: Conversation, members: NewMember[], by: string) {
   if (members.length === 0) return;
@@ -159,6 +159,7 @@ function peopleOf(db: Database, conversationIds: string[]) {
       avatarKey: user.avatarKey,
       external: conversationMembers.external,
       state: conversationMembers.state,
+      requestedAt: conversationMembers.requestedAt,
     })
     .from(conversationMembers)
     .innerJoin(user, eq(user.id, conversationMembers.userId))

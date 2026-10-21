@@ -56,6 +56,9 @@ export const conversationListItemSchema = z
     muted: z.boolean(),
     /** Read-only: blocked direct chat, outside chat off, or left/removed (design 3.2). */
     readOnly: z.boolean(),
+    /** The starter's side of an unanswered request: "Waiting for <name> to accept" or, after 30 days,
+     * "<name> didn't accept" (AC-F14-10, 12). A deleted request still reads "waiting" (AC-F14-11). */
+    request: z.enum(["waiting", "not_accepted"]).nullable(),
   })
   .meta({ id: "ConversationListItem" });
 export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
@@ -113,6 +116,28 @@ export const addPeopleBodySchema = z
   .meta({ id: "AddChatPeople" });
 
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
+/** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */
+const chatRequestSchema = z
+  .object({
+    conversationId: z.uuid(),
+    kind: z.enum(["direct", "group"]),
+    from: person.omit({ external: true }).extend({ email: z.string() }),
+    /** A group's name, when it has one. */
+    groupName: z.string().nullable(),
+    requestedAt: z.iso.datetime(),
+    preview: z
+      .array(z.object({ senderName: z.string(), text: z.string(), at: z.iso.datetime() }))
+      .max(CHATS_LIMITS.messagesWhilePending),
+  })
+  .meta({ id: "ChatRequest" });
+export const chatRequestsSchema = z.object({ requests: z.array(chatRequestSchema) }).meta({ id: "ChatRequests" });
+
+export const blockedPeopleSchema = z
+  .object({ people: z.array(person.omit({ external: true })) })
+  .meta({ id: "BlockedPeople" });
+export const blockBodySchema = z.object({ userId: z.uuid() }).meta({ id: "BlockPerson" });
+export const blockedParamsSchema = z.object({ userId: z.uuid() });
+
 export const declineBodySchema = z.object({ block: z.boolean().default(false) }).meta({ id: "DeclineChat" });
 export const myChatSettingsBodySchema = z
   .object({ pinned: z.boolean(), muted: z.boolean(), hidden: z.boolean() })

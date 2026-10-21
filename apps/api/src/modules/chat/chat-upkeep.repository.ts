@@ -4,6 +4,7 @@ import {
   callAttendances,
   chatAttachments,
   chatEvents,
+  conversationMembers,
   chatMessages,
   chatPollVotes,
   chatReactions,
@@ -102,6 +103,12 @@ function forgetPerson(db: Database, userId: string) {
 export function createChatUpkeepRepository(db: Database) {
   return {
     fillConversations: () => fillConversations(db),
+    /** F14: chat requests not answered in 30 days are tidied away (AC-F14-12; reads hide them already). */
+    expireRequests: (before: Date) =>
+      db
+        .update(conversationMembers)
+        .set({ state: "declined", updatedAt: new Date() })
+        .where(and(eq(conversationMembers.state, "pending"), lt(conversationMembers.requestedAt, before))),
     /** Catch-up news is kept a day (design 3.4). */
     /**
      * Old news goes, except each meeting's newest piece: news numbers continue from it and never start

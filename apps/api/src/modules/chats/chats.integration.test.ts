@@ -92,9 +92,10 @@ describe("starting chats", { timeout: 60_000 }, () => {
     const list = await listOf(m1, workspaceId);
     expect(list.conversations.find((c) => c.id === named.id)?.title).toBe("Launch");
     expect(list.conversations.find((c) => c.id === unnamed.id)?.kind).toBe("group");
-    // Outsiders and empty starts are refused.
+    // An account that doesn't exist, a group with someone outside (until T7) and empty starts are refused.
     const outsider = await newPerson(t, "start-outsider");
-    expect((await start(m1, workspaceId, { userIds: [outsider.id] })).statusCode).toBe(404);
+    expect((await start(m1, workspaceId, { userIds: [randomUUID()] })).statusCode).toBe(404);
+    expect((await start(m1, workspaceId, { userIds: [outsider.id, m2.id] })).statusCode).toBe(404);
     expect(errorCode(await start(m1, workspaceId, { userIds: [m1.id] }))).toBe("CHAT_INVALID");
   });
 

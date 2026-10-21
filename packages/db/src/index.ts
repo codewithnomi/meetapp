@@ -16,6 +16,8 @@ export {
   conversations,
   conversationMembers,
   conversationReads,
+  chatBlocks,
+  chatRequestCooldowns,
   type Conversation,
   type ConversationMember,
   calls,

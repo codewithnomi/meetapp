@@ -1,12 +1,17 @@
 // Finding people for New chat and inviting people without MeetApp (F14 design.md 2.2, 5; AC-F14-07, 08,
 // 31; D063): name suggestions come from the open workspace only, an exact email finds one account and is
 // limited, and the "Join me on MeetApp" email goes out only when asked for, 20 a day.
-import { user, workspaceMembers, workspaces } from "@meetapp/db";
-import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startAuthTestApp, testEmail, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { countEmails, waitForEmail } from "../../test-support/mailpit.ts";
-import { caller, newPerson, seedWorkspace, type Call, type Person } from "../../test-support/workspaces-setup.ts";
+import {
+  caller,
+  namedPerson,
+  seedPersonal,
+  seedWorkspace,
+  type Call,
+  type Person,
+} from "../../test-support/workspaces-setup.ts";
 
 let t: AuthTestApp;
 let call: Call;
@@ -28,28 +33,12 @@ const find = (person: Person, workspaceId: string, q: string) =>
 const found = async (person: Person, workspaceId: string, q: string) =>
   (await find(person, workspaceId, q)).json<Found>();
 
-async function named(label: string, name: string) {
-  const person = await newPerson(t, label);
-  await t.database.db.update(user).set({ name }).where(eq(user.id, person.id));
-  return person;
-}
-
-async function personalOf(person: Person) {
-  const [row] = await t.database.db
-    .insert(workspaces)
-    .values({ name: "Personal", kind: "personal", createdBy: person.id })
-    .returning({ id: workspaces.id });
-  if (!row) throw new Error("no personal workspace");
-  await t.database.db.insert(workspaceMembers).values({ workspaceId: row.id, userId: person.id, role: "owner" });
-  return row.id;
-}
-
 describe("finding people", { timeout: 60_000 }, () => {
   it("TC-F14-11 [AC-F14-07] a name finds the workspace's members only; outsiders and other workspaces never appear", async () => {
-    const m1 = await named("p-m1", "Maya First");
-    const m2 = await named("p-m2", "Desmond Second");
-    const m3 = await named("p-m3", "Destiny Third");
-    const outsider = await named("p-e1", "Desiree Outside");
+    const m1 = await namedPerson(t, "p-m1", "Maya First");
+    const m2 = await namedPerson(t, "p-m2", "Desmond Second");
+    const m3 = await namedPerson(t, "p-m3", "Destiny Third");
+    const outsider = await namedPerson(t, "p-e1", "Desiree Outside");
     const w1 = await seedWorkspace(t, [
       [m1, "owner"],
       [m2, "member"],
@@ -68,8 +57,8 @@ describe("finding people", { timeout: 60_000 }, () => {
   });
 
   it("TC-F14-14 [AC-F14-08, AC-F14-31] partial emails find nothing; an exact email finds that one account; 30 a minute", async () => {
-    const m1 = await named("p-s1", "Searcher One");
-    const other = await named("p-s2", "Exact Match");
+    const m1 = await namedPerson(t, "p-s1", "Searcher One");
+    const other = await namedPerson(t, "p-s2", "Exact Match");
     const w1 = await seedWorkspace(t, [[m1, "owner"]]);
     const domain = other.email.split("@")[1] ?? "";
 
@@ -94,9 +83,9 @@ describe("finding people", { timeout: 60_000 }, () => {
 
 describe("inviting people without an account", { timeout: 60_000 }, () => {
   it("TC-F14-13 [AC-F14-08] the lookup sends nothing; the Personal invite sends one email; the 21st in a day is refused", async () => {
-    const m1 = await named("p-i1", "Inviting Person");
+    const m1 = await namedPerson(t, "p-i1", "Inviting Person");
     const w1 = await seedWorkspace(t, [[m1, "owner"]]);
-    await personalOf(m1);
+    await seedPersonal(t, m1);
     const nobody = testEmail("p-nobody");
     const since = new Date();
 

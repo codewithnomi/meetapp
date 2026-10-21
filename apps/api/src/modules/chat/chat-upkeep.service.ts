@@ -8,6 +8,7 @@ import type { ChatUpkeepRepository } from "./chat-upkeep.repository.ts";
 
 const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
 const UNSENT_KEPT_MS = 60 * 60 * 1000;
+const REQUESTS_KEPT_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface UpkeepDeps extends ChatDeps {
   upkeep: ChatUpkeepRepository;
@@ -45,6 +46,7 @@ async function cleanUp(deps: UpkeepDeps): Promise<void> {
   await deps.upkeep.fillConversations();
   const now = deps.calls.now().getTime();
   await deps.upkeep.forgetEventsBefore(new Date(now - EVENTS_KEPT_MS));
+  await deps.upkeep.expireRequests(new Date(now - REQUESTS_KEPT_MS));
   for (const file of await deps.upkeep.filesToRemove(new Date(now - UNSENT_KEPT_MS))) {
     // A file that is already gone is fine; the row goes only after its file, so nothing is left behind.
     await deps.storage.delete(file.storageKey);

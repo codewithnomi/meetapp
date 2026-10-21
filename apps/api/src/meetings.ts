@@ -37,6 +37,8 @@ import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
 import { createChatsRepository } from "./modules/chats/chats.repository.ts";
 import { createChatsPeopleService } from "./modules/chats/chats-people.service.ts";
+import { createChatsRequestsRepository } from "./modules/chats/chats-requests.repository.ts";
+import { createChatsRequestsService } from "./modules/chats/chats-requests.service.ts";
 import { createChatsService } from "./modules/chats/chats.service.ts";
 import type { Outbox } from "./emails/outbox.ts";
 
@@ -84,6 +86,12 @@ function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: Calls
   };
   const chatAfter = createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) });
   const chatsRepository = createChatsRepository(db);
+  const requestsDeps = {
+    chats: chatsRepository,
+    requests: createChatsRequestsRepository(db),
+    limiter: calls.limiter,
+    now: calls.now,
+  };
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
@@ -91,7 +99,8 @@ function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: Calls
     chatFiles: createChatFilesService(chatDeps, storage),
     chatAfter,
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
-    chats: createChatsService({ chats: chatsRepository, readableMeetings: (userId) => chatAfter.readable(userId) }),
+    chats: createChatsService({ ...requestsDeps, readableMeetings: (userId) => chatAfter.readable(userId) }),
+    chatsRequests: createChatsRequestsService(requestsDeps),
     chatsPeople: createChatsPeopleService({
       chats: chatsRepository,
       limiter: calls.limiter,

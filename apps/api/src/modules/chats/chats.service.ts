@@ -1,11 +1,12 @@
 // The chat list and starting chats (F14 design.md 3.1, 3.5; AC-F14-01–05, 07, 09, 15, 28, 35): one list
 // for one-to-one, group and meeting chats, newest activity first with pinned chats on top, unread counts,
-// filters and name search. People outside the workspace and chat requests arrive in T6.
+// filters and name search. A chat with someone outside the workspace is a request (chats-requests.service.ts).
 import { CHATS_LIMITS, type ConversationListItem } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
 import { matchesNames } from "./chats.search.ts";
 import type { ChatsRepository, Conversation, ConversationMember } from "./chats.repository.ts";
+import { requestCutoff, startExternalDirect, type RequestsDeps } from "./chats-requests.service.ts";
 
 interface ReadableMeeting {
   id: string;
@@ -13,7 +14,7 @@ interface ReadableMeeting {
   title: string;
 }
 
-export interface ChatsDeps {
+export interface ChatsDeps extends RequestsDeps {
   chats: ChatsRepository;
   /** Meetings whose chat the person may read now (F03's rules, AC-F14-28). */
   readableMeetings: (userId: string) => Promise<ReadableMeeting[]>;
@@ -69,6 +70,18 @@ interface Built {
   activity: number;
 }
 
+/** The starter's view of an unanswered request in a direct chat (AC-F14-10, 11, 12). */
+function requestOf(entry: Entry, others: Person[], now: Date): ConversationListItem["request"] {
+  const [other] = others;
+  if (entry.conversation.kind !== "direct" || !other) return null;
+  if (other.state !== "pending" && other.state !== "declined") return null;
+  return (other.requestedAt ?? now) <= requestCutoff(now) ? "not_accepted" : "waiting";
+}
+
+/** Who shows in a chat's title: accepted members; in a direct chat also the person asked. */
+const shownIn = (entry: Entry, person: Person) =>
+  person.state === "accepted" || (entry.conversation.kind === "direct" && person.state !== "left");
+
 async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise<Built[]> {
   const ids = entries.map((entry) => entry.conversation.id);
   const [people, lasts, unread] = await Promise.all([
@@ -76,9 +89,20 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
     deps.chats.lastMessages(ids),
     deps.chats.unreadCounts(userId, ids),
   ]);
+  const directOthers = people.filter(
+    (p) =>
+      p.userId !== userId &&
+      entries.some((e) => e.conversation.id === p.conversationId && e.conversation.kind === "direct"),
+  );
+  const blocks = await deps.requests.blocksBetween(
+    userId,
+    directOthers.map((p) => p.userId),
+  );
+  const blocked = new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId]));
+  const now = deps.now();
   return entries.map((entry) => {
     const id = entry.conversation.id;
-    const others = people.filter((p) => p.conversationId === id && p.userId !== userId && p.state === "accepted");
+    const others = people.filter((p) => p.conversationId === id && p.userId !== userId && shownIn(entry, p));
     const last = lasts.find((row) => row.conversationId === id);
     const item: ConversationListItem = {
       id,
@@ -93,7 +117,11 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
       mentioned: false,
       pinned: Boolean(entry.member?.pinnedAt),
       muted: entry.member?.muted ?? false,
-      readOnly: entry.member ? entry.member.state !== "accepted" : false,
+      readOnly: entry.member
+        ? entry.member.state !== "accepted" ||
+          (entry.conversation.kind === "direct" && others.some((p) => blocked.has(p.userId)))
+        : false,
+      request: requestOf(entry, others, now),
     };
     const activity = (last?.createdAt ?? entry.conversation.createdAt).getTime();
     return {
@@ -150,11 +178,13 @@ async function start(deps: ChatsDeps, membership: Membership, body: { userIds: s
   if (others.length + 1 > CHATS_LIMITS.groupMax) {
     throw new AppError(409, "CHAT_GROUP_FULL", `A group chat can have up to ${String(CHATS_LIMITS.groupMax)} people.`);
   }
-  // People outside the workspace get a chat request instead (T6); until then they are refused like strangers.
-  const members = await deps.chats.workspaceMemberIds(workspaceId, others);
-  if (membership.kind === "personal" || members.length !== others.length) throw notFound();
+  const members = membership.kind === "personal" ? [] : await deps.chats.workspaceMemberIds(workspaceId, others);
   const accepted = (id: string) => ({ userId: id, external: false, state: "accepted" as const });
   const [first] = others;
+  // Someone outside the workspace (everyone, from Personal) gets a chat request (AC-F14-10, 24).
+  if (others.length === 1 && first && members.length === 0) return startExternalDirect(deps, membership, first);
+  // Groups with people from outside arrive in T7; until then they are refused like strangers.
+  if (membership.kind === "personal" || members.length !== others.length) throw notFound();
   if (others.length === 1 && first) {
     const made = await deps.chats.direct(workspaceId, userId, [accepted(userId), accepted(first)]);
     return { id: made.conversation.id, created: made.created };

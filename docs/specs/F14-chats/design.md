@@ -101,7 +101,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 ### 3.7 Chat requests and blocking (AC-10–14)
 - Starting a chat with an external person creates the conversation with the starter `accepted` and the other `pending`. The pending person gets a `list` news item on `user:<id>`; their Personal list shows it under Chat requests.
 - **Accept** → `accepted`. **Delete** → `declined` (the conversation disappears for them; the starter sees nothing new; a 30-day wait before a new request to the same person). **Block** → a `blocks (blocker_id, blocked_id)` row: the blocked person can't start chats with the blocker, send in an accepted chat between them (read-only for both), or see their status; in group chats they share, nothing changes (as in Teams). Only external people can be blocked.
-- Unanswered requests expire after 30 days (a daily job): the receiver's request goes, the starter sees "<name> didn't accept".
+- Unanswered requests expire after 30 days: reads hide them at once and the regular chat clean-up marks them declined; the starter's list item says `request: "not_accepted"` ("<name> didn't accept"). A deleted request shows "waiting" to the starter until the same 30 days pass, so the sender is never told. Asking again later reuses the same direct chat.
 - Group requests: the external person is `pending` until they accept; Preview shows messages after they were added; deleting means they're not in the group ("<name> didn't join").
 ### 3.8 Status (AC-26)
 - Redis keeps `status:<user>` = `available` / `away` / `offline`, updated by the live line (open + `active` within 5 minutes = available; open, no activity = away; no line = **offline within 35 seconds** of the last line closing, a 30-second grace for reconnects). **In a meeting** comes from F02's attendance (in a call).
@@ -147,7 +147,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 | `PATCH /conversations/:id/me` (`{ pinned, muted, hidden }`) | per-person list choices (at most 15 pinned: `CHAT_PIN_LIMIT`), AC-05, 35 |
 | `POST /me/invitations` (`{ email }`) | the Personal "Join me on MeetApp" email (20 a day per person); in a team workspace the app uses F01's invitation route, AC-08 |
 | `GET /conversations/:id/messages/:mid/seen` | who has seen a group message (groups up to 20), AC-24 |
-| `GET /me/blocked`, `DELETE /me/blocked/:userId` | Settings → Privacy, AC-13 |
+| `GET /me/blocked`, `POST /me/blocked` (`{ userId }`, block from an accepted chat), `DELETE /me/blocked/:userId` | Settings → Privacy, AC-13 |
 | `PATCH /me/settings` (`{ readReceipts }`) | AC-24 |
 | `GET /realtime` (WebSocket) | the live line, 3.4 |
 - Meeting chat keeps F03's `/calls/:callId/chat/…` routes during a call (they find the meeting's conversation).

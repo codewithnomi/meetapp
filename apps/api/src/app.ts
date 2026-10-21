@@ -20,6 +20,7 @@ import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
 import { chatAfterRoutes } from "./modules/chat/chat-after.routes.ts";
+import { chatsRequestsRoutes } from "./modules/chats/chats-requests.routes.ts";
 import { chatsRoutes } from "./modules/chats/chats.routes.ts";
 import { chatFilesRoutes } from "./modules/chat/chat-files.routes.ts";
 import { chatPollsRoutes } from "./modules/chat/chat-polls.routes.ts";
@@ -148,6 +149,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
     chatAfter,
     chats,
     chatsPeople,
+    chatsRequests,
   } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
@@ -159,4 +161,5 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(chatFilesRoutes, { files: chatFiles });
   await app.register(chatAfterRoutes, { after: chatAfter });
   await app.register(chatsRoutes, { chats, people: chatsPeople, lookup: membershipLookup });
+  await app.register(chatsRequestsRoutes, { requests: chatsRequests });
 }

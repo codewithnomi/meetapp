@@ -42,10 +42,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-11, 13, 14.
   - Built in T5: `GET /workspaces/:id/people?q=`, `POST /me/invitations`; 3 tests. Suggestions show no job title (F01 accounts have none).
 
-- [ ] **T6: Chat requests and blocking.**
+- [x] **T6: Chat requests and blocking.**
   - Pending requests, preview, accept, delete (30-day wait), block and unblock, 10 messages while pending, 20 requests a day, 30-day expiry (read-time hiding plus the daily job), Personal everyone-external.
   - Covers: AC-F14-10–13.
   - Tests: TC-F14-16, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 66.
+  - Built in T6: requests, preview, accept, delete (+block), 30-day wait, 20 a day, expiry, block/unblock (`POST /me/blocked` added for blocking from an accepted chat); 10 tests. Moved: the 10-message limit (TC-21), sending in a blocked or shared group chat (TC-25 send part, TC-27) to T8 where sending lands; status parts (TC-18, 25) to T10; the `list` news item (TC-16) to T9; the all-states sweep TC-66 to T12. The "next day" part of TC-22 relies on the 24-hour rate window (rate-limit unit tests).
 
 - [ ] **T7: Group chats.**
   - 3–250 people, rename, add with history (none, 1–365 days, all), remove and leave (`left_seq`), external members' requests, last member leaves.
