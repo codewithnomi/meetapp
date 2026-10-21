@@ -186,6 +186,9 @@ describe("limits", { timeout: 120_000 }, () => {
     const r = await room("rate");
     for (let i = 0; i < 10; i++) expect((await upload(r.attendee, r.callId, PDF, "a.pdf")).statusCode).toBe(200);
     expect(errorCode(await upload(r.attendee, r.callId, PDF, "a.pdf"))).toBe("CHAT_FILE_RATE");
+    // Counted per person: joining again with a new ticket gives no 10 more (F03 verification).
+    const again = await joined(t, r.meeting, r.people.first);
+    expect(errorCode(await upload(again, r.callId, PDF, "a.pdf"))).toBe("CHAT_FILE_RATE");
   });
 
   it("TC-F03-60 [AC-F03-34] a meeting holds 500 MB of files, unsent ones included, even when uploads race", async () => {

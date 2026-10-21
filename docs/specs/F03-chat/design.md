@@ -95,7 +95,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 4. It saves the message (one transaction with the attachments), then broadcasts `message_created` (3.4).
 5. **Twice-sent protection:** `(sender_attendance_id, client_id)` is unique; a repeat returns the saved message, so retry and reconnect never make a copy.
 6. **Timing out:** no answer within 10 seconds → "Not sent" with **Retry**, which resends the same `clientId`.
-7. **Rate limits (Redis, per sender):** 10 messages per 10 seconds; the 11th is refused for 10 seconds with `CHAT_TOO_FAST` and the wait time (AC-06). Reactions and votes count separately (30 a minute), so a quick reaction doesn't block typing.
+7. **Rate limits (Redis, per sender):** 10 messages per 10 seconds; the 11th is refused for 10 seconds with `CHAT_TOO_FAST` and the wait time (AC-06). Reactions and votes count separately (30 a minute), so a quick reaction doesn't block typing. File uploads: 10 a minute per person (per account, or per device for guests), so rejoining gives no more. `GET /me/meeting-chats`: 30 a minute per person. Chat file links (`/api/v1/chat-files/<token>`) are hidden in logs like invitation links (verification round 1).
 
 ### 3.3 Reading (AC-02, 42)
 - During the call: `GET /calls/:callId/chat/messages?before=<cursor>&limit=50` (ticket).

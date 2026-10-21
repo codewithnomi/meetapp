@@ -51,7 +51,9 @@ function readFileToken(secret: string, token: string, now: number) {
 
 async function upload(deps: ChatDeps, storage: FileStorage, request: UploadRequest) {
   const actor = await chatActor(deps, request.callId, request.ticketHash, "attach");
-  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, request.ticketHash);
+  // Per person, not per ticket: leaving and rejoining doesn't give 10 more (F03 verification).
+  const who = actor.attendance.userId ?? actor.attendance.guestDeviceHash ?? actor.attendance.id;
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, who);
   if (wait !== undefined) throw new AppError(429, "CHAT_FILE_RATE", "You can send up to 10 files a minute.", wait);
   const fileName = cleanFileName(request.fileName);
   const checked = await checkFile(request.bytes, fileName).catch((error: unknown) => {

@@ -7,6 +7,8 @@ import { parseCursor, pinnedViews, viewsOf, type ChatDeps } from "./chat-access.
 import type { ChatAfterRepository } from "./chat-after.repository.ts";
 import { linkTo } from "./chat-files.service.ts";
 import { viewPoll } from "./chat-polls.service.ts";
+import { AppError } from "../../plugins/errors.ts";
+import { RATE_RULES } from "../../plugins/rate-limit.ts";
 
 /** How many past meetings the meetings list offers "Open chat" for, and how many are looked at. */
 const RECENT_SHOWN = 20;
@@ -57,6 +59,8 @@ async function chatForAi(deps: AfterDeps, userId: string, meetingId: string) {
 
 /** Past meetings whose chat this person may open now, most recent first (AC-F03-42). */
 async function recent(deps: AfterDeps, userId: string) {
+  const wait = await deps.calls.limiter.take(RATE_RULES.recentMeetingChats, userId);
+  if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many requests. Try again shortly.", wait);
   const joined = await deps.after.meetingsJoinedBy(userId, RECENT_LOOKED_AT);
   const meetings = [];
   for (const { meetingId, lastJoinedAt } of joined) {

@@ -200,6 +200,12 @@ describe("after the meeting", { timeout: 90_000 }, () => {
     expect(seen.closed).toBe(true);
     expect(seen.results).not.toBeNull();
     expect((await pollAfter(await newPerson(t, "poll-outsider"))).statusCode).toBe(404);
+    // A rate limit stops a person asking over and over (each answer checks up to 50 meetings).
+    let last = 200;
+    for (let i = 0; i < 31; i += 1)
+      last = (await t.app.inject({ method: "GET", url: "/api/v1/me/meeting-chats", headers: headers(r.people.second) }))
+        .statusCode;
+    expect(last).toBe(429);
     const organizerList = await t.app.inject({
       method: "GET",
       url: "/api/v1/me/meeting-chats",

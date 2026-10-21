@@ -84,7 +84,8 @@ function readableName(name: string): string {
 }
 
 /** Addresses whose last part is itself a secret: invitation and join links (F01), meeting links (F02). */
-const SECRET_PATHS = /^((?:https?:\/\/[^/]+)?\/(?:invite|join|m)\/)[^/?#]+/;
+// The chat file link's last part is its 5-minute permission, so it never reaches logs either (F03).
+const SECRET_PATHS = /^((?:https?:\/\/[^/]+)?\/(?:invite|join|m|api\/v1\/chat-files)\/)[^/?#]+/;
 
 /** "/invite/abc?x=1" → "/invite/REDACTED?x=1", also with the site in front; other addresses are unchanged. */
 export function redactPath(url: string): string {
