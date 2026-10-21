@@ -51,6 +51,8 @@ interface News {
   seq: number;
   type: string;
   message: ChatMessage;
+  /** With pins_changed: pinned or unpinned, so a repeated packet changes nothing. */
+  pinned?: boolean;
 }
 
 /**
@@ -59,7 +61,13 @@ interface News {
  */
 async function announce(deps: ChatDeps, callId: string, news: News, viewer: string) {
   const everyone = await viewOne(deps, news.message, undefined);
-  await broadcast(deps, callId, { seq: news.seq, type: news.type, id: news.message.id, message: everyone });
+  await broadcast(deps, callId, {
+    seq: news.seq,
+    type: news.type,
+    id: news.message.id,
+    message: everyone,
+    ...(news.pinned === undefined ? {} : { pinned: news.pinned }),
+  });
   return viewOne(deps, news.message, viewer);
 }
 
@@ -121,7 +129,12 @@ async function pin(deps: ChatDeps, request: OnMessage) {
   const seq = await deps.actions.pin(actor.message, actor.attendance.id);
   if (seq === "full") throw new AppError(409, "CHAT_PINS_FULL", "Up to 3 messages can be pinned. Unpin one first.");
   if (seq === undefined) return;
-  await announce(deps, callId, { seq, type: "pins_changed", message: actor.message }, actor.attendance.id);
+  await announce(
+    deps,
+    callId,
+    { seq, type: "pins_changed", message: actor.message, pinned: true },
+    actor.attendance.id,
+  );
   await pinnedNote(deps, callId, actor);
 }
 
@@ -146,7 +159,8 @@ export function createChatActionsService(deps: ChatDeps) {
       const message = await deps.chat.one(actor.row.meeting.id, messageId);
       if (!message) throw notFound();
       const seq = await deps.actions.unpin(message);
-      if (seq !== undefined) await announce(deps, callId, { seq, type: "pins_changed", message }, actor.attendance.id);
+      if (seq !== undefined)
+        await announce(deps, callId, { seq, type: "pins_changed", message, pinned: false }, actor.attendance.id);
     },
     pinned: async (callId: string, ticketHash: string) => {
       const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");

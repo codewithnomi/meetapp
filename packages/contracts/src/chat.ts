@@ -276,6 +276,8 @@ export const chatEventSchema = z
     /** With poll_changed: which poll, and its new version (no results: they depend on who asks). */
     pollId: z.uuid().optional(),
     version: z.number().int().optional(),
+    /** With pins_changed: the message is pinned now (true) or not (false). */
+    pinned: z.boolean().optional(),
   })
   .meta({ id: "ChatEvent" });
 export type ChatEvent = z.infer<typeof chatEventSchema>;

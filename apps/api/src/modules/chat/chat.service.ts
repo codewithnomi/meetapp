@@ -124,7 +124,11 @@ export function createChatService(deps: ChatDeps) {
       const { row } = await chatActor(deps, callId, ticketHash, "read");
       const { rows, oldestKept } = await deps.chat.eventsAfter(row.meeting.id, after);
       const gap = oldestKept !== null && oldestKept > after + 1;
-      const events = rows.map((event) => ({ seq: event.seq, type: event.type, ...(event.payload as { id?: string }) }));
+      const events = rows.map((event) => ({
+        seq: event.seq,
+        type: event.type,
+        ...(event.payload as { id?: string; pinned?: boolean }),
+      }));
       return { events, gap };
     },
   };

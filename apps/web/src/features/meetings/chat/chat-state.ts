@@ -81,12 +81,12 @@ function applyEvent(state: ChatState, event: ChatEvent, mine: boolean): ChatStat
   const message = event.message;
   if (!message) return { ...state, lastSeq };
   const isNew = event.type === "message_created" && !state.messages.some((m) => m.id === message.id);
-  const pinned =
-    event.type === "pins_changed"
-      ? state.pinned.some((p) => p.id === message.id)
-        ? state.pinned.filter((p) => p.id !== message.id)
-        : [...state.pinned, message]
-      : state.pinned.map((p) => (p.id === message.id ? message : p));
+  // Pin news says pinned or not, so a late or repeated packet changes nothing (verification round 1).
+  const already = state.pinned.some((p) => p.id === message.id);
+  const updated = state.pinned.map((p) => (p.id === message.id ? message : p));
+  let pinned = updated;
+  if (event.type === "pins_changed" && event.pinned === true && !already) pinned = [...updated, message];
+  if (event.type === "pins_changed" && event.pinned === false) pinned = updated.filter((p) => p.id !== message.id);
   return {
     ...state,
     lastSeq,

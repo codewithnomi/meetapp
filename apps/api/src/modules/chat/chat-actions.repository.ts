@@ -95,7 +95,7 @@ async function pin(db: Database, message: ChatMessage, by: string): Promise<numb
         .onConflictDoNothing()
         .returning();
       if (!added) return undefined;
-      return recordEvent(tx, where(message), "pins_changed", { id: message.id });
+      return recordEvent(tx, where(message), "pins_changed", { id: message.id, pinned: true });
     });
   } catch (error) {
     if (isPinLimit(error)) return "full";
@@ -107,7 +107,7 @@ async function unpin(db: Database, message: ChatMessage): Promise<number | undef
   return db.transaction(async (tx) => {
     const removed = await tx.delete(chatPins).where(eq(chatPins.messageId, message.id)).returning();
     if (removed.length === 0) return undefined;
-    return recordEvent(tx, where(message), "pins_changed", { id: message.id });
+    return recordEvent(tx, where(message), "pins_changed", { id: message.id, pinned: false });
   });
 }
 

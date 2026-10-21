@@ -107,6 +107,15 @@ describe("chat state", () => {
     expect(state.messages).toHaveLength(1);
   });
 
+  it("TC-F03-36 [AC-F03-19] pin news says pinned or not: a repeated or late packet never unpins", () => {
+    const m = message();
+    const pin = (seq: number, pinned: boolean): ChatEvent => ({ seq, type: "pins_changed", message: m, pinned });
+    const once = run(emptyChat, { type: "event", event: pin(1, true), mine: false });
+    const twice = run(once, { type: "event", event: pin(1, true), mine: false });
+    expect(twice.pinned.map((p) => p.id)).toEqual([m.id]);
+    expect(run(twice, { type: "event", event: pin(2, false), mine: false }).pinned).toEqual([]);
+  });
+
   it("TC-F03-92 [AC-F03-01] a page sets the news number, so later news is not taken for a gap", () => {
     const state = run(emptyChat, { type: "page", messages: [], hasMore: false, older: false, lastSeq: 40 });
     expect(missedNews(state, created(41, message()))).toBe(false);
