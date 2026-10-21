@@ -2,7 +2,8 @@
 // box with the message and Save replaces it; the poll button opens "Create a poll" for those allowed;
 // "sending too fast" is said in words (AC-F03-06, 10, 14, 21).
 import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
-import { ChatComposer, IconButton, PollCreator, ReplyQuote, type ChatComposerLabels } from "@meetapp/ui";
+import { ChatComposer, IconButton, PollCreator, ReplyQuote } from "@meetapp/ui";
+import { composerLabels, pollLabels } from "./chat-labels.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ToolButtons, WaitingFiles, useExpressions } from "./ChatTools.tsx";
 import { useState } from "react";
@@ -12,51 +13,11 @@ import { firstLineOf } from "./chat-texts.ts";
 import type { ChatView } from "./ChatMessages.tsx";
 import type { Joined } from "../../features/meetings/index.ts";
 
-const COMPOSER_KEYS = [
-  "placeholder",
-  "send",
-  "format",
-  "emoji",
-  "formatting",
-  "bold",
-  "italic",
-  "underline",
-  "strike",
-  "bulletList",
-  "orderedList",
-  "quote",
-  "link",
-  "linkAddress",
-  "applyLink",
-  "code",
-  "codeBlock",
-] as const;
-
-const POLL_KEYS = [
-  "title",
-  "description",
-  "close",
-  "question",
-  "questionHint",
-  "answers",
-  "addAnswer",
-  "multiple",
-  "anonymous",
-  "anonymousHint",
-  "cancel",
-  "post",
-] as const;
-
 function PollButton({ visit, onFailed }: { visit: Joined; onFailed: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const words = Object.fromEntries(POLL_KEYS.map((key) => [key, t(`meetings.chat.newPoll.${key}`)]));
-  const labels = {
-    ...words,
-    answer: (n: number) => t("meetings.chat.newPoll.answer", { n }),
-    removeAnswer: (n: number) => t("meetings.chat.newPoll.removeAnswer", { n }),
-  } as unknown as Parameters<typeof PollCreator>[0]["labels"];
+  const labels = pollLabels(t);
   return (
     <>
       <IconButton
@@ -166,9 +127,7 @@ export function ComposerArea(props: ComposerAreaProps) {
     view.chat.send(content, undefined, replyingTo?.id);
     onDone();
   });
-  const labels = Object.fromEntries(
-    COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
-  ) as unknown as ChatComposerLabels;
+  const labels = composerLabels(t);
   const send = (body: MessageDocument) => (sendFrom(props, body), onDone());
   const tools = (
     <>

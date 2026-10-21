@@ -18,6 +18,14 @@ export interface Uploaded {
   sizeBytes: number;
 }
 
+function readJson(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Uploads one file, reporting progress (0–100); rejects with an UploadProblem. */
 export function uploadFile(visit: Joined, file: File, onProgress: (percent: number) => void): Promise<Uploaded> {
   return new Promise((resolve, reject) => {
@@ -30,12 +38,11 @@ export function uploadFile(visit: Joined, file: File, onProgress: (percent: numb
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     };
     request.onload = () => {
-      if (request.status === 200) return resolve(JSON.parse(request.responseText) as Uploaded);
-      try {
-        reject((JSON.parse(request.responseText) as { error: { code: UploadProblem } }).error.code);
-      } catch {
-        reject("failed");
-      }
+      const answer = readJson(request.responseText);
+      if (request.status === 200 && answer) return resolve(answer as Uploaded);
+      // A refusal names its reason; anything else (including a broken answer) is "failed".
+      const code = (answer as { error?: { code?: UploadProblem } } | undefined)?.error?.code;
+      reject(request.status !== 200 && code ? code : "failed");
     };
     request.onerror = () => reject("failed");
     request.send(file);

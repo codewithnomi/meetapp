@@ -16,7 +16,7 @@ import { Message, Pending, type ChatRights, type ChatView } from "./ChatMessages
 const NEAR_BOTTOM_PX = 40;
 
 /** Keeps the newest message in view, unless the person is reading older ones (AC-F03-08). */
-function useStickToBottom(count: number, chat: Chat) {
+function useStickToBottom(count: number, chat: Chat, onFailed: () => void) {
   const list = useRef<HTMLDivElement>(null);
   const [atBottom, setAtBottom] = useState(true);
   // How many messages there were when the person scrolled up; more than that means new ones arrived.
@@ -39,7 +39,7 @@ function useStickToBottom(count: number, chat: Chat) {
     setAtBottom(bottom);
     if (element.scrollTop === 0 && chat.state.hasMore) {
       before.current = element.scrollHeight;
-      void chat.loadOlder().catch(() => undefined);
+      void chat.loadOlder().catch(onFailed);
     }
   };
   const toNewest = () => {
@@ -186,7 +186,7 @@ export function ChatArea(props: ChatAreaProps) {
   const { chat, writing, dropping, rights, title, onClose, onFailed, viewerUserId } = props;
   const { t } = useTranslation();
   const { messages, sending, loaded, pinned } = chat.state;
-  const scroll = useStickToBottom(messages.length + sending.length, chat);
+  const scroll = useStickToBottom(messages.length + sending.length, chat, onFailed);
   const pinBar = usePinnedBar(pinned);
   const act = useInteraction();
   const readOnly = !writing || writing.off;

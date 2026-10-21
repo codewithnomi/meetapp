@@ -65,6 +65,7 @@ async function recent(deps: AfterDeps, userId: string) {
   const meetings = [];
   for (const { meetingId, lastJoinedAt } of joined) {
     if (meetings.length === RECENT_SHOWN) break;
+    // A meeting the person may no longer read is simply left out of the list (not an error).
     const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
     if (!allowed || !lastJoinedAt) continue;
     const { meeting } = allowed.row;

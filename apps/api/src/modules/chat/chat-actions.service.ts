@@ -97,6 +97,7 @@ async function remove(deps: ChatDeps, request: OnMessage) {
   const ownNow = isOwn(actor) && actor.message.callId === callId;
   if (!ownNow) {
     // Someone else's message, or one's own from an earlier call: organizers and co-organizers only.
+    // Not an organizer is an answer, not an error: the next line then refuses as "not found".
     const organizer = await chatActor(deps, callId, ticketHash, "deleteAny").catch(() => undefined);
     if (!organizer) ownInThisCall(actor, callId);
   }

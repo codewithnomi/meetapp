@@ -76,6 +76,9 @@ function useHeight(element: HTMLElement | null): number | undefined {
   return height;
 }
 
+/** The side panel's width beside the stage (chat, participants, info), as in the approved screens. */
+const PANEL_WIDTH = "sm:w-95";
+
 export function MeetingLayout(props: MeetingLayoutProps) {
   const { title, layoutSwitch, lobby, notices, stage, panel, controls, announcement } = props;
   const [area, setArea] = useState<HTMLElement | null>(null);
@@ -97,7 +100,7 @@ export function MeetingLayout(props: MeetingLayoutProps) {
         </main>
         <footer className="shrink-0 px-6 pt-4 pb-5">{controls}</footer>
       </div>
-      {panel ? <div className="flex min-h-0 shrink-0 p-4 sm:w-[380px] sm:pl-0">{panel}</div> : null}
+      {panel ? <div className={cx("flex min-h-0 shrink-0 p-4 sm:pl-0", PANEL_WIDTH)}>{panel}</div> : null}
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>

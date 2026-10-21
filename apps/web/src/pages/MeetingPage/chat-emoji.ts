@@ -1,6 +1,7 @@
 // The emoji picker's words and the recently used emoji (F03), shared by the message box and reactions.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { readSaved, save } from "./safe-storage.ts";
 
 const RECENT_KEY = "meetapp.chat.recentEmoji";
 const MAX_RECENT = 8;
@@ -9,22 +10,19 @@ const MAX_RECENT = 8;
 function useRecentEmoji() {
   const [recent, setRecent] = useState<string[]>(() => {
     try {
-      const saved: unknown = JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+      const saved: unknown = JSON.parse(readSaved(RECENT_KEY) ?? "[]");
       return Array.isArray(saved)
         ? saved.filter((item): item is string => typeof item === "string").slice(0, MAX_RECENT)
         : [];
     } catch {
+      // Not a list (changed by hand): start empty.
       return [];
     }
   });
   const used = (emoji: string) => {
     const next = [emoji, ...recent.filter((item) => item !== emoji)].slice(0, MAX_RECENT);
     setRecent(next);
-    try {
-      localStorage.setItem(RECENT_KEY, JSON.stringify(next));
-    } catch {
-      // Not saved: the list still works for this session.
-    }
+    save(RECENT_KEY, JSON.stringify(next));
   };
   return { recent, used };
 }

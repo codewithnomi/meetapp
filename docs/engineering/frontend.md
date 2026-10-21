@@ -64,5 +64,5 @@ Create components with the `/new-component` command so every component gets all 
 - **Accessibility:** WCAG 2.2 AA. Everything usable with the keyboard; every button has a label; color contrast checked (Storybook a11y addon).
 - **Themes (D018):** light, dark and "system" modes plus a user-selectable accent color (default **sky blue**), all via tokens. Components never use a fixed color, only token names like `accent`, `surface`, `text`, so any theme works automatically. Every accent color must pass contrast checks in light and dark mode.
 - **States:** every component that shows data has loading, empty and error states.
-- **Performance:** 100-person grid renders only visible tiles; heavy pages are lazy-loaded.
+- **Performance:** 100-person grid renders only visible tiles; heavy pages are lazy-loaded. Meeting chat loads 50 messages at a time and older ones only when scrolled to (F03); it does not virtualize the list. Revisit if a long chat (several hundred loaded messages) scrolls slowly.
 - **Testing:** atoms/molecules get unit tests (React Testing Library); organisms get interaction tests; pages get e2e tests (Playwright).

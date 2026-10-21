@@ -17,10 +17,13 @@ export interface GifImageProps {
   labels: { pause: string; play: string; attribution: string };
 }
 
+/** GIFs show at most this wide in a chat bubble (the placeholder below matches: w-60 = 240 px). */
+const GIF_MAX_WIDTH_PX = 240;
+
 export function GifImage({ url, stillUrl, description, width, height, reduceMotion, labels }: GifImageProps) {
   const [playing, setPlaying] = useState(!reduceMotion);
   const shown = playing || !stillUrl ? url : stillUrl;
-  const scale = Math.min(1, 240 / width);
+  const scale = Math.min(1, GIF_MAX_WIDTH_PX / width);
   return (
     <figure className="relative m-0 flex w-fit flex-col gap-1">
       {playing || stillUrl ? (
@@ -35,7 +38,7 @@ export function GifImage({ url, stillUrl, description, width, height, reduceMoti
         <div role="img" aria-label={description} className="h-30 w-60 rounded-md bg-surface-sunken" />
       )}
       <IconButton
-        icon={playing ? "close" : "chevron"}
+        icon={playing ? "pause" : "play"}
         label={playing ? labels.pause : labels.play}
         variant="ghost"
         size="sm"

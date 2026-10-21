@@ -45,6 +45,8 @@ import {
   List,
   ListOrdered,
   Paperclip,
+  Pause,
+  Play,
   Pencil,
   Reply,
   SquareCode,
@@ -92,6 +94,8 @@ export const ICONS = {
   // F02, drawn in the approved meeting screens: Meeting info, React, gallery pages, the Leave menu, Pin.
   info: Info,
   smile: Smile,
+  pause: Pause,
+  play: Play,
   smilePlus: SmilePlus,
   "chevron-left": ChevronLeft,
   "chevron-down": ChevronDown,
