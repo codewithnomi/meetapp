@@ -211,17 +211,3 @@ export async function pinnedViews(deps: ChatDeps, conversationId: string, viewer
     viewer,
   );
 }
-
-/** Where a new message belongs and who sent it, as kept in the record. */
-export function sentBy({ attendance, row, conversationId }: Awaited<ReturnType<typeof chatActor>>, callId: string) {
-  return {
-    workspaceId: row.meeting.workspaceId,
-    meetingId: row.meeting.id,
-    conversationId,
-    callId,
-    senderAttendanceId: attendance.id,
-    senderUserId: attendance.userId,
-    senderName: attendance.displayName,
-    senderGroup: attendance.participantGroup,
-  };
-}

@@ -127,6 +127,9 @@ export const conversationReactionParamsSchema = conversationMessageParamsSchema.
   emoji: z.string().min(1).max(40),
 });
 
+export const conversationPollParamsSchema = z.object({ conversationId: z.string(), pollId: z.string() });
+export const conversationFileParamsSchema = z.object({ conversationId: z.string(), attachmentId: z.string() });
+
 /** Who has seen a message (AC-F14-24): `null` when receipts don't apply (big group, receipts off). */
 export const seenSchema = z
   .object({ people: z.array(z.object({ userId: z.uuid(), name: z.string() })).nullable() })

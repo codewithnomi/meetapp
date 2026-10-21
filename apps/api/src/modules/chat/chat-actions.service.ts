@@ -114,14 +114,22 @@ export async function unreactAs(deps: ChatDeps, seat: ChatSeat, messageId: strin
   if (seq !== undefined) await announce(deps, seat, { seq, type: "reactions_changed", message });
 }
 
-async function pin(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+/** Pin (any member in chats, presenters and up in meetings); 3 at most per chat (AC-F03-19, F14 AC-19). */
+export async function pinAs(deps: ChatDeps, seat: ChatSeat, messageId: string) {
   const message = await messageFor(deps, seat, messageId);
   if (message.kind === "system") throw invalid();
-  const seq = await deps.actions.pin(message, seat.who.attendanceId ?? "");
+  const seq = await deps.actions.pin(message, seat.who);
   if (seq === "full") throw new AppError(409, "CHAT_PINS_FULL", "Up to 3 messages can be pinned. Unpin one first.");
   if (seq === undefined) return;
   await announce(deps, seat, { seq, type: "pins_changed", message, pinned: true });
   await pinnedNote(deps, seat);
+}
+
+export async function unpinAs(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await deps.chat.one(seat.conversationId, messageId);
+  if (!message) throw notFound();
+  const seq = await deps.actions.unpin(message);
+  if (seq !== undefined) await announce(deps, seat, { seq, type: "pins_changed", message, pinned: false });
 }
 
 const seatFor = (deps: ChatDeps, request: OnMessage, action: ChatAction) =>
@@ -136,14 +144,8 @@ export function createChatActionsService(deps: ChatDeps) {
       reactAs(deps, await seatFor(deps, request, "react"), request.messageId, emoji),
     unreact: async (request: OnMessage, emoji: string) =>
       unreactAs(deps, await seatFor(deps, request, "react"), request.messageId, emoji),
-    pin: async (request: OnMessage) => pin(deps, await seatFor(deps, request, "pin"), request.messageId),
-    unpin: async (request: OnMessage) => {
-      const seat = await seatFor(deps, request, "pin");
-      const message = await deps.chat.one(seat.conversationId, request.messageId);
-      if (!message) throw notFound();
-      const seq = await deps.actions.unpin(message);
-      if (seq !== undefined) await announce(deps, seat, { seq, type: "pins_changed", message, pinned: false });
-    },
+    pin: async (request: OnMessage) => pinAs(deps, await seatFor(deps, request, "pin"), request.messageId),
+    unpin: async (request: OnMessage) => unpinAs(deps, await seatFor(deps, request, "pin"), request.messageId),
     pinned: async (callId: string, ticketHash: string) => {
       const seat = await meetingSeat(deps, callId, ticketHash, "read");
       return { pinned: await pinnedViews(deps, seat.conversationId, viewerOf(seat)) };

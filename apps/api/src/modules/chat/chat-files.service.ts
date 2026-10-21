@@ -6,7 +6,8 @@ import type { ChatAttachment } from "./chat-files.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
-import { chatActor, personKey, type ChatDeps } from "./chat-access.ts";
+import { chatActor, type ChatDeps } from "./chat-access.ts";
+import { meetingSeat, type ChatSeat } from "./chat-seat.ts";
 import { FileRefusedError, checkFile, cleanFileName } from "./chat-files.ts";
 
 export { MAX_FILE_BYTES } from "./chat-files.ts";
@@ -49,30 +50,35 @@ function readFileToken(secret: string, token: string, now: number) {
   return { attachmentId: id, preview: kind === "p" };
 }
 
-async function upload(deps: ChatDeps, storage: FileStorage, request: UploadRequest) {
-  const actor = await chatActor(deps, request.callId, request.ticketHash, "attach");
+/** Checks, cleans and stores a file for this seat's next message (AC-F03-28–34, F14 AC-19). */
+export async function uploadAs(deps: ChatDeps, storage: FileStorage, seat: ChatSeat, file: NewFile) {
+  if (!(await seat.mayAttach())) throw notFound();
   // Per person, not per ticket: leaving and rejoining doesn't give 10 more (F03 verification).
-  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, personKey(actor.attendance));
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, seat.limitKey);
   if (wait !== undefined) throw new AppError(429, "CHAT_FILE_RATE", "You can send up to 10 files a minute.", wait);
-  const fileName = cleanFileName(request.fileName);
-  const checked = await checkFile(request.bytes, fileName).catch((error: unknown) => {
+  const fileName = cleanFileName(file.fileName);
+  const checked = await checkFile(file.bytes, fileName).catch((error: unknown) => {
     throw error instanceof FileRefusedError ? refusal(error) : error;
   });
-  const { row, attendance } = actor;
   const id = randomUUID();
-  const storageKey = `chat/${row.meeting.workspaceId}/${row.meeting.id}/${id}`;
-  const reserved = await deps.files.reserve({
-    id,
-    workspaceId: row.meeting.workspaceId,
-    meetingId: row.meeting.id,
-    uploaderAttendanceId: attendance.id,
-    fileName,
-    mediaType: checked.mediaType,
-    sizeBytes: checked.bytes.length,
-    storageKey,
-  });
+  const storageKey = `chat/${seat.workspaceId}/${seat.conversationId}/${id}`;
+  const reserved = await deps.files.reserve(
+    {
+      id,
+      workspaceId: seat.workspaceId,
+      meetingId: seat.meetingId,
+      conversationId: seat.conversationId,
+      uploaderAttendanceId: seat.who.attendanceId,
+      uploaderUserId: seat.who.userId,
+      fileName,
+      mediaType: checked.mediaType,
+      sizeBytes: checked.bytes.length,
+      storageKey,
+    },
+    seat.maxChatFileBytes,
+  );
   if (reserved === "full") {
-    throw new AppError(409, "CHAT_MEETING_FILES_FULL", "This meeting has reached its file limit.");
+    throw new AppError(409, "CHAT_MEETING_FILES_FULL", "This chat has reached its file limit.");
   }
   try {
     await storage.put(storageKey, checked.bytes, checked.mediaType);
@@ -91,11 +97,14 @@ async function upload(deps: ChatDeps, storage: FileStorage, request: UploadReque
   return { id, fileName, mediaType: checked.mediaType, sizeBytes: checked.bytes.length };
 }
 
-export interface UploadRequest {
-  callId: string;
-  ticketHash: string;
+export interface NewFile {
   fileName: string;
   bytes: Uint8Array;
+}
+
+export interface UploadRequest extends NewFile {
+  callId: string;
+  ticketHash: string;
 }
 
 /** What the download route sends back. */
@@ -130,7 +139,8 @@ async function download(deps: ChatDeps, storage: FileStorage, token: string): Pr
 
 export function createChatFilesService(deps: ChatDeps, storage: FileStorage) {
   return {
-    upload: (request: UploadRequest) => upload(deps, storage, request),
+    upload: async (request: UploadRequest) =>
+      uploadAs(deps, storage, await meetingSeat(deps, request.callId, request.ticketHash, "attach"), request),
     /** A 5-minute link for someone allowed to see the message, never for guests (AC-F03-31, 33). */
     link: async (callId: string, ticketHash: string, attachmentId: string, preview: boolean) => {
       const { conversationId } = await chatActor(deps, callId, ticketHash, "download");

@@ -7,7 +7,7 @@ import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
 import { AttachmentsNotYoursError } from "./chat.repository.ts";
-import { chatActor, invalid, parseCursor, pinnedViews, viewOne, viewsOf, type ChatDeps } from "./chat-access.ts";
+import { invalid, parseCursor, pinnedViews, viewOne, viewsOf, type ChatDeps } from "./chat-access.ts";
 import { meetingSeat, seatSender, viewerOf, type ChatSeat } from "./chat-seat.ts";
 
 export { MAX_PACKET_BYTES, type ChatDeps } from "./chat-access.ts";
@@ -127,12 +127,13 @@ export async function oneFor(deps: ChatDeps, seat: ChatSeat, messageId: string) 
   return viewOne(deps, message, viewerOf(seat));
 }
 
-/** What the app needs to search KLIPY itself (D059): the key and a random per-meeting id. */
-async function gifSettings(deps: ChatDeps, callId: string, ticketHash: string) {
-  const { row, attendance } = await chatActor(deps, callId, ticketHash, "send");
-  if (!row.allowGifs) throw gifsOff();
+/** What the app needs to search KLIPY itself (D059): the key and a random per-chat id. */
+export function gifSettingsFor(deps: ChatDeps, seat: ChatSeat) {
+  if (!seat.allowGifs) throw gifsOff();
+  // Meetings keep F03's id (meeting and join); chats use the conversation and the account.
+  const place = seat.meetingId ?? seat.conversationId;
   const customerId = createHmac("sha256", deps.voterSecret)
-    .update(`gif:${row.meeting.id}:${attendance.id}`)
+    .update(`gif:${place}:${viewerOf(seat) ?? ""}`)
     .digest("hex")
     .slice(0, 32);
   const { apiUrl, key } = deps.gifService;
@@ -141,7 +142,8 @@ async function gifSettings(deps: ChatDeps, callId: string, ticketHash: string) {
 
 export function createChatService(deps: ChatDeps) {
   return {
-    gifSettings: (callId: string, ticketHash: string) => gifSettings(deps, callId, ticketHash),
+    gifSettings: async (callId: string, ticketHash: string) =>
+      gifSettingsFor(deps, await meetingSeat(deps, callId, ticketHash, "send")),
     send: async (callId: string, ticketHash: string, input: SendInput) =>
       sendFrom(deps, await meetingSeat(deps, callId, ticketHash, "send"), input),
     page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) =>

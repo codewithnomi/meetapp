@@ -57,6 +57,13 @@
       "when": 1792604130236,
       "tag": "0007_chats_people",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792605159401,
+      "tag": "0008_chat_pins_per_conversation",
+      "breakpoints": true
     }
   ]
 }

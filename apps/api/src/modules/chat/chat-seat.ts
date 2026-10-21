@@ -2,6 +2,7 @@
 // group chat (an account). Message, reaction and reply rules are shared; each kind builds its own seat
 // with its own rights checks, news delivery and reading window.
 import type { ChatEvent } from "@meetapp/contracts";
+import { roleOf } from "../calls/admission.ts";
 import { broadcast, chatActor, personKey, type ChatDeps } from "./chat-access.ts";
 import type { ChatAction } from "./chat.permissions.ts";
 import type { Who } from "./chat-who.ts";
@@ -23,6 +24,10 @@ export interface ChatSeat {
   ownAnyTime: boolean;
   /** Meeting organizers may delete anyone's message. */
   mayDeleteAny: () => Promise<boolean>;
+  /** All the chat's files together: a meeting 500 MB (AC-F03-34), a chat 2 GB (F14 AC-19). */
+  maxChatFileBytes: number;
+  /** Meeting organizers and co-organizers: close anyone's poll and always see results (F03 AC-22). */
+  manager: boolean;
   /** Files are allowed (guests send none in meetings). */
   mayAttach: () => Promise<boolean>;
   /** What may be read: messages from `from` (history choice) until `until`, news up to `untilSeq`
@@ -31,22 +36,21 @@ export interface ChatSeat {
   deliver: (event: ChatEvent) => Promise<void>;
 }
 
+const MEETING_FILE_BYTES = 500 * 1024 * 1024;
+export const CHAT_FILE_BYTES = 2 * 1024 * 1024 * 1024;
+
 /** The viewer key for "mine": the join in meetings, the account in chats. */
 export const viewerOf = (seat: ChatSeat) => seat.who.attendanceId ?? seat.who.userId ?? undefined;
 
-/** The caller in this running call, as a seat; 404 or CHAT_OFF as F03's rights say. */
-export async function meetingSeat(deps: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
-  const { attendance, row, conversationId } = await chatActor(deps, callId, ticketHash, action);
-  const can = (other: ChatAction) => () =>
-    chatActor(deps, callId, ticketHash, other).then(
-      () => true,
-      () => false,
-    );
+type Actor = Awaited<ReturnType<typeof chatActor>>;
+
+/** A meeting join as a seat (during the call, or reading afterwards with nothing delivered). */
+export function joinSeat(actor: Actor, extras: Pick<ChatSeat, "callId" | "mayDeleteAny" | "mayAttach" | "deliver">) {
+  const { attendance, row, conversationId } = actor;
   const seat: ChatSeat = {
     conversationId,
     workspaceId: row.meeting.workspaceId,
     meetingId: row.meeting.id,
-    callId,
     who: { attendanceId: attendance.id, userId: null },
     userId: attendance.userId,
     name: attendance.displayName,
@@ -54,12 +58,28 @@ export async function meetingSeat(deps: ChatDeps, callId: string, ticketHash: st
     limitKey: personKey(attendance),
     allowGifs: row.allowGifs,
     ownAnyTime: false,
-    mayDeleteAny: can("deleteAny"),
-    mayAttach: can("attach"),
+    maxChatFileBytes: MEETING_FILE_BYTES,
+    manager: ["organizer", "co_organizer"].includes(roleOf(attendance, row)),
     window: { from: null, until: null, untilSeq: null },
-    deliver: (event) => broadcast(deps, callId, event),
+    ...extras,
   };
   return seat;
+}
+
+/** The caller in this running call, as a seat; 404 or CHAT_OFF as F03's rights say. */
+export async function meetingSeat(deps: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
+  const actor = await chatActor(deps, callId, ticketHash, action);
+  const can = (other: ChatAction) => () =>
+    chatActor(deps, callId, ticketHash, other).then(
+      () => true,
+      () => false,
+    );
+  return joinSeat(actor, {
+    callId,
+    mayDeleteAny: can("deleteAny"),
+    mayAttach: can("attach"),
+    deliver: (event) => broadcast(deps, callId, event),
+  });
 }
 
 /** Where a new message belongs and who sent it, as kept in the record. */

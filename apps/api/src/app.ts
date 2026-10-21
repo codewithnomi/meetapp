@@ -20,6 +20,7 @@ import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
 import { chatAfterRoutes } from "./modules/chat/chat-after.routes.ts";
+import { chatsExtrasRoutes } from "./modules/chats/chats-extras.routes.ts";
 import { chatsMessagesRoutes } from "./modules/chats/chats-messages.routes.ts";
 import { chatsGroupsRoutes } from "./modules/chats/chats-groups.routes.ts";
 import { chatsRequestsRoutes } from "./modules/chats/chats-requests.routes.ts";
@@ -164,9 +165,10 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
 
 /** One-to-one and group chats (F14). */
 async function registerChatsRoutes(app: FastifyInstance, accounts: Accounts): Promise<void> {
-  const { chats, chatsPeople, chatsRequests, chatsGroups, chatsMessages, membershipLookup } = accounts;
+  const { chats, chatsPeople, chatsRequests, chatsGroups, chatsMessages, chatsExtras, membershipLookup } = accounts;
   await app.register(chatsRoutes, { chats, people: chatsPeople, lookup: membershipLookup });
   await app.register(chatsRequestsRoutes, { requests: chatsRequests });
   await app.register(chatsGroupsRoutes, { groups: chatsGroups });
   await app.register(chatsMessagesRoutes, { messages: chatsMessages });
+  await app.register(chatsExtrasRoutes, { extras: chatsExtras });
 }

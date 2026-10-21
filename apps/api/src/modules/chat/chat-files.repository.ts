@@ -1,18 +1,18 @@
-// Chat file records (F03 design.md section 6 and 4). The meeting's 500 MB is counted with the meeting
-// row locked, so two uploads at once can't both slip under it; unsent files count too (AC-F03-34).
-import { chatAttachments, meetings, type ChatAttachment, type Database, type Executor } from "@meetapp/db";
+// Chat file records (F03 design.md section 6 and 4; F14 AC-19). A chat's total (a meeting's 500 MB, a
+// one-to-one or group chat's 2 GB) is counted with the conversation row locked, so two uploads at once
+// can't both slip under it; unsent files count too (AC-F03-34).
+import { chatAttachments, conversations, type ChatAttachment, type Database, type Executor } from "@meetapp/db";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { meetingConversation, meetingOf } from "./meeting-conversation.repository.ts";
+import { isWho, type Who } from "./chat-who.ts";
 
-/** All the files of one meeting together, sent or not (AC-F03-34). */
-const MAX_MEETING_FILE_BYTES = 500 * 1024 * 1024;
+const uploader = { attendanceId: chatAttachments.uploaderAttendanceId, userId: chatAttachments.uploaderUserId };
 
 export type NewAttachment = typeof chatAttachments.$inferInsert;
 
 /** Gives files to a message: only this sender's ready, unsent files of this meeting. */
 export async function claimAttachments(
   tx: Executor,
-  claim: { ids: string[]; messageId: string; meetingId: string; uploaderAttendanceId: string },
+  claim: { ids: string[]; messageId: string; conversationId: string; uploader: Who },
 ): Promise<boolean> {
   if (claim.ids.length === 0) return true;
   const claimed = await tx
@@ -21,8 +21,8 @@ export async function claimAttachments(
     .where(
       and(
         inArray(chatAttachments.id, claim.ids),
-        eq(chatAttachments.meetingId, claim.meetingId),
-        eq(chatAttachments.uploaderAttendanceId, claim.uploaderAttendanceId),
+        eq(chatAttachments.conversationId, claim.conversationId),
+        isWho(uploader, claim.uploader),
         eq(chatAttachments.status, "ready"),
         isNull(chatAttachments.messageId),
       ),
@@ -33,22 +33,20 @@ export async function claimAttachments(
 
 export function createChatFilesRepository(db: Database) {
   return {
-    /** A new upload's record, or "full" when the meeting's files would pass 500 MB. */
-    reserve: (attachment: NewAttachment): Promise<ChatAttachment | "full"> =>
+    /** A new upload's record, or "full" when the chat's files would pass `maxBytes`. */
+    reserve: (
+      attachment: NewAttachment & { conversationId: string },
+      maxBytes: number,
+    ): Promise<ChatAttachment | "full"> =>
       db.transaction(async (tx) => {
-        const meetingId = meetingOf({ meetingId: attachment.meetingId ?? null });
-        await tx.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${meetingId} for update`);
+        const { conversationId } = attachment;
+        await tx.execute(sql`select 1 from ${conversations} where ${conversations.id} = ${conversationId} for update`);
         const [used] = await tx
           .select({ bytes: sql<number>`coalesce(sum(${chatAttachments.sizeBytes}), 0)::bigint` })
           .from(chatAttachments)
-          .where(and(eq(chatAttachments.meetingId, meetingId), ne(chatAttachments.status, "deleted")));
-        if (Number(used?.bytes ?? 0) + attachment.sizeBytes > MAX_MEETING_FILE_BYTES) return "full";
-        const conversationId =
-          attachment.conversationId ?? (await meetingConversation(tx, attachment.workspaceId, meetingId));
-        const [row] = await tx
-          .insert(chatAttachments)
-          .values({ ...attachment, conversationId })
-          .returning();
+          .where(and(eq(chatAttachments.conversationId, conversationId), ne(chatAttachments.status, "deleted")));
+        if (Number(used?.bytes ?? 0) + attachment.sizeBytes > maxBytes) return "full";
+        const [row] = await tx.insert(chatAttachments).values(attachment).returning();
         if (!row) throw new Error("no attachment row");
         return row;
       }),

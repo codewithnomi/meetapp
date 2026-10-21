@@ -60,10 +60,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-36, 39, 45, 48, 49 (and TC-F14-21, 25, 27, 34 moved here).
   - Built in T8: migration `0007_chats_people` (D066), F03's rules on a shared "seat" (call join or chat account), `/conversations/:id/messages`, `…/events`, edits, deletes, reactions, `…/seen`, `PATCH /me/settings`, mentions (members only), `mentioned` in the list, hidden chats come back on a new message; 9 integration + 2 unit tests; F03's 134 chat tests still pass. The `read` news on the line is T9.
 
-- [ ] **T8b: Pins, polls, files and GIFs in chats.**
+- [x] **T8b: Pins, polls, files and GIFs in chats.**
   - F03's pin (any member, 3 at most), poll (any member creates, its creator closes), file (25 MB, safe types, 10 a minute, 2 GB per chat) and GIF routes per conversation, using the D066 columns.
   - Covers: AC-F14-19.
   - Tests: TC-F14-37, 38.
+  - Built in T8b: migration `0008_chat_pins_per_conversation` (the 3-pin limit per chat), pins/polls/files/GIF settings on the shared seat (meeting organizers keep their poll rights), `/conversations/:id/pins`, `…/polls`, `…/attachments`, `…/gif-settings`; the file total is counted per conversation (500 MB meetings, 2 GB chats); 5 tests; F03's chat tests still pass. Virus scanning is still the open item before going online (progress.md).
 
 - [ ] **T9: The live line.**
   - `GET /realtime` WebSocket: sign-in before opening, session end closes lines within 2 seconds, Redis channels per conversation and person, subscriptions updated within 2 seconds, typing, limits (64 KB, 5 lines, ping), catch-up after reconnect.

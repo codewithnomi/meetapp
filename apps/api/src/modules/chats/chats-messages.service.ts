@@ -7,7 +7,7 @@ import { CHATS_LIMITS, type ChatEvent, type MessageDocument } from "@meetapp/con
 import { AppError } from "../../plugins/errors.ts";
 import type { ChatDeps } from "../chat/chat-access.ts";
 import { deleteAs, editAs, reactAs, unreactAs } from "../chat/chat-actions.service.ts";
-import type { ChatSeat } from "../chat/chat-seat.ts";
+import { CHAT_FILE_BYTES, type ChatSeat } from "../chat/chat-seat.ts";
 import { eventsFor, oneFor, pageFor, readable, sendFrom, type SendInput } from "../chat/chat.service.ts";
 import { cleanMentions, seenApplies } from "./chats-mentions.ts";
 import type { ChatsMessagesRepository } from "./chats-messages.repository.ts";
@@ -26,7 +26,7 @@ const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
 const readOnly = () => new AppError(403, "CHAT_READ_ONLY", "You can't send messages in this chat.");
 
 /** The person's seat in the chat, if `action` is allowed; 404 for anyone outside it. */
-async function seatIn(deps: MessagesDeps, userId: string, conversationId: string, action: ChatsAction) {
+export async function seatIn(deps: MessagesDeps, userId: string, conversationId: string, action: ChatsAction) {
   const row = await deps.chats.member(conversationId, userId);
   if (!row || row.conversation.kind === "meeting" || row.conversation.deletedAt) throw notFound();
   const { conversation, member } = row;
@@ -61,6 +61,8 @@ async function seatIn(deps: MessagesDeps, userId: string, conversationId: string
     limitKey: userId,
     allowGifs: await deps.messages.allowGifs(conversation.workspaceId),
     ownAnyTime: true,
+    maxChatFileBytes: CHAT_FILE_BYTES,
+    manager: false,
     mayDeleteAny: () => Promise.resolve(false),
     mayAttach: () => Promise.resolve(true),
     window: {

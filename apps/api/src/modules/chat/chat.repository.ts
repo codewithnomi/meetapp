@@ -6,6 +6,7 @@ import { meetingConversation, meetingOf, type ChatPlace } from "./meeting-conver
 export type { ChatPlace };
 import { and, asc, desc, eq, gt, gte, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { claimAttachments } from "./chat-files.repository.ts";
+import type { Who } from "./chat-who.ts";
 
 export type NewChatMessage = typeof chatMessages.$inferInsert;
 
@@ -91,16 +92,11 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
       if (!existing) throw new Error("message neither saved nor found");
       return { message: existing, created: false as const };
     }
-    // Files only come with meeting messages for now; chats' own files arrive with F14 T8.
-    if (attachmentIds.length > 0) {
-      const claim = {
-        ids: attachmentIds,
-        messageId: saved.id,
-        meetingId: meetingOf(saved),
-        uploaderAttendanceId: saved.senderAttendanceId ?? "",
-      };
-      if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
-    }
+    const uploader: Who = saved.senderAttendanceId
+      ? { attendanceId: saved.senderAttendanceId, userId: null }
+      : { attendanceId: null, userId: saved.senderUserId ?? "" };
+    const claim = { ids: attachmentIds, messageId: saved.id, conversationId, uploader };
+    if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
     // The chat list orders chats by their newest activity (F14 AC-F14-01).
     await tx.update(conversations).set({ lastMessageAt: saved.createdAt }).where(eq(conversations.id, conversationId));
     const seq = await recordEvent(tx, saved, eventType, { id: saved.id });

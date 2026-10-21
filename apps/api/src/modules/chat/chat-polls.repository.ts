@@ -5,6 +5,7 @@ import {
   chatPollOptions,
   chatPolls,
   chatPollVotes,
+  user,
   type ChatPoll,
   type Database,
   type Executor,
@@ -13,6 +14,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { recordEvent } from "./chat.repository.ts";
 import type { NewChatMessage } from "./chat.repository.ts";
 import { meetingConversation, meetingOf } from "./meeting-conversation.repository.ts";
+import type { Who } from "./chat-who.ts";
 
 export interface NewPoll {
   message: NewChatMessage;
@@ -20,13 +22,13 @@ export interface NewPoll {
   options: string[];
   multiple: boolean;
   anonymous: boolean;
-  creatorAttendanceId: string;
+  creator: Who;
 }
 
 export interface Ballot {
   voterKey: string;
-  /** Empty for anonymous polls. */
-  attendanceId: string | null;
+  /** Who voted, kept only for polls that show names; null for anonymous polls. */
+  voter: Who | null;
   optionIds: string[];
 }
 
@@ -38,7 +40,9 @@ async function repeated(tx: Executor, message: NewChatMessage) {
     .innerJoin(chatPolls, eq(chatPolls.messageId, chatMessages.id))
     .where(
       and(
-        eq(chatMessages.senderAttendanceId, message.senderAttendanceId ?? ""),
+        message.senderAttendanceId
+          ? eq(chatMessages.senderAttendanceId, message.senderAttendanceId)
+          : and(isNull(chatMessages.senderAttendanceId), eq(chatMessages.senderUserId, message.senderUserId ?? "")),
         eq(chatMessages.clientId, message.clientId),
       ),
     );
@@ -71,7 +75,8 @@ async function create(db: Database, poll: NewPoll) {
         question: poll.question,
         multiple: poll.multiple,
         anonymous: poll.anonymous,
-        creatorAttendanceId: poll.creatorAttendanceId,
+        creatorAttendanceId: poll.creator.attendanceId,
+        creatorUserId: poll.creator.userId,
       })
       .returning();
     if (!row) throw new Error("no poll row");
@@ -100,7 +105,8 @@ async function vote(db: Database, poll: ChatPoll, ballot: Ballot): Promise<PollC
         pollId: poll.id,
         optionId,
         voterKey: ballot.voterKey,
-        attendanceId: ballot.attendanceId,
+        attendanceId: ballot.voter?.attendanceId ?? null,
+        voterUserId: ballot.voter?.userId ?? null,
         ...times,
       })),
     );
@@ -152,6 +158,15 @@ export function createChatPollsRepository(db: Database) {
         .from(chatPollOptions)
         .where(eq(chatPollOptions.pollId, pollId))
         .orderBy(asc(chatPollOptions.position)),
+    /** Names of chat voters and creators (accounts), for polls that show names. */
+    userNames: async (userIds: string[]) =>
+      userIds.length === 0
+        ? new Map<string, string>()
+        : new Map(
+            (await db.select({ id: user.id, name: user.name }).from(user).where(inArray(user.id, userIds))).map(
+              (row) => [row.id, row.name] as const,
+            ),
+          ),
     votes: (pollId: string) => db.select().from(chatPollVotes).where(eq(chatPollVotes.pollId, pollId)),
     /** The poll of each poll message, for message views. */
     byMessages: (messageIds: string[]) =>

@@ -93,12 +93,17 @@ async function removeReaction(db: Database, message: ChatMessage, who: Who, emoj
 const isPinLimit = (error: unknown) =>
   ((error as { cause?: { code?: string } }).cause ?? (error as { code?: string })).code === CHECK_VIOLATION;
 
-async function pin(db: Database, message: ChatMessage, by: string): Promise<number | "full" | undefined> {
+async function pin(db: Database, message: ChatMessage, by: Who): Promise<number | "full" | undefined> {
   try {
     return await db.transaction(async (tx) => {
       const [added] = await tx
         .insert(chatPins)
-        .values({ ...where(message), messageId: message.id, pinnedByAttendanceId: by })
+        .values({
+          ...where(message),
+          messageId: message.id,
+          pinnedByAttendanceId: by.attendanceId,
+          pinnedByUserId: by.userId,
+        })
         .onConflictDoNothing()
         .returning();
       if (!added) return undefined;
@@ -138,7 +143,7 @@ export function createChatActionsRepository(db: Database) {
     addReaction: (message: ChatMessage, person: { who: Who; name: string }, emoji: string) =>
       addReaction(db, message, person, emoji),
     removeReaction: (message: ChatMessage, who: Who, emoji: string) => removeReaction(db, message, who, emoji),
-    pin: (message: ChatMessage, by: string) => pin(db, message, by),
+    pin: (message: ChatMessage, by: Who) => pin(db, message, by),
     unpin: (message: ChatMessage) => unpin(db, message),
     /** Reactions of these messages, for building what apps see. */
     reactionsOf: (messageIds: string[]) =>

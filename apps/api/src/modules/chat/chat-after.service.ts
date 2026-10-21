@@ -8,6 +8,7 @@ import { parseCursor, pinnedViews, viewsOf, type ChatDeps } from "./chat-access.
 import type { ChatAfterRepository } from "./chat-after.repository.ts";
 import { linkTo } from "./chat-files.service.ts";
 import { viewPoll } from "./chat-polls.service.ts";
+import { joinSeat } from "./chat-seat.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 
@@ -135,7 +136,9 @@ export function createChatAfterService(deps: AfterDeps) {
       const actor = await afterActor(deps, userId, meetingId, "read");
       const poll = await deps.polls.byId(actor.conversationId, pollId);
       if (!poll) throw notFound();
-      return viewPoll(deps, poll, actor);
+      const no = () => Promise.resolve(false);
+      const seat = joinSeat(actor, { callId: null, mayDeleteAny: no, mayAttach: no, deliver: () => Promise.resolve() });
+      return viewPoll(deps, poll, seat);
     },
     recent: (userId: string) => recent(deps, userId),
     readable: (userId: string) => readable(deps, userId),

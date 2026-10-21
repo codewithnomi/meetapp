@@ -195,9 +195,12 @@ describe("limits", { timeout: 120_000 }, () => {
     const r = await room("full");
     // Fill the meeting with records just under the limit, then race two real uploads for the last space.
     const used = 500 * 1024 * 1024 - PDF.length * 1.5;
+    // Rows carry their conversation since F14 (the fill step gives older ones theirs).
+    const conversationId = await t.accounts.chatDeps.chat.conversationOf(r.meeting.workspaceId, r.meeting.id);
     await t.database.db.insert(chatAttachments).values({
       workspaceId: r.meeting.workspaceId,
       meetingId: r.meeting.id,
+      conversationId,
       fileName: "filler.pdf",
       mediaType: "application/pdf",
       sizeBytes: Math.floor(used),
