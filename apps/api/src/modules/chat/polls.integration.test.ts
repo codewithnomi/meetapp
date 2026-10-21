@@ -127,6 +127,17 @@ describe("creating and voting", { timeout: 30_000 }, () => {
     for (const packet of changed)
       expect(Object.keys(packet).sort()).toEqual(["id", "pollId", "seq", "type", "version"]);
   });
+
+  it("TC-F03-38 [AC-F03-22] two votes at the same moment announce two different versions", async () => {
+    const r = await room("together");
+    const { polls, packets } = pollService();
+    const created = await polls.create(r.callId, hashOf(r.presenter), poll());
+    const on = (who: Joined) => ({ callId: r.callId, ticketHash: hashOf(who), pollId: created.id });
+    const option = created.options[0]?.id ?? "";
+    await Promise.all([polls.vote(on(r.other), [option]), polls.vote(on(r.attendee), [option])]);
+    const versions = packets.filter((packet) => packet["type"] === "poll_changed").map((packet) => packet["version"]);
+    expect(new Set(versions).size).toBe(2);
+  });
 });
 
 describe("anonymous polls and closing", { timeout: 30_000 }, () => {

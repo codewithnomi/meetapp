@@ -69,7 +69,7 @@ async function create(db: Database, poll: NewPoll) {
 }
 
 /** Replaces the voter's earlier choice; refused once closed (the poll row is locked meanwhile). */
-async function vote(db: Database, poll: ChatPoll, ballot: Ballot): Promise<number | "closed"> {
+async function vote(db: Database, poll: ChatPoll, ballot: Ballot): Promise<PollChange | "closed"> {
   return db.transaction(async (tx) => {
     const [open] = await tx
       .select()
@@ -95,12 +95,21 @@ async function vote(db: Database, poll: ChatPoll, ballot: Ballot): Promise<numbe
   });
 }
 
-async function bump(tx: Executor, poll: ChatPoll): Promise<number> {
-  await tx
+/** A poll's change: its news number and its new version, read back from the database (two votes at once get two). */
+export interface PollChange {
+  seq: number;
+  version: number;
+}
+
+async function bump(tx: Executor, poll: ChatPoll): Promise<PollChange> {
+  const [row] = await tx
     .update(chatPolls)
     .set({ version: sql`${chatPolls.version} + 1` })
-    .where(eq(chatPolls.id, poll.id));
-  return recordEvent(tx, poll, "poll_changed", { id: poll.messageId, pollId: poll.id });
+    .where(eq(chatPolls.id, poll.id))
+    .returning({ version: chatPolls.version });
+  const version = row?.version ?? poll.version + 1;
+  const seq = await recordEvent(tx, poll, "poll_changed", { id: poll.messageId, pollId: poll.id, version });
+  return { seq, version };
 }
 
 export function createChatPollsRepository(db: Database) {

@@ -3,7 +3,7 @@
 // creator, organizer and co-organizers always (as in Teams). Anonymous polls never name anyone.
 import { createHmac } from "node:crypto";
 import type { PollView } from "@meetapp/contracts";
-import type { ChatPoll } from "./chat-polls.repository.ts";
+import type { ChatPoll, PollChange } from "./chat-polls.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { notFound, roleOf } from "../calls/admission.ts";
 import { broadcast, chatActor, invalid, sentBy, viewOne, type ChatDeps } from "./chat-access.ts";
@@ -112,13 +112,13 @@ async function create(deps: ChatDeps, callId: string, ticketHash: string, input:
 }
 
 /** News of a changed poll carries only its id and version: results depend on who asks (TC-F03-39). */
-async function pollChanged(deps: ChatDeps, callId: string, poll: ChatPoll, seq: number) {
+async function pollChanged(deps: ChatDeps, callId: string, poll: ChatPoll, change: PollChange) {
   await broadcast(deps, callId, {
-    seq,
+    seq: change.seq,
     type: "poll_changed",
     id: poll.messageId,
     pollId: poll.id,
-    version: poll.version + 1,
+    version: change.version,
   });
 }
 
@@ -133,17 +133,17 @@ async function vote(deps: ChatDeps, request: OnPoll, optionIds: string[]) {
     attendanceId: poll.anonymous ? null : actor.attendance.id,
     optionIds: chosen,
   };
-  const seq = await deps.polls.vote(poll, ballot);
-  if (seq === "closed") throw closedError();
-  await pollChanged(deps, request.callId, poll, seq);
-  return viewPoll(deps, { ...poll, version: poll.version + 1 }, actor);
+  const change = await deps.polls.vote(poll, ballot);
+  if (change === "closed") throw closedError();
+  await pollChanged(deps, request.callId, poll, change);
+  return viewPoll(deps, { ...poll, version: change.version }, actor);
 }
 
 async function close(deps: ChatDeps, request: OnPoll) {
   const { actor, poll } = await onPoll(deps, request, "read");
   if (poll.creatorAttendanceId !== actor.attendance.id && !isOrganizer(actor)) throw notFound();
-  const seq = await deps.polls.close(poll);
-  if (seq !== undefined) await pollChanged(deps, request.callId, poll, seq);
+  const change = await deps.polls.close(poll);
+  if (change !== undefined) await pollChanged(deps, request.callId, poll, change);
 }
 
 export function createChatPollsService(deps: ChatDeps) {

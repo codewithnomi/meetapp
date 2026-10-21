@@ -127,7 +127,7 @@ export function createChatService(deps: ChatDeps) {
       const events = rows.map((event) => ({
         seq: event.seq,
         type: event.type,
-        ...(event.payload as { id?: string; pinned?: boolean }),
+        ...(event.payload as { id?: string; pinned?: boolean; pollId?: string; version?: number }),
       }));
       return { events, gap };
     },
