@@ -14,12 +14,15 @@ export interface ChatPlace {
   headers: Record<string, string>;
   /** The viewer's own join of this call, to show "You"; unknown after the meeting. */
   attendanceId?: string | undefined;
+  /** The running call (during a call): own messages from it can be edited or deleted. */
+  callId?: string | undefined;
 }
 
 export const callPlace = (visit: Joined): ChatPlace => ({
   path: base(visit),
   headers: headers(visit),
   attendanceId: visit.attendanceId,
+  callId: visit.call?.callId,
 });
 export const pastPlace = (meetingId: string): ChatPlace => ({
   path: `/api/v1/meetings/${meetingId}/chat`,

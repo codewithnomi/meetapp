@@ -17,8 +17,8 @@ We build the UI like LEGO: small pieces combine into bigger pieces.
 |---|---|---|---|
 | **Tokens** | Design values: colors, spacing, fonts, radius, shadows | `color.primary`, `space.4` | nothing |
 | **Atoms** | Smallest UI pieces; can't be split further | Button, IconButton, Icon, Avatar, Input, Badge, Spinner, Tooltip, Toggle | tokens |
-| **Molecules** | A few atoms working together | MicToggleButton, DeviceSelect, SearchField, ChatMessage, ParticipantBadge, CaptionLine | atoms |
-| **Organisms** | Larger self-contained sections | VideoTile, VideoGrid, MeetingControlBar, ChatPanel, TranscriptPanel, ParticipantList, MinutesView, AskAIChat | molecules, atoms |
+| **Molecules** | A few atoms working together | MicToggleButton, DeviceSelect, SearchField, ParticipantBadge, CaptionLine | atoms |
+| **Organisms** | Larger self-contained sections | VideoTile, VideoGrid, MeetingControlBar, ChatMessage, ChatPanel, TranscriptPanel, ParticipantList, MinutesView, AskAIChat | molecules, atoms |
 | **Templates** | Page layouts with empty slots, no real data | MeetingLayout, DashboardLayout, AuthLayout, SettingsLayout | organisms and below |
 | **Pages** | Templates filled with real data; the only level that talks to the backend | MeetingPage, HomePage, MeetingHistoryPage, MinutesPage, SettingsPage | everything |
 

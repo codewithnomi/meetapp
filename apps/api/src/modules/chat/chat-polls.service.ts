@@ -6,7 +6,8 @@ import type { PollView } from "@meetapp/contracts";
 import type { ChatPoll, PollChange } from "./chat-polls.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { notFound, roleOf } from "../calls/admission.ts";
-import { broadcast, chatActor, invalid, sentBy, viewOne, type ChatDeps } from "./chat-access.ts";
+import { broadcast, chatActor, invalid, personKey, sentBy, viewOne, type ChatDeps } from "./chat-access.ts";
+import { RATE_RULES } from "../../plugins/rate-limit.ts";
 
 type Actor = Awaited<ReturnType<typeof chatActor>>;
 
@@ -125,6 +126,9 @@ async function pollChanged(deps: ChatDeps, callId: string, poll: ChatPoll, chang
 async function vote(deps: ChatDeps, request: OnPoll, optionIds: string[]) {
   const { actor, poll } = await onPoll(deps, request, "vote");
   if (poll.closedAt) throw closedError();
+  // Votes share the reactions' limit: 30 a minute per person (design 3.2).
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatReactions, personKey(actor.attendance));
+  if (wait !== undefined) throw new AppError(429, "CHAT_TOO_FAST", "Too many votes. Wait a moment.", wait);
   const valid = new Set((await deps.polls.options(poll.id)).map((option) => option.id));
   const chosen = [...new Set(optionIds)];
   if (chosen.some((id) => !valid.has(id)) || (!poll.multiple && chosen.length !== 1)) throw invalid();

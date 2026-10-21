@@ -132,7 +132,6 @@ export {
   pollSchema,
   voteBodySchema,
   type PollView,
-  chatEventSchema,
   editMessageBodySchema,
   pinBodySchema,
   pinnedListSchema,
@@ -141,12 +140,10 @@ export {
   chatMessageParamsSchema,
   chatMessageSchema,
   chatParamsSchema,
-  eventsPageSchema,
   eventsQuerySchema,
   messagesPageSchema,
   messagesQuerySchema,
   sendMessageBodySchema,
-  type ChatEvent,
   type ChatMessageView,
   MAX_DOCUMENT_BYTES,
   MAX_LINK_LENGTH,
@@ -159,3 +156,4 @@ export {
   type ChatMode,
   type MessageDocument,
 } from "./chat.ts";
+export { chatEventSchema, eventsPageSchema, type ChatEvent } from "./chat-news.ts";

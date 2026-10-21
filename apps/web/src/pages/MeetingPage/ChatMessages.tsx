@@ -32,10 +32,12 @@ function reactWith(view: ChatView, message: ChatMessageView, emoji: string) {
   void setReaction(view.place, message.id, emoji, !mine).catch(view.onFailed);
 }
 
-function moreActions(t: TFunction, view: ChatView, message: ChatMessageView, own: boolean): MenuAction[] {
+function moreActions(t: TFunction, view: ChatView, message: ChatMessageView, ownMessage: boolean): MenuAction[] {
   const pinned = view.chat.state.pinned.some((p) => p.id === message.id);
   const pin = () => void setPinned(view.place, message.id, !pinned).catch(view.onFailed);
   const writing = !view.readOnly;
+  // Own messages from an earlier call of this meeting are shown as own but can't be changed (server rule).
+  const own = ownMessage && message.callId === view.place.callId;
   return [
     ...(writing && own && message.kind === "text"
       ? [{ id: "edit", label: t("meetings.chat.actions.edit"), onSelect: () => view.onEdit(message) }]
@@ -196,13 +198,14 @@ function PersonMessage({ view, message, continued = false }: MessageProps) {
   );
 }
 
-export function Pending({ item, chat }: { item: Sending; chat: Chat }) {
+export function Pending({ item, chat, continued }: { item: Sending; chat: Chat; continued: boolean }) {
   const { t } = useTranslation();
   return (
     <ChatMessage
       id={item.clientId}
       name={t("meetings.chat.you")}
       own
+      continued={continued}
       time=""
       document={item.content.body}
       status={

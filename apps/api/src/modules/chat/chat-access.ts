@@ -30,6 +30,13 @@ export interface ChatDeps {
   voterSecret: string;
 }
 
+/**
+ * The person behind a join, for sending limits: their account, or a guest's device. Leaving and joining
+ * again gives no fresh allowance (F03 verification).
+ */
+export const personKey = (attendance: { id: string; userId: string | null; guestDeviceHash: string | null }) =>
+  attendance.userId ?? attendance.guestDeviceHash ?? attendance.id;
+
 export const invalid = () => new AppError(400, "CHAT_INVALID", "This message can't be sent.");
 
 /** The caller in this running call, allowed to do `action` in its chat; 404 or CHAT_OFF otherwise. */
@@ -107,6 +114,7 @@ function viewOf(message: ChatMessage, extras: Extras) {
     id: message.id,
     cursor: cursorOf(message),
     clientId: message.clientId,
+    callId: message.callId,
     kind: message.kind,
     sender: {
       attendanceId: message.senderAttendanceId,

@@ -10,6 +10,7 @@ import { AttachmentsNotYoursError } from "./chat.repository.ts";
 import {
   broadcast,
   chatActor,
+  personKey,
   invalid,
   parseCursor,
   pinnedViews,
@@ -48,8 +49,8 @@ function contentOf(input: SendInput, row: { allowGifs: boolean }) {
   return { kind: "text" as const, body: input.body ?? null, plainText, attachmentIds };
 }
 
-async function takeMessageTurn(deps: ChatDeps, ticketHash: string): Promise<void> {
-  const wait = await deps.calls.limiter.take(RATE_RULES.chatMessages, ticketHash);
+async function takeMessageTurn(deps: ChatDeps, person: string): Promise<void> {
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatMessages, person);
   if (wait !== undefined) {
     throw new AppError(429, "CHAT_TOO_FAST", "You're sending messages too fast. Try again in a few seconds.", wait);
   }
@@ -63,7 +64,7 @@ async function send(deps: ChatDeps, callId: string, ticketHash: string, input: S
   if (attachmentIds.length > 0) await chatActor(deps, callId, ticketHash, "attach");
   // A reply quotes a message of this meeting only (AC-F03-14).
   if (input.replyToId && !(await deps.chat.one(row.meeting.id, input.replyToId))) throw invalid();
-  await takeMessageTurn(deps, ticketHash);
+  await takeMessageTurn(deps, personKey(attendance));
   const saved = await deps.chat
     .insertMessage(
       {

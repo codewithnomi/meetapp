@@ -45,6 +45,7 @@ export interface ChatComposerProps {
   onPasteFiles?: ((files: File[]) => void) | undefined;
 }
 
+/** Enter sends, except inside lists and code blocks; Ctrl/Cmd+Enter always sends; Escape cancels. */
 function sendKeys(send: { current: () => void }, escape: { current: (() => void) | undefined }) {
   return Extension.create({
     name: "meetappSendKeys",
@@ -103,6 +104,7 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
   return editor;
 }
 
+/** What is in the box now, whether it may be sent, and how many characters are too many. */
 function useDraft(editor: Editor | null, allowEmpty: boolean, waiting: boolean) {
   const document = editor ? toRichDocument(editor.getJSON() as EditorNode) : { v: 1 as const, blocks: [] };
   const text = visibleText(document);

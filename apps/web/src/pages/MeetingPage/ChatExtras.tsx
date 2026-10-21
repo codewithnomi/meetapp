@@ -4,6 +4,7 @@ import type { ChatMessageView } from "@meetapp/contracts";
 import { AttachmentCard, GifImage, Sticker } from "@meetapp/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { prefersReducedMotion } from "./reduced-motion.ts";
 import { fileAddress, saveFile, type ChatPlace } from "../../features/meetings/chat/index.ts";
 
 type Attachment = ChatMessageView["attachments"][number];
@@ -50,8 +51,6 @@ function File({ place, attachment, onFailed }: { place: ChatPlace; attachment: A
   );
 }
 
-const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 export function MessageExtras({
   place,
   message,
@@ -79,7 +78,7 @@ export function MessageExtras({
           description={t("meetings.chat.gifs.described", { description: message.gif.description })}
           width={message.gif.width}
           height={message.gif.height}
-          reduceMotion={reducedMotion()}
+          reduceMotion={prefersReducedMotion()}
           labels={{
             pause: t("meetings.chat.gifs.pause"),
             play: t("meetings.chat.gifs.play"),

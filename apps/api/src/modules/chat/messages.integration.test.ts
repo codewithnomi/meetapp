@@ -26,7 +26,7 @@ async function callOfTwo(label: string) {
   if (!member) throw new Error("people missing");
   const host = await joined(t, meeting, organizer);
   const other = await joined(t, meeting, member);
-  return { meeting, host, other, callId: host.call?.callId ?? "" };
+  return { meeting, organizer, host, other, callId: host.call?.callId ?? "" };
 }
 
 const send = (who: Joined, callId: string, body: unknown, clientId: string = randomUUID()) =>
@@ -135,6 +135,9 @@ describe("sending", { timeout: 30_000 }, () => {
     expect(seconds).toBeLessThanOrEqual(10);
     // The limit is the sender's own: the other person still sends.
     expect((await send(room.other, room.callId, text("still fine"))).statusCode).toBe(200);
+    // Per person, not per ticket: joining again gives no fresh 10 (F03 verification round 2).
+    const again = await joined(t, room.meeting, room.organizer);
+    expect(errorCode(await send(again, room.callId, text("after rejoining")))).toBe("CHAT_TOO_FAST");
   });
 
   it("TC-F03-92 [AC-F03-16] news too big for one packet carries only the id, and the message is fetched by id", async () => {

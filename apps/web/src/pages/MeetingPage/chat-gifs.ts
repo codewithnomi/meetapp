@@ -8,10 +8,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gifSettings, searchGifs, trendingGifs, type FoundGif } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
+import { prefersReducedMotion } from "./reduced-motion.ts";
 import { readSaved, save } from "./safe-storage.ts";
 
 const NOTICE_KEY = "meetapp.chat.gifNoticeSeen";
 const SEARCH_DELAY_MS = 300;
+/** A GIF search that takes longer gives up and says GIFs aren't available. */
+const SEARCH_TIMEOUT_MS = 2_000;
 
 const seenNotice = () => readSaved(NOTICE_KEY) === "yes";
 
@@ -35,7 +38,7 @@ function useGifSearch(settings: Awaited<ReturnType<typeof gifSettings>> | undefi
     const controller = new AbortController();
     const timer = setTimeout(() => {
       setState((old) => ({ ...old, status: "loading" }));
-      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(2_000)]);
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(SEARCH_TIMEOUT_MS)]);
       // Nothing typed: what's trending, as in Teams.
       const found = query.trim() === "" ? trendingGifs(settings, signal) : searchGifs(settings, query.trim(), signal);
       found.then(
@@ -71,7 +74,7 @@ export function useGifPicker(visit: Joined, onPick: (gif: NonNullable<ChatMessag
     onQuery: setQuery,
     results: search.results,
     status: search.status,
-    reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    reduceMotion: prefersReducedMotion(),
     onPick: (gif) =>
       onPick({
         id: gif.id,

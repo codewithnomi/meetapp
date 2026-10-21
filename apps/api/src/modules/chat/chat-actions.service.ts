@@ -7,7 +7,16 @@ import type { ChatMessage } from "./chat.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
-import { broadcast, chatActor, sentBy, invalid, pinnedViews, viewOne, type ChatDeps } from "./chat-access.ts";
+import {
+  broadcast,
+  chatActor,
+  personKey,
+  sentBy,
+  invalid,
+  pinnedViews,
+  viewOne,
+  type ChatDeps,
+} from "./chat-access.ts";
 import type { ChatAction } from "./chat.permissions.ts";
 import { knownEmoji } from "./emoji.ts";
 
@@ -42,8 +51,8 @@ function ownInThisCall(actor: Actor & { message: ChatMessage }, callId: string):
   if (actor.message.callId !== callId) throw editEnded();
 }
 
-async function takeReactionTurn(deps: ChatDeps, ticketHash: string): Promise<void> {
-  const wait = await deps.calls.limiter.take(RATE_RULES.chatReactions, ticketHash);
+async function takeReactionTurn(deps: ChatDeps, person: string): Promise<void> {
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatReactions, person);
   if (wait !== undefined) throw new AppError(429, "CHAT_TOO_FAST", "Too many reactions. Wait a moment.", wait);
 }
 
@@ -111,7 +120,7 @@ async function react(deps: ChatDeps, request: OnMessage, value: string) {
   const emoji = knownEmoji(value);
   if (!emoji) throw invalid();
   const actor = await onMessage(deps, request, "react");
-  await takeReactionTurn(deps, request.ticketHash);
+  await takeReactionTurn(deps, personKey(actor.attendance));
   const person = { attendanceId: actor.attendance.id, name: actor.attendance.displayName };
   const seq = await deps.actions.addReaction(actor.message, person, emoji);
   if (seq !== undefined) await reactionsChanged(deps, request.callId, seq, actor);

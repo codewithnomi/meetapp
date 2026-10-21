@@ -1,7 +1,6 @@
 // The words of the chat's message box and poll form (F03), written out key by key so the compiler checks
 // every translation key (code-quality review, verification round 1).
-import type { ChatComposerLabels } from "@meetapp/ui";
-import type { PollCreatorProps } from "@meetapp/ui";
+import type { ChatComposerLabels, PollCreatorProps } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 
 export const composerLabels = (t: TFunction): ChatComposerLabels => ({

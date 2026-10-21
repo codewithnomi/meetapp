@@ -8,7 +8,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
-import { continuesGroup, firstLineOf } from "./chat-texts.ts";
+import { continuesGroup, firstLineOf, isOwn, time } from "./chat-texts.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ComposerArea } from "./ChatComposerArea.tsx";
 import { Message, Pending, type ChatRights, type ChatView } from "./ChatMessages.tsx";
@@ -148,13 +148,20 @@ function useInteraction() {
 type Interaction = ReturnType<typeof useInteraction>;
 
 function AllMessages({ view }: { view: ChatView }) {
+  const last = view.chat.state.messages.at(-1);
+  // Messages being sent join the viewer's group when the last one is theirs, from this minute (AC-F03-48).
+  const joinsLast =
+    last !== undefined &&
+    last.kind !== "system" &&
+    isOwn(last, view.place.attendanceId, view.viewerUserId) &&
+    time(last.createdAt) === time(new Date().toISOString());
   return (
     <>
       {view.chat.state.messages.map((message, index, all) => (
         <Message key={message.id} view={view} message={message} continued={continuesGroup(all[index - 1], message)} />
       ))}
-      {view.chat.state.sending.map((item) => (
-        <Pending key={item.clientId} item={item} chat={view.chat} />
+      {view.chat.state.sending.map((item, index) => (
+        <Pending key={item.clientId} item={item} chat={view.chat} continued={index > 0 || joinsLast} />
       ))}
     </>
   );

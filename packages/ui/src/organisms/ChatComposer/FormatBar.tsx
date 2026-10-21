@@ -1,7 +1,7 @@
 // The message box's Format toolbar (part of ChatComposer, F03 AC-F03-15): bold, italic, underline,
 // strike, lists, quote, link (http/https only, with its own address field), code and code block.
 import type { Editor } from "@tiptap/react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { IconButton } from "../../atoms/IconButton/index.ts";
 import type { IconName } from "../../atoms/Icon/index.ts";
 import { Input } from "../../atoms/Input/index.ts";
@@ -43,9 +43,10 @@ const TOOLS: { mark: string; icon: IconName; label: keyof ChatComposerLabels; ru
   { mark: "codeBlock", icon: "code-block", label: "codeBlock", run: (e) => e.chain().focus().toggleCodeBlock().run() },
 ];
 
-/** Enter sends, except inside lists and code blocks; Ctrl/Cmd+Enter always sends; Escape cancels. */
+/** The link's address; only http and https addresses are applied (AC-F03-17). */
 function LinkForm({ editor, labels, onDone }: { editor: Editor; labels: ChatComposerLabels; onDone: () => void }) {
   const [href, setHref] = useState("https://");
+  const fieldId = useId();
   const valid = /^https?:\/\/\S+$/i.test(href);
   return (
     <form
@@ -57,12 +58,7 @@ function LinkForm({ editor, labels, onDone }: { editor: Editor; labels: ChatComp
       }}
     >
       <div className="min-w-0 flex-1">
-        <Input
-          id="chat-link-address"
-          label={labels.linkAddress}
-          value={href}
-          onChange={(event) => setHref(event.target.value)}
-        />
+        <Input id={fieldId} label={labels.linkAddress} value={href} onChange={(event) => setHref(event.target.value)} />
       </div>
       <IconButton icon="check" label={labels.applyLink} variant="ghost" size="sm" type="submit" disabled={!valid} />
     </form>
@@ -98,5 +94,3 @@ export function FormatBar({ editor, labels }: { editor: Editor; labels: ChatComp
     </div>
   );
 }
-
-/** What is in the box now, whether it may be sent, and how many characters are too many. */

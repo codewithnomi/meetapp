@@ -9,12 +9,12 @@ updated: 2026-10-20
 
 Small steps, done in order, on branch `feat/F03-chat`. Each step is committed and pushed when its tests pass (D026). Tick `[x]` when done and verified.
 - **Tests per step (D052):** each step runs only its own test cases plus typecheck and lint. The whole suite, the desktop tests and the screenshots run once, at `/spec-verify`.
-- **Library details:** before a step uses a library (TipTap, Frimousse, file-type, `@fastify/multipart`, sharp, LiveKit, KLIPY), it is checked against current docs (Context7). A difference updates design.md first, and the owner is told.
+- **Library details:** before a step uses a library (TipTap, Frimousse, file-type, `@fastify/multipart` (dropped in T6), sharp, LiveKit, KLIPY), it is checked against current docs (Context7). A difference updates design.md first, and the owner is told.
 
 ## Backend
 
 - [x] **T1: Libraries, the GIF service and settings.**
-  - Vet the D058 libraries with `/add-dependency`: TipTap, Frimousse, file-type, `@fastify/multipart`. Each is installed in the task that first uses it.
+  - Vet the D058 libraries with `/add-dependency`: TipTap, Frimousse, file-type, `@fastify/multipart` (dropped in T6: uploads use the raw body). Each is installed in the task that first uses it.
   - KLIPY: confirm the free terms, the family-safe filter, no ads in API results, the image host name (D059). Get a free key into `.env` (`GIF_API_KEY`, not required in development: without it the GIF picker says GIFs aren't available).
   - Check that LiveKit passes can limit data publishing by topic (design 3.4); if not, apps ignore participant packets on `meetapp.chat`.
   - Check Electron's `setSpellCheckerDictionaryDownloadURL` with bundled dictionaries.

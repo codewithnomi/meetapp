@@ -23,10 +23,15 @@ Screens follow the approved designs (D029): canvas https://claude.ai/artifact/7A
 ## 1. What gets created
 ```
 packages/contracts/src/chat.ts            Zod shapes: message document, events, requests, errors
+packages/contracts/src/chat-extras.ts     polls (POLL_LIMITS), files, GIF settings, past meetings' chats
 packages/db/src/schema/chat.ts            tables (section 4), migration 0005_chat
 apps/api/src/modules/chat/                routes, service, repository, document checks, file checks,
                                           poll logic, GIF settings, broadcaster, clean-up jobs
-apps/web/src/features/meetings/chat/      chat panel, composer, message list, pickers, polls, hooks
+apps/web/src/features/meetings/chat/      chat data and state: requests, news, files, GIF search, hooks (useChat, usePastChat)
+apps/web/src/pages/MeetingPage/           the chat screen parts: Chat*.tsx (panel, messages, composer, tools, poll,
+                                          extras) and chat-*.ts helpers (texts, labels, view, gifs, emoji, attachments),
+                                          file-drop.ts, safe-storage.ts, reduced-motion.ts
+apps/web/src/pages/MeetingsPage/RecentMeetings.tsx   Recent meetings with Open chat (T16)
 packages/ui/src/…                         new components (section 2.3)
 apps/desktop/src/main/chat-desktop.ts     spell-check menu and file-saving rules (chat-bridge.ts wires them)
 packages/ui/src/atoms/Sticker/            our own stickers, drawn in code (names in packages/contracts)
@@ -98,7 +103,7 @@ packages/ui/src/organisms/ExpressionPicker/ the emoji, GIF and sticker popup wit
 4. It saves the message (one transaction with the attachments), then broadcasts `message_created` (3.4).
 5. **Twice-sent protection:** `(sender_attendance_id, client_id)` is unique; a repeat returns the saved message, so retry and reconnect never make a copy.
 6. **Timing out:** no answer within 10 seconds → "Not sent" with **Retry**, which resends the same `clientId`.
-7. **Rate limits (Redis, per sender):** 10 messages per 10 seconds; the 11th is refused for 10 seconds with `CHAT_TOO_FAST` and the wait time (AC-06). Reactions and votes count separately (30 a minute), so a quick reaction doesn't block typing. File uploads: 10 a minute per person (per account, or per device for guests), so rejoining gives no more. `GET /me/meeting-chats`: 30 a minute per person. Chat file links (`/api/v1/chat-files/<token>`) are hidden in logs like invitation links (verification round 1).
+7. **Rate limits (Redis, per person: their account, or the device for guests, so rejoining gives no fresh allowance):** 10 messages per 10 seconds; the 11th is refused for 10 seconds with `CHAT_TOO_FAST` and the wait time (AC-06). Reactions and votes count separately (30 a minute per person, shared), so a quick reaction doesn't block typing. File uploads: 10 a minute per person (per account, or per device for guests), so rejoining gives no more. `GET /me/meeting-chats`: 30 a minute per person. Chat file links (`/api/v1/chat-files/<token>`) are hidden in logs like invitation links (verification round 1).
 
 ### 3.3 Reading (AC-02, 42)
 - During the call: `GET /calls/:callId/chat/messages?before=<cursor>&limit=50` (ticket).
@@ -121,7 +126,7 @@ packages/ui/src/organisms/ExpressionPicker/ the emoji, GIF and sticker popup wit
 - After the meeting, only organizer and co-organizer delete exists, on the `/meetings/:meetingId/…` route.
 
 ### 3.6 Reactions, replies, pins (AC-12–14, 19, 20)
-- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions/:emoji` (URL-encoded) removes; the emoji is normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. One per person per message, as in Teams: adding a different emoji replaces the person's earlier one in the same step, with one `reactions_changed` (D061). Who reacted is shown when pointing at a chip (names only; a guest's typed name).
+- **Reactions:** `POST …/messages/:id/reactions` adds and `DELETE …/messages/:id/reactions/:emoji` (URL-encoded) removes; the emoji is normalised (NFC). `emoji` must be one of the standard emoji in our emoji list (the same data the picker uses), so any other text is refused. One per person per message, as in Teams: adding a different emoji replaces the person's earlier one in the same step, with one `reactions_changed` (D061). Who reacted is shown when pointing at a chip (names only; a guest's typed name). Each reaction also carries the reactors' join ids, so each app works out "mine" from news sent to everyone (verification round 1).
 - **Replies:** `replyToId` is stored; the quote is built on reading, so edits and deletes show up in it.
 - **Pins:** `POST …/pins` (`{ messageId }`) and `DELETE …/pins/:messageId`; at most 3, checked inside one transaction; the app asks which to unpin when full.
 
@@ -240,7 +245,7 @@ packages/ui/src/organisms/ExpressionPicker/ the emoji, GIF and sticker popup wit
 ## Security and privacy
 - **S1, S2:** every route (except `GET /chat-files/:token`, whose signed 5-minute token is the permission) checks the ticket of this call or, after the meeting, the signed-in user's non-removed attendance in this meeting (members and external people) (3.1), re-reading roles each time; all refusals look like `NOT_FOUND`; outsider sweeps cover every new route.
 - **S5:** rate limits for messages, reactions, votes and files (3.2, 6); GIF searches are limited by KLIPY itself.
-- **S10:** message text, file names, poll text are never logged (only ids and counts); the log cleaning gains `body`, `plain_text`, `q`, `question`, poll option `text`, `href`, the GIF `description`, `fileName` (the `X-Meeting-Ticket` header is already hidden since F02).
+- **S10:** message text, file names, poll text are never logged (only ids and counts); the log cleaning gains `body`, `plainText`, `question`, `options`, `href`, the GIF `description`, `fileName` (GIF search words never reach our backend: the app asks KLIPY itself) (the `X-Meeting-Ticket` header is already hidden since F02).
 - **S11:** strict document shape (5.2), text-only rendering, http/https links opened outside, file names cleaned.
 - **S12:** content-based type checks, 25 MB limit, private storage, 5-minute links, `attachment` downloads, never opened by the app. **Virus scanning is a must-do before going online** (progress.md).
 - **S14:** chat text will be passed to AI (F06, F07) as data, inside clear data markers, never as instructions; AI only uses chats the asking person can read (3.1).

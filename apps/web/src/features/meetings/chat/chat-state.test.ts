@@ -16,6 +16,7 @@ function message(overrides: Partial<ChatMessageView> = {}): ChatMessageView {
     id,
     cursor: `c${String(n)}`,
     clientId: `client-${String(n)}`,
+    callId: "call-1",
     kind: "text",
     sender: { attendanceId: "someone", name: "Bilal Ahmed", group: "member", userId: null },
     body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: `m${String(n)}` }] }] },

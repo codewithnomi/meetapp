@@ -206,6 +206,8 @@ export const chatMessageSchema = z
     cursor: z.string(),
     /** The id the sender's app made, so it can swap its "sending" copy for this one. */
     clientId: z.string(),
+    /** The call it was sent in: only messages of the running call can be edited by their sender. */
+    callId: z.string().nullable(),
     kind: z.enum(["text", "gif", "sticker", "poll", "system"]),
     sender: z.object({
       attendanceId: z.uuid().nullable(),
@@ -265,30 +267,6 @@ export const messagesPageSchema = z
     lastSeq: z.number().int().optional(),
   })
   .meta({ id: "ChatMessagesPage" });
-
-/** News delivered on `meetapp.chat` and kept a day for catching up (design 3.4). */
-export const chatEventSchema = z
-  .object({
-    seq: z.number().int().positive(),
-    type: z.string(),
-    id: z.uuid().optional(),
-    message: chatMessageSchema.optional(),
-    /** With poll_changed: which poll, and its new version (no results: they depend on who asks). */
-    pollId: z.uuid().optional(),
-    version: z.number().int().optional(),
-    /** With pins_changed: the message is pinned now (true) or not (false). */
-    pinned: z.boolean().optional(),
-  })
-  .meta({ id: "ChatEvent" });
-export type ChatEvent = z.infer<typeof chatEventSchema>;
-
-export const eventsPageSchema = z
-  .object({
-    events: z.array(chatEventSchema),
-    /** True when events older than `after` were already cleaned: reload the pins and visible pages. */
-    gap: z.boolean(),
-  })
-  .meta({ id: "ChatEventsPage" });
 
 export const editMessageBodySchema = z.object({ body: messageDocumentSchema }).meta({ id: "EditChatMessage" });
 export const reactionBodySchema = z.object({ emoji: z.string().min(1).max(40) }).meta({ id: "ChatReaction" });

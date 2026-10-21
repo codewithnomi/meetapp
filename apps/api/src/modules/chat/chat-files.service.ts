@@ -6,7 +6,7 @@ import type { ChatAttachment } from "./chat-files.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
-import { chatActor, type ChatDeps } from "./chat-access.ts";
+import { chatActor, personKey, type ChatDeps } from "./chat-access.ts";
 import { FileRefusedError, checkFile, cleanFileName } from "./chat-files.ts";
 
 export { MAX_FILE_BYTES } from "./chat-files.ts";
@@ -52,8 +52,7 @@ function readFileToken(secret: string, token: string, now: number) {
 async function upload(deps: ChatDeps, storage: FileStorage, request: UploadRequest) {
   const actor = await chatActor(deps, request.callId, request.ticketHash, "attach");
   // Per person, not per ticket: leaving and rejoining doesn't give 10 more (F03 verification).
-  const who = actor.attendance.userId ?? actor.attendance.guestDeviceHash ?? actor.attendance.id;
-  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, who);
+  const wait = await deps.calls.limiter.take(RATE_RULES.chatUploads, personKey(actor.attendance));
   if (wait !== undefined) throw new AppError(429, "CHAT_FILE_RATE", "You can send up to 10 files a minute.", wait);
   const fileName = cleanFileName(request.fileName);
   const checked = await checkFile(request.bytes, fileName).catch((error: unknown) => {
