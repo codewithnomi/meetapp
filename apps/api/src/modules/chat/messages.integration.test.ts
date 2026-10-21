@@ -185,6 +185,8 @@ describe("reading", { timeout: 60_000 }, () => {
       if (!page.hasMore) break;
     }
     expect(sizes).toEqual([50, 50, 20]);
+    // The first page carries the newest news number (120 messages, 120 pieces of news).
+    expect((await chat.page(callId, lateHash, { limit: 50 })).lastSeq).toBe(120);
     expect(new Set(seen).size).toBe(120);
     const all = await storedFor(meeting.id);
     const newestFirst = [...all].sort(

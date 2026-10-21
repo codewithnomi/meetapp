@@ -105,11 +105,13 @@ export function createChatService(deps: ChatDeps) {
     page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) => {
       const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");
       const meetingId = row.meeting.id;
+      // Read before the page: news after this number reaches the app live or by catching up (none is lost).
+      const lastSeq = query.before ? undefined : await deps.chat.lastSeq(meetingId);
       const rows = await deps.chat.page(meetingId, query.limit + 1, parseCursor(query.before));
       const messages = await viewsOf(deps, meetingId, rows.slice(0, query.limit), attendance.id);
       if (query.before) return { messages, hasMore: rows.length > query.limit };
       const pinned = await pinnedViews(deps, meetingId, attendance.id);
-      return { messages, hasMore: rows.length > query.limit, pinned };
+      return { messages, hasMore: rows.length > query.limit, pinned, lastSeq };
     },
     one: async (callId: string, ticketHash: string, messageId: string) => {
       const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");

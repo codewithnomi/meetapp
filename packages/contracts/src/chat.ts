@@ -261,6 +261,8 @@ export const messagesPageSchema = z
     hasMore: z.boolean(),
     /** Pinned messages, oldest pin first (only on the first page). */
     pinned: z.array(chatMessageSchema).optional(),
+    /** The newest news number when the first page was read; news after it arrives live (design 3.4). */
+    lastSeq: z.number().int().optional(),
   })
   .meta({ id: "ChatMessagesPage" });
 

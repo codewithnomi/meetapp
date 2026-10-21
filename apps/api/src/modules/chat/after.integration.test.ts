@@ -273,8 +273,12 @@ describe("upkeep", { timeout: 60_000 }, () => {
     await t.database.db.execute(
       sql`update chat_events set created_at = now() - interval '2 days' where meeting_id = ${r.meeting.id}`,
     );
+    const newest = await t.database.db.select().from(chatEvents).where(eq(chatEvents.meetingId, r.meeting.id));
+    const highest = Math.max(...newest.map((event) => event.seq));
     await t.accounts.chatUpkeep.cleanUp();
-    expect(await t.database.db.select().from(chatEvents).where(eq(chatEvents.meetingId, r.meeting.id))).toHaveLength(0);
+    // Old news goes, but each meeting keeps its newest, so numbers never start again at 1.
+    const kept = await t.database.db.select().from(chatEvents).where(eq(chatEvents.meetingId, r.meeting.id));
+    expect(kept.map((event) => event.seq)).toEqual([highest]);
     expect(
       await t.database.db
         .select()

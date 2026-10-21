@@ -107,6 +107,14 @@ describe("chat state", () => {
     expect(state.messages).toHaveLength(1);
   });
 
+  it("TC-F03-92 [AC-F03-01] a page sets the news number, so later news is not taken for a gap", () => {
+    const state = run(emptyChat, { type: "page", messages: [], hasMore: false, older: false, lastSeq: 40 });
+    expect(missedNews(state, created(41, message()))).toBe(false);
+    expect(missedNews(state, created(43, message()))).toBe(true);
+    // An older page has no number and keeps the one known.
+    expect(run(state, { type: "page", messages: [], hasMore: false, older: true }).lastSeq).toBe(40);
+  });
+
   it("TC-F03-92 [AC-F03-01] a gap in the news numbers is noticed", () => {
     const state = run(
       emptyChat,

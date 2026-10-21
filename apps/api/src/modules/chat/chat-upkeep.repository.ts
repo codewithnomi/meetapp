@@ -10,7 +10,7 @@ import {
   type Database,
   type Executor,
 } from "@meetapp/db";
-import { and, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 
 const DELETED_USER = "Deleted user";
 
@@ -73,7 +73,19 @@ function forgetPerson(db: Database, userId: string) {
 export function createChatUpkeepRepository(db: Database) {
   return {
     /** Catch-up news is kept a day (design 3.4). */
-    forgetEventsBefore: (before: Date) => db.delete(chatEvents).where(lt(chatEvents.createdAt, before)),
+    /**
+     * Old news goes, except each meeting's newest piece: news numbers continue from it and never start
+     * again at 1 during a long call (verification round 1).
+     */
+    forgetEventsBefore: (before: Date) =>
+      db
+        .delete(chatEvents)
+        .where(
+          and(
+            lt(chatEvents.createdAt, before),
+            sql`${chatEvents.seq} < (select max(e.seq) from ${chatEvents} e where e.meeting_id = ${chatEvents.meetingId})`,
+          ),
+        ),
     /** Files to remove from storage: deleted ones, and uploads never sent within the hour (AC-F03-34). */
     filesToRemove: (unsentBefore: Date) =>
       db

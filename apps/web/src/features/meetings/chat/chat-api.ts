@@ -35,6 +35,7 @@ export interface MessagesPage {
   messages: ChatMessageView[];
   hasMore: boolean;
   pinned?: ChatMessageView[] | undefined;
+  lastSeq?: number | undefined;
 }
 
 export function messagesPage(place: ChatPlace, before?: string): Promise<MessagesPage> {

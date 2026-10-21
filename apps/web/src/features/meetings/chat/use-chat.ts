@@ -84,7 +84,14 @@ function usePages(place: ChatPlace, initial: ChatState) {
 
   const loadNewest = useCallback(async () => {
     const page = await messagesPage(place);
-    dispatch({ type: "page", messages: page.messages, hasMore: page.hasMore, pinned: page.pinned, older: false });
+    dispatch({
+      type: "page",
+      messages: page.messages,
+      hasMore: page.hasMore,
+      pinned: page.pinned,
+      older: false,
+      lastSeq: page.lastSeq,
+    });
   }, [place]);
 
   useEffect(() => {

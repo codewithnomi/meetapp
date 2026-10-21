@@ -54,6 +54,8 @@ export type ChatAction =
       hasMore: boolean;
       pinned?: ChatMessageView[] | undefined;
       older: boolean;
+      /** The newest news number when the page was read (first page only). */
+      lastSeq?: number | undefined;
     }
   | { type: "event"; event: ChatEvent; mine: boolean }
   | { type: "sending"; item: Sending }
@@ -104,6 +106,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         messages: merge(state.messages, action.messages),
         hasMore: action.older || !state.loaded ? action.hasMore : state.hasMore,
         pinned: action.pinned ?? state.pinned,
+        lastSeq: Math.max(state.lastSeq, action.lastSeq ?? 0),
         loaded: true,
       };
     case "event":

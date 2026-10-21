@@ -99,6 +99,14 @@ async function eventsAfter(db: Database, meetingId: string, after: number) {
 
 export function createChatRepository(db: Database) {
   return {
+    /** The newest news number of a meeting (0 before any), sent with the first page (verification round 1). */
+    lastSeq: async (meetingId: string): Promise<number> => {
+      const [row] = await db
+        .select({ last: sql<number>`coalesce(max(${chatEvents.seq}), 0)::int` })
+        .from(chatEvents)
+        .where(eq(chatEvents.meetingId, meetingId));
+      return row?.last ?? 0;
+    },
     insertMessage: (message: NewChatMessage, eventType: string, attachmentIds?: string[]) =>
       insertMessage(db, message, eventType, attachmentIds),
     /** One page of a meeting's history, newest first (the app shows them oldest at the top). */

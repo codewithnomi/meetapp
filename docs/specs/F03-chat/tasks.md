@@ -138,7 +138,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 
 ## Fixes from /spec-verify round 1 (2026-10-21, verification.md)
 - [x] **T-fix-1: Live news carries no per-viewer data.** Reactions, edits, deletes and pins are broadcast without the actor's `mine` marks; each app keeps its own `mine` (fetches the message for itself). Test: two people, Alice's reaction is not "mine" for Bob (integration + desktop).
-- [ ] **T-fix-2: News numbers.** Pages return the newest news number and the app sets it; the number is a per-meeting counter that never restarts after clean-up. Tests: gap → reload → later news applied once; news right after joining is fetched.
+- [x] **T-fix-2: News numbers.** Pages return the newest news number and the app sets it; the number is a per-meeting counter that never restarts after clean-up. Tests: gap → reload → later news applied once; news right after joining is fetched.
 - [ ] **T-fix-3: Pin news says pinned or unpinned** (no flipping); a repeated or late packet changes nothing. Unit test.
 - [ ] **T-fix-4: Poll versions come from the database** (`UPDATE … RETURNING`), so two votes at once announce two versions. Integration test.
 - [ ] **T-fix-5: App fixes.** Deleting in a past chat updates that message wherever it is; Send waits while a file is still uploading (files never dropped silently); "own" also matches the same account after a rejoin; ©, ® and ™ are not big emoji; a failed history load shows a message with Retry. Unit tests.
