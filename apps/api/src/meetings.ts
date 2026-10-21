@@ -35,6 +35,8 @@ import { createMeetingsRepository } from "./modules/meetings/meetings.repository
 import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
+import { createChatsRepository } from "./modules/chats/chats.repository.ts";
+import { createChatsService } from "./modules/chats/chats.service.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -76,12 +78,18 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     fileLinkSecret: keyFor(config, "chat-file-links-v1"),
     gifService: { apiUrl: config.GIF_API_URL, key: config.GIF_API_KEY },
   };
+  const chatAfter = createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) });
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
     chatPolls: createChatPollsService(chatDeps),
     chatFiles: createChatFilesService(chatDeps, storage),
-    chatAfter: createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) }),
+    chatAfter,
+    /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
+    chats: createChatsService({
+      chats: createChatsRepository(db),
+      readableMeetings: (userId) => chatAfter.readable(userId),
+    }),
     chatUpkeep: createChatUpkeepService({ ...chatDeps, upkeep: createChatUpkeepRepository(db), storage }),
     chatDeps,
   };

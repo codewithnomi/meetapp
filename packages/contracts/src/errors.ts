@@ -45,6 +45,9 @@ export const ERROR_CODES = [
   "CHAT_FILE_RATE",
   "CHAT_MEETING_FILES_FULL",
   "CHAT_GIFS_OFF",
+  // F14: chats.
+  "CHAT_PIN_LIMIT",
+  "CHAT_GROUP_FULL",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

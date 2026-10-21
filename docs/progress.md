@@ -65,7 +65,8 @@
 - **F14 T1 done:** WebSocket library vetted, chat contracts, permissions table (7 tests).
 - **F14 T2 done:** migration 0006 (adds only), meeting conversations, F03 writes conversation ids; 132 chat/meeting tests pass.
 - **F14 T3 done:** fill (before serving and every clean-up) and F03 reads by conversation; 199 backend tests pass.
-- **Next step:** F14 T4, conversations and the chat list (`/next`).
+- **F14 T4 done:** chat list, starting chats, pins, mute, hide, read marks; 16 tests.
+- **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

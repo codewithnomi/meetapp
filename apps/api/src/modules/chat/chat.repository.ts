@@ -90,6 +90,8 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
       uploaderAttendanceId: saved.senderAttendanceId ?? "",
     };
     if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
+    // The chat list orders chats by their newest activity (F14 AC-F14-01).
+    await tx.update(conversations).set({ lastMessageAt: saved.createdAt }).where(eq(conversations.id, conversationId));
     const seq = await recordEvent(tx, saved, eventType, { id: saved.id });
     return { message: saved, created: true as const, seq };
   });

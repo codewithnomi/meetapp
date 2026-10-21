@@ -72,7 +72,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F14-19 [AC-F14-11] Delete hi
 - **Level:** integration
 - **Given** a chat with M2 whose message text contains "budget", and a group named "Café team"
 - **When** M1 searches `q=budget` and `q=cafe`
-- **Then** "budget" finds nothing; "cafe" finds the group; the search runs with `unaccent` in the database
+- **Then** "budget" finds nothing; "cafe" finds the group (the search ignores accents in the service, design 4)
 
 ### TC-F14-08: Pin, unpin and the 15-pin limit
 - **Covers:** AC-F14-05

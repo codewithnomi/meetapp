@@ -30,10 +30,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - **Built in T3:** `fillConversations` (meetings get conversations; F03's 5 tables filled in batches of 5,000; safe to stop and re-run; returns rows filled) runs once before the server starts serving and on every chat clean-up; F03's reading functions (page, one, news, pins, quotes, polls, files, last news number) and news numbering now work by conversation; `chatActor`/`afterActor` hand services the meeting's conversation. Tests: the fill with 12,000 old messages while new ones arrive (none lost, none left, re-run 0); F03's chat, meetings and calls backend suites pass (199). The desktop suites run at `/spec-verify` (D052).
 
 ## Backend
-- [ ] **T4: Conversations and the chat list.**
+- [x] **T4: Conversations and the chat list.**
   - Start a direct chat (unique per pair and workspace) or a group; the list with Personal/external rule, meeting chats by F03's rules, filters, name search (case and accents), unread counts, pinned (15), mute, hide.
   - Covers: AC-F14-01–05, 07, 09, 15, 28, 35.
   - Tests: TC-F14-01, 03, 05, 06, 07, 08, 09, 12, 15, 57, 72.
+  - **Built in T4:** `chats.repository.ts`, `chats.service.ts`, `chats.routes.ts`, `chats.search.ts`: start a direct chat (one per pair per workspace, also under races) or a group (up to 250); the list (own workspace's chats, meeting chats by F03's rules through `chatAfter.readable`, newest first, pinned on top up to 15, unread counts after the read mark, filters, name search ignoring case and accents in the service); per-person pin, mute and hide; read marks that never move back; conversations' last activity updated on every message. 16 tests. Moved: a hidden chat coming back with a new message is tested in T8 (sending); workspace deletion in T11. People outside the workspace are refused until T6.
 
 - [ ] **T5: People lookup and invitations.**
   - To: suggestions from members; exact email returns one account (30 a minute, D063, logged without the email); Personal "Join me on MeetApp" invitations (20 a day); team workspaces use F01's invitation.

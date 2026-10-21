@@ -166,6 +166,8 @@ export {
   addPeopleBodySchema,
   conversationListItemSchema,
   conversationListSchema,
+  conversationParamsSchema,
+  startedConversationSchema,
   declineBodySchema,
   historyChoiceSchema,
   lineAppMessageSchema,

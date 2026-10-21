@@ -2,6 +2,7 @@
 // took part (members and external people) and weren't removed read it, read-only. When the latest call
 // ended with chat "In-meeting only", only the organizer and co-organizers read it. Guests never do.
 import { notFound, asTheyAreNow, roleOf } from "../calls/admission.ts";
+import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import { parseCursor, pinnedViews, viewsOf, type ChatDeps } from "./chat-access.ts";
 import type { ChatAfterRepository } from "./chat-after.repository.ts";
@@ -58,6 +59,33 @@ async function chatForAi(deps: AfterDeps, userId: string, meetingId: string) {
   };
 }
 
+/** How many of a person's meetings the chat list looks at (F14 AC-F14-28). */
+const LIST_LOOKED_AT = 200;
+
+/**
+ * Meetings whose chat this person may read now, for the chat list (F14 AC-F14-28): a running call they
+ * are in, or a past meeting under F03's after-meeting rules (AC-F03-42). No rate limit: it is the list.
+ */
+async function readable(deps: AfterDeps, userId: string) {
+  const joined = await deps.after.meetingsJoinedBy(userId, LIST_LOOKED_AT);
+  const meetings: { id: string; workspaceId: string; title: string; live: boolean }[] = [];
+  for (const { meetingId } of joined) {
+    const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
+    if (allowed) {
+      const { meeting } = allowed.row;
+      meetings.push({ id: meeting.id, workspaceId: meeting.workspaceId, title: meeting.title, live: false });
+      continue;
+    }
+    // During the call: in it now (F03 AC-F03-02).
+    const [latest] = await deps.after.joinsOf(meetingId, userId);
+    if (!latest || !(IN_CALL_STATUSES as readonly string[]).includes(latest.status)) continue;
+    const row = await deps.calls.meetings.find(meetingId);
+    if (row)
+      meetings.push({ id: meetingId, workspaceId: row.meeting.workspaceId, title: row.meeting.title, live: true });
+  }
+  return meetings;
+}
+
 /** Past meetings whose chat this person may open now, most recent first (AC-F03-42). */
 async function recent(deps: AfterDeps, userId: string) {
   const wait = await deps.calls.limiter.take(RATE_RULES.recentMeetingChats, userId);
@@ -109,6 +137,7 @@ export function createChatAfterService(deps: AfterDeps) {
       return viewPoll(deps, poll, actor);
     },
     recent: (userId: string) => recent(deps, userId),
+    readable: (userId: string) => readable(deps, userId),
     chatForAi: (userId: string, meetingId: string) => chatForAi(deps, userId, meetingId),
   };
 }

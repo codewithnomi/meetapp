@@ -84,6 +84,12 @@ export const startConversationBodySchema = z
   })
   .meta({ id: "StartConversation" });
 
+export const startedConversationSchema = z
+  .object({ id: z.uuid(), created: z.boolean() })
+  .meta({ id: "StartedConversation" });
+
+export const conversationParamsSchema = z.object({ conversationId: z.string() });
+
 /** A suggestion in New chat's To: field (AC-F14-07, 08; D063). */
 export const peopleResultSchema = z
   .object({
