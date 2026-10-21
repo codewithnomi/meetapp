@@ -118,10 +118,11 @@ export function recordRequests(page: Page): string[] {
 /**
  * Everything the page may reach on `window.meetapp` (F00 design section 5, F01 design section 4, F02
  * design section 5): the platform name, the sign-in calls main makes for the page, camera/mic/screen
- * access with the share picker, and the device key. Anything else is a leak.
+ * access with the share picker, the device key, and saving chat files (F03, design 6). Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth", "media", "deviceKey"],
+  meetapp: ["platform", "auth", "media", "deviceKey", "files"],
+  files: ["save"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
   auth: [
     "startProviderSignIn",
@@ -141,12 +142,15 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `meetapp.media` and `meetapp.auth`. */
-export function bridgeKeys(page: Page): Promise<{ meetapp: string[]; media: string[]; auth: string[] }> {
+/** What the page sees on `window.meetapp`: its keys, and the keys of `meetapp.files`, `.media` and `.auth`. */
+export function bridgeKeys(
+  page: Page,
+): Promise<{ meetapp: string[]; files: string[]; media: string[]; auth: string[] }> {
   return page.evaluate(() => {
-    const bridge = (window as { meetapp?: { auth?: object; media?: object } }).meetapp ?? {};
+    const bridge = (window as { meetapp?: { auth?: object; media?: object; files?: object } }).meetapp ?? {};
     return {
       meetapp: Object.keys(bridge),
+      files: Object.keys(bridge.files ?? {}),
       media: Object.keys(bridge.media ?? {}),
       auth: Object.keys(bridge.auth ?? {}),
     };
