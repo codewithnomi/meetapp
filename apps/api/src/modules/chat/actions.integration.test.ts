@@ -148,6 +148,12 @@ describe("reactions and replies", { timeout: 30_000 }, () => {
     expect(view?.reactions.map((reaction) => reaction.emoji)).toHaveLength(1);
     expect(heart?.mine).toBe(true);
     expect(types(packets)).toContain("reactions_changed");
+    // News to the room carries no one person's "mine", only who reacted (verification round 1, bug 1).
+    const news = packets.filter((packet) => packet["type"] === "reactions_changed").at(-1) as {
+      message: { reactions: { mine: boolean; attendanceIds: string[] }[] };
+    };
+    expect(news.message.reactions.every((reaction) => !reaction.mine)).toBe(true);
+    expect(news.message.reactions[0]?.attendanceIds).toContain(r.other.attendanceId);
   });
 
   it("TC-F03-25 [AC-F03-14] a reply quotes the original as it is now, and only within the meeting", async () => {

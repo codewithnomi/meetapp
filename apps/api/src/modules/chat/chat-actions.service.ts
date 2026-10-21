@@ -53,10 +53,14 @@ interface News {
   message: ChatMessage;
 }
 
+/**
+ * News to the whole room carries no one person's view (no "mine"): each app works out its own from the
+ * reactors' joins (verification round 1, bug 1). The actor gets their own view back.
+ */
 async function announce(deps: ChatDeps, callId: string, news: News, viewer: string) {
-  const view = await viewOne(deps, news.message, viewer);
-  await broadcast(deps, callId, { seq: news.seq, type: news.type, id: news.message.id, message: view });
-  return view;
+  const everyone = await viewOne(deps, news.message, undefined);
+  await broadcast(deps, callId, { seq: news.seq, type: news.type, id: news.message.id, message: everyone });
+  return viewOne(deps, news.message, viewer);
 }
 
 /** "<name> pinned a message", saved as a system note and delivered like a message (AC-F03-19). */

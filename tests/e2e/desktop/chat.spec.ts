@@ -439,6 +439,11 @@ test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, 
   // One reaction per person: another emoji replaces it, the same one takes it back.
   await bar.getByRole("button", { name: "React with thumbs up" }).click();
   await expect(message.getByRole("button", { name: /👍/ })).toBeVisible({ timeout: 5_000 });
+  // Mo sees the host's reaction, but not as Mo's own (verification round 1, bug 1).
+  const moChip = mo.page.getByRole("log", { name: "Messages" }).getByRole("button", { name: /👍/ });
+  await expect(moChip).toBeVisible({ timeout: 5_000 });
+  await expect(moChip).toHaveAttribute("aria-pressed", "false");
+  await expect(message.getByRole("button", { name: /👍/ })).toHaveAttribute("aria-pressed", "true");
   // As in Teams: "Add reaction" beside the reactions opens the full emoji list.
   await expect(message.getByRole("button", { name: "Add reaction" })).toBeVisible();
   await hostLog.getByText("hi", { exact: true }).hover();

@@ -2,7 +2,7 @@
 // unread only while closed, sending and "Not sent", and gaps in the server's news noticed.
 import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
 import { describe, expect, it } from "vitest";
-import { chatReducer, emptyChat, missedNews, type ChatState } from "./chat-state.ts";
+import { asSeenBy, chatReducer, emptyChat, missedNews, type ChatState } from "./chat-state.ts";
 
 const DOC = {
   v: 1 as const,
@@ -39,6 +39,16 @@ const created = (seq: number, m: ChatMessageView): ChatEvent => ({
   message: m,
 });
 const run = (state: ChatState, ...actions: Parameters<typeof chatReducer>[1][]) => actions.reduce(chatReducer, state);
+
+describe("asSeenBy", () => {
+  it("TC-F03-24 [AC-F03-13] news sent to everyone is marked mine only for the people who reacted", () => {
+    const news = message({
+      reactions: [{ emoji: "👍", count: 1, names: ["Alice"], attendanceIds: ["alice"], mine: false }],
+    });
+    expect(asSeenBy(news, "alice").reactions[0]?.mine).toBe(true);
+    expect(asSeenBy(news, "bob").reactions[0]?.mine).toBe(false);
+  });
+});
 
 describe("chat state", () => {
   it("TC-F03-04 [AC-F03-02] pages and news merge in time order, never twice", () => {

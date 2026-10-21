@@ -134,3 +134,11 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
 /** True when news skipped numbers, so the app asks for what it missed (design 3.4). */
 export const missedNews = (state: ChatState, event: ChatEvent) =>
   state.loaded && state.lastSeq > 0 && event.seq > state.lastSeq + 1;
+
+/** News sent to everyone has no "mine": it is worked out here from who reacted (verification round 1). */
+export function asSeenBy(message: ChatMessageView, viewerId: string): ChatMessageView {
+  return {
+    ...message,
+    reactions: message.reactions.map((reaction) => ({ ...reaction, mine: reaction.attendanceIds.includes(viewerId) })),
+  };
+}

@@ -221,7 +221,15 @@ export const chatMessageSchema = z
     replyTo: z.object({ id: z.uuid(), senderName: z.string(), firstLine: z.string(), deleted: z.boolean() }).nullable(),
     /** Emoji with their counts, the names of who reacted, and whether "you" did (AC-F03-13). */
     reactions: z.array(
-      z.object({ emoji: z.string(), count: z.number().int(), names: z.array(z.string()), mine: z.boolean() }),
+      z.object({
+        emoji: z.string(),
+        count: z.number().int(),
+        names: z.array(z.string()),
+        /** Who reacted (their joins), so each app works out "mine" itself from news sent to everyone. */
+        attendanceIds: z.array(z.string()),
+        /** For the person who asked; false in news sent to the whole room. */
+        mine: z.boolean(),
+      }),
     ),
     gif: gifSchema.nullable(),
     sticker: z.enum(STICKERS).nullable(),

@@ -84,10 +84,11 @@ const firstLine = (message: ChatMessage) =>
 type Reaction = { messageId: string; attendanceId: string; emoji: string; reactorName: string };
 
 function reactionsFor(rows: Reaction[], messageId: string, viewer: string | undefined) {
-  const byEmoji = new Map<string, { names: string[]; mine: boolean }>();
+  const byEmoji = new Map<string, { names: string[]; attendanceIds: string[]; mine: boolean }>();
   for (const row of rows.filter((reaction) => reaction.messageId === messageId)) {
-    const entry = byEmoji.get(row.emoji) ?? { names: [], mine: false };
+    const entry = byEmoji.get(row.emoji) ?? { names: [], attendanceIds: [], mine: false };
     entry.names.push(row.reactorName);
+    entry.attendanceIds.push(row.attendanceId);
     entry.mine ||= row.attendanceId === viewer;
     byEmoji.set(row.emoji, entry);
   }

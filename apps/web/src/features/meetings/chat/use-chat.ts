@@ -16,7 +16,15 @@ import {
   sendMessage,
   type ChatPlace,
 } from "./chat-api.ts";
-import { chatReducer, emptyChat, missedNews, type ChatAction, type ChatState, type Outgoing } from "./chat-state.ts";
+import {
+  asSeenBy,
+  chatReducer,
+  emptyChat,
+  missedNews,
+  type ChatAction,
+  type ChatState,
+  type Outgoing,
+} from "./chat-state.ts";
 
 const MAX_CATCH_UP = 50;
 
@@ -52,12 +60,14 @@ function applyNews({ visit, latest, dispatch, catchUp }: NewsContext, event: Cha
     void catchUp().catch(() => undefined);
     return;
   }
-  const apply = (message?: ChatMessageView) =>
+  const apply = (fetched?: ChatMessageView) => {
+    const message = fetched ?? (event.message ? asSeenBy(event.message, visit.attendanceId) : undefined);
     dispatch({
       type: "event",
       event: { ...event, ...(message ? { message } : {}) },
-      mine: (message ?? event.message)?.sender.attendanceId === visit.attendanceId,
+      mine: message?.sender.attendanceId === visit.attendanceId,
     });
+  };
   // News too big for one packet carries only the id (design 3.4).
   if (!event.message && event.id && event.type !== "poll_changed") {
     void oneMessage(visit, event.id)
