@@ -115,7 +115,7 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
       status: null,
       lastMessage: lastLine(last, userId),
       unread: unread.find((row) => row.conversationId === id)?.unread ?? 0,
-      mentioned: false,
+      mentioned: unread.find((row) => row.conversationId === id)?.mentioned ?? false,
       pinned: Boolean(entry.member?.pinnedAt),
       muted: entry.member?.muted ?? false,
       readOnly: entry.member

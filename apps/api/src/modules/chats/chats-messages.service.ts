@@ -1,0 +1,144 @@
+// Writing and reading in one-to-one and group chats (F14 design.md 3.2, 3.3; AC-F14-12, 13, 18, 19,
+// 21, 22, 24). The person's seat comes from their membership, checked on every request; F03's message,
+// reaction and reply rules then apply as they are. A sender whose request is unanswered sends at most
+// 10 messages; a blocked direct chat is read-only for both; left and removed people read only what they
+// saw. Mentions of people outside the chat become plain text.
+import { CHATS_LIMITS, type ChatEvent, type MessageDocument } from "@meetapp/contracts";
+import { AppError } from "../../plugins/errors.ts";
+import type { ChatDeps } from "../chat/chat-access.ts";
+import { deleteAs, editAs, reactAs, unreactAs } from "../chat/chat-actions.service.ts";
+import type { ChatSeat } from "../chat/chat-seat.ts";
+import { eventsFor, oneFor, pageFor, readable, sendFrom, type SendInput } from "../chat/chat.service.ts";
+import { cleanMentions, seenApplies } from "./chats-mentions.ts";
+import type { ChatsMessagesRepository } from "./chats-messages.repository.ts";
+import { canChats, type ChatsAction } from "./chats.permissions.ts";
+import type { RequestsDeps } from "./chats-requests.service.ts";
+
+export interface MessagesDeps extends RequestsDeps {
+  /** F03's chat pieces: messages, reactions, files, limits. */
+  meetingChat: ChatDeps;
+  messages: ChatsMessagesRepository;
+  /** Delivers news to the members' live lines (T9); saved news is caught up meanwhile. */
+  publish: (conversationId: string, event: ChatEvent) => Promise<void>;
+}
+
+const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
+const readOnly = () => new AppError(403, "CHAT_READ_ONLY", "You can't send messages in this chat.");
+
+/** The person's seat in the chat, if `action` is allowed; 404 for anyone outside it. */
+async function seatIn(deps: MessagesDeps, userId: string, conversationId: string, action: ChatsAction) {
+  const row = await deps.chats.member(conversationId, userId);
+  if (!row || row.conversation.kind === "meeting" || row.conversation.deletedAt) throw notFound();
+  const { conversation, member } = row;
+  const people = await deps.chats.peopleOf([conversationId]);
+  const other = conversation.kind === "direct" ? people.find((p) => p.userId !== userId) : undefined;
+  const blocked = other ? (await deps.requests.blocksBetween(userId, [other.userId])).length > 0 : false;
+  const facts = {
+    kind: conversation.kind === "direct" ? ("direct" as const) : ("group" as const),
+    state: member.state,
+    outOfWorkspace: false,
+    external: member.external,
+    otherExternal: other?.external ?? false,
+    blocked,
+    outsideOffWithExternal: false,
+  };
+  if (!canChats(action, facts)) {
+    const openChat = { ...facts, blocked: false, outsideOffWithExternal: false };
+    if (member.state === "accepted" && canChats(action, openChat)) throw readOnly();
+    throw notFound();
+  }
+  const me = await deps.messages.person(userId);
+  const ended = member.state === "left" || member.state === "removed";
+  const seat: ChatSeat = {
+    conversationId,
+    workspaceId: conversation.workspaceId,
+    meetingId: null,
+    callId: null,
+    who: { attendanceId: null, userId },
+    userId,
+    name: me?.name ?? "",
+    group: member.external ? "external" : "member",
+    limitKey: userId,
+    allowGifs: await deps.messages.allowGifs(conversation.workspaceId),
+    ownAnyTime: true,
+    mayDeleteAny: () => Promise.resolve(false),
+    mayAttach: () => Promise.resolve(true),
+    window: {
+      from: member.historyFrom,
+      until: ended ? member.leftAt : null,
+      untilSeq: ended ? (member.leftSeq ?? 0) : null,
+    },
+    deliver: (event) => deps.publish(conversationId, event),
+  };
+  return { seat, conversation, people, other, readReceipts: me?.readReceipts ?? true };
+}
+
+/** At most 10 messages before the other person accepts (AC-F14-12). */
+async function checkRequestLimit(deps: MessagesDeps, userId: string, place: Awaited<ReturnType<typeof seatIn>>) {
+  const { other, seat } = place;
+  if (!other || (other.state !== "pending" && other.state !== "declined")) return;
+  const since = other.requestedAt ?? new Date(0);
+  if ((await deps.messages.sentSince(seat.conversationId, userId, since)) >= CHATS_LIMITS.messagesWhilePending) {
+    throw new AppError(403, "CHAT_REQUEST_LIMIT", `You can send more once ${other.name} accepts.`);
+  }
+}
+
+async function send(deps: MessagesDeps, userId: string, conversationId: string, input: SendInput) {
+  const place = await seatIn(deps, userId, conversationId, "send");
+  await checkRequestLimit(deps, userId, place);
+  const members = new Set(place.people.filter((p) => p.state === "accepted").map((p) => p.userId));
+  const cleaned = input.body ? cleanMentions(input.body, members) : undefined;
+  const view = await sendFrom(deps.meetingChat, place.seat, {
+    ...input,
+    ...(cleaned ? { body: cleaned.document, mentionedUserIds: cleaned.mentioned } : {}),
+  });
+  // A hidden chat comes back with a new message (AC-F14-35).
+  await deps.messages.unhide(conversationId);
+  return view;
+}
+
+/** Who has seen a message (AC-F14-24); `null` when receipts don't apply. */
+async function seen(deps: MessagesDeps, userId: string, conversationId: string, messageId: string) {
+  const { seat, conversation, readReceipts } = await seatIn(deps, userId, conversationId, "read");
+  const message = await readable(deps.meetingChat, seat, messageId);
+  if (!message) throw notFound();
+  const readers = await deps.messages.readers(conversationId);
+  const kind = conversation.kind === "direct" ? "direct" : "group";
+  const facts = { kind, members: readers.length, readerOn: true, senderOn: readReceipts } as const;
+  if (!seenApplies(facts)) return { people: null };
+  const people = readers
+    .filter((r) => r.userId !== userId && r.readReceipts && r.lastReadAt && r.lastReadAt >= message.createdAt)
+    .map((r) => ({ userId: r.userId, name: r.name }));
+  return { people };
+}
+
+type OnMessage = { userId: string; conversationId: string; messageId: string };
+
+export function createChatsMessagesService(deps: MessagesDeps) {
+  const seat = async (userId: string, conversationId: string, action: ChatsAction) =>
+    (await seatIn(deps, userId, conversationId, action)).seat;
+  const chat = deps.meetingChat;
+  return {
+    send: (userId: string, conversationId: string, input: SendInput) => send(deps, userId, conversationId, input),
+    page: async (userId: string, conversationId: string, query: { before?: string | undefined; limit: number }) =>
+      pageFor(chat, await seat(userId, conversationId, "read"), query),
+    one: async ({ userId, conversationId, messageId }: OnMessage) =>
+      oneFor(chat, await seat(userId, conversationId, "read"), messageId),
+    events: async (userId: string, conversationId: string, after: number) =>
+      eventsFor(chat, await seat(userId, conversationId, "read"), after),
+    edit: async ({ userId, conversationId, messageId }: OnMessage, body: MessageDocument) =>
+      editAs(chat, await seat(userId, conversationId, "editOwn"), messageId, body),
+    delete: async ({ userId, conversationId, messageId }: OnMessage) =>
+      deleteAs(chat, await seat(userId, conversationId, "deleteOwn"), messageId),
+    react: async ({ userId, conversationId, messageId }: OnMessage, emoji: string) =>
+      reactAs(chat, await seat(userId, conversationId, "react"), messageId, emoji),
+    unreact: async ({ userId, conversationId, messageId }: OnMessage, emoji: string) =>
+      unreactAs(chat, await seat(userId, conversationId, "react"), messageId, emoji),
+    seen: ({ userId, conversationId, messageId }: OnMessage) => seen(deps, userId, conversationId, messageId),
+    setReadReceipts: async (userId: string, on: boolean) => {
+      await deps.messages.setReadReceipts(userId, on);
+    },
+  };
+}
+
+export type ChatsMessagesService = ReturnType<typeof createChatsMessagesService>;

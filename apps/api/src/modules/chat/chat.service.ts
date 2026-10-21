@@ -7,28 +7,20 @@ import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
 import { AttachmentsNotYoursError } from "./chat.repository.ts";
-import {
-  broadcast,
-  chatActor,
-  personKey,
-  invalid,
-  parseCursor,
-  pinnedViews,
-  sentBy,
-  viewOne,
-  viewsOf,
-  type ChatDeps,
-} from "./chat-access.ts";
+import { chatActor, invalid, parseCursor, pinnedViews, viewOne, viewsOf, type ChatDeps } from "./chat-access.ts";
+import { meetingSeat, seatSender, viewerOf, type ChatSeat } from "./chat-seat.ts";
 
 export { MAX_PACKET_BYTES, type ChatDeps } from "./chat-access.ts";
 
-interface SendInput {
+export interface SendInput {
   clientId: string;
   body?: MessageDocument | undefined;
   replyToId?: string | undefined;
   attachmentIds?: string[] | undefined;
   gif?: GifInput | undefined;
   sticker?: StickerName | undefined;
+  /** Chats: members mentioned in `body` (worked out by the chats service, F14 AC-22). */
+  mentionedUserIds?: string[] | undefined;
 }
 
 type GifInput = NonNullable<ChatMessageView["gif"]>;
@@ -56,22 +48,23 @@ async function takeMessageTurn(deps: ChatDeps, person: string): Promise<void> {
   }
 }
 
-async function send(deps: ChatDeps, callId: string, ticketHash: string, input: SendInput) {
-  const { attendance, row, conversationId } = await chatActor(deps, callId, ticketHash, "send");
+/** Saves and delivers a message from this seat: text, files, a GIF or a sticker (F03 AC-03; F14 AC-19). */
+export async function sendFrom(deps: ChatDeps, seat: ChatSeat, input: SendInput) {
   // Text, files, or both, or a GIF, or a sticker; an empty message is refused (AC-F03-03).
-  const { attachmentIds, ...content } = contentOf(input, row);
+  const { attachmentIds, ...content } = contentOf(input, seat);
   // Guests send no files (AC-F03-33).
-  if (attachmentIds.length > 0) await chatActor(deps, callId, ticketHash, "attach");
-  // A reply quotes a message of this meeting only (AC-F03-14).
-  if (input.replyToId && !(await deps.chat.one(conversationId, input.replyToId))) throw invalid();
-  await takeMessageTurn(deps, personKey(attendance));
+  if (attachmentIds.length > 0 && !(await seat.mayAttach())) throw notFound();
+  // A reply quotes a message of this chat only (AC-F03-14).
+  if (input.replyToId && !(await readable(deps, seat, input.replyToId))) throw invalid();
+  await takeMessageTurn(deps, seat.limitKey);
   const saved = await deps.chat
     .insertMessage(
       {
-        ...sentBy({ attendance, row, conversationId }, callId),
+        ...seatSender(seat),
         ...content,
         replyToId: input.replyToId ?? null,
         clientId: input.clientId,
+        mentionedUserIds: input.mentionedUserIds ?? null,
       },
       "message_created",
       attachmentIds,
@@ -80,11 +73,58 @@ async function send(deps: ChatDeps, callId: string, ticketHash: string, input: S
       if (error instanceof AttachmentsNotYoursError) throw invalid();
       throw error;
     });
-  const view = await viewOne(deps, saved.message, attendance.id);
+  const view = await viewOne(deps, saved.message, viewerOf(seat));
   if (saved.created) {
-    await broadcast(deps, callId, { seq: saved.seq, type: "message_created", id: view.id, message: view });
+    await seat.deliver({ seq: saved.seq, type: "message_created", id: view.id, message: view });
   }
   return view;
+}
+
+/** A message this seat may read (inside its reading window), or nothing. */
+export async function readable(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await deps.chat.one(seat.conversationId, messageId);
+  if (!message) return undefined;
+  const { window } = seat;
+  if (window.from && message.createdAt < window.from) return undefined;
+  if (window.until && message.createdAt > window.until) return undefined;
+  return message;
+}
+
+/** A page of history, newest first; the first page also brings the pins and the newest news number. */
+export async function pageFor(deps: ChatDeps, seat: ChatSeat, query: { before?: string | undefined; limit: number }) {
+  const { conversationId } = seat;
+  // Read before the page: news after this number reaches the app live or by catching up (none is lost).
+  const newest = query.before ? undefined : await deps.chat.lastSeq(conversationId);
+  const lastSeq =
+    newest === undefined || seat.window.untilSeq === null ? newest : Math.min(newest, seat.window.untilSeq);
+  const { window } = seat;
+  const rows = await deps.chat.page(conversationId, query.limit + 1, parseCursor(query.before), window);
+  const messages = await viewsOf(deps, conversationId, rows.slice(0, query.limit), viewerOf(seat));
+  if (query.before) return { messages, hasMore: rows.length > query.limit };
+  const pinned = await pinnedViews(deps, conversationId, viewerOf(seat));
+  return { messages, hasMore: rows.length > query.limit, pinned, lastSeq };
+}
+
+/** Missed news after a reconnect; `gap` when older news was already cleaned (design 3.4). */
+export async function eventsFor(deps: ChatDeps, seat: ChatSeat, after: number) {
+  const { rows, oldestKept } = await deps.chat.eventsAfter(seat.conversationId, after);
+  const gap = oldestKept !== null && oldestKept > after + 1;
+  const untilSeq = seat.window.untilSeq;
+  const events = rows
+    .filter((event) => untilSeq === null || event.seq <= untilSeq)
+    .map((event) => ({
+      seq: event.seq,
+      type: event.type,
+      ...(event.payload as { id?: string; pinned?: boolean; pollId?: string; version?: number }),
+    }));
+  return { events, gap };
+}
+
+/** One message, as this seat sees it. */
+export async function oneFor(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await readable(deps, seat, messageId);
+  if (!message) throw notFound();
+  return viewOne(deps, message, viewerOf(seat));
 }
 
 /** What the app needs to search KLIPY itself (D059): the key and a random per-meeting id. */
@@ -102,35 +142,14 @@ async function gifSettings(deps: ChatDeps, callId: string, ticketHash: string) {
 export function createChatService(deps: ChatDeps) {
   return {
     gifSettings: (callId: string, ticketHash: string) => gifSettings(deps, callId, ticketHash),
-    send: (callId: string, ticketHash: string, input: SendInput) => send(deps, callId, ticketHash, input),
-    page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) => {
-      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
-      // Read before the page: news after this number reaches the app live or by catching up (none is lost).
-      const lastSeq = query.before ? undefined : await deps.chat.lastSeq(conversationId);
-      const rows = await deps.chat.page(conversationId, query.limit + 1, parseCursor(query.before));
-      const messages = await viewsOf(deps, conversationId, rows.slice(0, query.limit), attendance.id);
-      if (query.before) return { messages, hasMore: rows.length > query.limit };
-      const pinned = await pinnedViews(deps, conversationId, attendance.id);
-      return { messages, hasMore: rows.length > query.limit, pinned, lastSeq };
-    },
-    one: async (callId: string, ticketHash: string, messageId: string) => {
-      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
-      const message = await deps.chat.one(conversationId, messageId);
-      if (!message) throw notFound();
-      return viewOne(deps, message, attendance.id);
-    },
-    /** Missed news after a reconnect; `gap` when older news was already cleaned (design 3.4). */
-    events: async (callId: string, ticketHash: string, after: number) => {
-      const { conversationId } = await chatActor(deps, callId, ticketHash, "read");
-      const { rows, oldestKept } = await deps.chat.eventsAfter(conversationId, after);
-      const gap = oldestKept !== null && oldestKept > after + 1;
-      const events = rows.map((event) => ({
-        seq: event.seq,
-        type: event.type,
-        ...(event.payload as { id?: string; pinned?: boolean; pollId?: string; version?: number }),
-      }));
-      return { events, gap };
-    },
+    send: async (callId: string, ticketHash: string, input: SendInput) =>
+      sendFrom(deps, await meetingSeat(deps, callId, ticketHash, "send"), input),
+    page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) =>
+      pageFor(deps, await meetingSeat(deps, callId, ticketHash, "read"), query),
+    one: async (callId: string, ticketHash: string, messageId: string) =>
+      oneFor(deps, await meetingSeat(deps, callId, ticketHash, "read"), messageId),
+    events: async (callId: string, ticketHash: string, after: number) =>
+      eventsFor(deps, await meetingSeat(deps, callId, ticketHash, "read"), after),
   };
 }
 

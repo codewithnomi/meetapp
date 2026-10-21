@@ -69,6 +69,7 @@
 - **F14 T5 done:** New chat people search (members by name; exact email finds one account, 30 a minute), "Join me on MeetApp" email from Personal (20 a day); 3 tests.
 - **F14 T6 done:** chat requests (preview, accept, delete with 30-day wait, block), 20 requests a day, 30-day expiry, block/unblock, Personal treats everyone as external; 10 tests. Send-related parts moved to T8, status to T10.
 - **F14 T7 done:** group chats: 3–250 people (people from outside get a request), rename, add with history (none / 1–365 days / all), any member removes anyone, leave, notes in the chat, empty groups deleted after 30 days; 5 tests. Fixed: system notes in non-meeting chats crashed on the meeting-files step.
+- **F14 T8 done (split: T8b next):** send, read, edit/delete any time, reactions, replies, @mentions (members only; "mentioned" even when muted), "Seen" and "who has seen" with the read-receipts setting, 10 messages while a request waits, blocked chats read-only, left/removed people read only what they saw. Needed migration `0007_chats_people` (D066: chat rows name the account outside calls). F03's code now works on a shared "seat"; all 134 meeting-chat tests still pass. T8b: pins, polls, files, GIFs in chats.
 - **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)

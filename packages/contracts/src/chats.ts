@@ -122,6 +122,17 @@ export const renameBodySchema = z
   .meta({ id: "RenameChat" });
 export const chatMemberParamsSchema = z.object({ conversationId: z.string(), userId: z.uuid() });
 
+export const conversationMessageParamsSchema = z.object({ conversationId: z.string(), messageId: z.uuid() });
+export const conversationReactionParamsSchema = conversationMessageParamsSchema.extend({
+  emoji: z.string().min(1).max(40),
+});
+
+/** Who has seen a message (AC-F14-24): `null` when receipts don't apply (big group, receipts off). */
+export const seenSchema = z
+  .object({ people: z.array(z.object({ userId: z.uuid(), name: z.string() })).nullable() })
+  .meta({ id: "ChatSeen" });
+export const myChatPrefsBodySchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefs" });
+
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
 /** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */
 const chatRequestSchema = z

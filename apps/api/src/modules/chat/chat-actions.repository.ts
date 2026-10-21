@@ -11,6 +11,9 @@ import {
 } from "@meetapp/db";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { recordEvent } from "./chat.repository.ts";
+import { isWho, type Who } from "./chat-who.ts";
+
+const reactor = { attendanceId: chatReactions.attendanceId, userId: chatReactions.userId };
 
 /** Most different emoji one person may add to one message (AC-F03-13). */
 const CHECK_VIOLATION = "23514";
@@ -27,16 +30,19 @@ const live = (conversationId: string, id: string) =>
   and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.id, id), isNull(chatMessages.deletedAt));
 
 /** Removes a message's content; who sent it and when stay (AC-F03-10). Its pin and files go too. */
-async function deleteMessage(
-  db: Database,
-  conversationId: string,
-  id: string,
-  by: string,
-): Promise<Change<ChatMessage>> {
+async function deleteMessage(db: Database, conversationId: string, id: string, by: Who): Promise<Change<ChatMessage>> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .update(chatMessages)
-      .set({ body: null, plainText: null, gif: null, sticker: null, deletedAt: new Date(), deletedByAttendanceId: by })
+      .set({
+        body: null,
+        plainText: null,
+        gif: null,
+        sticker: null,
+        deletedAt: new Date(),
+        deletedByAttendanceId: by.attendanceId,
+        deletedByUserId: by.userId,
+      })
       .where(and(live(conversationId, id), ne(chatMessages.kind, "system")))
       .returning();
     if (!row) return undefined;
@@ -49,19 +55,20 @@ async function deleteMessage(
 async function addReaction(
   db: Database,
   message: ChatMessage,
-  person: { attendanceId: string; name: string },
+  person: { who: Who; name: string },
   emoji: string,
 ): Promise<number | undefined> {
   return db.transaction(async (tx) => {
     // One reaction per person, as in Teams (D061): a different emoji replaces the earlier one.
-    const mine = and(eq(chatReactions.messageId, message.id), eq(chatReactions.attendanceId, person.attendanceId));
+    const mine = and(eq(chatReactions.messageId, message.id), isWho(reactor, person.who));
     await tx.delete(chatReactions).where(and(mine, ne(chatReactions.emoji, emoji)));
     const [added] = await tx
       .insert(chatReactions)
       .values({
         workspaceId: message.workspaceId,
         messageId: message.id,
-        attendanceId: person.attendanceId,
+        attendanceId: person.who.attendanceId,
+        userId: person.who.userId,
         emoji,
         reactorName: person.name,
       })
@@ -72,17 +79,11 @@ async function addReaction(
   });
 }
 
-async function removeReaction(db: Database, message: ChatMessage, attendanceId: string, emoji: string) {
+async function removeReaction(db: Database, message: ChatMessage, who: Who, emoji: string) {
   return db.transaction(async (tx) => {
     const removed = await tx
       .delete(chatReactions)
-      .where(
-        and(
-          eq(chatReactions.messageId, message.id),
-          eq(chatReactions.attendanceId, attendanceId),
-          eq(chatReactions.emoji, emoji),
-        ),
-      )
+      .where(and(eq(chatReactions.messageId, message.id), isWho(reactor, who), eq(chatReactions.emoji, emoji)))
       .returning();
     if (removed.length === 0) return undefined;
     return recordEvent(tx, where(message), "reactions_changed", { id: message.id });
@@ -133,11 +134,10 @@ export function createChatActionsRepository(db: Database) {
           .returning();
         return row ? { row, seq: await recordEvent(tx, where(row), "message_edited", { id }) } : undefined;
       }),
-    delete: (conversationId: string, id: string, by: string) => deleteMessage(db, conversationId, id, by),
-    addReaction: (message: ChatMessage, person: { attendanceId: string; name: string }, emoji: string) =>
+    delete: (conversationId: string, id: string, by: Who) => deleteMessage(db, conversationId, id, by),
+    addReaction: (message: ChatMessage, person: { who: Who; name: string }, emoji: string) =>
       addReaction(db, message, person, emoji),
-    removeReaction: (message: ChatMessage, attendanceId: string, emoji: string) =>
-      removeReaction(db, message, attendanceId, emoji),
+    removeReaction: (message: ChatMessage, who: Who, emoji: string) => removeReaction(db, message, who, emoji),
     pin: (message: ChatMessage, by: string) => pin(db, message, by),
     unpin: (message: ChatMessage) => unpin(db, message),
     /** Reactions of these messages, for building what apps see. */

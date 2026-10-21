@@ -130,7 +130,12 @@ async function lastMessages(db: Database, conversationIds: string[]) {
 async function unreadCounts(db: Database, userId: string, conversationIds: string[]) {
   if (conversationIds.length === 0) return [];
   return db
-    .select({ conversationId: chatMessages.conversationId, unread: sql<number>`count(*)::int` })
+    .select({
+      conversationId: chatMessages.conversationId,
+      unread: sql<number>`count(*)::int`,
+      // Mentioned in an unread message: counted even when the chat is muted (AC-F14-22).
+      mentioned: sql<boolean>`coalesce(bool_or(${userId} = any(${chatMessages.mentionedUserIds})), false)`,
+    })
     .from(chatMessages)
     .leftJoin(
       conversationReads,

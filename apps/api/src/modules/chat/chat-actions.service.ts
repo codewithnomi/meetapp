@@ -1,26 +1,18 @@
-// What people do to messages during a call (F03 design.md 3.5 and 3.6): edit and delete (own, or
-// any for organizers), react, pin and unpin. Rights are checked on every action; each change is
-// saved with its news, then delivered to the room.
+// What people do to messages (F03 design.md 3.5 and 3.6; F14 AC-19, 21): edit and delete (own, or
+// any for meeting organizers), react, pin and unpin. Rights are checked on every action by the seat
+// (a call's join or a chat's account); each change is saved with its news, then delivered.
 import { randomUUID } from "node:crypto";
 import { documentPlainText, type MessageDocument } from "@meetapp/contracts";
 import type { ChatMessage } from "./chat.repository.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { notFound } from "../calls/admission.ts";
-import {
-  broadcast,
-  chatActor,
-  personKey,
-  sentBy,
-  invalid,
-  pinnedViews,
-  viewOne,
-  type ChatDeps,
-} from "./chat-access.ts";
+import { invalid, pinnedViews, viewOne, type ChatDeps } from "./chat-access.ts";
+import { meetingSeat, seatSender, viewerOf, type ChatSeat } from "./chat-seat.ts";
+import { readable } from "./chat.service.ts";
 import type { ChatAction } from "./chat.permissions.ts";
 import { knownEmoji } from "./emoji.ts";
 
-type Actor = Awaited<ReturnType<typeof chatActor>>;
 /** One request about one message: which call, whose ticket, which message. */
 export interface OnMessage {
   callId: string;
@@ -30,25 +22,23 @@ export interface OnMessage {
 
 const editEnded = () => new AppError(409, "CHAT_EDIT_ENDED", "This message can no longer be changed.");
 
-/** The caller and a message of their meeting; 404 when the message isn't there. */
-async function onMessage(deps: ChatDeps, { callId, ticketHash, messageId }: OnMessage, action: ChatAction) {
-  const actor = await chatActor(deps, callId, ticketHash, action);
-  const message = await deps.chat.one(actor.conversationId, messageId);
+/** A message this seat may act on; 404 when it isn't there (or outside what they may read). */
+async function messageFor(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await readable(deps, seat, messageId);
   if (!message || message.deletedAt) throw notFound();
-  return { ...actor, message };
+  return message;
 }
 
 /** The same person sent it: the same account (any of their joins), or the same guest join. */
-function isOwn(actor: Actor & { message: ChatMessage }): boolean {
-  const { message, attendance } = actor;
-  if (message.senderAttendanceId === attendance.id) return true;
-  return attendance.userId !== null && message.senderUserId === attendance.userId;
+function isOwn(seat: ChatSeat, message: ChatMessage): boolean {
+  if (seat.who.attendanceId !== null && message.senderAttendanceId === seat.who.attendanceId) return true;
+  return seat.userId !== null && message.senderUserId === seat.userId;
 }
 
-/** Own messages only, and only during the call they were sent in (AC-F03-10). */
-function ownInThisCall(actor: Actor & { message: ChatMessage }, callId: string): void {
-  if (!isOwn(actor)) throw notFound();
-  if (actor.message.callId !== callId) throw editEnded();
+/** Own messages only; in meetings only during the call they were sent in (AC-F03-10, F14 AC-21). */
+function ownNow(seat: ChatSeat, message: ChatMessage): void {
+  if (!isOwn(seat, message)) throw notFound();
+  if (!seat.ownAnyTime && message.callId !== seat.callId) throw editEnded();
 }
 
 async function takeReactionTurn(deps: ChatDeps, person: string): Promise<void> {
@@ -65,116 +55,98 @@ interface News {
 }
 
 /**
- * News to the whole room carries no one person's view (no "mine"): each app works out its own from the
- * reactors' joins (verification round 1, bug 1). The actor gets their own view back.
+ * News to everyone carries no one person's view (no "mine"): each app works out its own from the
+ * reactors' joins or accounts (verification round 1, bug 1). The actor gets their own view back.
  */
-async function announce(deps: ChatDeps, callId: string, news: News, viewer: string) {
+async function announce(deps: ChatDeps, seat: ChatSeat, news: News) {
   const everyone = await viewOne(deps, news.message, undefined);
-  await broadcast(deps, callId, {
+  await seat.deliver({
     seq: news.seq,
     type: news.type,
     id: news.message.id,
     message: everyone,
     ...(news.pinned === undefined ? {} : { pinned: news.pinned }),
   });
-  return viewOne(deps, news.message, viewer);
+  return viewOne(deps, news.message, viewerOf(seat));
 }
 
 /** "<name> pinned a message", saved as a system note and delivered like a message (AC-F03-19). */
-async function pinnedNote(deps: ChatDeps, callId: string, actor: Actor): Promise<void> {
-  const { attendance } = actor;
+async function pinnedNote(deps: ChatDeps, seat: ChatSeat): Promise<void> {
   const saved = await deps.chat.insertMessage(
-    {
-      ...sentBy(actor, callId),
-      kind: "system",
-      system: { event: "pinned", name: attendance.displayName },
-      clientId: randomUUID(),
-    },
+    { ...seatSender(seat), kind: "system", system: { event: "pinned", name: seat.name }, clientId: randomUUID() },
     "message_created",
   );
-  if (saved.created) {
-    await announce(deps, callId, { seq: saved.seq, type: "message_created", message: saved.message }, attendance.id);
-  }
+  if (saved.created) await announce(deps, seat, { seq: saved.seq, type: "message_created", message: saved.message });
 }
 
-const reactionsChanged = (deps: ChatDeps, callId: string, seq: number, actor: Actor & { message: ChatMessage }) =>
-  announce(deps, callId, { seq, type: "reactions_changed", message: actor.message }, actor.attendance.id);
-
-async function remove(deps: ChatDeps, request: OnMessage) {
-  const { callId, ticketHash, messageId } = request;
-  const actor = await onMessage(deps, request, "deleteOwn");
-  const ownNow = isOwn(actor) && actor.message.callId === callId;
-  if (!ownNow) {
-    // Someone else's message, or one's own from an earlier call: organizers and co-organizers only.
-    // Not an organizer is an answer, not an error: the next line then refuses as "not found".
-    const organizer = await chatActor(deps, callId, ticketHash, "deleteAny").catch(() => undefined);
-    if (!organizer) ownInThisCall(actor, callId);
-  }
-  const change = await deps.actions.delete(actor.conversationId, messageId, actor.attendance.id);
+export async function editAs(deps: ChatDeps, seat: ChatSeat, messageId: string, body: MessageDocument) {
+  const message = await messageFor(deps, seat, messageId);
+  ownNow(seat, message);
+  const plainText = documentPlainText(body);
+  if (plainText.trim() === "") throw invalid();
+  const change = await deps.actions.edit(seat.conversationId, messageId, { body, plainText });
   if (!change) throw notFound();
-  const news = { seq: change.seq, type: "message_deleted", message: change.row };
-  await announce(deps, callId, news, actor.attendance.id);
+  return announce(deps, seat, { seq: change.seq, type: "message_edited", message: change.row });
 }
 
-async function react(deps: ChatDeps, request: OnMessage, value: string) {
+export async function deleteAs(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await messageFor(deps, seat, messageId);
+  const own = isOwn(seat, message) && (seat.ownAnyTime || message.callId === seat.callId);
+  // Someone else's message, or one's own from an earlier call: meeting organizers only.
+  if (!own && !(await seat.mayDeleteAny())) ownNow(seat, message);
+  const change = await deps.actions.delete(seat.conversationId, messageId, seat.who);
+  if (!change) throw notFound();
+  await announce(deps, seat, { seq: change.seq, type: "message_deleted", message: change.row });
+}
+
+export async function reactAs(deps: ChatDeps, seat: ChatSeat, messageId: string, value: string) {
   const emoji = knownEmoji(value);
   if (!emoji) throw invalid();
-  const actor = await onMessage(deps, request, "react");
-  await takeReactionTurn(deps, personKey(actor.attendance));
-  const person = { attendanceId: actor.attendance.id, name: actor.attendance.displayName };
-  const seq = await deps.actions.addReaction(actor.message, person, emoji);
-  if (seq !== undefined) await reactionsChanged(deps, request.callId, seq, actor);
+  const message = await messageFor(deps, seat, messageId);
+  await takeReactionTurn(deps, seat.limitKey);
+  const seq = await deps.actions.addReaction(message, { who: seat.who, name: seat.name }, emoji);
+  if (seq !== undefined) await announce(deps, seat, { seq, type: "reactions_changed", message });
 }
 
-async function unreact(deps: ChatDeps, request: OnMessage, value: string) {
-  const actor = await onMessage(deps, request, "react");
-  const seq = await deps.actions.removeReaction(actor.message, actor.attendance.id, knownEmoji(value) ?? value);
-  if (seq !== undefined) await reactionsChanged(deps, request.callId, seq, actor);
+export async function unreactAs(deps: ChatDeps, seat: ChatSeat, messageId: string, value: string) {
+  const message = await messageFor(deps, seat, messageId);
+  const seq = await deps.actions.removeReaction(message, seat.who, knownEmoji(value) ?? value);
+  if (seq !== undefined) await announce(deps, seat, { seq, type: "reactions_changed", message });
 }
 
-async function pin(deps: ChatDeps, request: OnMessage) {
-  const { callId } = request;
-  const actor = await onMessage(deps, request, "pin");
-  if (actor.message.kind === "system") throw invalid();
-  const seq = await deps.actions.pin(actor.message, actor.attendance.id);
+async function pin(deps: ChatDeps, seat: ChatSeat, messageId: string) {
+  const message = await messageFor(deps, seat, messageId);
+  if (message.kind === "system") throw invalid();
+  const seq = await deps.actions.pin(message, seat.who.attendanceId ?? "");
   if (seq === "full") throw new AppError(409, "CHAT_PINS_FULL", "Up to 3 messages can be pinned. Unpin one first.");
   if (seq === undefined) return;
-  await announce(
-    deps,
-    callId,
-    { seq, type: "pins_changed", message: actor.message, pinned: true },
-    actor.attendance.id,
-  );
-  await pinnedNote(deps, callId, actor);
+  await announce(deps, seat, { seq, type: "pins_changed", message, pinned: true });
+  await pinnedNote(deps, seat);
 }
+
+const seatFor = (deps: ChatDeps, request: OnMessage, action: ChatAction) =>
+  meetingSeat(deps, request.callId, request.ticketHash, action);
 
 export function createChatActionsService(deps: ChatDeps) {
   return {
-    edit: async (request: OnMessage, body: MessageDocument) => {
-      const actor = await onMessage(deps, request, "editOwn");
-      ownInThisCall(actor, request.callId);
-      const plainText = documentPlainText(body);
-      if (plainText.trim() === "") throw invalid();
-      const change = await deps.actions.edit(actor.conversationId, request.messageId, { body, plainText });
-      if (!change) throw notFound();
-      const news = { seq: change.seq, type: "message_edited", message: change.row };
-      return announce(deps, request.callId, news, actor.attendance.id);
-    },
-    delete: (request: OnMessage) => remove(deps, request),
-    react: (request: OnMessage, emoji: string) => react(deps, request, emoji),
-    unreact: (request: OnMessage, emoji: string) => unreact(deps, request, emoji),
-    pin: (request: OnMessage) => pin(deps, request),
-    unpin: async ({ callId, ticketHash, messageId }: OnMessage) => {
-      const actor = await chatActor(deps, callId, ticketHash, "pin");
-      const message = await deps.chat.one(actor.conversationId, messageId);
+    edit: async (request: OnMessage, body: MessageDocument) =>
+      editAs(deps, await seatFor(deps, request, "editOwn"), request.messageId, body),
+    delete: async (request: OnMessage) => deleteAs(deps, await seatFor(deps, request, "deleteOwn"), request.messageId),
+    react: async (request: OnMessage, emoji: string) =>
+      reactAs(deps, await seatFor(deps, request, "react"), request.messageId, emoji),
+    unreact: async (request: OnMessage, emoji: string) =>
+      unreactAs(deps, await seatFor(deps, request, "react"), request.messageId, emoji),
+    pin: async (request: OnMessage) => pin(deps, await seatFor(deps, request, "pin"), request.messageId),
+    unpin: async (request: OnMessage) => {
+      const seat = await seatFor(deps, request, "pin");
+      const message = await deps.chat.one(seat.conversationId, request.messageId);
       if (!message) throw notFound();
       const seq = await deps.actions.unpin(message);
-      if (seq !== undefined)
-        await announce(deps, callId, { seq, type: "pins_changed", message, pinned: false }, actor.attendance.id);
+      if (seq !== undefined) await announce(deps, seat, { seq, type: "pins_changed", message, pinned: false });
     },
     pinned: async (callId: string, ticketHash: string) => {
-      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
-      return { pinned: await pinnedViews(deps, conversationId, attendance.id) };
+      const seat = await meetingSeat(deps, callId, ticketHash, "read");
+      return { pinned: await pinnedViews(deps, seat.conversationId, viewerOf(seat)) };
     },
   };
 }

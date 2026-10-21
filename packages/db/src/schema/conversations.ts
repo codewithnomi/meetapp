@@ -67,6 +67,8 @@ export const conversationMembers = pgTable(
     historyFrom: moment("history_from"),
     /** After leaving or removal: the last news number they may still read (AC-F14-18). */
     leftSeq: integer("left_seq"),
+    /** When they left or were removed: they read messages up to this moment (AC-F14-18). */
+    leftAt: moment("left_at"),
     addedBy: uuid("added_by").references(() => user.id, { onDelete: "set null" }),
     joinedAt: moment("joined_at"),
     /** When a chat request was sent (pending; 30-day expiry, AC-F14-12). */

@@ -127,7 +127,8 @@ export function createChatAfterService(deps: AfterDeps) {
     /** Organizers and co-organizers may still remove a message afterwards (AC-F03-11). */
     delete: async (userId: string, meetingId: string, messageId: string) => {
       const { attendance, conversationId } = await afterActor(deps, userId, meetingId, "deleteAny");
-      if (!(await deps.actions.delete(conversationId, messageId, attendance.id))) throw notFound();
+      const by = { attendanceId: attendance.id, userId: null };
+      if (!(await deps.actions.delete(conversationId, messageId, by))) throw notFound();
     },
     /** A poll's final result, as the person may see it (AC-F03-23, 42). */
     poll: async (userId: string, meetingId: string, pollId: string) => {

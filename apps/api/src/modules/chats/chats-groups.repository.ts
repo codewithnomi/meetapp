@@ -38,6 +38,7 @@ function add(db: Database, conversation: { id: string; workspaceId: string }, pe
         joinedAt: sql`excluded.joined_at`,
         requestedAt: sql`excluded.requested_at`,
         leftSeq: null,
+        leftAt: null,
         hidden: false,
         updatedAt: now,
       },
@@ -71,7 +72,7 @@ export function createChatsGroupsRepository(db: Database) {
     stop: (conversationId: string, userId: string, state: "left" | "removed", leftSeq: number) =>
       db
         .update(conversationMembers)
-        .set({ state, leftSeq })
+        .set({ state, leftSeq, leftAt: new Date() })
         .where(and(eq(conversationMembers.conversationId, conversationId), eq(conversationMembers.userId, userId))),
     rename: (conversationId: string, name: string) =>
       db.update(conversations).set({ name }).where(eq(conversations.id, conversationId)),

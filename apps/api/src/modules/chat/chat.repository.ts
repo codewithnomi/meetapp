@@ -4,10 +4,16 @@ import { type Database, type Executor, chatEvents, chatMessages, conversations, 
 import { meetingConversation, meetingOf, type ChatPlace } from "./meeting-conversation.repository.ts";
 
 export type { ChatPlace };
-import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { claimAttachments } from "./chat-files.repository.ts";
 
 export type NewChatMessage = typeof chatMessages.$inferInsert;
+
+/** What a person may read: F14 history choice and leaving (AC-17, 18). */
+interface Window {
+  from: Date | null;
+  until: Date | null;
+}
 
 /** Where a page of history starts: the oldest message already shown (time, then id). */
 export interface Cursor {
@@ -76,7 +82,9 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
         .from(chatMessages)
         .where(
           and(
-            eq(chatMessages.senderAttendanceId, message.senderAttendanceId ?? ""),
+            message.senderAttendanceId
+              ? eq(chatMessages.senderAttendanceId, message.senderAttendanceId)
+              : and(isNull(chatMessages.senderAttendanceId), eq(chatMessages.senderUserId, message.senderUserId ?? "")),
             eq(chatMessages.clientId, message.clientId),
           ),
         );
@@ -128,11 +136,18 @@ export function createChatRepository(db: Database) {
     insertMessage: (message: NewChatMessage, eventType: string, attachmentIds?: string[]) =>
       insertMessage(db, message, eventType, attachmentIds),
     /** One page of a meeting's history, newest first (the app shows them oldest at the top). */
-    page: (conversationId: string, limit: number, before?: Cursor): Promise<ChatMessage[]> =>
+    page: (conversationId: string, limit: number, before?: Cursor, window?: Window): Promise<ChatMessage[]> =>
       db
         .select()
         .from(chatMessages)
-        .where(and(eq(chatMessages.conversationId, conversationId), before ? olderThan(before) : undefined))
+        .where(
+          and(
+            eq(chatMessages.conversationId, conversationId),
+            before ? olderThan(before) : undefined,
+            window?.from ? gte(chatMessages.createdAt, window.from) : undefined,
+            window?.until ? lte(chatMessages.createdAt, window.until) : undefined,
+          ),
+        )
         .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
         .limit(limit),
     one: async (conversationId: string, id: string): Promise<ChatMessage | undefined> => {

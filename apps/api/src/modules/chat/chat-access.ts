@@ -92,15 +92,24 @@ const iso = (date: Date | null) => (date ? date.toISOString() : null);
 const firstLine = (message: ChatMessage) =>
   message.deletedAt ? DELETED_TEXT : ((message.plainText ?? "").split("\n")[0]?.slice(0, 200) ?? "");
 
-type Reaction = { messageId: string; attendanceId: string; emoji: string; reactorName: string };
+type Reaction = {
+  messageId: string;
+  attendanceId: string | null;
+  userId: string | null;
+  emoji: string;
+  reactorName: string;
+};
+type ReactionEntry = { names: string[]; attendanceIds: string[]; userIds: string[]; mine: boolean };
 
+/** `viewer` is the asker's join (meeting chats) or account (chats). */
 function reactionsFor(rows: Reaction[], messageId: string, viewer: string | undefined) {
-  const byEmoji = new Map<string, { names: string[]; attendanceIds: string[]; mine: boolean }>();
+  const byEmoji = new Map<string, ReactionEntry>();
   for (const row of rows.filter((reaction) => reaction.messageId === messageId)) {
-    const entry = byEmoji.get(row.emoji) ?? { names: [], attendanceIds: [], mine: false };
+    const entry = byEmoji.get(row.emoji) ?? { names: [], attendanceIds: [], userIds: [], mine: false };
     entry.names.push(row.reactorName);
-    entry.attendanceIds.push(row.attendanceId);
-    entry.mine ||= row.attendanceId === viewer;
+    if (row.attendanceId) entry.attendanceIds.push(row.attendanceId);
+    if (row.userId) entry.userIds.push(row.userId);
+    entry.mine ||= viewer !== undefined && (row.attendanceId === viewer || row.userId === viewer);
     byEmoji.set(row.emoji, entry);
   }
   return [...byEmoji].map(([emoji, entry]) => ({ emoji, count: entry.names.length, ...entry }));

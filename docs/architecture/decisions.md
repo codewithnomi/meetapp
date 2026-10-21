@@ -421,3 +421,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** a `conversations` table (kinds: direct, group, meeting); F03's chat tables gain `conversation_id`, filled for existing meeting chats by a re-runnable step, so messages, reactions, pins, polls and files work the same in every chat. Meeting chats keep F03's rules and their call-server delivery during calls.
 - **Why:** Teams treats meeting chats as chats in the same list; one model means one set of checks and one set of tests.
 - **Cost:** none; a careful two-step migration (no column dropped in F14).
+
+### D066: Chat rows name the person by account outside calls (F14)
+- **Date:** 2026-10-21. **Status:** accepted (technical gap found while building F14 T8; within the approved D065 design).
+- **Decision:** F03's chat tables named who sent, reacted, pinned, created a poll, voted, uploaded or deleted by their join of a call. One-to-one and group chats have no call, so migration `0007_chats_people` adds the account next to it (`user_id` on reactions; `deleted_by_user_id`, `uploader_user_id`, `pinned_by_user_id`, `creator_user_id`, `voter_user_id`), lets a reaction have no join, keeps "sent once" per account for chat messages, and adds `mentioned_user_ids` (mentions) and `conversation_members.left_at` (what left people may read). Add-only; meeting chats keep using joins. In code, F03's rules take a "seat" (`chat-seat.ts`): a call's join or a chat's account, with its own rights check, reading window and news delivery.
+- **Why:** the same message, reaction and reply rules for every chat (D065) without copying F03's code.
+- **Cost:** none.

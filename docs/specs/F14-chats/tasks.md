@@ -54,10 +54,16 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-29, 30, 31, 32, 33, 34, 35.
   - Built in T7: rename, add with history, remove anyone, leave, groups with outside people at creation, notes (named, added, removed, left, didn't join), empty groups deleted by the clean-up after 30 days; 5 tests. Reading only up to `left_seq` and refused sends (TC-34) are checked in T8, the live line's part in T9.
 
-- [ ] **T8: Messages in conversations, mentions and reads.**
-  - F03's message, reaction, reply, pin, poll, file and GIF routes per conversation (any member pins and creates polls); edit and delete any time; `mention` parts; read marks, unread, "Seen" and "who has seen" with the receipts setting.
-  - Covers: AC-F14-19, 21, 22, 24.
-  - Tests: TC-F14-36, 37, 38, 39, 45, 48, 49.
+- [x] **T8: Messages in conversations, mentions and reads.** (split in two in T8: 8a messages, 8b pins, polls, files and GIFs)
+  - F03's message, reaction and reply routes per conversation; edit and delete any time; `mention` parts; read marks, unread, "Seen" and "who has seen" with the receipts setting.
+  - Covers: AC-F14-19, 21, 22, 24 (and from T6/T7: AC-F14-12 10 messages, 13 send in blocked chats, 18 reading up to leaving).
+  - Tests: TC-F14-36, 39, 45, 48, 49 (and TC-F14-21, 25, 27, 34 moved here).
+  - Built in T8: migration `0007_chats_people` (D066), F03's rules on a shared "seat" (call join or chat account), `/conversations/:id/messages`, `…/events`, edits, deletes, reactions, `…/seen`, `PATCH /me/settings`, mentions (members only), `mentioned` in the list, hidden chats come back on a new message; 9 integration + 2 unit tests; F03's 134 chat tests still pass. The `read` news on the line is T9.
+
+- [ ] **T8b: Pins, polls, files and GIFs in chats.**
+  - F03's pin (any member, 3 at most), poll (any member creates, its creator closes), file (25 MB, safe types, 10 a minute, 2 GB per chat) and GIF routes per conversation, using the D066 columns.
+  - Covers: AC-F14-19.
+  - Tests: TC-F14-37, 38.
 
 - [ ] **T9: The live line.**
   - `GET /realtime` WebSocket: sign-in before opening, session end closes lines within 2 seconds, Redis channels per conversation and person, subscriptions updated within 2 seconds, typing, limits (64 KB, 5 lines, ping), catch-up after reconnect.

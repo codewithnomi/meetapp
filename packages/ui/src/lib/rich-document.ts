@@ -120,17 +120,19 @@ function editorInlines(content: Paragraph["content"]): EditorNode[] {
   return (content ?? []).map((part) =>
     part.type === "hardBreak"
       ? { type: "hardBreak" }
-      : {
-          type: "text",
-          text: part.text,
-          ...(part.marks
-            ? {
-                marks: part.marks.map((mark) =>
-                  mark.type === "link" ? { type: "link", attrs: { href: mark.href } } : { type: mark.type },
-                ),
-              }
-            : {}),
-        },
+      : part.type === "mention"
+        ? { type: "text", text: part.text }
+        : {
+            type: "text",
+            text: part.text,
+            ...(part.marks
+              ? {
+                  marks: part.marks.map((mark) =>
+                    mark.type === "link" ? { type: "link", attrs: { href: mark.href } } : { type: mark.type },
+                  ),
+                }
+              : {}),
+          },
   );
 }
 

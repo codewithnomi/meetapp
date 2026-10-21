@@ -10,8 +10,10 @@ import {
   pgTable,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { user } from "./auth.ts";
 import { id, moment, timestamps } from "./columns.ts";
 import { callAttendances, calls, meetings, participantGroup } from "./meetings.ts";
@@ -29,6 +31,8 @@ const workspaceRef = () =>
 const meetingRef = () => uuid("meeting_id").references(() => meetings.id, { onDelete: "cascade" });
 /** The conversation (F14, D065). Filled for every row by the F14 fill step; required in a later migration. */
 const conversationRef = () => uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" });
+/** F14 chats have no call: the person is their account (migration 0007). */
+const personRef = (name: string) => uuid(name).references(() => user.id, { onDelete: "set null" });
 const attendanceRef = (name: string) => uuid(name).references(() => callAttendances.id, { onDelete: "set null" });
 
 export const chatMessages = pgTable(
@@ -60,12 +64,19 @@ export const chatMessages = pgTable(
     editedAt: moment("edited_at"),
     deletedAt: moment("deleted_at"),
     deletedByAttendanceId: attendanceRef("deleted_by_attendance_id"),
+    deletedByUserId: personRef("deleted_by_user_id"),
+    /** Chats: people @mentioned in the message (AC-F14-22), for "mentioned" in the chat list. */
+    mentionedUserIds: uuid("mentioned_user_ids").array(),
     ...timestamps(),
   },
   (table) => [
     index("chat_messages_meeting_order_idx").on(table.meetingId, table.createdAt, table.id),
     index("chat_messages_conversation_order_idx").on(table.conversationId, table.createdAt, table.id),
     unique("chat_messages_sent_once").on(table.senderAttendanceId, table.clientId),
+    // Chats: the same account sends a client id once (meeting messages are kept once per join above).
+    uniqueIndex("chat_messages_sent_once_by_user")
+      .on(table.senderUserId, table.clientId)
+      .where(sql`${table.senderAttendanceId} is null`),
     index("chat_messages_sender_user_id_idx").on(table.senderUserId),
     index("chat_messages_reply_to_id_idx").on(table.replyToId),
     index("chat_messages_workspace_id_idx").on(table.workspaceId),
@@ -82,6 +93,7 @@ export const chatAttachments = pgTable(
     /** Empty until the message is sent; unsent files are deleted after an hour. */
     messageId: uuid("message_id").references(() => chatMessages.id, { onDelete: "set null" }),
     uploaderAttendanceId: attendanceRef("uploader_attendance_id"),
+    uploaderUserId: personRef("uploader_user_id"),
     fileName: text("file_name").notNull(),
     /** From the content check, never from the name. */
     mediaType: text("media_type").notNull(),
@@ -110,16 +122,18 @@ export const chatReactions = pgTable(
     messageId: uuid("message_id")
       .notNull()
       .references(() => chatMessages.id, { onDelete: "cascade" }),
-    attendanceId: uuid("attendance_id")
-      .notNull()
-      .references(() => callAttendances.id, { onDelete: "cascade" }),
+    /** Meeting chats: the join that reacted. Chats: empty, `user_id` instead. */
+    attendanceId: uuid("attendance_id").references(() => callAttendances.id, { onDelete: "cascade" }),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
     emoji: text("emoji").notNull(),
     reactorName: text("reactor_name").notNull(),
     ...timestamps(),
   },
   (table) => [
     unique("chat_reactions_once").on(table.messageId, table.attendanceId, table.emoji),
+    uniqueIndex("chat_reactions_once_by_user").on(table.messageId, table.userId, table.emoji),
     index("chat_reactions_attendance_id_idx").on(table.attendanceId),
+    index("chat_reactions_user_id_idx").on(table.userId),
     index("chat_reactions_workspace_id_idx").on(table.workspaceId),
   ],
 );
@@ -137,6 +151,7 @@ export const chatPins = pgTable(
       .unique()
       .references(() => chatMessages.id, { onDelete: "cascade" }),
     pinnedByAttendanceId: attendanceRef("pinned_by_attendance_id"),
+    pinnedByUserId: personRef("pinned_by_user_id"),
     ...timestamps(),
   },
   (table) => [
@@ -161,6 +176,7 @@ export const chatPolls = pgTable(
     multiple: boolean("multiple").notNull(),
     anonymous: boolean("anonymous").notNull(),
     creatorAttendanceId: attendanceRef("creator_attendance_id"),
+    creatorUserId: personRef("creator_user_id"),
     closedAt: moment("closed_at"),
     /** Goes up with every vote, so apps know when to fetch the results again. */
     version: integer("version").notNull().default(0),
@@ -204,9 +220,12 @@ export const chatPollVotes = pgTable(
       .references(() => chatPollOptions.id, { onDelete: "cascade" }),
     voterKey: text("voter_key").notNull(),
     attendanceId: uuid("attendance_id").references(() => callAttendances.id, { onDelete: "cascade" }),
+    /** Chats: the voter's account, only for polls that show names (empty for anonymous ones). */
+    voterUserId: uuid("voter_user_id").references(() => user.id, { onDelete: "cascade" }),
     ...timestamps(),
   },
   (table) => [
+    index("chat_poll_votes_voter_user_id_idx").on(table.voterUserId),
     unique("chat_poll_votes_once").on(table.pollId, table.optionId, table.voterKey),
     index("chat_poll_votes_voter_idx").on(table.pollId, table.voterKey),
     index("chat_poll_votes_attendance_id_idx").on(table.attendanceId),

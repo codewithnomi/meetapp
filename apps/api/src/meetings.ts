@@ -37,6 +37,8 @@ import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
 import { createChatsRepository } from "./modules/chats/chats.repository.ts";
 import { createChatsPeopleService } from "./modules/chats/chats-people.service.ts";
+import { createChatsMessagesRepository } from "./modules/chats/chats-messages.repository.ts";
+import { createChatsMessagesService } from "./modules/chats/chats-messages.service.ts";
 import { createChatsGroupsRepository } from "./modules/chats/chats-groups.repository.ts";
 import { createChatsGroupsService } from "./modules/chats/chats-groups.service.ts";
 import { createChatsRequestsRepository } from "./modules/chats/chats-requests.repository.ts";
@@ -104,6 +106,13 @@ function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: Calls
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
     chats: createChatsService({ ...requestsDeps, readableMeetings: (userId) => chatAfter.readable(userId) }),
     chatsRequests: createChatsRequestsService(requestsDeps),
+    chatsMessages: createChatsMessagesService({
+      ...requestsDeps,
+      meetingChat: chatDeps,
+      messages: createChatsMessagesRepository(db),
+      // The live line (T9) delivers news; until then apps catch up from the saved news.
+      publish: () => Promise.resolve(),
+    }),
     chatsGroups: createChatsGroupsService({ ...requestsDeps, groups: createChatsGroupsRepository(db) }),
     chatsPeople: createChatsPeopleService({
       chats: chatsRepository,

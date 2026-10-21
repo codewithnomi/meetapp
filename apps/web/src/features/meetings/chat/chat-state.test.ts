@@ -44,7 +44,7 @@ const run = (state: ChatState, ...actions: Parameters<typeof chatReducer>[1][]) 
 describe("asSeenBy", () => {
   it("TC-F03-24 [AC-F03-13] news sent to everyone is marked mine only for the people who reacted", () => {
     const news = message({
-      reactions: [{ emoji: "👍", count: 1, names: ["Alice"], attendanceIds: ["alice"], mine: false }],
+      reactions: [{ emoji: "👍", count: 1, names: ["Alice"], attendanceIds: ["alice"], userIds: [], mine: false }],
     });
     expect(asSeenBy(news, "alice").reactions[0]?.mine).toBe(true);
     expect(asSeenBy(news, "bob").reactions[0]?.mine).toBe(false);

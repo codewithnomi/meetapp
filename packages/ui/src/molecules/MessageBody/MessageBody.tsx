@@ -8,7 +8,11 @@ import { Button } from "../../atoms/Button/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 
 type RichMark = { type: "bold" | "italic" | "underline" | "strike" | "code" } | { type: "link"; href: string };
-type RichInline = { type: "text"; text: string; marks?: RichMark[] | undefined } | { type: "hardBreak" };
+type RichInline =
+  | { type: "text"; text: string; marks?: RichMark[] | undefined }
+  | { type: "hardBreak" }
+  /** "@Name" for a chat member (F14 AC-F14-22). */
+  | { type: "mention"; userId: string; text: string };
 interface RichParagraph {
   type: "paragraph";
   content?: RichInline[] | undefined;
@@ -110,6 +114,7 @@ function withMark(node: ReactNode, mark: RichMark, onOpen: (href: string) => voi
 
 function Inline({ part, onOpen }: { part: RichInline; onOpen: (href: string) => void }) {
   if (part.type === "hardBreak") return <br />;
+  if (part.type === "mention") return <span className="font-semibold text-accent-text">{part.text}</span>;
   const marks = part.marks ?? [];
   const isLinkOrCode = marks.some((mark) => mark.type === "link" || mark.type === "code");
   let node: ReactNode = isLinkOrCode ? part.text : linkify(part.text, onOpen);

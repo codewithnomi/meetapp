@@ -85,6 +85,8 @@ const markSchema = z.discriminatedUnion("type", [
 const inlineSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("text"), text: z.string().min(1), marks: z.array(markSchema).max(6).optional() }),
   z.strictObject({ type: z.literal("hardBreak") }),
+  /** "@Name" for a member of the chat (F14 AC-F14-22); anyone else becomes plain text on the server. */
+  z.strictObject({ type: z.literal("mention"), userId: z.uuid(), text: z.string().min(1).max(120) }),
 ]);
 
 const paragraphSchema = z.strictObject({ type: z.literal("paragraph"), content: z.array(inlineSchema).optional() });
@@ -127,7 +129,7 @@ function listDepth(list: List): number {
 }
 
 function paragraphText(paragraph: Paragraph): string {
-  return (paragraph.content ?? []).map((part) => (part.type === "text" ? part.text : "\n")).join("");
+  return (paragraph.content ?? []).map((part) => (part.type === "hardBreak" ? "\n" : part.text)).join("");
 }
 
 function listText(list: List): string[] {
@@ -229,6 +231,8 @@ export const chatMessageSchema = z
         names: z.array(z.string()),
         /** Who reacted (their joins), so each app works out "mine" itself from news sent to everyone. */
         attendanceIds: z.array(z.string()),
+        /** Who reacted in one-to-one and group chats (their accounts; F14). */
+        userIds: z.array(z.string()),
         /** For the person who asked; false in news sent to the whole room. */
         mine: z.boolean(),
       }),
