@@ -56,6 +56,7 @@
 - **Owner check when merging (optional):** try the chat with two windows, including the right-click spelling menu in the message box.
 - **F03 merged** (PR #15, 2026-10-21). **F14 Chats:** requirements **approved** (2026-10-21) on branch `feat/F14-chats` (`docs/specs/F14-chats/requirements.md`, 35 ACs), reviewed by spec-reviewer, owner choices recorded (follow Teams; 250 per group; read receipts on; D063 accepted).
 - **F14 screen designs drafted** (2026-10-21) on the canvas, row "Chats (F14)": Chat screen, New chat, Chat requests, Group chat with the outside-chat setting.
+- Owner look notes on the F14 screens (2026-10-21): buttons had no size (fixed); the side menu folds to icons with tooltips, as in Teams (added as AC-F14-36, owner request).
 - **Next step:** owner approves the F14 screens, then design.md (`/next`).
 
 ## Open questions (need the owner's answer)

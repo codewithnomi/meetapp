@@ -82,6 +82,9 @@ People talk to each other every day in MeetApp, not only in meetings: one-to-one
 ### Meeting chats in the list
 - **AC-F14-28:** WHEN a person took part in a meeting whose chat they may read (F03 AC-42), THEN it appears in the chat list under the meeting's title with a calendar picture; during a running call it opens the live chat, afterwards the read-only chat (F03 rules).
 
+### The side menu
+- **AC-F14-36:** WHEN a person presses the menu button at the top of the side menu, THEN the menu folds to icons only (Home, Chat, Meetings, People, Settings, and the workspace's letter), each showing its name in a tooltip when pointed at or focused, with the Chat unread count on its icon; pressing it again unfolds it. The choice is remembered on this computer (owner, 2026-10-21, as in Teams).
+
 ### Quality
 - **AC-F14-29:** WHEN the person opens a chat, THEN its newest messages show within 1 second, and older ones load while scrolling up (50 at a time), as in F03.
 - **AC-F14-30:** WHEN the whole chat feature is used with the keyboard only or a screen reader, THEN every step works and new messages in the open chat are announced (F03 AC-45); every label comes from the translation file.
