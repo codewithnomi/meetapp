@@ -24,7 +24,7 @@ Every feature's requirements must include a "Security & privacy" section.
 
 ## Input
 - S11. All input is validated (length, type, format). Chat messages and names are shown as plain text (no HTML/scripts).
-- S12. File uploads: allowed types only, size limit, stored privately, never executed.
+- S12. File uploads: allowed types only, size limit, stored privately, never executed. Chat files (F03) are checked by their content, pictures are re-saved without location details, and downloads use 5-minute signed links; virus scanning is added before chat runs online.
 
 ## AI-specific
 - S13. AI search only uses meetings the asking user is allowed to see (permission filter in the database query).
@@ -33,7 +33,7 @@ Every feature's requirements must include a "Security & privacy" section.
 - S16. Only the minimum necessary data is sent to AI services.
 
 ## Desktop app (Electron)
-- S17. Context isolation on, Node integration off, sandbox on.
+- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only).
 - S18. Auto-updates are signed and verified.
 
 ## Code & dependencies

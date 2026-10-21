@@ -3,9 +3,9 @@
 ## What it is
 The MeetApp design system in React, built exactly from the approved design system (D029) and organised by Atomic Design (`docs/engineering/frontend.md`).
 
-- **Atoms:** ActionMenu (the ⋯ menu), Avatar, Badge, Button, Icon (Lucide icons under the design system's names), IconButton, Input, LevelMeter (microphone level), Spinner, Toggle (Radix Switch), Tooltip (Radix).
-- **Molecules:** AccentPicker and SegmentedControl (the Settings → Appearance controls, keyboard radio groups), AvatarUpload, CodeInput, DeviceSelect, Dialog (Radix), InviteForm, JoinLinkCard, LobbyRow, MemberRow, MessageCard, Notice, ParticipantRow, RequestRow, SidePanel.
-- **Organisms:** WorkspaceSwitcher (Radix menu); F02: VideoTile, ControlBar, Gallery (16 a page or speaker view, sized to fit the window), ParticipantPanel, MeetingInfoPanel, MeetingOptionsForm, DevicePanel, SharePicker.
+- **Atoms:** ActionMenu (the ⋯ menu), Avatar, Badge, Button, Icon (Lucide icons under the design system's names), IconButton, Input, LevelMeter (microphone level), Spinner, Toggle (Radix Switch), Tooltip (Radix); F03: ReactionChip, FileChip, Sticker.
+- **Molecules:** AccentPicker and SegmentedControl (the Settings → Appearance controls, keyboard radio groups), AvatarUpload, CodeInput, DeviceSelect, Dialog (Radix), InviteForm, JoinLinkCard, LobbyRow, MemberRow, MessageCard, Notice, ParticipantRow, RequestRow, SidePanel; F03: MessageBody (our own message renderer, never HTML), MessageActions, ReplyQuote, AttachmentCard, SystemNote, PinnedBar, DropArea, EmojiPicker, GifPicker, GifImage, StickerPicker, PollCard.
+- **Organisms:** WorkspaceSwitcher (Radix menu); F02: VideoTile, ControlBar, Gallery (16 a page or speaker view, sized to fit the window), ParticipantPanel, MeetingInfoPanel, MeetingOptionsForm, DevicePanel, SharePicker; F03: ChatMessage, ChatPanel, ChatComposer (rich text with TipTap), PollCreator, ExpressionPicker (emoji, GIFs and stickers with tabs, as in Teams).
 - **Templates:** AppLayout (side menu and screen), AuthLayout (the sign-in screens), MeetingLayout (the meeting screen: fits the window, control bar always visible).
 - **Styles:** import `@meetapp/ui/styles.css` once. It loads the design tokens, Tailwind with only token classes, and the bundled Figtree and JetBrains Mono fonts (no Google request).
 - **Text:** components contain no text of their own. Every label arrives as a prop, already translated.

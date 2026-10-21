@@ -26,7 +26,7 @@ const said = (who: string, at: string, kind = "text") =>
   ({ kind, sender: { attendanceId: who }, createdAt: at }) as ChatMessageView;
 
 describe("grouping", () => {
-  it("TC-F03-95 [AC-F03-48] the same person in the same minute continues the group; anything else starts one", () => {
+  it("TC-F03-96 [AC-F03-48] the same person in the same minute continues the group; anything else starts one", () => {
     const first = said("a", "2026-10-20T10:41:05.000Z");
     expect(continuesGroup(undefined, first)).toBe(false);
     expect(continuesGroup(first, said("a", "2026-10-20T10:41:50.000Z"))).toBe(true);

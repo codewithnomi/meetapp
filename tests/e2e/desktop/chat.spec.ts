@@ -407,7 +407,7 @@ test("TC-F03-69 TC-F03-72 [AC-F03-40] [AC-F03-42] a removed person loses the cha
   await expect(openChatOf(mo.page, title)).toHaveCount(0);
 });
 
-test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, one reaction each, and actions kept inside the panel", async () => {
+test("TC-F03-96 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, one reaction each, and actions kept inside the panel", async () => {
   const who = await team();
   const { host, link } = await hostMeeting(who);
   const mo = await joinWindow(who.member, link);

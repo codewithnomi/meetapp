@@ -23,14 +23,14 @@
   - reviewed by spec-reviewer, and its findings fixed.
 - **F02 verified: PASS (2026-10-20)**, see `docs/specs/F02-meetings/verification.md` (second run; the Medium security items and a clean-up bug found by the reviews were fixed with tests first). Smoothness for 100 people met on an idle Mac only; the owner accepted it (D056), to re-check before going online.
 - **F02 merged** into main (PR #11).
-- **F03 In-meeting chat:** requirements **approved** by the owner (2026-10-20) on branch `feat/F03-chat` (`docs/specs/F03-chat/requirements.md`, 46 ACs), following Teams (D057: no private messages, guests text only, 25 MB files; plus emoji, reactions, replies, rich text and code, pins, polls, GIFs and stickers), reviewed by spec-reviewer and fixed. Virus scanning of chat files is a must-do before going online.
+- **F03 In-meeting chat:** requirements **approved** by the owner (2026-10-20) on branch `feat/F03-chat` (`docs/specs/F03-chat/requirements.md`, 48 ACs), following Teams (D057: no private messages, guests text only, 25 MB files; plus emoji, reactions, replies, rich text and code, pins, polls, GIFs and stickers), reviewed by spec-reviewer and fixed. Virus scanning of chat files is a must-do before going online.
 - **F03 screen designs:** 4 screens drawn on the canvas (2026-10-20, "In-meeting chat (F03)" row), **approved** by the owner (2026-10-20); poll results show after voting, as in Teams.
 - **F03 design:** **approved** by the owner (2026-10-20, `docs/specs/F03-chat/design.md`), reviewed by spec-reviewer and fixed; D058, D060 accepted; D059 accepted (KLIPY GIFs, loaded straight from KLIPY; no old .doc/.xls/.ppt).
 - **F03 tests and tasks:** **approved** by the owner (2026-10-20): tests.md 95 test cases (every AC covered), tasks.md 18 steps (every test case in a step).
 - **F03 building:** T1 done (libraries vetted, GIF settings). KLIPY checked on another network: free, ads optional (never asked for); the owner chose searches from each person's app, as KLIPY requires (D059 changed).
 - **F03 T2 done:** chat tables (migration 0005), message format rules, chat permissions table.
 - **F03 T3 done:** sending, reading pages, catching up after a reconnect, live delivery through the call server, the message limit; security sweeps extended.
-- **F03 T4 done:** edit and delete (own during the call; organizers any), reactions (known emoji, 20 per person), replies with live quotes, pins (3 at most, with a note).
+- **F03 T4 done:** edit and delete (own during the call; organizers any), reactions (known emoji, 20 per person; replaced by one per person, D061), replies with live quotes, pins (3 at most, with a note).
 - **F03 T5 done:** polls (create by organizers and presenters, vote and change, results after voting, anonymous without names or times, close, auto-close at the end).
 - **F03 T6 done:** files and pictures (content checks, cleaned pictures with previews, 25 MB, 10 a minute, 500 MB per meeting, guests none, signed 5-minute downloads with safe headers).
 - **F03 T7 done:** GIF settings for the app's own KLIPY search, GIF and sticker messages, the workspace "Allow GIFs" switch.

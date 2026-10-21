@@ -2,7 +2,7 @@
 feature: F03
 title: In-meeting chat
 status: approved
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # F03 In-meeting chat: Test Cases
@@ -291,7 +291,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 - **Level:** integration
 - **Given** organizer, C1, P1, M2 (attendee) and G1 (a guest made an attendee; guests are presenters by default, as in Teams, and may then create polls) in a call
 - **When** each posts a poll; then polls with a 201-character question, 1 option, 11 options, a 101-character option, and one with `multiple` and `anonymous`
-- **Then** organizer, C1 and P1 succeed (poll message and `poll_created` broadcast); M2 and G1 are refused `NOT_FOUND`; the invalid polls get `CHAT_INVALID`; a poll after the meeting ended is refused
+- **Then** organizer, C1 and P1 succeed (the poll message as `message_created` broadcast); M2 and G1 are refused `NOT_FOUND`; the invalid polls get `CHAT_INVALID`; a poll after the meeting ended is refused
 
 ### TC-F03-38: Voting rules
 - **Covers:** AC-F03-22, AC-F03-23
@@ -771,7 +771,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 
 **Total: 95 test cases.** Every AC (AC-F03-01 to AC-F03-46) appears in at least one row above. Every rule in the "Security & privacy" sections has a security case: S1/S2 (79, 80), S5 (13, 43, 60), S10 (87, 40), S11 (81, 82, 83), S12 (84, 85, 86, 56), S14 (91, 81), S17 (93, 90), LiveKit server-only events (88, 89), GIF privacy (43, 90), spell check privacy (34).
 
-### TC-F03-95: Emoji-only messages and grouped messages
+### TC-F03-96: Emoji-only messages and grouped messages
 - **Covers:** AC-F03-47, AC-F03-48
 - **Level:** unit
 - **Given** the emoji check and the grouping rule

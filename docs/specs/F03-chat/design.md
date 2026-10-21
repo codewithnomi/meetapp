@@ -2,7 +2,7 @@
 feature: F03
 title: In-meeting chat
 status: approved
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # F03 In-meeting chat: Design (HOW)
@@ -29,7 +29,8 @@ apps/api/src/modules/chat/                routes, service, repository, document 
 apps/web/src/features/meetings/chat/      chat panel, composer, message list, pickers, polls, hooks
 packages/ui/src/…                         new components (section 2.3)
 apps/desktop/src/main/chat-desktop.ts     spell-check menu and file-saving rules (chat-bridge.ts wires them)
-packages/ui/src/assets/stickers/          our own sticker set (SVG)
+packages/ui/src/atoms/Sticker/            our own stickers, drawn in code (names in packages/contracts)
+packages/ui/src/organisms/ExpressionPicker/ the emoji, GIF and sticker popup with tabs
 ```
 
 ## 2. Screens and user flow
@@ -65,8 +66,9 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 
 ### 2.3 New UI components (Atomic Design, `packages/ui`)
 - **Atoms:** `ReactionChip`, `FileChip`.
-- **Molecules:** `MessageBody` (our renderer, with code blocks and Copy), `MessageActions`, `ReplyQuote`, `AttachmentCard` (file card or picture preview), `PollOption`, `SystemNote`, `PinnedBar`, `DropArea`. (T11: `ChatMessage` is an organism, because it uses these molecules.)
-- **Organisms:** `ChatComposer`, `FormatToolbar`, `EmojiPicker`, `GifPicker`, `StickerPicker`, `PollCard`, `PollCreator`, `DropArea`, `ChatPanel`.
+- **Atoms:** also `Sticker` (one of our stickers, drawn in code).
+- **Molecules:** `MessageBody` (our renderer, with code blocks and Copy), `MessageActions`, `ReplyQuote`, `AttachmentCard` (file card or picture preview), `SystemNote`, `PinnedBar`, `DropArea`, `EmojiPicker`, `GifPicker`, `GifImage`, `StickerPicker`, `PollCard` (its options are inside it). (T11: `ChatMessage` is an organism, because it uses these molecules.)
+- **Organisms:** `ChatMessage`, `ChatComposer` (its Format toolbar is part of it, `FormatBar.tsx`), `PollCreator`, `ChatPanel`, `ExpressionPicker` (the tabbed emoji, GIF and sticker popup, owner 2026-10-21).
 - The design system canvas gets the new components after the look check, as in F02.
 
 ## 3. How chat works
@@ -76,6 +78,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | read during the call | anyone admitted or in the call (status `admitted`/`in_call`), any group |
 | send text, emoji, GIF, sticker, react, reply, vote | same, while chat mode is `on` or `in_meeting` |
 | attach files | same, but not guests (AC-33) |
+| open or download a file | same, but not guests (as in Teams; AC-31 note, owner choice "follow Teams") |
 | edit own message | the sender, only while the call the message was sent in (`chat_messages.call_id`) is running; otherwise `CHAT_EDIT_ENDED` |
 | delete own message | same as edit |
 | delete anyone's message | organizer, co-organizers (during or after) |
@@ -107,7 +110,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 ### 3.4 Delivering news to everyone (AC-01, 13, 19–23, 37)
 - **How:** after saving, the backend calls LiveKit's `sendData` (reliable) on topic `meetapp.chat`, to everyone in the room, exactly as F02 sends `meetapp.control`.
 - **Trust:** apps accept `meetapp.chat` only when LiveKit marks it as sent by the server (no participant identity). Participants can still publish data (F02's reactions need it), and LiveKit has no per-topic limit (checked in T1, 2026-10-20: `canPublishData` is one yes/no), so apps ignore every `meetapp.chat` packet that comes from a participant.
-- **Events:** `message_created`, `message_edited`, `message_deleted`, `reactions_changed` (message id + new counts), `pins_changed`, `poll_created`, `poll_changed` (counts; see 3.7), `poll_closed`, `chat_mode_changed`.
+- **Events:** `message_created` (also for a new poll's message), `message_edited`, `message_deleted`, `reactions_changed` (the message with its reactions and who reacted, no one person's "mine"), `pins_changed` (with `pinned: true/false`), `poll_changed` (poll id and its new version only, also when a poll closes; see 3.7), `chat_mode_changed`. The first page of messages also carries the newest news number (`lastSeq`).
 - **Size:** LiveKit's reliable packets should stay under about 15 KB. Any event larger than 14 KB (long code, edits included) is sent as `{ type, id, seq }` only; apps then fetch that message (`GET …/chat/messages/:id`).
 - **Missed news:** every chat event gets a per-meeting sequence number (`chat_events` table, kept 1 day). After a reconnect the app asks `GET …/chat/events?after=<last seq>` and applies them in order; if the gap is older than what is kept, it reloads the pinned list and the visible pages. Tested with more than 50 messages plus an edit during a drop.
 - **Speed (AC-01):** one database write plus one LiveKit call; measured in the 100-person load test (95% under 1 second).
@@ -125,7 +128,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 ### 3.7 Polls (AC-21–23)
 - `POST …/polls` (`{ question ≤200, options 2–10 × ≤100, multiple, anonymous }`) makes a poll and its message (the poll appears in the chat like a message).
 - `PUT …/polls/:id/vote` (`{ optionIds }`, one unless `multiple`), replacing the person's earlier vote; refused once closed.
-- `POST …/polls/:id/close`; when the last call of the meeting ends, open polls close automatically (the F02 end handling calls `closeOpenPolls`).
+- `POST …/polls/:id/close`; when the last call of the meeting ends, open polls close automatically (the F02 end handling closes them in the same step, `call-events.repository.ts`).
 - **Who sees results (owner, 2026-10-20, as in Teams):** a person sees counts only after voting; the creator, organizer and co-organizers always. So `poll_changed` carries only the poll id and a version number; apps that may see results fetch `GET …/polls/:id`, which answers with counts only to those allowed.
 - **Anonymous polls:** a vote row stores `voter_key` = HMAC(server secret, poll id + the voter's user id, or guest device fingerprint), never the attendance or the user, and no time. Names are never returned for an anonymous poll. "Nobody" (AC-22) means nobody in the product; someone running the servers with both the secret and the database could work it out, as with any such system. Non-anonymous polls also store `attendance_id`, and the result lists names.
 
@@ -143,14 +146,14 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | `workspaces.allow_gifs` | boolean, default true (AC-27) |
 | `chat_messages` | `id`, `workspace_id`, `meeting_id`, `call_id` (the call it was sent in), `sender_attendance_id`, `sender_user_id` (empty for guests and after account deletion), `sender_name` (as shown at the time), `sender_group`, `kind` (text / gif / sticker / poll / system), `body` (JSON document, section 5.2; empty when deleted), `plain_text` (the visible text, for counting, Copy text and later search; empty when deleted), `gif` (JSON: service id, size, description, the service's image addresses), `sticker` (our sticker name), `system` (JSON: event and name), `reply_to_id`, `client_id`, `created_at`, `edited_at`, `deleted_at`, `deleted_by_attendance_id` |
 | `chat_attachments` | `id`, `workspace_id`, `meeting_id`, `message_id` (empty until sent), `uploader_attendance_id`, `file_name` (cleaned), `media_type` (from the content check), `size_bytes`, `storage_key`, `preview_key` (pictures), `width`, `height`, `status` (uploading / ready / deleted), `created_at` |
-| `chat_reactions` | `message_id`, `attendance_id`, `emoji`, `reactor_name`, `created_at`; primary key on the first three |
+| `chat_reactions` | `id`, `workspace_id`, `message_id`, `attendance_id`, `emoji`, `reactor_name`, `created_at`; unique `(message_id, attendance_id, emoji)`; one per person per message is kept by the service (D061) |
 | `chat_events` | `meeting_id`, `seq`, `type`, `payload`, `created_at`: recent news for catching up after a reconnect, kept 1 day |
 | `chat_pins` | `meeting_id`, `message_id`, `pinned_by_attendance_id`, `created_at`; at most 3 per meeting (a trigger in migration 0005 locks the meeting row first) |
 | `chat_polls` | `id`, `message_id`, `meeting_id`, `question`, `multiple`, `anonymous`, `creator_attendance_id`, `closed_at`, `version` |
 | `chat_poll_options` | `id`, `poll_id`, `position`, `text` |
 | `chat_poll_votes` | `poll_id`, `option_id`, `voter_key`, `attendance_id` (empty when anonymous; for anonymous polls the row times are set to the poll's start, so votes can't be matched with join times); unique on `(poll_id, option_id, voter_key)` |
 
-- **Indexes:** `chat_messages (meeting_id, id)`, unique `(sender_attendance_id, client_id)`, `sender_user_id`, `reply_to_id`; `chat_attachments (meeting_id)`, `(message_id)`, `(status, created_at)` for clean-up.
+- **Indexes:** `chat_messages (meeting_id, created_at, id)`, `workspace_id` on every chat table, `chat_events (created_at)` for clean-up, unique `(sender_attendance_id, client_id)`, `sender_user_id`, `reply_to_id`; `chat_attachments (meeting_id)`, `(message_id)`, `(status, created_at)` for clean-up.
 - **Deleting a meeting** (F06/F10) deletes its chat rows (cascade) and a job deletes its files (AC-43).
 - **Account deletion (AC-44):** F01's deletion job gains a step: the person's messages get empty `body`/`plain_text`, their attachments are deleted, `sender_user_id` becomes empty and `sender_name` becomes "Deleted user"; their reactions and non-anonymous votes are removed.
 - **Data export** (privacy-legal, until built into the app it's done on request): a query by `sender_user_id` returns their messages and files.
@@ -177,7 +180,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Content check:** the first bytes decide the type (library **file-type**, MIT, vetted in T1, D058): PNG, JPEG, GIF, WebP, PDF, DOCX/XLSX/PPTX (ZIP with the right inner parts; macro-enabled files, those with `vbaProject.bin` or a docm/xlsm/pptm content type, are refused). The old Office formats (.doc, .xls, .ppt) are not accepted: their container is shared with installers and often carries macros (owner, 2026-10-20). Plain text and CSV are accepted only when the whole file is valid UTF-8 without control characters. Anything else: `CHAT_FILE_TYPE` and nothing is kept (AC-30).
 - **Pictures:** re-saved with **sharp** (already used for profile photos) in the same format: turned the right way up first (`.rotate()`), then saved without location, camera and other hidden details (AC-32); `limitInputPixels` (40 million) and at most 300 frames for animated GIF/WebP refuse "decompression bombs"; a preview up to 480 px wide is made. Animated GIFs keep their animation.
 - **Names:** the shown file name is cleaned (no paths, no control characters, at most 200 characters).
-- **Storage:** private bucket `chat` in RustFS (R2 later), key `workspace/meeting/attachment-id`; files are never run or opened by the app.
+- **Storage:** the app's private bucket (`STORAGE_BUCKET`, RustFS locally, R2 later), key `chat/<workspace>/<meeting>/<attachment-id>`; files are never run or opened by the app.
 - **Download (changed in T6):** `GET …/attachments/:id/link` checks the rights again and returns a link to our own backend, `GET /api/v1/chat-files/:token`, valid 5 minutes. The token is signed by the backend (HMAC) and names the file and its end time; the backend then sends the file from private storage with `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-store` and the stored type (text and CSV as `text/plain; charset=utf-8`) (AC-F03-31). Storage links can't carry `nosniff`, so files never go to the app straight from storage. People who lost access get no new links. The desktop app saves through a "Save as" dialog (`window.meetapp.files.save`, section 5.1); previews use such links too.
 - **Limits:** 10 uploads a minute per person (`CHAT_FILE_RATE`; every upload counts, sent or not), 500 MB of files per meeting (`CHAT_MEETING_FILES_FULL`), counting all attachments not deleted, including unsent ones, checked with the meeting row locked so two uploads can't both slip under it (AC-34).
 - **Unfinished uploads:** attachments never sent are deleted after 1 hour; a cut-off upload leaves nothing (AC-05).
@@ -196,7 +199,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Showing GIFs:** loaded straight from `static.klipy.com` (allowed by name in the content security policy), using KLIPY's addresses unchanged.
 - **Reduce motion (AC-25):** with the system setting on, the app shows the GIF's still picture with a Play button; every GIF can be paused. Each has a text description from the service ("GIF: …").
 - **Turned off (AC-27):** `PATCH /workspaces/:workspaceId/settings` gains `allowGifs` (owner and admins, as F02's `allowGuests`); when false, the GIF button is hidden and the backend refuses GIF settings and GIF messages with `CHAT_GIFS_OFF`.
-- **Stickers (AC-26):** about 24 SVG stickers drawn for MeetApp, in `packages/ui/src/assets/stickers/`, each with a name and a text description. A sticker message stores only the name; unknown names are refused.
+- **Stickers (AC-26):** 24 stickers (names in `packages/contracts/src/chat.ts`), drawn in code by the `Sticker` atom (8 with their own picture, the rest with a shared look and their words), each with a text description. A sticker message stores only the name; unknown names are refused.
 
 ## 8. Backend endpoints (all under `/api/v1`)
 | Endpoint | Who | Purpose |
@@ -207,7 +210,9 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 | `POST`, `DELETE /calls/:callId/chat/messages/:id/reactions` (`{ emoji }`) | ticket, may write | react |
 | `POST /calls/:callId/chat/pins`, `DELETE …/pins/:messageId` | organizer, co-organizers | pin, unpin |
 | `POST /calls/:callId/chat/polls`, `GET …/polls/:id`, `PUT …/polls/:id/vote`, `POST …/polls/:id/close` | 3.1 | polls |
-| `POST /calls/:callId/chat/attachments`, `GET …/attachments/:id/link` | members and external people in call | upload, download link |
+| `POST /calls/:callId/chat/attachments`, `GET …/attachments/:id/link` | members and external people in call (not guests: they read chat but neither send nor open files, as in Teams) | upload, download link |
+| `GET /calls/:callId/chat/pins` | ticket, in call | the pinned messages |
+| `GET /chat-files/:token` | anyone with a valid 5-minute link (the signed token is the permission) | the file itself, as a download |
 | `GET /calls/:callId/chat/gif-settings` | ticket, GIFs allowed, chat on | the KLIPY key and a per-meeting `customer_id` for the app's own search |
 | `GET /meetings/:meetingId/chat/messages`, `GET …/attachments/:id/link`, `GET …/polls/:id` | signed in, 3.1 | after the meeting |
 | `GET /me/meeting-chats` | signed in | past meetings whose chat the person may open (up to 20), with whether they are an organizer there (T16) |
@@ -233,7 +238,7 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Clock differences:** times come from the server.
 
 ## Security and privacy
-- **S1, S2:** every route checks the ticket of this call or, after the meeting, the signed-in user's non-removed attendance in this meeting (members and external people) (3.1), re-reading roles each time; all refusals look like `NOT_FOUND`; outsider sweeps cover every new route.
+- **S1, S2:** every route (except `GET /chat-files/:token`, whose signed 5-minute token is the permission) checks the ticket of this call or, after the meeting, the signed-in user's non-removed attendance in this meeting (members and external people) (3.1), re-reading roles each time; all refusals look like `NOT_FOUND`; outsider sweeps cover every new route.
 - **S5:** rate limits for messages, reactions, votes and files (3.2, 6); GIF searches are limited by KLIPY itself.
 - **S10:** message text, file names, poll text are never logged (only ids and counts); the log cleaning gains `body`, `plain_text`, `q`, `question`, poll option `text`, `href`, the GIF `description`, `fileName` (the `X-Meeting-Ticket` header is already hidden since F02).
 - **S11:** strict document shape (5.2), text-only rendering, http/https links opened outside, file names cleaned.
@@ -264,7 +269,7 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 | AC-F03-06 | integration (11th in 10 s refused for 10 s, message text) |
 | AC-F03-07, 08, 09 | desktop (badge, 99+, no jump while scrolled up, New messages, empty state) |
 | AC-F03-10, 11 | integration (rights, during vs after, text and file removed) + desktop (confirmation, "Edited", "deleted") |
-| AC-F03-12, 13, 14 | desktop (picker search, skin tones, recent; reactions seen within 1 s; reply quote and jump) + integration (20-reaction limit, emoji list) |
+| AC-F03-12, 13, 14 | desktop (picker search, skin tones, recent; reactions seen within 1 s; reply quote and jump) + integration (one reaction per person, emoji list) |
 | AC-F03-15, 16, 17 | unit (document checks, paste cleaning, renderer) + desktop (toolbar, shortcuts, backticks, Copy exact) |
 | AC-F03-18 | desktop (misspelled word → suggestions in the context menu; no network request) |
 | AC-F03-19, 20 | integration (3-pin limit, rights) + desktop (pinned bar and note within 2 s) |
@@ -277,9 +282,9 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 | AC-F03-45, 46 | desktop keyboard-only run + axe + live announcements; translation keys test |
 
 ## Decisions made here
-- **D058 (accepted):** new libraries for F03: TipTap (editor), Frimousse (emoji picker) with emojibase-data bundled, file-type (content check), `@fastify/multipart` (uploads); vetted in T1.
+- **D058 (accepted):** new libraries for F03: TipTap (editor), Frimousse (emoji picker) with emojibase-data bundled, file-type (content check); uploads use the raw body, no multipart library (T6); vetted in T1.
 - **D059 (accepted by the owner, 2026-10-20; changed in T1):** GIF service: KLIPY's free API, searched from each person's app as KLIPY's rules require, GIFs loaded from KLIPY; we store only which GIF was sent; no ads.
-- **D060 (proposed):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.
+- **D060 (accepted):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.
 
 ## Account deletion and meeting deletion (verification round 1)
 - **AC-44:** `chatUpkeep.forgetPerson(userId)` removes a deleted account's message text and files and keeps "Deleted user · message removed" (tested in after.integration.test.ts); `exportFor(userId)` lists their own messages and files. Account deletion itself arrives with F10: its job must call `forgetPerson` within the 30-day window (privacy-legal.md). Until then, a deletion request is handled by support with that same step (runbooks/calls.md).

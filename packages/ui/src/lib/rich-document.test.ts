@@ -102,7 +102,7 @@ const plain = (text: string, marks?: { type: "bold" }[]): RichDocument => ({
 });
 
 describe("emojiOnly", () => {
-  it("TC-F03-95 [AC-F03-47] 1 to 3 emoji alone show larger; with text, more than 3, or formatted they don't", () => {
+  it("TC-F03-96 [AC-F03-47] 1 to 3 emoji alone show larger; with text, more than 3, or formatted they don't", () => {
     for (const text of ["👍", "🎉🎉🎉", "👍🏽 ❤️", "👨‍👩‍👧"]) expect(emojiOnly(plain(text))).toBe(true);
     for (const text of ["👍 ok", "🎉🎉🎉🎉", "hi", "1", "™", "©", "®"]) expect(emojiOnly(plain(text))).toBe(false);
     expect(emojiOnly(plain("👍", [{ type: "bold" }]))).toBe(false);

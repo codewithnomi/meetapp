@@ -30,7 +30,7 @@ meetapp/
 │   ├── desktop/                   Electron shell (F04)
 │   │   ├── CLAUDE.md              Rules for this app
 │   │   └── src/
-│   │       ├── main/              Window, security, app:// files, settings, Sentry, sign-in token and calls (F01: auth-token.ts keeps the token, auth-client.ts makes the sign-in calls and adds the bearer header, auth-actions.ts the list behind `window.meetapp.auth`, auth-bridge.ts the window bridge, provider-sign-in.ts the Google/Microsoft browser step); F02: media-permissions.ts (camera and mic for our own page, screen only through our picker), media-actions.ts and media-bridge.ts (`window.meetapp.media`), device-key.ts (`window.meetapp.deviceKey`) (later: deep links, updates, notifications)
+│   │       ├── main/              Window, security, app:// files, settings, Sentry, sign-in token and calls (F01: auth-token.ts keeps the token, auth-client.ts makes the sign-in calls and adds the bearer header, auth-actions.ts the list behind `window.meetapp.auth`, auth-bridge.ts the window bridge, provider-sign-in.ts the Google/Microsoft browser step); F02: media-permissions.ts (camera and mic for our own page, screen only through our picker), media-actions.ts and media-bridge.ts (`window.meetapp.media`), device-key.ts (`window.meetapp.deviceKey`); F03: chat-desktop.ts and chat-bridge.ts (spelling menu, `window.meetapp.files.save`) (later: deep links, updates, notifications)
 │   │       └── preload/           The only bridge between app pages and the computer
 │   │   (scripts/second-window.ts: `pnpm dev:window`, a second window with its own sign-in)
 │   │

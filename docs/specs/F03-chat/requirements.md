@@ -2,7 +2,7 @@
 feature: F03
 title: In-meeting chat
 status: approved
-updated: 2026-10-20
+updated: 2026-10-21
 ---
 
 # F03 In-meeting chat: Requirements (WHAT)
@@ -77,7 +77,7 @@ Everyone in a meeting, with the meeting roles and groups from F02 (organizer, co
 - **AC-F03-28:** WHEN a person attaches a file of an allowed type up to 25 MB, THEN it is sent with the message; pictures (PNG, JPEG, GIF, WebP) show a small preview, other files show their name, size and a **Download** button. Allowed types: pictures above, PDF, plain text, CSV, and Word, Excel and PowerPoint documents in the current formats (.docx, .xlsx, .pptx, without macros); old .doc, .xls and .ppt files are refused (owner, 2026-10-20). WHEN a preview can't be shown, THEN the file name and **Download** show instead.
 - **AC-F03-29:** WHEN a person drags one or more files from their computer over the meeting window, THEN a clear drop area appears over the chat panel ("Drop files to share in chat"; the panel opens if it was closed); WHEN they drop the files, THEN they are attached to the message box, ready to send, with the same type and size checks as AC-F03-28 and AC-F03-30; WHEN they drag back out, THEN the drop area goes away. Pasting a picture (Ctrl/Cmd+V) attaches it the same way. Guests see no drop area (AC-F03-33).
 - **AC-F03-30:** WHEN the file is larger than 25 MB, or its real content is not an allowed type (whatever its name says), THEN it is refused with "Files can be up to 25 MB" or "This kind of file can't be sent", and nothing is stored.
-- **AC-F03-31:** WHEN someone downloads or previews a file, THEN it works only for people allowed to see that message; a download link copied out of the app stops working within 5 minutes. WHEN a person loses access (removed, guest left), THEN they get no new links. Files are never opened or run by the app; downloaded files are saved where the person chooses.
+- **AC-F03-31:** WHEN someone downloads or previews a file, THEN it works only for people allowed to see that message; a download link copied out of the app stops working within 5 minutes. WHEN a person loses access (removed, guest left), THEN they get no new links. Files are never opened or run by the app; downloaded files are saved where the person chooses. Guests read the chat but don't open files, as in Teams (owner: "follow Teams").
 - **AC-F03-32:** WHEN a picture is shared, THEN the stored copy has its location and camera details removed.
 - **AC-F03-33:** WHEN a guest is in the meeting, THEN no attach button is shown to them, and the server refuses any upload from a guest.
 - **AC-F03-34:** WHEN a person tries to send more than 10 files in one minute, THEN it is refused with "You can send up to 10 files a minute"; WHEN the files of one meeting reach 500 MB in total, THEN further files are refused with "This meeting has reached its file limit".

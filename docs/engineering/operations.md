@@ -29,6 +29,10 @@ Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts
 
 **Background work for meetings (F02):** the same BullMQ queue runs, inside the API process: a clean-up every minute that ends calls whose room is gone, removes from the call server anyone the backend didn't let in, frees the places of people marked inside who aren't there (lost reports, or let in but never connected within a minute), and times out lobby waits after 30 minutes; two jobs per call at 29 h 50 min ("ends in 10 minutes") and 30 h (the call ends); and a daily forgetting of call-server reports older than 1 day. If Redis is down these don't run: calls still work, but an abandoned call stays open and lost reports aren't repaired until Redis is back (the clean-up then catches up on its next round). See [runbooks/calls.md](../runbooks/calls.md).
 
+**Background work for meeting chat (F03):** the same every-minute clean-up also deletes chat news older than 1 day (each meeting keeps its newest, so news numbers never restart), the files of deleted messages, and files uploaded but never sent within 1 hour. If Redis is down this doesn't run: chat still works, but old files wait in storage until Redis is back. GIFs depend on KLIPY (outside us): if it is down, the GIF tab says "GIFs aren't available right now" and nothing else is affected.
+
+**Before chat runs online (F03):** add virus scanning of chat files (the backend checks content and type, but doesn't scan for viruses yet), and get a free production KLIPY key.
+
 **Local-only risks (accepted for the Mac, revisit before anything runs online):** Alloy is not privileged and has no whole-disk access, but it reads the Docker and containerd sockets, which allow full control of Docker (D041); Grafana opens without a login as a read-only viewer and answers only to 127.0.0.1; Prometheus and the Alloy page have no login; the notification helper listens on 127.0.0.1 only and accepts only JSON from its own address. The database numbers are read with a read-only `meetapp_monitor` login (pg_monitor rights). Every port is bound to 127.0.0.1.
 
 ## 1. Monitoring later in production (same tools, plus)
