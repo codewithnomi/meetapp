@@ -403,7 +403,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none now (same free tools and call server); more work in Phase 1.
 
 ### D063: Typing an exact email in "New chat" shows whether it uses MeetApp (F14)
-- **Date:** 2026-10-21. **Status:** proposed (with the F14 requirements; owner: "follow Teams").
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 requirements, 2026-10-21).
 - **Decision:** as in Teams, a person who types an exact email in New chat sees whether it has a MeetApp account, so they can chat or invite. Only exact emails (no lists, no partial matches), at most 30 lookups a minute per person.
 - **Why:** chatting with people outside the workspace needs it, and Teams does the same. F01 hides it at sign-in (AC-F01-02, 13), where it would help someone guess passwords; here the lookup is signed in, limited and logged.
 - **Cost:** none.
