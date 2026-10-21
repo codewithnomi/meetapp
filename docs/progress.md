@@ -48,7 +48,7 @@
 - **F03 look fixes, rounds 2 and 3 (owner, 2026-10-21):** full-height side panel, bubble-only fading actions, Teams-style reactions with "Add reaction", steady polls, and one emoji/GIF/sticker popup with tabs. Open for before going online: confirm KLIPY's trending answer format with a real key.
 - **F03 T17 done:** chat in the 100-person load meeting: 95% of messages shown within 318 ms (target 1 s). Watch: the F02 video-smoothness check missed in the same run (a numbers-reading hiccup and a busy Mac); rerun on an idle Mac at spec-verify.
 - **F03 T18 done:** the whole chat works with the keyboard only (desktop test); new messages are announced while the chat panel is closed; translation check; docs. All 18 F03 tasks are built.
-- **F03 /spec-verify round 1: FAIL** (2026-10-21, verification.md): all 48 ACs have code and tests, speed target met (318 ms), no Critical/High security issues; but the bug-finder found a High bug (live reaction/edit news shows someone else's reaction as yours) and five Medium ones, and docs disagree with code in 10 places. Fix tasks T-fix-1..9 in tasks.md.
+- **F03 /spec-verify round 1: FAIL** (2026-10-21, verification.md): all 48 ACs have code and tests, speed target met (318 ms), no Critical/High security issues; but the bug-finder found a High bug (live reaction/edit news shows someone else's reaction as yours) and five Medium ones, and docs disagree with code in 10 places. Full run: 1910 unit/integration passed; desktop 72 passed, 8 failed (3 outdated bridge/policy lists, 1 F02 control-bar test, 1 chat test only in the full run, 2 slow-email flakes). Fix tasks T-fix-1..10 in tasks.md.
 - **Next step:** F03 T-fix-1 (`/next`), then `/spec-verify` again.
 
 ## Open questions (need the owner's answer)

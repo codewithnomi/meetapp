@@ -10,13 +10,18 @@ date: 2026-10-21
 ## Automated tests (whole project)
 | Suite | Passed | Failed | Skipped |
 |---|---|---|---|
-| Unit + integration (`pnpm test`) | see "Full run" below | | |
+| Unit + integration (`pnpm test`, 243 files) | 1910 | 0 | 10 todo |
+| Desktop, whole project (`pnpm test`) | 72 | 8 | 0 |
 | Desktop (chat.spec.ts, 12 tests, run 2026-10-21) | 12 | 0 | 0 |
 | Load (TC-F03-02, 2026-10-21) | chat 95% within 318 ms (target 1 s) | F02 video check missed on a busy Mac (to rerun idle) | |
 
 Typecheck: ✅ · Lint and the other checks (`pnpm check`): ✅
 
-Full run: recorded when it finishes (the round-2 report will hold the final counts).
+Full run (2026-10-21, 21 minutes). The 8 desktop failures:
+- media.spec TC-F02-113, security.spec TC-F00-58 and TC-F00-61, sentry.spec TC-F00-58: these older tests list the exact desktop bridge and security policy; F03 added `files.save` and the KLIPY hosts on purpose (design 5.1, D059). The tests must be updated to the new lists.
+- meeting-roles.spec TC-F02-74: "Only presenters can share" not found in the control bar. This may come from the full-height side panel; to investigate.
+- chat.spec TC-F03-69/72: in the full run, the past chat didn't show Xena's message (it passes alone); to investigate.
+- workspaces.spec TC-F01-41 and TC-F01-62: a sign-up code email arrived late (a known slow-mail flake); rerun.
 
 ## Acceptance criteria
 All 48 ACs have code and at least one test that names them (ac-verifier).
