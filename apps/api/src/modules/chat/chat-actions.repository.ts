@@ -23,16 +23,21 @@ const where = (message: Pick<ChatMessage, "workspaceId" | "meetingId" | "convers
   meetingId: message.meetingId,
 });
 
-const live = (meetingId: string, id: string) =>
-  and(eq(chatMessages.meetingId, meetingId), eq(chatMessages.id, id), isNull(chatMessages.deletedAt));
+const live = (conversationId: string, id: string) =>
+  and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.id, id), isNull(chatMessages.deletedAt));
 
 /** Removes a message's content; who sent it and when stay (AC-F03-10). Its pin and files go too. */
-async function deleteMessage(db: Database, meetingId: string, id: string, by: string): Promise<Change<ChatMessage>> {
+async function deleteMessage(
+  db: Database,
+  conversationId: string,
+  id: string,
+  by: string,
+): Promise<Change<ChatMessage>> {
   return db.transaction(async (tx) => {
     const [row] = await tx
       .update(chatMessages)
       .set({ body: null, plainText: null, gif: null, sticker: null, deletedAt: new Date(), deletedByAttendanceId: by })
-      .where(and(live(meetingId, id), ne(chatMessages.kind, "system")))
+      .where(and(live(conversationId, id), ne(chatMessages.kind, "system")))
       .returning();
     if (!row) return undefined;
     await tx.delete(chatPins).where(eq(chatPins.messageId, id));
@@ -115,16 +120,20 @@ async function unpin(db: Database, message: ChatMessage): Promise<number | undef
 export function createChatActionsRepository(db: Database) {
   return {
     /** Changes the text of a message that isn't deleted; undefined when there is none. */
-    edit: (meetingId: string, id: string, change: { body: unknown; plainText: string }): Promise<Change<ChatMessage>> =>
+    edit: (
+      conversationId: string,
+      id: string,
+      change: { body: unknown; plainText: string },
+    ): Promise<Change<ChatMessage>> =>
       db.transaction(async (tx) => {
         const [row] = await tx
           .update(chatMessages)
           .set({ ...change, editedAt: new Date() })
-          .where(and(live(meetingId, id), eq(chatMessages.kind, "text")))
+          .where(and(live(conversationId, id), eq(chatMessages.kind, "text")))
           .returning();
         return row ? { row, seq: await recordEvent(tx, where(row), "message_edited", { id }) } : undefined;
       }),
-    delete: (meetingId: string, id: string, by: string) => deleteMessage(db, meetingId, id, by),
+    delete: (conversationId: string, id: string, by: string) => deleteMessage(db, conversationId, id, by),
     addReaction: (message: ChatMessage, person: { attendanceId: string; name: string }, emoji: string) =>
       addReaction(db, message, person, emoji),
     removeReaction: (message: ChatMessage, attendanceId: string, emoji: string) =>
@@ -137,19 +146,19 @@ export function createChatActionsRepository(db: Database) {
         ? Promise.resolve([])
         : db.select().from(chatReactions).where(inArray(chatReactions.messageId, messageIds)),
     /** The messages these replies quote, from the same meeting only. */
-    quoted: (meetingId: string, ids: string[]) =>
+    quoted: (conversationId: string, ids: string[]) =>
       ids.length === 0
         ? Promise.resolve([])
         : db
             .select()
             .from(chatMessages)
-            .where(and(eq(chatMessages.meetingId, meetingId), inArray(chatMessages.id, ids))),
-    pinnedIds: async (meetingId: string, executor: Executor = db) =>
+            .where(and(eq(chatMessages.conversationId, conversationId), inArray(chatMessages.id, ids))),
+    pinnedIds: async (conversationId: string, executor: Executor = db) =>
       (
         await executor
           .select({ id: chatPins.messageId })
           .from(chatPins)
-          .where(eq(chatPins.meetingId, meetingId))
+          .where(eq(chatPins.conversationId, conversationId))
           .orderBy(chatPins.createdAt)
       ).map((row) => row.id),
   };

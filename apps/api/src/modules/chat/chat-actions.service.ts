@@ -33,7 +33,7 @@ const editEnded = () => new AppError(409, "CHAT_EDIT_ENDED", "This message can n
 /** The caller and a message of their meeting; 404 when the message isn't there. */
 async function onMessage(deps: ChatDeps, { callId, ticketHash, messageId }: OnMessage, action: ChatAction) {
   const actor = await chatActor(deps, callId, ticketHash, action);
-  const message = await deps.chat.one(actor.row.meeting.id, messageId);
+  const message = await deps.chat.one(actor.conversationId, messageId);
   if (!message || message.deletedAt) throw notFound();
   return { ...actor, message };
 }
@@ -82,10 +82,10 @@ async function announce(deps: ChatDeps, callId: string, news: News, viewer: stri
 
 /** "<name> pinned a message", saved as a system note and delivered like a message (AC-F03-19). */
 async function pinnedNote(deps: ChatDeps, callId: string, actor: Actor): Promise<void> {
-  const { attendance, row } = actor;
+  const { attendance } = actor;
   const saved = await deps.chat.insertMessage(
     {
-      ...sentBy({ attendance, row }, callId),
+      ...sentBy(actor, callId),
       kind: "system",
       system: { event: "pinned", name: attendance.displayName },
       clientId: randomUUID(),
@@ -110,7 +110,7 @@ async function remove(deps: ChatDeps, request: OnMessage) {
     const organizer = await chatActor(deps, callId, ticketHash, "deleteAny").catch(() => undefined);
     if (!organizer) ownInThisCall(actor, callId);
   }
-  const change = await deps.actions.delete(actor.row.meeting.id, messageId, actor.attendance.id);
+  const change = await deps.actions.delete(actor.conversationId, messageId, actor.attendance.id);
   if (!change) throw notFound();
   const news = { seq: change.seq, type: "message_deleted", message: change.row };
   await announce(deps, callId, news, actor.attendance.id);
@@ -155,7 +155,7 @@ export function createChatActionsService(deps: ChatDeps) {
       ownInThisCall(actor, request.callId);
       const plainText = documentPlainText(body);
       if (plainText.trim() === "") throw invalid();
-      const change = await deps.actions.edit(actor.row.meeting.id, request.messageId, { body, plainText });
+      const change = await deps.actions.edit(actor.conversationId, request.messageId, { body, plainText });
       if (!change) throw notFound();
       const news = { seq: change.seq, type: "message_edited", message: change.row };
       return announce(deps, request.callId, news, actor.attendance.id);
@@ -166,15 +166,15 @@ export function createChatActionsService(deps: ChatDeps) {
     pin: (request: OnMessage) => pin(deps, request),
     unpin: async ({ callId, ticketHash, messageId }: OnMessage) => {
       const actor = await chatActor(deps, callId, ticketHash, "pin");
-      const message = await deps.chat.one(actor.row.meeting.id, messageId);
+      const message = await deps.chat.one(actor.conversationId, messageId);
       if (!message) throw notFound();
       const seq = await deps.actions.unpin(message);
       if (seq !== undefined)
         await announce(deps, callId, { seq, type: "pins_changed", message, pinned: false }, actor.attendance.id);
     },
     pinned: async (callId: string, ticketHash: string) => {
-      const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");
-      return { pinned: await pinnedViews(deps, row.meeting.id, attendance.id) };
+      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
+      return { pinned: await pinnedViews(deps, conversationId, attendance.id) };
     },
   };
 }

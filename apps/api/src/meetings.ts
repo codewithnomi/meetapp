@@ -116,6 +116,8 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     callsDeps,
     /** Starts the call jobs (server.ts); from then on new calls get their 30-hour jobs. */
     startCallJobs: async () => {
+      // F14 step 2 (D065): before serving, every meeting chat row gets its conversation; reads use it.
+      await chat.chatUpkeep.fillConversations();
       const started = await startCallJobs({ host: config.REDIS_HOST, port: config.REDIS_PORT }, callJobs);
       callsDeps.scheduler.schedule = started.schedule;
       return started;

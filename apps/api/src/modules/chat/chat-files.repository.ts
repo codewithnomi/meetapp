@@ -59,11 +59,11 @@ export function createChatFilesRepository(db: Database) {
         .where(eq(chatAttachments.id, id)),
     /** An upload that failed half-way leaves no record. */
     forget: (id: string) => db.delete(chatAttachments).where(eq(chatAttachments.id, id)),
-    byId: async (meetingId: string, id: string): Promise<ChatAttachment | undefined> => {
+    byId: async (conversationId: string, id: string): Promise<ChatAttachment | undefined> => {
       const [row] = await db
         .select()
         .from(chatAttachments)
-        .where(and(eq(chatAttachments.meetingId, meetingId), eq(chatAttachments.id, id)));
+        .where(and(eq(chatAttachments.conversationId, conversationId), eq(chatAttachments.id, id)));
       return row;
     },
     /** For the download route, which has only the signed id. */

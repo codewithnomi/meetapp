@@ -41,7 +41,8 @@ export const personKey = (attendance: { id: string; userId: string | null; guest
 export const invalid = () => new AppError(400, "CHAT_INVALID", "This message can't be sent.");
 
 /** The caller in this running call, allowed to do `action` in its chat; 404 or CHAT_OFF otherwise. */
-export async function chatActor({ calls }: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
+export async function chatActor(deps: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
+  const { calls } = deps;
   const attendance = await calls.attendances.byTicket(ticketHash);
   const present = (IN_CALL_STATUSES as readonly string[]).includes(attendance?.status ?? "");
   if (!attendance || attendance.callId !== callId || !present) throw notFound();
@@ -59,7 +60,9 @@ export async function chatActor({ calls }: ChatDeps, callId: string, ticketHash:
     if (canChat(action, { ...facts, mode: "on" })) throw new AppError(403, "CHAT_OFF", "Chat is turned off.");
     throw notFound();
   }
-  return { attendance: person, row };
+  // The meeting's conversation: chat rows are read by conversation (F14 D065).
+  const conversationId = await deps.chat.conversationOf(row.meeting.workspaceId, row.meeting.id);
+  return { attendance: person, row, conversationId };
 }
 
 /** Sends news to the room; a packet too big for the call server carries only the id (design 3.4). */
@@ -148,12 +151,12 @@ function viewOf(message: ChatMessage, extras: Extras) {
 /** What apps see of these messages, for one viewer: quotes and reactions are added (AC-F03-13, 14). */
 export async function viewsOf(
   deps: ChatDeps,
-  meetingId: string,
+  conversationId: string,
   messages: ChatMessage[],
   viewer?: string,
 ): Promise<ChatMessageView[]> {
   const replyIds = [...new Set(messages.flatMap((message) => (message.replyToId ? [message.replyToId] : [])))];
-  const quoted = new Map((await deps.actions.quoted(meetingId, replyIds)).map((row) => [row.id, row]));
+  const quoted = new Map((await deps.actions.quoted(conversationId, replyIds)).map((row) => [row.id, row]));
   const ids = messages.map((message) => message.id);
   const reactions = await deps.actions.reactionsOf(ids);
   const polls = new Map((await deps.polls.byMessages(ids)).map((poll) => [poll.messageId, poll.id]));
@@ -181,28 +184,31 @@ export async function viewsOf(
 
 /** One message as apps see it. */
 export async function viewOne(deps: ChatDeps, message: ChatMessage, viewer?: string): Promise<ChatMessageView> {
-  const [view] = await viewsOf(deps, meetingOf(message), [message], viewer);
+  const conversationId =
+    message.conversationId ?? (await deps.chat.conversationOf(message.workspaceId, meetingOf(message)));
+  const [view] = await viewsOf(deps, conversationId, [message], viewer);
   if (!view) throw notFound();
   return view;
 }
 
-/** The pinned messages of a meeting, oldest pin first (AC-F03-19). */
-export async function pinnedViews(deps: ChatDeps, meetingId: string, viewer?: string): Promise<ChatMessageView[]> {
-  const ids = await deps.actions.pinnedIds(meetingId);
-  const rows = await Promise.all(ids.map((id) => deps.chat.one(meetingId, id)));
+/** The pinned messages of a conversation, oldest pin first (AC-F03-19). */
+export async function pinnedViews(deps: ChatDeps, conversationId: string, viewer?: string): Promise<ChatMessageView[]> {
+  const ids = await deps.actions.pinnedIds(conversationId);
+  const rows = await Promise.all(ids.map((id) => deps.chat.one(conversationId, id)));
   return viewsOf(
     deps,
-    meetingId,
+    conversationId,
     rows.flatMap((message) => (message ? [message] : [])),
     viewer,
   );
 }
 
 /** Where a new message belongs and who sent it, as kept in the record. */
-export function sentBy({ attendance, row }: Awaited<ReturnType<typeof chatActor>>, callId: string) {
+export function sentBy({ attendance, row, conversationId }: Awaited<ReturnType<typeof chatActor>>, callId: string) {
   return {
     workspaceId: row.meeting.workspaceId,
     meetingId: row.meeting.id,
+    conversationId,
     callId,
     senderAttendanceId: attendance.id,
     senderUserId: attendance.userId,

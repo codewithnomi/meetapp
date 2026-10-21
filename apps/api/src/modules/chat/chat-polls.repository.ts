@@ -129,11 +129,11 @@ export function createChatPollsRepository(db: Database) {
   return {
     create: (poll: NewPoll) => create(db, poll),
     vote: (poll: ChatPoll, ballot: Ballot) => vote(db, poll, ballot),
-    byId: async (meetingId: string, pollId: string): Promise<ChatPoll | undefined> => {
+    byId: async (conversationId: string, pollId: string): Promise<ChatPoll | undefined> => {
       const [row] = await db
         .select()
         .from(chatPolls)
-        .where(and(eq(chatPolls.meetingId, meetingId), eq(chatPolls.id, pollId)));
+        .where(and(eq(chatPolls.conversationId, conversationId), eq(chatPolls.id, pollId)));
       return row;
     },
     /** Closes an open poll; undefined when it was already closed. */

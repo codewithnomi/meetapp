@@ -38,7 +38,7 @@ const isOrganizer = (actor: Actor) => ["organizer", "co_organizer"].includes(rol
 
 async function onPoll(deps: ChatDeps, { callId, ticketHash, pollId }: OnPoll, action: "read" | "vote") {
   const actor = await chatActor(deps, callId, ticketHash, action);
-  const poll = await deps.polls.byId(actor.row.meeting.id, pollId);
+  const poll = await deps.polls.byId(actor.conversationId, pollId);
   if (!poll) throw notFound();
   return { actor, poll };
 }

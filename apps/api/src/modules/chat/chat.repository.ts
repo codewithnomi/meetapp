@@ -1,6 +1,6 @@
 // Chat storage (F03 design.md sections 3.2–3.4 and 4). Database access only: every query is limited
 // to one meeting, which the service reached through the caller's ticket (S2).
-import { type Database, type Executor, chatEvents, chatMessages, meetings, type ChatMessage } from "@meetapp/db";
+import { type Database, type Executor, chatEvents, chatMessages, conversations, type ChatMessage } from "@meetapp/db";
 import { meetingConversation, meetingOf, type ChatPlace } from "./meeting-conversation.repository.ts";
 
 export type { ChatPlace };
@@ -21,13 +21,13 @@ const olderThan = (cursor: Cursor) =>
     and(eq(chatMessages.createdAt, cursor.createdAt), lt(chatMessages.id, cursor.id)),
   );
 
-/** The next event number for a meeting; the meeting row is locked so numbers never repeat. */
-async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
-  await executor.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${meetingId} for update`);
+/** The next event number for a conversation; its row is locked so numbers never repeat. */
+async function nextSeq(executor: Executor, conversationId: string): Promise<number> {
+  await executor.execute(sql`select 1 from ${conversations} where ${conversations.id} = ${conversationId} for update`);
   const [row] = await executor
     .select({ last: sql<number>`coalesce(max(${chatEvents.seq}), 0)::int` })
     .from(chatEvents)
-    .where(eq(chatEvents.meetingId, meetingId));
+    .where(eq(chatEvents.conversationId, conversationId));
   return (row?.last ?? 0) + 1;
 }
 
@@ -38,11 +38,12 @@ export async function recordEvent(
   type: string,
   payload: Record<string, unknown>,
 ): Promise<number> {
-  const meetingId = meetingOf(where);
-  const seq = await nextSeq(executor, meetingId);
   // Only these fields: callers may pass a whole message or poll row.
   const { workspaceId } = where;
-  const conversationId = where.conversationId ?? (await meetingConversation(executor, workspaceId, meetingId));
+  const meetingId = where.meetingId ?? null;
+  const conversationId =
+    where.conversationId ?? (await meetingConversation(executor, workspaceId, meetingOf({ meetingId })));
+  const seq = await nextSeq(executor, conversationId);
   await executor.insert(chatEvents).values({ workspaceId, meetingId, conversationId, seq, type, payload });
   return seq;
 }
@@ -95,48 +96,50 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
 }
 
 /** Events after `after`, oldest first, and the oldest number still kept. */
-async function eventsAfter(db: Database, meetingId: string, after: number) {
+async function eventsAfter(db: Database, conversationId: string, after: number) {
   const rows = await db
     .select()
     .from(chatEvents)
-    .where(and(eq(chatEvents.meetingId, meetingId), gt(chatEvents.seq, after)))
+    .where(and(eq(chatEvents.conversationId, conversationId), gt(chatEvents.seq, after)))
     .orderBy(asc(chatEvents.seq))
     .limit(500);
   const [oldest] = await db
     .select({ seq: sql<number | null>`min(${chatEvents.seq})::int` })
     .from(chatEvents)
-    .where(eq(chatEvents.meetingId, meetingId));
+    .where(eq(chatEvents.conversationId, conversationId));
   return { rows, oldestKept: oldest?.seq ?? null };
 }
 
 export function createChatRepository(db: Database) {
   return {
     /** The newest news number of a meeting (0 before any), sent with the first page (verification round 1). */
-    lastSeq: async (meetingId: string): Promise<number> => {
+    lastSeq: async (conversationId: string): Promise<number> => {
       const [row] = await db
         .select({ last: sql<number>`coalesce(max(${chatEvents.seq}), 0)::int` })
         .from(chatEvents)
-        .where(eq(chatEvents.meetingId, meetingId));
+        .where(eq(chatEvents.conversationId, conversationId));
       return row?.last ?? 0;
     },
     insertMessage: (message: NewChatMessage, eventType: string, attachmentIds?: string[]) =>
       insertMessage(db, message, eventType, attachmentIds),
     /** One page of a meeting's history, newest first (the app shows them oldest at the top). */
-    page: (meetingId: string, limit: number, before?: Cursor): Promise<ChatMessage[]> =>
+    page: (conversationId: string, limit: number, before?: Cursor): Promise<ChatMessage[]> =>
       db
         .select()
         .from(chatMessages)
-        .where(and(eq(chatMessages.meetingId, meetingId), before ? olderThan(before) : undefined))
+        .where(and(eq(chatMessages.conversationId, conversationId), before ? olderThan(before) : undefined))
         .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
         .limit(limit),
-    one: async (meetingId: string, id: string): Promise<ChatMessage | undefined> => {
+    one: async (conversationId: string, id: string): Promise<ChatMessage | undefined> => {
       const [row] = await db
         .select()
         .from(chatMessages)
-        .where(and(eq(chatMessages.meetingId, meetingId), eq(chatMessages.id, id)));
+        .where(and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.id, id)));
       return row;
     },
-    eventsAfter: (meetingId: string, after: number) => eventsAfter(db, meetingId, after),
+    eventsAfter: (conversationId: string, after: number) => eventsAfter(db, conversationId, after),
+    /** The meeting's conversation (made on first need), for meeting chat requests (D065). */
+    conversationOf: (workspaceId: string, meetingId: string) => meetingConversation(db, workspaceId, meetingId),
   };
 }
 

@@ -106,8 +106,8 @@ export interface FileAnswer {
 }
 
 /** A 5-minute link to a sent file of this meeting; the caller checked the person's rights (AC-F03-31). */
-export async function linkTo(deps: ChatDeps, meetingId: string, attachmentId: string, preview: boolean) {
-  const file = await deps.files.byId(meetingId, attachmentId);
+export async function linkTo(deps: ChatDeps, conversationId: string, attachmentId: string, preview: boolean) {
+  const file = await deps.files.byId(conversationId, attachmentId);
   if (!file || file.status !== "ready" || !file.messageId || (preview && !file.previewKey)) throw notFound();
   const expiresAt = deps.calls.now().getTime() + LINK_SECONDS * 1000;
   const token = fileToken(deps.fileLinkSecret, file.id, preview, expiresAt);
@@ -133,8 +133,8 @@ export function createChatFilesService(deps: ChatDeps, storage: FileStorage) {
     upload: (request: UploadRequest) => upload(deps, storage, request),
     /** A 5-minute link for someone allowed to see the message, never for guests (AC-F03-31, 33). */
     link: async (callId: string, ticketHash: string, attachmentId: string, preview: boolean) => {
-      const { row } = await chatActor(deps, callId, ticketHash, "download");
-      return linkTo(deps, row.meeting.id, attachmentId, preview);
+      const { conversationId } = await chatActor(deps, callId, ticketHash, "download");
+      return linkTo(deps, conversationId, attachmentId, preview);
     },
     download: (token: string) => download(deps, storage, token),
   };

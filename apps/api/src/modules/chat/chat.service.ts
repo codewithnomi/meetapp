@@ -57,18 +57,18 @@ async function takeMessageTurn(deps: ChatDeps, person: string): Promise<void> {
 }
 
 async function send(deps: ChatDeps, callId: string, ticketHash: string, input: SendInput) {
-  const { attendance, row } = await chatActor(deps, callId, ticketHash, "send");
+  const { attendance, row, conversationId } = await chatActor(deps, callId, ticketHash, "send");
   // Text, files, or both, or a GIF, or a sticker; an empty message is refused (AC-F03-03).
   const { attachmentIds, ...content } = contentOf(input, row);
   // Guests send no files (AC-F03-33).
   if (attachmentIds.length > 0) await chatActor(deps, callId, ticketHash, "attach");
   // A reply quotes a message of this meeting only (AC-F03-14).
-  if (input.replyToId && !(await deps.chat.one(row.meeting.id, input.replyToId))) throw invalid();
+  if (input.replyToId && !(await deps.chat.one(conversationId, input.replyToId))) throw invalid();
   await takeMessageTurn(deps, personKey(attendance));
   const saved = await deps.chat
     .insertMessage(
       {
-        ...sentBy({ attendance, row }, callId),
+        ...sentBy({ attendance, row, conversationId }, callId),
         ...content,
         replyToId: input.replyToId ?? null,
         clientId: input.clientId,
@@ -104,26 +104,25 @@ export function createChatService(deps: ChatDeps) {
     gifSettings: (callId: string, ticketHash: string) => gifSettings(deps, callId, ticketHash),
     send: (callId: string, ticketHash: string, input: SendInput) => send(deps, callId, ticketHash, input),
     page: async (callId: string, ticketHash: string, query: { before?: string | undefined; limit: number }) => {
-      const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");
-      const meetingId = row.meeting.id;
+      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
       // Read before the page: news after this number reaches the app live or by catching up (none is lost).
-      const lastSeq = query.before ? undefined : await deps.chat.lastSeq(meetingId);
-      const rows = await deps.chat.page(meetingId, query.limit + 1, parseCursor(query.before));
-      const messages = await viewsOf(deps, meetingId, rows.slice(0, query.limit), attendance.id);
+      const lastSeq = query.before ? undefined : await deps.chat.lastSeq(conversationId);
+      const rows = await deps.chat.page(conversationId, query.limit + 1, parseCursor(query.before));
+      const messages = await viewsOf(deps, conversationId, rows.slice(0, query.limit), attendance.id);
       if (query.before) return { messages, hasMore: rows.length > query.limit };
-      const pinned = await pinnedViews(deps, meetingId, attendance.id);
+      const pinned = await pinnedViews(deps, conversationId, attendance.id);
       return { messages, hasMore: rows.length > query.limit, pinned, lastSeq };
     },
     one: async (callId: string, ticketHash: string, messageId: string) => {
-      const { row, attendance } = await chatActor(deps, callId, ticketHash, "read");
-      const message = await deps.chat.one(row.meeting.id, messageId);
+      const { attendance, conversationId } = await chatActor(deps, callId, ticketHash, "read");
+      const message = await deps.chat.one(conversationId, messageId);
       if (!message) throw notFound();
       return viewOne(deps, message, attendance.id);
     },
     /** Missed news after a reconnect; `gap` when older news was already cleaned (design 3.4). */
     events: async (callId: string, ticketHash: string, after: number) => {
-      const { row } = await chatActor(deps, callId, ticketHash, "read");
-      const { rows, oldestKept } = await deps.chat.eventsAfter(row.meeting.id, after);
+      const { conversationId } = await chatActor(deps, callId, ticketHash, "read");
+      const { rows, oldestKept } = await deps.chat.eventsAfter(conversationId, after);
       const gap = oldestKept !== null && oldestKept > after + 1;
       const events = rows.map((event) => ({
         seq: event.seq,

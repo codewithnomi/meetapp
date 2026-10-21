@@ -41,6 +41,8 @@ async function modeChanged(deps: UpkeepDeps, meetingId: string, byName: string):
 
 /** Old catch-up news, deleted messages' files and files never sent are removed (design 3.4, 6). */
 async function cleanUp(deps: UpkeepDeps): Promise<void> {
+  // F14 step 2: fill any meeting chat row still without its conversation (nothing to do once filled).
+  await deps.upkeep.fillConversations();
   const now = deps.calls.now().getTime();
   await deps.upkeep.forgetEventsBefore(new Date(now - EVENTS_KEPT_MS));
   for (const file of await deps.upkeep.filesToRemove(new Date(now - UNSENT_KEPT_MS))) {
@@ -55,6 +57,8 @@ export function createChatUpkeepService(deps: UpkeepDeps) {
   return {
     modeChanged: (meetingId: string, byName: string) => modeChanged(deps, meetingId, byName),
     cleanUp: () => cleanUp(deps),
+    /** F14 step 2 (D065), also run on every clean-up; returns the rows filled. */
+    fillConversations: () => deps.upkeep.fillConversations(),
     /** Called by the account deletion (F10; until then by support, privacy-legal.md). */
     forgetPerson: (userId: string) => deps.upkeep.forgetPerson(userId),
     exportFor: (userId: string) => deps.upkeep.exportFor(userId),

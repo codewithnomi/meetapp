@@ -23,10 +23,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-77 (first part), TC-F14-78.
   - **Built in T2:** schema `conversations.ts` (5 tables, each with `id`, `workspace_id` where owned) and migration `0006_chats` (adds only: meeting columns optional, empty `conversation_id` on F03's 5 tables with indexes, `user.read_receipts` and `workspaces.allow_outside_chat` default on); `meetingConversation` (find or create, safe to repeat) used by every F03 save, so new rows and news carry their conversation; new meetings get theirs at creation. Tests: migration on an F03 database loses nothing; one conversation per meeting; one direct chat per pair; F03's chat and meetings backend suites pass (132).
 
-- [ ] **T3: Migration steps 2 and 3 (fill, then read by conversation).**
+- [x] **T3: Migration steps 2 and 3 (fill, then read by conversation).**
   - The re-runnable fill until no message is left without a conversation; F03's reads switch to `conversation_id`; F03's routes find the meeting's conversation.
   - Covers: AC-F14-28, D065.
   - Tests: TC-F14-77, TC-F14-80.
+  - **Built in T3:** `fillConversations` (meetings get conversations; F03's 5 tables filled in batches of 5,000; safe to stop and re-run; returns rows filled) runs once before the server starts serving and on every chat clean-up; F03's reading functions (page, one, news, pins, quotes, polls, files, last news number) and news numbering now work by conversation; `chatActor`/`afterActor` hand services the meeting's conversation. Tests: the fill with 12,000 old messages while new ones arrive (none lost, none left, re-run 0); F03's chat, meetings and calls backend suites pass (199). The desktop suites run at `/spec-verify` (D052).
 
 ## Backend
 - [ ] **T4: Conversations and the chat list.**
