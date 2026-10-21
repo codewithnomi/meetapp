@@ -34,6 +34,8 @@ export const OPTIONAL_KEYS: readonly string[] = [
   "MICROSOFT_AUTHORITY",
   "LIVEKIT_PUBLIC_URL",
   "CALLS_KEEP_SIMULATED_PEOPLE",
+  "GIF_API_KEY",
+  "GIF_API_URL",
 ];
 
 /**
@@ -60,6 +62,8 @@ export function fakeEnv(nodeEnv: NodeEnv = "test"): Record<string, string> {
     "MICROSOFT_AUTHORITY",
     "LIVEKIT_PUBLIC_URL",
     "CALLS_KEEP_SIMULATED_PEOPLE",
+    "GIF_API_KEY",
+    "GIF_API_URL",
   ]) {
     env[key] = "";
   }

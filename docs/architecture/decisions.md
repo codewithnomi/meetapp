@@ -361,3 +361,43 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Measured again (2026-10-20, F02's final runs, Mac busy with VS Code, Teams, Firefox and Docker):** sound delay 70 ms, joins 1.9 s (95th percentile), 25-person meeting at most 598 MB: met. Smoothness: the worst tile showed 73% (page 1) and 63% (page 2) of the frames it received: **not met** on the busy Mac. The owner chose not to re-run it on an idle Mac and accepted the earlier idle-Mac result (2026-10-20); to re-check before going online.
 - **Why:** the old numbers expected more than the senders send (15) and less memory than comparable apps use. Memory is the person's own computer while a meeting is open: nothing is stored on a server and nothing costs money.
 - **Cost:** none.
+
+### D057: Meeting chat follows Microsoft Teams (F03)
+- **Date:** 2026-10-20. **Status:** accepted (owner: "we will follow how microsoft teams is handling this").
+- **Decision:** the meeting chat is one shared conversation for everyone in the meeting: **no private messages inside it** (in Teams, private one-to-one chat is the separate Chat tab; for us a "later" item). **Guests** can chat but can't share files. Files up to **25 MB**. People can edit and delete their own messages; the organizer and co-organizers can delete anyone's. The organizer or a co-organizer sets meeting chat to On, In-meeting only, or Off.
+- **Added (owner, 2026-10-20):** as in Teams: emoji picker, reactions, replies with a quote, rich text with code blocks, pinned messages (organizer and co-organizers, up to 3), polls (organizer, co-organizers, presenters create; everyone votes), GIFs from an outside GIF service (family-safe, admins can turn it off) and a built-in sticker set. F03 grows from small to medium.
+- **Why:** people coming from Teams find nothing new; fewer ways for unknown people to upload files; less storage.
+- **Cost:** none (files use the existing storage).
+
+### D058: New libraries for F03 (chat)
+- **Date:** 2026-10-20. **Status:** accepted (owner approved the F03 design, 2026-10-20; each library vetted in F03 T1 with `/add-dependency`).
+- **Decision:** TipTap (rich text editor on ProseMirror, MIT), Frimousse (emoji picker, MIT), file-type (finds a file's real type from its bytes, MIT), `@fastify/multipart` (file uploads, MIT), and emojibase-data (the emoji list, MIT), bundled so the picker never downloads it from a CDN.
+- **Vetted (T1, 2026-10-20), versions at least two weeks old:** `@tiptap/react`, `@tiptap/starter-kit`, `@tiptap/pm` and the underline, link and placeholder extensions 3.31.4 (MIT, 6 maintainers, monthly releases); `frimousse` 0.4.0 (MIT, Liveblocks, React 18/19, about 300 KB); `emojibase-data` 17.0.0 (MIT; only the needed languages are copied into the app); `file-type` 22.1.1 (MIT, needs Node 22+, we run 24; 4 small dependencies); `@fastify/multipart` 10.1.2 (MIT, Fastify team, Fastify 5). Each is installed in the task that first uses it.
+- **Changed in T6:** `@fastify/multipart` is not used: uploads send the file itself as the body, as the F01 photo upload does. Downloads go through our backend with a signed 5-minute link (storage links can't carry the `nosniff` header), so no link-signing library is needed.
+- **Why:** a safe, Teams-like message box with formatting and code; a small emoji picker we can style; file checks that don't trust the file name.
+- **Cost:** none.
+
+### D059: GIF service for meeting chat
+- **Date:** 2026-10-20. **Status:** accepted (owner, 2026-10-20: KLIPY; GIFs load straight from KLIPY, as Teams does with GIPHY; old .doc/.xls/.ppt files not accepted in chat).
+- **Decision (as built, see the T1 change below):** KLIPY's free API, called by each person's own app with a family-safe filter and only a random per-meeting id; GIF images load from KLIPY's image servers; nothing about GIFs is stored on our server. Our backend only hands the app the key and the id, and an admin can turn GIFs off. GIPHY was the first fallback idea and is not built. Tenor's API closed on 30 June 2026.
+- **Changed in F03 T1 (2026-10-20, owner: "whatever is free… we will not store anything on our server… it will load on users' internet"):** KLIPY's integration rules require searches and GIF loads to come from the person's own app, not through partner servers, and forbid storing or re-hosting GIFs. So each app searches KLIPY directly with a per-meeting random `customer_id` and the family-safe filter; our backend only hands out the key and that id, and checks that sent GIFs point to `static.klipy.com`. Ads are optional in KLIPY and we never ask for them. Free; a production key is requested from KLIPY before going online.
+- **Why:** free; used by WhatsApp and Discord since Tenor closed; our backend keeps the key secret and hides who is searching.
+- **Cost:** none (free terms confirmed in T1).
+
+### D060: How chat is built (F03)
+- **Date:** 2026-10-20. **Status:** accepted (owner approved the F03 design, 2026-10-20).
+- **Decision:** one chat per meeting; the backend checks and saves every action, then LiveKit delivers server-only events on topic `meetapp.chat`; messages are a strict JSON document drawn by our own renderer (never HTML); files are checked by content, cleaned and kept in private storage with 5-minute links; spell check is Electron's built-in one with bundled dictionaries.
+- **Why:** the app can't skip the rules, nothing typed can run as code, and no new server is needed.
+- **Cost:** none.
+
+### D061: Chat looks and reacts like Teams (F03)
+- **Date:** 2026-10-20. **Status:** accepted (owner asked for it after trying the chat).
+- **Decision:** one reaction per person per message (a different emoji replaces it; the same one removes it); messages of only 1–3 emoji show larger without a bubble; a person's messages within the same minute are grouped as connected bubbles under one name and time. Replaces the earlier "up to 20 reactions per person" and "messages are not grouped".
+- **Why:** the owner wants the chat to behave as in Microsoft Teams, which people already know.
+- **Cost:** none.
+
+### D062: MeetApp is a complete Teams-style app, not only a meeting app
+- **Date:** 2026-10-21. **Status:** accepted (owner: "this is not just a meeting app … it's a complete app like MS Teams … we should do [it] right now").
+- **Decision:** add **F14 Chats** (one-to-one and group chats that stay, contacts for personal accounts and colleagues in organizations, meeting chats in the same list) and **F15 Calls from chat** (audio and video calls from any chat, ringing, missed calls), built right after F03 and before F04. They reuse F03's chat building blocks and F02's calling. When unsure how something works, follow Teams.
+- **Why:** the owner wants people to use MeetApp every day like Teams, not only for scheduled meetings.
+- **Cost:** none now (same free tools and call server); more work in Phase 1.

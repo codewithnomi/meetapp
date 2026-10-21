@@ -6,6 +6,7 @@ import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
+import { addSpellcheckMenu, registerFilesBridge, setUpSpellcheck } from "./chat-bridge.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
@@ -22,6 +23,7 @@ const csp = contentSecurityPolicy({
   apiUrl: settings.apiUrl,
   devServerUrl: settings.devServerUrl,
   callServerUrl: settings.callServerUrl,
+  gifApiUrl: settings.gifApiUrl,
 });
 
 if (settings.userDataDir) app.setPath("userData", settings.userDataDir);
@@ -30,7 +32,10 @@ app.enableSandbox();
 startSentry(settings.sentryDsn);
 registerAppScheme();
 
-app.on("web-contents-created", (_event, contents) => guardContents(contents, appUrl, (url) => shell.openExternal(url)));
+app.on("web-contents-created", (_event, contents) => {
+  guardContents(contents, appUrl, (url) => shell.openExternal(url));
+  addSpellcheckMenu(contents);
+});
 app.on("window-all-closed", () => app.quit());
 
 function openWindow(): void {
@@ -50,7 +55,15 @@ function openWindow(): void {
 // Not awaited at the top level: Electron only becomes ready after this file has finished running.
 void app.whenReady().then(() => {
   const picker = createSharePicker();
-  lockDownSession(session.defaultSession, { csp, devServerUrl: settings.devServerUrl, appUrl, picker });
+  lockDownSession(session.defaultSession, {
+    csp,
+    devServerUrl: settings.devServerUrl,
+    appUrl,
+    picker,
+    apiUrl: settings.apiUrl,
+  });
+  setUpSpellcheck(session.defaultSession);
+  registerFilesBridge(appUrl, settings.apiUrl);
   registerMediaBridge(createMediaActions(realMediaSystem(), picker), appUrl);
   // safeStorage works only once the app is ready.
   const tokens = createTokenStore(safeStorage, join(app.getPath("userData"), "auth-token"));

@@ -1,12 +1,14 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-21
 ---
 
 # Product Vision
 
 ## In one sentence
-A meeting app like Microsoft Teams or Zoom that is **cheaper**, has **excellent call quality even with 100 people**, and has a **smart AI assistant** built in that remembers what was said in meetings.
+A complete **Microsoft Teams-style** app (chats, calls and meetings), not only a meeting app, that is **cheaper**, has **excellent call quality even with 100 people**, and has a **smart AI assistant** built in that remembers what was said in meetings.
+
+**Owner, 2026-10-21 (D062):** "this is not just a meeting app … it's a complete app like MS Teams." People chat one to one and in groups, call each other (audio and video) from a chat, add contacts (personal accounts) or message colleagues in their organization, and meetings sit alongside, as in Teams. When unsure how something should work, we follow Teams.
 
 ## Who it is for
 - **Companies and teams** (main focus): workspaces, admins, company login.

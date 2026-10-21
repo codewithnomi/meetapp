@@ -90,3 +90,16 @@ describe("ControlBar", () => {
     expect(screen.getByRole("button", { name: "Participants, 23" })).toHaveAttribute("aria-pressed", "false");
   });
 });
+
+describe("ControlBar chat button", () => {
+  it("TC-F03-15 [AC-F03-07] shows unread messages, up to 99+, and opens the chat", async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(
+      <ControlBar {...props({ chat: { label: "Chat, 3 unread", active: false, unread: 3, onClick } })} />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Chat, 3 unread" }));
+    expect(onClick).toHaveBeenCalled();
+    rerender(<ControlBar {...props({ chat: { label: "Chat, 120 unread", active: false, unread: 120, onClick } })} />);
+    expect(screen.getByRole("button", { name: "Chat, 120 unread" })).toHaveTextContent("99+");
+  });
+});

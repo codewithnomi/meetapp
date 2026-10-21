@@ -1,5 +1,5 @@
 // "Meeting options" for the organizer and co-organizers (approved canvas, AC-F02-02, 34, 36): who skips
-// the lobby, who presents, co-organizers (only the organizer changes them; people from the workspace),
+// the lobby, who presents, meeting chat (F03), co-organizers (only the organizer changes them; people from the workspace),
 // and the attendees' mic and camera. The choices are kept here until Save sends them in one change.
 // Locking belongs to a running call: the meeting screen passes `lock`, which applies at once (AC-F02-37).
 import { MeetingOptionsForm, type CoOrganizers } from "@meetapp/ui";
@@ -12,6 +12,7 @@ import { useMeeting, useUpdateMeeting, type MeetingDetails } from "./meetings-ap
 
 type Options = MeetingDetails["options"];
 const AUDIENCES = ["everyone", "workspace", "organizers"] as const;
+const CHAT_MODES = ["on", "in_meeting", "off"] as const;
 const MAX_CO_ORGANIZERS = 10;
 const SUGGESTIONS = 5;
 
@@ -98,6 +99,13 @@ function useChoices(draft: Options, change: (next: Partial<Options>) => void) {
       value: draft.whoCanPresent,
       options,
       onChange: (v: string) => change({ whoCanPresent: v as Options["whoCanPresent"] }),
+    },
+    chatMode: {
+      label: t("meetings.options.chat"),
+      hint: t("meetings.options.chatHint"),
+      value: draft.chatMode,
+      options: CHAT_MODES.map((value) => ({ value, label: t(`meetings.options.chatMode.${value}`) })),
+      onChange: (v: string) => change({ chatMode: v as Options["chatMode"] }),
     },
   };
 }

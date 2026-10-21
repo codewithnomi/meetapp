@@ -19,6 +19,8 @@ const EMPTY_ROOM_SECONDS = 30;
 const MAX_PARTICIPANTS = 100;
 /** Server messages the apps trust (design.md 3.6): only ones sent here, never by a participant. */
 const CONTROL_TOPIC = "meetapp.control";
+/** Chat news (F03 design 3.4): apps trust only packets the server sent, never a participant's. */
+const CHAT_TOPIC = "meetapp.chat";
 
 export type MediaSource = "camera" | "microphone" | "screen_share";
 
@@ -108,6 +110,9 @@ export function createLiveKitProvider(config: Config) {
         topic: CONTROL_TOPIC,
         ...(identities ? { destinationIdentities: identities } : {}),
       }),
+    /** Chat news to everyone in the room (F03 design 3.4). */
+    sendChat: (room: string, payload: Uint8Array) =>
+      rooms.sendData(room, payload, DataPacket_Kind.RELIABLE, { topic: CHAT_TOPIC }),
     participants: (room: string): Promise<ParticipantInfo[]> => rooms.listParticipants(room),
     runningRooms: async (): Promise<string[]> => (await rooms.listRooms()).map((room) => room.name),
     deleteRoom: (room: string) => rooms.deleteRoom(room),

@@ -6,13 +6,15 @@ import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { REACTIONS, EMOJI, can, shortcutText, type CallPerson, type Reaction } from "../../features/meetings/index.ts";
 
-export type Panel = "people" | "info" | "devices" | undefined;
+export type Panel = "people" | "chat" | "info" | "devices" | undefined;
 
 export interface CallControlsProps {
   me: CallPerson | undefined;
   may: { microphone: boolean; camera: boolean; screen: boolean };
   elapsed: string;
   count: number;
+  /** Unread chat messages while the chat is closed (AC-F03-07). */
+  unread: number;
   panel: Panel;
   onPanel: (panel: Panel) => void;
   onMicrophone: () => void;
@@ -89,6 +91,12 @@ export function CallControls(props: CallControlsProps) {
         count,
         active: panel === "people",
         onClick: () => toggle("people"),
+      }}
+      chat={{
+        label: props.unread > 0 ? t("meetings.chat.buttonUnread", { count: props.unread }) : t("meetings.chat.button"),
+        unread: props.unread,
+        active: panel === "chat",
+        onClick: () => toggle("chat"),
       }}
       info={{ label: t("meetings.call.info"), active: panel === "info", onClick: () => toggle("info") }}
     />

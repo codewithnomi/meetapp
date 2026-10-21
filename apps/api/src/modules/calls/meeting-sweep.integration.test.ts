@@ -25,6 +25,16 @@ const PAYLOAD = {
   all: true,
   raised: true,
   role: "presenter",
+  // F03: a valid chat message, so only the caller decides the answer.
+  clientId: "00000000-0000-4000-8000-000000000001",
+  messageId: "00000000-0000-4000-8000-000000000002",
+  emoji: "👍",
+  question: "Hijacked?",
+  options: ["yes", "no"],
+  multiple: false,
+  anonymous: false,
+  optionIds: ["00000000-0000-4000-8000-000000000003"],
+  body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: "Hijacked" }] }] },
   locked: true,
 };
 
@@ -56,7 +66,10 @@ const fill = (url: string, ids: Ids) =>
     .replace(":workspaceId", ids.workspaceId)
     .replace(":meetingId", ids.meetingId)
     .replace(":callId", ids.callId)
-    .replace(":attendanceId", ids.attendanceId);
+    .replace(":attendanceId", ids.attendanceId)
+    .replace(":messageId", ids.attendanceId)
+    .replace(":pollId", ids.attendanceId)
+    .replace(":attachmentId", ids.attendanceId);
 
 /** Everything a refused call must leave unchanged. */
 async function snapshot(ids: Ids): Promise<string> {

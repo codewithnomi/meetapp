@@ -44,6 +44,13 @@ export const RATE_RULES = {
   meetingJoinsPerToken: { name: "meeting-joins-token", limit: 10, windowSeconds: 60 },
   /** Actions in a call (admit, mute, remove, hand…) per meeting ticket: 30 a minute; status asks don't count. */
   callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
+  // F03: 10 chat messages in 10 seconds per person (AC-F03-06); reactions and votes have their own limit.
+  chatMessages: { name: "chat-messages", limit: 10, windowSeconds: 10 },
+  chatReactions: { name: "chat-reactions", limit: 30, windowSeconds: 60 },
+  // 10 file uploads a minute per person, sent or not (AC-F03-34).
+  chatUploads: { name: "chat-uploads", limit: 10, windowSeconds: 60 },
+  /** "Recent meetings" with Open chat per person: 30 a minute (each checks up to 50 meetings; F03 verification). */
+  recentMeetingChats: { name: "recent-meeting-chats", limit: 30, windowSeconds: 60 },
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
    * database or the call server (S5; F02 verification). */
   attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },

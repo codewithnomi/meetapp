@@ -44,6 +44,9 @@ Plain-English version first, technical names in brackets.
 | Mobile app | Flutter (Dart language) | Looks exactly the same on iPhone and Android (D019) |
 | Call server | LiveKit (open source) | Built for big meetings; we host it ourselves, so it's cheaper |
 | Calling in the app | livekit-client (D055) | LiveKit's own library for joining calls from the desktop and web app |
+| Meeting chat | our backend + the call server's data channel (D060) | The backend checks and saves every message, then the call server delivers it to everyone in the meeting |
+| Chat message box | TipTap (rich text), Frimousse (emoji) | Formatting, code and emoji, saved as a strict document, never as HTML |
+| GIFs in chat | KLIPY, free (D059) | Searched by each person's app; nothing about GIFs is stored on our server |
 | Backend | Node.js + Fastify | Fast, same language as the apps |
 | Database | PostgreSQL + pgvector | One database for normal data **and** AI search |
 | Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app |
@@ -56,7 +59,7 @@ Plain-English version first, technical names in brackets.
 | Usage analytics | PostHog (free tier, privacy settings on, no transcript content ever) | Know which features are used. Comes with F10. |
 | Monitoring | Gatus (status page), Grafana Alloy (collector), Prometheus, Loki, Tempo, Grafana (D027, D030, D041) | Know what is down and why; alerts by email and Mac notification |
 | Building and checking the code | pnpm workspaces + Turborepo; Vitest, Playwright, Storybook; ESLint, Prettier, dependency-cruiser, knip, jscpd | One repository, every check automatic (code-quality.md) |
-| Backend libraries | Drizzle (database), ioredis (cache), Pino (logs), Zod (input checks), nodemailer (email), AWS S3 client (files), LiveKit server SDK, OpenTelemetry (traces) | Small, well-known, free (D043) |
+| Backend libraries | Drizzle (database), ioredis (cache), Pino (logs), Zod (input checks), nodemailer (email), AWS S3 client (files), file-type and sharp (checking and cleaning chat files, F03), LiveKit server SDK, OpenTelemetry (traces) | Small, well-known, free (D043) |
 
 ## How the AI features work (simple)
 1. **Transcript:** every person's microphone is a separate audio stream. We convert each stream to text, so we always know exactly who said what.

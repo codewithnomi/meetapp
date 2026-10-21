@@ -2,9 +2,10 @@
 // stage (gallery of 16 a page, or speaker view), the control bar with shortcuts, the side panels, and
 // announcements for screen readers. When the call drops or ends, the app asks the backend what
 // happened (removed, ended, …) and shows that message.
+import { useSession } from "../../features/auth/index.ts";
 import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 import {
@@ -17,6 +18,9 @@ import {
   type Joined,
 } from "../../features/meetings/index.ts";
 import { CallControls, type Panel } from "./CallControls.tsx";
+import { useAttachments } from "./chat-attachments.ts";
+import { ChatArea } from "./ChatArea.tsx";
+import { useFileDrop } from "./file-drop.ts";
 import { Panels } from "./Panels.tsx";
 import { Stage } from "./Stage.tsx";
 import { DevicesPanel } from "./DevicesPanel.tsx";
@@ -110,6 +114,17 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const call: CallState = { ...useCall(visit, props), visit };
   const { room, me } = call;
   const view = useView();
+  const { setOpen } = call.chat;
+  const files = useAttachments(visit);
+  const session = useSession();
+  const canAttach = call.me !== undefined && call.me.group !== "guest";
+  const dropping = useFileDrop(
+    canAttach,
+    (dropped) => (view.setPanel("chat"), files.add(dropped)),
+    () => view.setPanel("chat"),
+  );
+  // While the chat is open, nothing counts as unread (AC-F03-07).
+  useEffect(() => setOpen(view.panel === "chat"), [setOpen, view.panel]);
   const context = {
     people: room.people,
     lobby: call.lobby,
@@ -125,7 +140,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions };
+  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id };
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -141,6 +156,7 @@ function Controls({ screen }: { screen: Screen }) {
       may={room.may}
       elapsed={elapsed}
       count={room.people.length}
+      unread={call.chat.state.unread}
       panel={view.panel}
       onPanel={view.setPanel}
       onMicrophone={actions.microphone}
@@ -201,6 +217,26 @@ function ScreenPanel({ screen }: { screen: Screen }) {
         onClose={close}
       />
     );
+  if (view.panel === "chat") {
+    const role = call.me?.role;
+    const rights = {
+      moderate: role === "organizer" || role === "co_organizer",
+      createPoll: role !== undefined && role !== "attendee",
+      attach: call.me !== undefined && call.me.group !== "guest",
+    };
+    const onFailed = () => view.setFailed(true);
+    return (
+      <ChatArea
+        chat={call.chat}
+        viewerUserId={screen.userId}
+        writing={{ visit: call.visit, attachments: screen.files, off: call.room.state.options?.chatMode === "off" }}
+        dropping={screen.dropping && rights.attach}
+        rights={rights}
+        onClose={close}
+        onFailed={onFailed}
+      />
+    );
+  }
   return <Panels panel={view.panel} context={context} onClose={close} onOptions={onOptions} />;
 }
 
@@ -215,7 +251,7 @@ function Call(props: MeetingPageProps & { visit: Joined }) {
         lobby={context.canAdmit ? lobbyBar(t, call, () => view.setPanel("people")) : undefined}
         notices={<ScreenNotices screen={screen} />}
         stage={<ScreenStage screen={screen} />}
-        panel={<ScreenPanel screen={screen} />}
+        panel={view.panel ? <ScreenPanel screen={screen} /> : undefined}
         controls={<Controls screen={screen} />}
         announcement={call.events.announcer.current}
       />

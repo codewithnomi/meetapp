@@ -5,6 +5,7 @@
 // keeps only the last handler set, so this is the one place they are set.
 import type { Event, Session, WebContents } from "electron";
 import { allowsCheck, allowsRequest, shareAnswer, type SharePicker } from "./media-permissions.ts";
+import { isChatFileUrl } from "./chat-desktop.ts";
 import { canOpenExternally, isInsideApp } from "./security.ts";
 
 export interface LockDown {
@@ -13,6 +14,8 @@ export interface LockDown {
   /** The app's own page (app://meetapp, or the dev server in development). */
   appUrl: string;
   picker: SharePicker;
+  /** The backend: chat files from it may be saved (F03). */
+  apiUrl: string;
 }
 
 function mediaRules(session: Session, { appUrl, picker }: LockDown): void {
@@ -52,7 +55,10 @@ export function lockDownSession(session: Session, lock: LockDown): void {
     cancel(event);
     callback();
   });
-  session.on("will-download", cancel);
+  // Only chat files from our backend are saved, with a "Save as" dialog; every other download is refused (F03).
+  session.on("will-download", (event, item) => {
+    if (!isChatFileUrl(item.getURL(), lock.apiUrl)) cancel(event);
+  });
   // app:// answers carry the CSP themselves (app-protocol.ts); in development the dev server's don't.
   if (devServerUrl) {
     session.webRequest.onHeadersReceived({ urls: [`${devServerUrl}/*`] }, (details, callback) => {

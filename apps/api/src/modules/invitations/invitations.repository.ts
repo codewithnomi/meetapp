@@ -125,6 +125,7 @@ const selectForPerson = (executor: Executor) =>
       workspaceId: workspaces.id,
       workspaceName: workspaces.name,
       allowGuests: workspaces.allowGuests,
+      allowGifs: workspaces.allowGifs,
       inviterName: inviter.name,
       invitedBy: invitations.invitedBy,
       role: invitations.role,

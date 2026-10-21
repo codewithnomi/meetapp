@@ -11,6 +11,8 @@ import { newPerson } from "../test-support/workspaces-setup.ts";
 
 /** Routes anyone may call, each with its own limit or check (design.md sections 4, 8 and 9). */
 const PUBLIC = new Set([
+  // F03: a chat file; the signed 5-minute link itself is the permission (design section 6).
+  "GET /api/v1/chat-files/:token",
   "GET /api/auth/*", // Better Auth: only its allow-list answers (TC-F01-80)
   "POST /api/auth/*",
   "GET /api/v1/auth/providers",
@@ -49,6 +51,24 @@ const OPTIONAL = new Set([
   "POST /api/v1/calls/:callId/participants/:attendanceId/remove",
   "PATCH /api/v1/calls/:callId/participants/:attendanceId/role",
   "POST /api/v1/calls/:callId/mute-all",
+  "POST /api/v1/calls/:callId/chat/messages",
+  "GET /api/v1/calls/:callId/chat/messages",
+  "GET /api/v1/calls/:callId/chat/messages/:messageId",
+  "GET /api/v1/calls/:callId/chat/events",
+  "GET /api/v1/calls/:callId/chat/gif-settings",
+  "PATCH /api/v1/calls/:callId/chat/messages/:messageId",
+  "DELETE /api/v1/calls/:callId/chat/messages/:messageId",
+  "POST /api/v1/calls/:callId/chat/messages/:messageId/reactions",
+  "DELETE /api/v1/calls/:callId/chat/messages/:messageId/reactions/:emoji",
+  "GET /api/v1/calls/:callId/chat/pins",
+  "POST /api/v1/calls/:callId/chat/polls",
+  "GET /api/v1/calls/:callId/chat/polls/:pollId",
+  "PUT /api/v1/calls/:callId/chat/polls/:pollId/vote",
+  "POST /api/v1/calls/:callId/chat/polls/:pollId/close",
+  "POST /api/v1/calls/:callId/chat/attachments",
+  "GET /api/v1/calls/:callId/chat/attachments/:attachmentId/link",
+  "POST /api/v1/calls/:callId/chat/pins",
+  "DELETE /api/v1/calls/:callId/chat/pins/:messageId",
   "PATCH /api/v1/calls/:callId",
   "POST /api/v1/calls/:callId/end",
 ]);

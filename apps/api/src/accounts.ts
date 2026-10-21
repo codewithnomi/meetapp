@@ -31,6 +31,7 @@ import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
 import { createRateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
 import { createMeetingPieces } from "./meetings.ts";
+import type { FileStorage } from "./modules/chat/chat-files.service.ts";
 
 export interface AccountsWiring {
   config: Config;
@@ -40,7 +41,7 @@ export interface AccountsWiring {
   log: FastifyBaseLogger;
   trustedOrigins: string[];
   /** Where profile photos are kept (F00 storage). */
-  storage: PhotoStorage;
+  storage: PhotoStorage & FileStorage;
   /** The call server (F02). */
   livekit: LiveKitProvider;
 }
@@ -91,7 +92,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
-    ...createMeetingPieces({ config, db, livekit }, limiter),
+    ...createMeetingPieces({ config, db, livekit, storage }, limiter),
   };
 }
 

@@ -23,3 +23,10 @@ export function useAllowGuests(workspaceId: string) {
     apiRequest<undefined>(`${base(workspaceId)}/settings`, { method: "PATCH", body: { allowGuests } }),
   );
 }
+
+/** GIFs in the workspace's meeting chat (F03 AC-F03-27). */
+export function useAllowGifs(workspaceId: string) {
+  return useSaved((allowGifs: boolean) =>
+    apiRequest<undefined>(`${base(workspaceId)}/settings`, { method: "PATCH", body: { allowGifs } }),
+  );
+}

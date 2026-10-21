@@ -113,6 +113,10 @@ export const configSchema = z
     // Where Microsoft sign-in happens; empty means Microsoft's own (login.microsoftonline.com). Set only
     // for a national Microsoft cloud, or to a local fake provider in the desktop tests.
     MICROSOFT_AUTHORITY: optional,
+    // GIFs in meeting chat (F03, D059): the GIF service's key; empty means the GIF picker says GIFs
+    // aren't available. The address is changed only for a fake service in tests.
+    GIF_API_KEY: optional,
+    GIF_API_URL: withDefault("https://api.klipy.com").pipe(z.url({ protocol: /^https?$/ })),
     // Shown on the profile screen for data requests (privacy-legal.md §2).
     SUPPORT_EMAIL: z.email(),
     // The backend's address as people's browsers reach it (invitation page, Google/Microsoft hand-off).

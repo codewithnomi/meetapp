@@ -1,0 +1,164 @@
+// Chat state rules (F03 TC-F03-04, 11, 15, 92 app parts): messages in time order and never twice,
+// unread only while closed, sending and "Not sent", and gaps in the server's news noticed.
+import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
+import { describe, expect, it } from "vitest";
+import { asSeenBy, chatReducer, emptyChat, missedNews, type ChatState } from "./chat-state.ts";
+
+const DOC = {
+  v: 1 as const,
+  blocks: [{ type: "paragraph" as const, content: [{ type: "text" as const, text: "hi" }] }],
+};
+let n = 0;
+function message(overrides: Partial<ChatMessageView> = {}): ChatMessageView {
+  n += 1;
+  const id = `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  return {
+    id,
+    cursor: `c${String(n)}`,
+    clientId: `client-${String(n)}`,
+    callId: "call-1",
+    kind: "text",
+    sender: { attendanceId: "someone", name: "Bilal Ahmed", group: "member", userId: null },
+    body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: `m${String(n)}` }] }] },
+    createdAt: new Date(Date.UTC(2026, 9, 20, 10, 0, n)).toISOString(),
+    editedAt: null,
+    deletedAt: null,
+    replyTo: null,
+    reactions: [],
+    attachments: [],
+    gif: null,
+    sticker: null,
+    pollId: null,
+    system: null,
+    ...overrides,
+  };
+}
+const created = (seq: number, m: ChatMessageView): ChatEvent => ({
+  seq,
+  type: "message_created",
+  id: m.id,
+  message: m,
+});
+const run = (state: ChatState, ...actions: Parameters<typeof chatReducer>[1][]) => actions.reduce(chatReducer, state);
+
+describe("asSeenBy", () => {
+  it("TC-F03-24 [AC-F03-13] news sent to everyone is marked mine only for the people who reacted", () => {
+    const news = message({
+      reactions: [{ emoji: "👍", count: 1, names: ["Alice"], attendanceIds: ["alice"], mine: false }],
+    });
+    expect(asSeenBy(news, "alice").reactions[0]?.mine).toBe(true);
+    expect(asSeenBy(news, "bob").reactions[0]?.mine).toBe(false);
+  });
+});
+
+describe("chat state", () => {
+  it("TC-F03-04 [AC-F03-02] pages and news merge in time order, never twice", () => {
+    const [a, b, c] = [message(), message(), message()];
+    const state = run(
+      emptyChat,
+      { type: "page", messages: [c, b], hasMore: true, older: false },
+      { type: "page", messages: [b, a], hasMore: false, older: true },
+      { type: "event", event: created(5, c), mine: false },
+    );
+    expect(state.messages.map((m) => m.id)).toEqual([a.id, b.id, c.id]);
+    expect(state.hasMore).toBe(false);
+  });
+
+  it("TC-F03-15 [AC-F03-07] new messages from others count as unread only while the chat is closed", () => {
+    const state = run(
+      emptyChat,
+      { type: "page", messages: [], hasMore: false, older: false },
+      { type: "event", event: created(1, message()), mine: false },
+      { type: "event", event: created(2, message()), mine: true },
+      { type: "event", event: created(3, message({ kind: "system" })), mine: false },
+    );
+    expect(state.unread).toBe(1);
+    const opened = run(
+      state,
+      { type: "open", open: true },
+      { type: "event", event: created(4, message()), mine: false },
+    );
+    expect(opened.unread).toBe(0);
+  });
+
+  it("TC-F03-11 [AC-F03-05] a send that fails is marked Not sent and leaves when it succeeds", () => {
+    const sent = message();
+    const failed = run(
+      emptyChat,
+      { type: "sending", item: { clientId: "c1", content: { body: DOC }, status: "sending" } },
+      { type: "failed", clientId: "c1", tooFast: false },
+    );
+    expect(failed.sending).toEqual([{ clientId: "c1", content: { body: DOC }, status: "failed" }]);
+    const retried = run(
+      failed,
+      { type: "sending", item: { clientId: "c1", content: { body: DOC }, status: "sending" } },
+      { type: "sent", clientId: "c1", message: sent },
+    );
+    expect(retried.sending).toEqual([]);
+    expect(retried.messages.map((m) => m.id)).toEqual([sent.id]);
+  });
+
+  it("TC-F03-11 [AC-F03-05] the server's copy arriving before the answer replaces the sending copy, never shown twice", () => {
+    const state = run(
+      emptyChat,
+      { type: "sending", item: { clientId: "c9", content: { body: DOC }, status: "sending" } },
+      { type: "event", event: created(1, message({ clientId: "c9" })), mine: true },
+    );
+    expect(state.sending).toEqual([]);
+    expect(state.messages).toHaveLength(1);
+  });
+
+  it("TC-F03-36 [AC-F03-19] pin news says pinned or not: a repeated or late packet never unpins", () => {
+    const m = message();
+    const pin = (seq: number, pinned: boolean): ChatEvent => ({ seq, type: "pins_changed", message: m, pinned });
+    const once = run(emptyChat, { type: "event", event: pin(1, true), mine: false });
+    const twice = run(once, { type: "event", event: pin(1, true), mine: false });
+    expect(twice.pinned.map((p) => p.id)).toEqual([m.id]);
+    expect(run(twice, { type: "event", event: pin(2, false), mine: false }).pinned).toEqual([]);
+  });
+
+  it("TC-F03-21 [AC-F03-10] a message deleted here shows as deleted at once and leaves the pinned list", () => {
+    const m = message();
+    const state = run(emptyChat, { type: "page", messages: [m], hasMore: false, older: false, pinned: [m] });
+    const after = run(state, { type: "deleted", id: m.id });
+    expect(after.messages[0]?.deletedAt).not.toBeNull();
+    expect(after.messages[0]?.body).toBeNull();
+    expect(after.pinned).toEqual([]);
+  });
+
+  it("TC-F03-04 [AC-F03-02] a failed load is noted until a page arrives", () => {
+    const failed = run(emptyChat, { type: "loadFailed" });
+    expect(failed.loadFailed).toBe(true);
+    expect(run(failed, { type: "page", messages: [], hasMore: false, older: false }).loadFailed).toBe(false);
+  });
+
+  it("TC-F03-92 [AC-F03-01] a page sets the news number, so later news is not taken for a gap", () => {
+    const state = run(emptyChat, { type: "page", messages: [], hasMore: false, older: false, lastSeq: 40 });
+    expect(missedNews(state, created(41, message()))).toBe(false);
+    expect(missedNews(state, created(43, message()))).toBe(true);
+    // An older page has no number and keeps the one known.
+    expect(run(state, { type: "page", messages: [], hasMore: false, older: true }).lastSeq).toBe(40);
+  });
+
+  it("TC-F03-92 [AC-F03-01] a gap in the news numbers is noticed", () => {
+    const state = run(
+      emptyChat,
+      { type: "page", messages: [], hasMore: false, older: false },
+      { type: "event", event: created(3, message()), mine: false },
+    );
+    expect(missedNews(state, created(4, message()))).toBe(false);
+    expect(missedNews(state, created(6, message()))).toBe(true);
+  });
+
+  it("TC-F03-21 [AC-F03-10] [AC-F03-20] a deleted message replaces the old one and leaves the pinned list", () => {
+    const m = message();
+    const deleted = { ...m, body: null, deletedAt: new Date().toISOString() };
+    const state = run(
+      emptyChat,
+      { type: "page", messages: [m], hasMore: false, older: false, pinned: [m] },
+      { type: "event", event: { seq: 2, type: "message_deleted", id: m.id, message: deleted }, mine: false },
+    );
+    expect(state.messages[0]?.deletedAt).not.toBeNull();
+    expect(state.pinned).toEqual([]);
+  });
+});

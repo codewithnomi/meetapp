@@ -16,6 +16,8 @@ export const workspaceSchema = z
     kind: z.enum(WORKSPACE_KINDS),
     role: z.enum(MEMBER_ROLES),
     allowGuests: z.boolean(),
+    /** GIFs in meeting chat (AC-F03-27). */
+    allowGifs: z.boolean(),
   })
   .meta({ id: "Workspace" });
 

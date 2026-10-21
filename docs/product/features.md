@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-21
 ---
 
 # MeetApp: Complete Feature Plan
@@ -34,7 +34,7 @@ You only ever need to type **`/next`**.
 
 ---
 
-## Phase 1: A working meeting app (desktop)
+## Phase 1: A working Teams-style app (desktop)
 *Result: you and others can sign in, start or schedule a meeting, and talk with audio, video, screen share and chat, from the desktop app.*
 
 ### F01 Accounts & workspaces
@@ -57,10 +57,25 @@ You only ever need to type **`/next`**.
 - **Depends on:** F01 · **Size:** large
 
 ### F03 In-meeting chat
-- Text chat for everyone in the meeting, plus private messages to one person
+- Text chat for everyone in the meeting (no private messages inside it, as in Teams, D057)
 - Send files and images (size limit, safe file types only)
+- Emoji, reactions, replies, formatting with code blocks, pinned messages, polls, GIFs and stickers, as in Teams (D057)
 - Chat saved with the meeting afterwards
-- **Depends on:** F02 · **Size:** small
+- **Depends on:** F02 · **Size:** medium
+
+### F14 Chats (one to one and groups)
+Like the Teams **Chat** screen (owner, 2026-10-21, D062): a chat list on the left (Unread, Chats, Meeting chats filters; each with name, last message, date) and the conversation on the right.
+- **One-to-one and group chats** that stay (not only during a meeting); name a group, add or remove people, leave
+- **Who you can chat with:** in an organization workspace, its members (search the people list); with a personal account, people you add as **contacts** (by email, they accept), as Teams does for personal accounts (details settled in the requirements)
+- **Meeting chats** in the same list (F03's chat after the meeting)
+- Everything F03 chat has: rich text and code, emoji, GIFs, stickers, reactions, replies, edit and delete, files, pins, polls; plus unread counts, "seen", typing indicator, mentions, and quick replies (as in the screenshot: "Any time", "Cheers!")
+- **Depends on:** F01, F03 · **Size:** large
+
+### F15 Calls from chat (audio and video)
+- Start an **audio or video call** from any one-to-one or group chat, as in Teams; the other person's app rings (accept or decline), missed calls show in the chat
+- Uses F02's calling (call server, devices, sharing, quality); a call's chat is the chat it started from
+- Add people to a running call
+- **Depends on:** F02, F14 · **Size:** large
 
 ### F04 Desktop app
 - Installable app for **Mac and Windows** (unsigned for now, D017)
@@ -150,18 +165,20 @@ You only ever need to type **`/next`**.
 ---
 
 ## Later ideas (not planned yet)
-Meeting **recording** (video files) · background blur / virtual backgrounds · breakout rooms · permanent team chat channels · live translation · whiteboard · end-to-end encryption · webinars · Linux desktop app.
+Meeting **recording** (video files) · background blur / virtual backgrounds · breakout rooms · Teams-style **teams and channels** (after F14) · live translation · whiteboard · end-to-end encryption · webinars · Linux desktop app.
 
 Noted by the owner during the F02 look check (2026-10-20), for after a first usable version (MVP):
-- **People search and chat outside meetings** (like Teams' Chat tab): find colleagues in the workspace and message them one to one. F03 covers chat inside a meeting only.
+- ~~People search and chat outside meetings~~: now planned as **F14 Chats** and **F15 Calls from chat** (owner, 2026-10-21, D062).
+- **AI writing help in chat (owner, 2026-10-20):** a **Rewrite with AI** button on a message being written, with tones (Friendly, Professional, Short, Formal, Apologetic). In one-to-one chat: **Write reply with AI** (reads the conversation and drafts a reply) and ready-to-send suggestions that fit the last message (e.g. someone asks for a quick call: "Yes, please", "I'm free now", "Just a minute", "Can we do it later?"). Rewrite comes after Ask AI (F07) in the meeting chat; reply suggestions come with one-to-one chat.
+- **Chat translation (owner, 2026-10-20):** the AI detects a message's language and shows a translation (English by default) under the original in the same bubble; each person can choose their language, and every message is translated into it. Built with the AI features (after F05), using the same AI service as the transcripts.
 - **In-call messages as toasts:** "X muted you", "Your share ended", unplugged devices and similar messages as small cards that slide in over the videos and close by themselves after a few seconds (today they are larger cards above the videos).
 - **Screen sharing like Teams:** a red border around the shared screen (seen only by the sharer), a "You're sharing" bar with **Stop sharing** in the meeting window, and a small floating sharing bar on top of other apps.
 
 ## The build order at a glance
 ```
-F00 → F01 → F02 → F03 → F04 → F13      (Phase 1: working meeting app)
+F00 → F01 → F02 → F03 → F14 → F15 → F04 → F13      (Phase 1: working Teams-style app)
     → F05 → F06                        (Phase 2: AI notes)
     → F07 → F08 → F09                  (Phase 3: AI assistant)
     → F10 → F11 → F12                  (Phase 4: web, mobile, business, local AI)
 ```
-F13 (scheduling) has a higher number only because it was added later. It's built in Phase 1. Build order follows `docs/specs/INDEX.md` from top to bottom.
+F13 (scheduling), F14 (chats) and F15 (calls from chat) have higher numbers only because they were added later. It's built in Phase 1. Build order follows `docs/specs/INDEX.md` from top to bottom.

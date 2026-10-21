@@ -20,7 +20,10 @@ describe("MeetingLayout", () => {
   it("TC-F02-86 [AC-F02-44] the title is the heading; stage, panel and controls are placed", () => {
     render(<MeetingLayout {...props()} />);
     expect(screen.getByRole("heading", { level: 1, name: "Weekly" })).toBeInTheDocument();
-    expect(screen.getByRole("main")).toHaveTextContent("StagePanel");
+    // The side panel runs the window's full height beside the stage and controls (as in Teams).
+    expect(screen.getByRole("main")).toHaveTextContent("Stage");
+    expect(screen.getByRole("main")).not.toHaveTextContent("Panel");
+    expect(screen.getByText("Panel")).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Meeting controls" })).toBeInTheDocument();
   });
 

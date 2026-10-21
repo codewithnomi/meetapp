@@ -1,20 +1,23 @@
 // Load tests (F02 T18; `pnpm test:load`, which starts the test call server and the backend first): the
 // desktop app in a meeting with 99 simulated people (TC-F02-41 gallery and sound, TC-F02-25 join time)
-// and with 24 (TC-F02-92 memory). The numbers are written to test-results/load-results.json; a target
+// and with 24 (TC-F02-92 memory); chat delivery in the 100-person meeting (F03 TC-F03-02). The numbers are written to test-results/load-results.json; a target
 // that is missed fails the test, after every number was measured. The simulated people run on this same
 // Mac, so run it on an idle Mac (other work on it lowers every number; seen 2026-10-15).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { FAKE_MEDIA, launchNewAccount } from "../e2e/desktop/desktop.ts";
+import { knockAsGuest } from "./chat-sender.ts";
 import {
   appMemoryMb,
+  chatSeen,
   awaitFirstSound,
   firstSoundAt,
   percentile,
   playingVideos,
   soundDelay,
   tileRates,
+  watchChat,
   watchConnections,
   worstShare,
   type TileRate,
@@ -65,6 +68,31 @@ async function meetNow(page: Page): Promise<{ room: string; link: string; joinMs
   return { room, link, joinMs };
 }
 
+const CHAT_MESSAGES = 50;
+/** Under the 10-messages-in-10-seconds limit for one sender (AC-F03-06). */
+const CHAT_SPACING_MS = 1_500;
+
+/**
+ * A guest asks to join, the organizer's app lets it in, and the guest sends messages through the backend
+ * while the app notes when each one shows; the delay per message (TC-F03-02).
+ */
+async function chatDelivery(page: Page, link: string, room: string): Promise<number[]> {
+  const guest = await knockAsGuest(link, "Load Sender");
+  await page.getByRole("button", { name: "Admit all" }).click();
+  await controls(page).getByRole("button", { name: /^Chat/ }).click();
+  await watchChat(page, "load-");
+  const sender = guest.ready(room);
+  const sent: Record<string, number> = {};
+  for (let i = 0; i < CHAT_MESSAGES; i += 1) {
+    sent[`load-${String(i)}`] = await sender.send(`load-${String(i)}`);
+    await page.waitForTimeout(CHAT_SPACING_MS);
+  }
+  await expect.poll(async () => Object.keys(await chatSeen(page)).length, { timeout: 15_000 }).toBe(CHAT_MESSAGES);
+  const seen = await chatSeen(page);
+  await controls(page).getByRole("button", { name: /^Chat/ }).click();
+  return Object.entries(sent).map(([text, at]) => (seen[text] ?? Number.POSITIVE_INFINITY) - at);
+}
+
 async function waitForPeople(page: Page, count: number): Promise<void> {
   await expect(page.getByRole("button", { name: `Participants, ${String(count)}` })).toBeVisible({ timeout: 180_000 });
 }
@@ -85,7 +113,7 @@ async function rejoinTime(page: Page, link: string): Promise<number> {
   return ((await firstSoundAt(page)) ?? Number.NaN) - clicked;
 }
 
-test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smoothly, sound on time, quick joins", async () => {
+test("TC-F02-41 TC-F02-25 TC-F03-02 [AC-F02-20] [AC-F02-12] [AC-F03-01] 100 people: 16 tiles drawn smoothly, sound on time, quick joins, chat on time", async () => {
   test.setTimeout(20 * 60_000);
   const { app, page } = await launchNewAccount(undefined, undefined, FAKE_MEDIA);
   await watchConnections(page);
@@ -111,6 +139,9 @@ test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smo
     await page.getByRole("button", { name: "Previous page" }).press("Enter");
     const delay = await soundDelay(page);
     record("gallery", { emptyJoinMs: joinMs, pageOne: samples, pageTwo, delay });
+    const chatDelays = await chatDelivery(page, link, room);
+    const chatP95 = percentile(chatDelays, 95);
+    record("chat", { delays: chatDelays, p95: chatP95 });
     const joins: number[] = [];
     for (let i = 0; i < JOIN_RUNS; i += 1) {
       const started = Date.now();
@@ -125,6 +156,7 @@ test("TC-F02-41 TC-F02-25 [AC-F02-20] [AC-F02-12] 100 people: 16 tiles drawn smo
     expect.soft(delay.tracks, "a simulated person is heard").toBeGreaterThan(0);
     expect.soft(delay.ms, "sound delay under 250 ms").toBeLessThan(250);
     expect.soft(p95, "join time under 3 s in 95% of runs").toBeLessThan(3_000);
+    expect.soft(chatP95, "chat messages shown within 1 s for 95% (AC-F03-01)").toBeLessThan(1_000);
   } finally {
     crowd.stop();
   }

@@ -1,7 +1,7 @@
 // What the call server reports, and the clean-up that repairs anything a lost report missed (F02 design
 // sections 3.5, 3.7 and "Edge cases"). Database access only. Each report is handled once (its event id),
 // and an attendance ignores reports older than the newest one it has applied.
-import { callAttendances, calls, livekitEvents, type Call, type Executor } from "@meetapp/db";
+import { callAttendances, calls, chatPolls, livekitEvents, meetings, type Call, type Executor } from "@meetapp/db";
 import { and, eq, inArray, isNull, lt, max, sql } from "drizzle-orm";
 
 export type EndReason = NonNullable<Call["endReason"]>;
@@ -70,6 +70,23 @@ export function createCallEventsRepository(executor: Executor) {
   };
 }
 
+/**
+ * What chat keeps when a call ends (F03 design 3.7, 3.8): the chat setting at that moment, which decides
+ * who reads the chat afterwards, and open polls close.
+ */
+async function closeChatOf(tx: Executor, call: { id: string; meetingId: string }, at: Date): Promise<void> {
+  await tx
+    .update(calls)
+    .set({
+      chatModeAtEnd: sql`(select ${meetings.chatMode} from ${meetings} where ${meetings.id} = ${call.meetingId})`,
+    })
+    .where(eq(calls.id, call.id));
+  await tx
+    .update(chatPolls)
+    .set({ closedAt: at })
+    .where(and(eq(chatPolls.meetingId, call.meetingId), isNull(chatPolls.closedAt)));
+}
+
 async function endCall(tx: Executor, callId: string, reason: EndReason, at: Date): Promise<boolean> {
   const [lastLeft] = await tx
     .select({ at: max(callAttendances.leftAt) })
@@ -80,8 +97,10 @@ async function endCall(tx: Executor, callId: string, reason: EndReason, at: Date
     .update(calls)
     .set({ endedAt, endReason: reason })
     .where(and(eq(calls.id, callId), isNull(calls.endedAt)))
-    .returning({ id: calls.id });
-  if (ended.length === 0) return false;
+    .returning({ id: calls.id, meetingId: calls.meetingId });
+  const [call] = ended;
+  if (!call) return false;
+  await closeChatOf(tx, call, at);
   await tx
     .update(callAttendances)
     .set({ status: "waiting", callId: null, lobbyEnteredAt: at, lastSeenAt: at })
@@ -108,6 +127,7 @@ export function endForEveryone(
       .where(and(eq(calls.id, call.id), isNull(calls.endedAt)))
       .returning({ id: calls.id });
     if (ended.length === 0) return false;
+    await closeChatOf(tx, call, at);
     await tx
       .update(callAttendances)
       .set({ status: "left", leftReason: "ended", leftAt: at })

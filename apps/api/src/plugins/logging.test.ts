@@ -75,6 +75,8 @@ describe("TC-F02-109 [AC-F02-52] meeting secrets are hidden", () => {
     expect(redactUrl(`/m/${LINK_PART}?lang=en`)).toBe("/m/REDACTED?lang=en");
     expect(redactPath(`https://meetapp.example/m/${LINK_PART}`)).toBe("https://meetapp.example/m/REDACTED");
     expect(redactPath("/api/v1/meetings/abc")).toBe("/api/v1/meetings/abc");
+    // A chat file link is its own permission for 5 minutes (F03 verification).
+    expect(redactPath("/api/v1/chat-files/abc.f.123.sig?x=1")).toBe("/api/v1/chat-files/REDACTED?x=1");
     expect(redactPath("/media/photo.png")).toBe("/media/photo.png");
   });
 

@@ -43,6 +43,7 @@ updated: 2026-10-20
 | Meetings: title, organizer, options, co-organizers, 12-digit meeting ID | plain fields | until the meeting expires (60 days; for link meetings, 60 days after the last join or change); deleting expired meetings comes with F06/F10 (S9) |
 | Meeting link and passcode | encrypted (AES-256-GCM), found through a keyed hash (HMAC) | as the meeting |
 | Meeting record: who took part (name shown, member / external / guest), when each joined and left, how the call ended | plain fields; a deleted account's link is removed and only the name stays | how long comes with F06/F10 (S9) |
+| Meeting chat (F03): messages and shared files | text in the database, files in private storage, pictures without location or camera details; seen only by people allowed in that meeting | deleted with the meeting; a deleted account's text and files removed within 30 days |
 | Guests: the name they typed | plain field, shown as text only | as the meeting record |
 | Guests' "same app" fingerprint (to keep a removed guest out of the call) | HMAC of the meeting ID and a random key made on their computer, so one guest's meetings can't be linked | as the meeting record |
 | Meeting tickets (the in-meeting pass) | SHA-256 fingerprint only, on the attendance; the app keeps the ticket in memory | works until the person leaves (30 minutes more for reading the outcome); the fingerprint stays with the meeting record |
@@ -55,7 +56,7 @@ Until export and deletion are built into the app, people ask through `SUPPORT_EM
 
 ## 3. Third-party services ("sub-processors")
 A public list of every service that touches user data, and why:
-LiveKit Cloud (development only; self-hosted in production), Google and Microsoft (optional sign-in only: they receive the sign-in request and send us the name, verified email and, once, the profile photo), Deepgram (speech-to-text), Anthropic (AI), embedding provider, Sentry (errors), cloud hosting, email provider, payment provider.
+LiveKit Cloud (development only; self-hosted in production), Google and Microsoft (optional sign-in only: they receive the sign-in request and send us the name, verified email and, once, the profile photo), the GIF service for meeting chat (F03, KLIPY, contacted by each person's app: the GIF search words, a random per-meeting id, and the internet address of people searching for or seeing GIFs; admins can turn GIFs off), Deepgram (speech-to-text), Anthropic (AI), embedding provider, Sentry (errors), cloud hosting, email provider, payment provider.
 - Use only providers that **don't train on our customers' data** and offer a data processing agreement.
 - **Local monitoring (F00, on the developer's Mac only):** the backend's logs and traces and the MeetApp containers' logs are kept for 7 days in Loki and Tempo on that Mac, never sent to a third party. Secrets and personal data are removed before logging (security rule S10); database error details and secrets in web addresses are removed too (F00 T-fix-2). The cleaning works on patterns, so an unusual secret format could still get through. (Confirmed by the owner on 2026-10-11.)
 

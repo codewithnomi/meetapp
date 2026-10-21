@@ -58,7 +58,7 @@ export function SidePanel({ title, closeLabel, onClose, children, className }: S
       ref={panel}
       aria-labelledby={headingId}
       className={cx(
-        "box-border flex max-w-full flex-[0_0_380px] flex-col gap-3 self-start overflow-y-auto rounded-lg max-h-full bg-surface p-4 text-ink",
+        "box-border flex h-full w-full max-w-full flex-col gap-3 overflow-y-auto rounded-lg bg-surface p-4 text-ink",
         className,
       )}
     >

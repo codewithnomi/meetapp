@@ -1,8 +1,8 @@
 // MeetingLayout (template): the meeting screen's frame from the approved "Meeting" screens, always on
 // the dark stage. Top: the meeting title and the Gallery/Speaker switch. Under it, for those who may let
 // people in, the lobby bar ("2 people are waiting in the lobby", View lobby, Admit all). Then the stage
-// with a side panel beside it (the stage shrinks; only on phone widths does the panel go below), and the
-// control bar at the bottom. The screen is exactly the window's
+// and the control bar at the bottom. A side panel (chat, participants, info) runs the window's full height
+// on the right, as in Teams (owner, 2026-10-21); on phone widths it goes below. The screen is exactly the window's
 // height: the control bar always shows (as in Teams), the stage's height is passed on as
 // `--stage-height` so the gallery's tiles fit it, and only the stage scrolls if it still doesn't fit.
 // One polite live region carries the announcements (joins, hands, "X muted you", AC-F02-44). Slots only: the page fills them.
@@ -76,26 +76,31 @@ function useHeight(element: HTMLElement | null): number | undefined {
   return height;
 }
 
+/** The side panel's width beside the stage (chat, participants, info), as in the approved screens. */
+const PANEL_WIDTH = "sm:w-95";
+
 export function MeetingLayout(props: MeetingLayoutProps) {
   const { title, layoutSwitch, lobby, notices, stage, panel, controls, announcement } = props;
   const [area, setArea] = useState<HTMLElement | null>(null);
   const height = useHeight(area);
   const stageHeight = height === undefined ? {} : ({ "--stage-height": `${String(height)}px` } as CSSProperties);
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-stage text-stage-ink">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-6 py-4">
-        <h1 className="m-0 text-[17px] leading-6 font-semibold">{title}</h1>
-        {layoutSwitch}
-      </header>
-      {lobby ? <Lobby lobby={lobby} /> : null}
-      {notices ? <div className="mx-6 mb-3 flex shrink-0 flex-col gap-2">{notices}</div> : null}
-      <main ref={setArea} className="flex min-h-0 flex-1 flex-wrap gap-4 overflow-y-auto px-6 sm:flex-nowrap">
-        <div className="min-w-0 flex-[999_1_560px]" style={stageHeight}>
-          {stage}
-        </div>
-        {panel}
-      </main>
-      <footer className="shrink-0 px-6 pt-4 pb-5">{controls}</footer>
+    <div className="flex h-dvh flex-col overflow-hidden bg-stage text-stage-ink sm:flex-row">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-6 py-4">
+          <h1 className="m-0 text-[17px] leading-6 font-semibold">{title}</h1>
+          {layoutSwitch}
+        </header>
+        {lobby ? <Lobby lobby={lobby} /> : null}
+        {notices ? <div className="mx-6 mb-3 flex shrink-0 flex-col gap-2">{notices}</div> : null}
+        <main ref={setArea} className="flex min-h-0 flex-1 flex-wrap gap-4 overflow-y-auto px-6 sm:flex-nowrap">
+          <div className="min-w-0 flex-1" style={stageHeight}>
+            {stage}
+          </div>
+        </main>
+        <footer className="shrink-0 px-6 pt-4 pb-5">{controls}</footer>
+      </div>
+      {panel ? <div className={cx("flex min-h-0 shrink-0 p-4 sm:pl-0", PANEL_WIDTH)}>{panel}</div> : null}
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>

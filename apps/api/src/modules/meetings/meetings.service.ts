@@ -24,7 +24,7 @@ export interface MeetingsServiceDeps {
   limiter: RateLimiter;
   now?: () => Date;
   /** Told after a change of the options or co-organizers, so a running call gets the new rights (F02 T8). */
-  onChange?: (meetingId: string) => Promise<void>;
+  onChange?: (meetingId: string, change?: { chatModeBy?: string }) => Promise<void>;
 }
 
 interface Caller {
@@ -58,6 +58,7 @@ export function detailsOf(row: MeetingRow, secrets: MeetingSecretBox): MeetingDe
       allowAttendeeMic: meeting.allowAttendeeMic,
       allowAttendeeCamera: meeting.allowAttendeeCamera,
       coOrganizerIds: row.coOrganizerIds,
+      chatMode: meeting.chatMode,
     },
     expiresAt: meeting.expiresAt.toISOString(),
   };
@@ -159,7 +160,8 @@ export function createMeetingsService({
       }
       const expiresAt = extendedExpiry(row.meeting.kind, row.meeting.expiresAt, now());
       await repository.update(meetingId, { ...options, expiresAt });
-      await onChange(meetingId);
+      const chatModeChanged = options.chatMode !== undefined && options.chatMode !== row.meeting.chatMode;
+      await onChange(meetingId, chatModeChanged ? { chatModeBy: caller.name } : {});
       return detailsOf(await managed(caller, meetingId), secrets);
     },
   };

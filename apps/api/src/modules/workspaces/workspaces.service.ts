@@ -1,6 +1,6 @@
 // Workspaces: business rules (F01 design.md section 5; AC-F01-14, 15, 21, 22, 23, 32). Callers come
 // through plugins/workspace-access.ts, so `membership` is always the caller's own, already checked.
-import type { MembersResponse, WorkspaceSummary } from "@meetapp/contracts";
+import type { MembersResponse, WorkspaceSettings, WorkspaceSummary } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import {
   allowedActions,
@@ -37,9 +37,10 @@ function workspaceRules(repository: WorkspacesRepository) {
       if (!workspace) throw limitReached("you");
       return { workspace, switchTo: workspace.id };
     },
-    async setAllowGuests(membership: Membership, allowGuests: boolean): Promise<void> {
+    /** The guest and GIF switches: owner and admins (AC-F02-40, AC-F03-27). */
+    async setSettings(membership: Membership, settings: WorkspaceSettings): Promise<void> {
       ensureAllowed(membership, "manageGuests");
-      await repository.setAllowGuests(membership.workspaceId, allowGuests);
+      await repository.setSettings(membership.workspaceId, settings);
     },
     async rename(membership: Membership, name: string): Promise<void> {
       ensureAllowed(membership, "rename");

@@ -46,6 +46,8 @@ export interface ControlBarProps {
   };
   /** The count is part of the label too: "Participants, 23". */
   people: PanelButton & { count: number };
+  /** Meeting chat (F03): the unread count, up to 99; the label says it too ("Chat, 3 unread"). */
+  chat?: (PanelButton & { unread: number }) | undefined;
   info: PanelButton;
 }
 
@@ -121,8 +123,8 @@ function MainControls(props: Omit<ControlBarProps, "label" | "elapsed" | "people
   );
 }
 
-/** The side panels: Participants (with the count) and Meeting info. */
-function PanelButtons({ people, info }: Pick<ControlBarProps, "people" | "info">) {
+/** The side panels: Participants (with the count), Chat (with unread messages) and Meeting info. */
+function PanelButtons({ people, chat, info }: Pick<ControlBarProps, "people" | "chat" | "info">) {
   return (
     <div className="flex items-center gap-2">
       <IconButton
@@ -133,12 +135,22 @@ function PanelButtons({ people, info }: Pick<ControlBarProps, "people" | "info">
         active={people.active}
         onClick={people.onClick}
       />
+      {chat ? (
+        <IconButton
+          icon="chat"
+          variant="ghost"
+          label={chat.label}
+          {...(chat.unread > 0 ? { badge: chat.unread > 99 ? "99+" : chat.unread } : {})}
+          active={chat.active}
+          onClick={chat.onClick}
+        />
+      ) : null}
       <IconButton icon="info" variant="ghost" label={info.label} active={info.active} onClick={info.onClick} />
     </div>
   );
 }
 
-export function ControlBar({ label, elapsed, people, info, ...controls }: ControlBarProps) {
+export function ControlBar({ label, elapsed, people, chat, info, ...controls }: ControlBarProps) {
   return (
     <div
       // A labelled group: every control is its own Tab stop (a toolbar would promise arrow-key moves).
@@ -148,7 +160,7 @@ export function ControlBar({ label, elapsed, people, info, ...controls }: Contro
     >
       <span className="font-mono text-[13px] font-medium tabular-nums">{elapsed}</span>
       <MainControls {...controls} />
-      <PanelButtons people={people} info={info} />
+      <PanelButtons people={people} chat={chat} info={info} />
     </div>
   );
 }
