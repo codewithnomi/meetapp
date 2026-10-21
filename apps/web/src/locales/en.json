@@ -933,6 +933,15 @@
         "high-five": "High five",
         "question": "Question",
         "done": "Done"
+      },
+      "expressions": {
+        "label": "Emoji, GIFs and stickers",
+        "all": "All",
+        "emoji": "Emoji",
+        "gifs": "GIFs",
+        "stickers": "Stickers",
+        "seeAll": "See all",
+        "search": "Find something fun"
       }
     },
     "recent": {

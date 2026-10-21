@@ -20,15 +20,3 @@ export const SAMPLE_LABELS: ChatComposerLabels = {
   code: "Inline code",
   codeBlock: "Code block",
 };
-
-export const SAMPLE_EMOJI = {
-  dataUrl: "/emojibase",
-  recent: ["👍", "🎉"],
-  labels: {
-    search: "Search emoji",
-    recent: "Recently used",
-    loading: "Loading…",
-    empty: "No emoji found",
-    skinTone: "Skin tone",
-  },
-};

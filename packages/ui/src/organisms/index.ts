@@ -2,6 +2,7 @@
 export * from "./ChatComposer/index.ts";
 export * from "./ChatMessage/index.ts";
 export * from "./ChatPanel/index.ts";
+export * from "./ExpressionPicker/index.ts";
 export * from "./ControlBar/index.ts";
 export * from "./DevicePanel/index.ts";
 export * from "./Gallery/index.ts";

@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { fn } from "storybook/test";
 import { ChatComposer } from "./ChatComposer.tsx";
-import { SAMPLE_EMOJI, SAMPLE_LABELS } from "./labels.ts";
+import { ExpressionPicker, SAMPLE_EXPRESSIONS } from "../ExpressionPicker/index.ts";
+import { SAMPLE_LABELS } from "./labels.ts";
 
 const meta = {
   title: "Organisms/ChatComposer",
@@ -10,7 +11,13 @@ const meta = {
     labels: SAMPLE_LABELS,
     tooManyLabel: (over: number) => `${String(over)} characters too many`,
     onSend: fn(),
-    emoji: SAMPLE_EMOJI,
+    expressions: (insert, close) => (
+      <ExpressionPicker
+        {...SAMPLE_EXPRESSIONS}
+        emoji={{ ...SAMPLE_EXPRESSIONS.emoji, onPick: insert }}
+        onClose={close}
+      />
+    ),
   },
   decorators: [(Story) => <div className="max-w-110 bg-surface p-3">{Story()}</div>],
 } satisfies Meta<typeof ChatComposer>;

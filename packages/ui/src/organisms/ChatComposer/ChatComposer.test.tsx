@@ -5,7 +5,7 @@ import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./ChatComposer.tsx";
-import { SAMPLE_EMOJI, SAMPLE_LABELS } from "./labels.ts";
+import { SAMPLE_LABELS } from "./labels.ts";
 
 const setup = () =>
   render(
@@ -13,11 +13,34 @@ const setup = () =>
       labels={SAMPLE_LABELS}
       tooManyLabel={(n) => `${String(n)} too many`}
       onSend={vi.fn()}
-      emoji={SAMPLE_EMOJI}
+      expressions={(_insert, close) => (
+        <div>
+          <button type="button">Inside</button>
+          <button type="button" onClick={close}>
+            Picker
+          </button>
+        </div>
+      )}
     />,
   );
 
 describe("ChatComposer", () => {
+  it("[AC-F03-12] the smiley opens the emoji, GIF and sticker popup above the box; it can close itself", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: SAMPLE_LABELS.emoji }));
+    await userEvent.click(screen.getByRole("button", { name: "Picker" }));
+    expect(screen.queryByRole("button", { name: "Picker" })).not.toBeInTheDocument();
+  });
+
+  it("a press inside the popup keeps it open; a press outside closes it (as in Teams)", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: SAMPLE_LABELS.emoji }));
+    await userEvent.click(screen.getByRole("button", { name: "Inside" }));
+    expect(screen.getByRole("button", { name: "Picker" })).toBeInTheDocument();
+    await userEvent.click(document.body);
+    expect(screen.queryByRole("button", { name: "Picker" })).not.toBeInTheDocument();
+  });
+
   it("TC-F03-07 [AC-F03-03] [AC-F03-45] the box is named and an empty box can't be sent", () => {
     setup();
     expect(screen.getByRole("textbox", { name: "Message everyone" })).toBeInTheDocument();

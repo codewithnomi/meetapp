@@ -9,12 +9,12 @@ import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, Extension, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCloseOnOutside } from "../../lib/useCloseOnOutside.ts";
 import { IconButton } from "../../atoms/IconButton/index.ts";
 import type { IconName } from "../../atoms/Icon/index.ts";
 import { Input } from "../../atoms/Input/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 import { toEditorDocument, toRichDocument, visibleText, type EditorNode } from "../../lib/rich-document.ts";
-import { EmojiPicker, type EmojiPickerProps } from "../../molecules/EmojiPicker/index.ts";
 import type { RichDocument } from "../../molecules/MessageBody/index.ts";
 
 export const MAX_MESSAGE_CHARS = 4000;
@@ -46,8 +46,11 @@ export interface ChatComposerProps {
   onSend: (document: RichDocument) => void;
   /** True when something else (files) may be sent without text. */
   allowEmpty?: boolean;
-  emoji: Omit<EmojiPickerProps, "onPick">;
-  onEmojiUsed?: ((emoji: string) => void) | undefined;
+  /**
+   * The emoji, GIF and sticker popup opened by the smiley button, above the box (as in Teams). It gets
+   * `insert` to put a picked emoji into the text and `close` to shut the popup.
+   */
+  expressions: (insert: (emoji: string) => void, close: () => void) => ReactNode;
   /** A reply quote or files waiting to be sent, above the text. */
   above?: ReactNode;
   /** More tools after the emoji button: attach, GIF, sticker, poll. */
@@ -210,20 +213,19 @@ interface ToolRowProps {
 }
 
 function ToolRow({ props, editor, over, canSend, formatting, onFormatting, onSend }: ToolRowProps) {
-  const { labels, tooManyLabel, emoji, onEmojiUsed, tools } = props;
+  const { labels, tooManyLabel, expressions, tools } = props;
   const [picking, setPicking] = useState(false);
+  const popup = useRef<HTMLDivElement>(null);
+  useCloseOnOutside(picking, popup, () => setPicking(false));
+  const insert = (picked: string) => {
+    editor?.chain().focus().insertContent(picked).run();
+    setPicking(false);
+  };
   return (
     <>
       {picking ? (
-        <div>
-          <EmojiPicker
-            {...emoji}
-            onPick={(picked) => {
-              editor?.chain().focus().insertContent(picked).run();
-              onEmojiUsed?.(picked);
-              setPicking(false);
-            }}
-          />
+        <div ref={popup} className="absolute right-0 bottom-full left-0 z-20 mb-2">
+          {expressions(insert, () => setPicking(false))}
         </div>
       ) : null}
       <div className="flex items-center gap-0.5">
@@ -237,6 +239,7 @@ function ToolRow({ props, editor, over, canSend, formatting, onFormatting, onSen
         />
         <IconButton
           icon="smile"
+          data-expressions-button=""
           label={labels.emoji}
           variant="ghost"
           size="sm"
@@ -279,7 +282,7 @@ export function ChatComposer(props: ChatComposerProps) {
     pasteFiles.current = props.onPasteFiles;
   });
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg border border-line-strong bg-surface-sunken p-2">
+    <div className="relative flex flex-col gap-1.5 rounded-lg border border-line-strong bg-surface-sunken p-2">
       {above}
       {editor && formatting ? <FormatBar editor={editor} labels={labels} /> : null}
       <EditorContent editor={editor} className={cx(EDITOR_CLASSES, FOCUS_RING)} />

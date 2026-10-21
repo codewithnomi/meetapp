@@ -121,16 +121,30 @@ export function readKlipy(answer: unknown): FoundGif[] {
 }
 
 /** Searches KLIPY from this app, family-safe, with no ad settings and no personal data (TC-F03-90). */
-export async function searchGifs(settings: GifSettings, query: string, signal: AbortSignal): Promise<FoundGif[]> {
+export function searchGifs(settings: GifSettings, query: string, signal: AbortSignal): Promise<FoundGif[]> {
+  return askKlipy(settings, "search", { q: query }, signal);
+}
+
+/** What's trending, shown before anything is typed (as in Teams). */
+export function trendingGifs(settings: GifSettings, signal: AbortSignal): Promise<FoundGif[]> {
+  return askKlipy(settings, "trending", {}, signal);
+}
+
+async function askKlipy(
+  settings: GifSettings,
+  kind: "search" | "trending",
+  extra: Record<string, string>,
+  signal: AbortSignal,
+): Promise<FoundGif[]> {
   const params = new URLSearchParams({
-    q: query,
+    ...extra,
     customer_id: settings.customerId,
     locale: "en",
     per_page: "24",
     content_filter: "high",
   });
   const answer = await fetch(
-    `${settings.apiUrl}/api/v1/${encodeURIComponent(settings.key)}/gifs/search?${params.toString()}`,
+    `${settings.apiUrl}/api/v1/${encodeURIComponent(settings.key)}/gifs/${kind}?${params.toString()}`,
     {
       signal,
       credentials: "omit",

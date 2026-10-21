@@ -1,17 +1,24 @@
-// The extra tools of the meeting chat's message box (F03): Attach (not for guests), GIF (when the
-// workspace allows them; searched at KLIPY by the app, with a one-time notice), and Sticker; plus the
-// files waiting to be sent, with progress, "Upload failed" and Retry (AC-F03-24–29, 33).
+// The extra tools of the meeting chat's message box (F03): Attach (not for guests); the emoji, GIF and
+// sticker popup with tabs, as in Teams (GIFs when the workspace allows them, searched or trending at KLIPY
+// by the app, with a one-time notice); plus the files waiting to be sent, with progress, "Upload failed"
+// and Retry (AC-F03-12, 24–29, 33).
 import { STICKERS, type ChatMessageView } from "@meetapp/contracts";
-import { FileChip, GifPicker, IconButton, StickerPicker } from "@meetapp/ui";
+import { ExpressionPicker, FileChip, IconButton, type GifPickerProps, type StickerPickerProps } from "@meetapp/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { gifSettings, searchGifs, type FoundGif } from "../../features/meetings/chat/index.ts";
+import {
+  gifSettings,
+  searchGifs,
+  trendingGifs,
+  type FoundGif,
+  type Outgoing,
+} from "../../features/meetings/chat/index.ts";
 import type { Joined } from "../../features/meetings/index.ts";
 import type { Attachments } from "./chat-attachments.ts";
+import { useEmojiSettings } from "./chat-emoji.ts";
 import { sizeText } from "./ChatExtras.tsx";
 
-export type OpenPicker = "gif" | "sticker" | undefined;
 const NOTICE_KEY = "meetapp.chat.gifNoticeSeen";
 const SEARCH_DELAY_MS = 300;
 
@@ -24,7 +31,7 @@ const seenNotice = () => {
 };
 
 /** The GIF settings for this call; undefined (button hidden) when the workspace turned GIFs off. */
-export function useGifSettings(visit: Joined) {
+function useGifSettings(visit: Joined) {
   return useQuery({
     queryKey: ["chat-gif-settings", visit.call?.callId],
     queryFn: () => gifSettings(visit),
@@ -42,9 +49,11 @@ function useGifSearch(settings: Awaited<ReturnType<typeof gifSettings>> | undefi
     if (!settings?.available) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      if (query.trim() === "") return;
       setState((old) => ({ ...old, status: "loading" }));
-      searchGifs(settings, query.trim(), AbortSignal.any([controller.signal, AbortSignal.timeout(2_000)])).then(
+      const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(2_000)]);
+      // Nothing typed: what's trending, as in Teams.
+      const found = query.trim() === "" ? trendingGifs(settings, signal) : searchGifs(settings, query.trim(), signal);
+      found.then(
         (results) => setState({ status: "ready", results }),
         () => !controller.signal.aborted && setState({ status: "unavailable", results: [] }),
       );
@@ -68,61 +77,84 @@ function useGifNotice() {
   return { seen, gotIt };
 }
 
-export function GifPanel({
-  visit,
-  onPick,
-}: {
-  visit: Joined;
-  onPick: (gif: NonNullable<ChatMessageView["gif"]>) => void;
-}) {
+/** The GIF part of the popup; undefined when the workspace turned GIFs off (AC-F03-25, 27). */
+function useGifPicker(visit: Joined, onPick: (gif: NonNullable<ChatMessageView["gif"]>) => void) {
   const { t } = useTranslation();
   const settings = useGifSettings(visit);
   const [query, setQuery] = useState("");
   const notice = useGifNotice();
-  const search = useGifSearch(settings.data, query);
-  return (
-    <GifPicker
-      query={query}
-      onQuery={setQuery}
-      results={search.results}
-      status={search.status}
-      reduceMotion={window.matchMedia("(prefers-reduced-motion: reduce)").matches}
-      onPick={(gif) =>
-        onPick({
-          id: gif.id,
-          description: gif.description,
-          url: gif.url,
-          ...(gif.stillUrl ? { stillUrl: gif.stillUrl } : {}),
-          width: gif.width,
-          height: gif.height,
-        })
-      }
-      notice={
-        notice.seen
-          ? undefined
-          : { text: t("meetings.chat.gifs.notice"), gotIt: t("meetings.chat.gifs.gotIt"), onGotIt: notice.gotIt }
-      }
-      labels={{
-        search: t("meetings.chat.gifs.search"),
-        loading: t("meetings.chat.gifs.loading"),
-        unavailable: t("meetings.chat.gifs.unavailable"),
-        attribution: t("meetings.chat.gifs.attribution"),
-      }}
-    />
-  );
+  const search = useGifSearch(notice.seen ? settings.data : undefined, query);
+  if (!settings.data) return undefined;
+  const picker: GifPickerProps = {
+    query,
+    onQuery: setQuery,
+    results: search.results,
+    status: search.status,
+    reduceMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    onPick: (gif) =>
+      onPick({
+        id: gif.id,
+        description: gif.description,
+        url: gif.url,
+        ...(gif.stillUrl ? { stillUrl: gif.stillUrl } : {}),
+        width: gif.width,
+        height: gif.height,
+      }),
+    notice: notice.seen
+      ? undefined
+      : { text: t("meetings.chat.gifs.notice"), gotIt: t("meetings.chat.gifs.gotIt"), onGotIt: notice.gotIt },
+    labels: {
+      search: t("meetings.chat.gifs.search"),
+      loading: t("meetings.chat.gifs.loading"),
+      unavailable: t("meetings.chat.gifs.unavailable"),
+      attribution: t("meetings.chat.gifs.attribution"),
+    },
+  };
+  return picker;
 }
 
-export function StickerPanel({ onPick }: { onPick: (name: (typeof STICKERS)[number]) => void }) {
+function useStickerPicker(onPick: (name: (typeof STICKERS)[number]) => void): StickerPickerProps {
   const { t } = useTranslation();
-  return (
-    <StickerPicker
-      label={t("meetings.chat.stickers.title")}
-      stickers={STICKERS.map((name) => ({
-        name,
-        text: t(`meetings.chat.stickers.${name}`),
-        label: t("meetings.chat.stickers.label", { name: t(`meetings.chat.stickers.${name}`) }),
-      }))}
-      onPick={(name) => onPick(name as (typeof STICKERS)[number])}
+  return {
+    label: t("meetings.chat.stickers.title"),
+    stickers: STICKERS.map((name) => ({
+      name,
+      text: t(`meetings.chat.stickers.${name}`),
+      label: t("meetings.chat.stickers.label", { name: t(`meetings.chat.stickers.${name}`) }),
+    })),
+    onPick: (name) => onPick(name as (typeof STICKERS)[number]),
+  };
+}
+
+const DEFAULT_FEATURED = ["😆", "🙂", "👍", "👏", "🎉", "❤️"];
+const FEATURED = 6;
+
+/**
+ * The popup behind the message box's smiley: an emoji goes into the text; a GIF or sticker is sent at once
+ * (with the reply, if replying), as in Teams.
+ */
+export function useExpressions(visit: Joined, sendNow: (content: Outgoing) => void) {
+  const { t } = useTranslation();
+  const emoji = useEmojiSettings();
+  const gifs = useGifPicker(visit, (gif) => sendNow({ gif }));
+  const stickers = useStickerPicker((sticker) => sendNow({ sticker }));
+  const featured = [...new Set([...emoji.settings.recent, ...DEFAULT_FEATURED])].slice(0, FEATURED);
+  return (insert: (emoji: string) => void, close: () => void) => (
+    <ExpressionPicker
+      label={t("meetings.chat.expressions.label")}
+      tabs={{
+        all: t("meetings.chat.expressions.all"),
+        emoji: t("meetings.chat.expressions.emoji"),
+        gifs: t("meetings.chat.expressions.gifs"),
+        stickers: t("meetings.chat.expressions.stickers"),
+      }}
+      seeAll={t("meetings.chat.expressions.seeAll")}
+      searchLabel={t("meetings.chat.expressions.search")}
+      emoji={{ ...emoji.settings, onPick: (picked) => (emoji.used(picked), insert(picked)) }}
+      featured={featured.map((item) => ({ emoji: item, label: item }))}
+      gifs={gifs ? { ...gifs, onPick: (gif) => (gifs.onPick(gif), close()) } : undefined}
+      stickers={{ ...stickers, onPick: (name) => (stickers.onPick(name), close()) }}
+      onClose={close}
     />
   );
 }
@@ -157,36 +189,14 @@ export function WaitingFiles({ attachments }: { attachments: Attachments }) {
 
 export interface ToolButtonsProps {
   canAttach: boolean;
-  canGif: boolean;
-  open: OpenPicker;
-  onOpen: (picker: OpenPicker) => void;
   onFiles: (files: File[]) => void;
 }
 
-export function ToolButtons({ canAttach, canGif, open, onOpen, onFiles }: ToolButtonsProps) {
+export function ToolButtons({ canAttach, onFiles }: ToolButtonsProps) {
   const { t } = useTranslation();
   const input = useRef<HTMLInputElement>(null);
-  const toggle = (picker: Exclude<OpenPicker, undefined>) => onOpen(open === picker ? undefined : picker);
   return (
     <>
-      {canGif ? (
-        <IconButton
-          icon="sparkle"
-          label={t("meetings.chat.gifs.button")}
-          variant="ghost"
-          size="sm"
-          active={open === "gif"}
-          onClick={() => toggle("gif")}
-        />
-      ) : null}
-      <IconButton
-        icon="sticker"
-        label={t("meetings.chat.stickers.button")}
-        variant="ghost"
-        size="sm"
-        active={open === "sticker"}
-        onClick={() => toggle("sticker")}
-      />
       {canAttach ? (
         <>
           <IconButton

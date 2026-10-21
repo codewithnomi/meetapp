@@ -4,9 +4,8 @@
 import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
 import { ChatComposer, IconButton, PollCreator, ReplyQuote, type ChatComposerLabels } from "@meetapp/ui";
 import type { Attachments } from "./chat-attachments.ts";
-import { GifPanel, StickerPanel, ToolButtons, WaitingFiles, useGifSettings, type OpenPicker } from "./ChatTools.tsx";
+import { ToolButtons, WaitingFiles, useExpressions } from "./ChatTools.tsx";
 import { useState } from "react";
-import { useEmojiSettings } from "./chat-emoji.ts";
 import { useTranslation } from "react-i18next";
 import { createPoll, editMessage, type Outgoing, type UploadProblem } from "../../features/meetings/chat/index.ts";
 import { firstLineOf } from "./chat-texts.ts";
@@ -121,12 +120,11 @@ function Notes({ view, attachments }: { view: ChatView; attachments: Attachments
   );
 }
 
-/** Above the text: the reply or edit quote, files waiting, and an open GIF or sticker picker. */
-function Above({ props, picker, onPicked }: { props: ComposerAreaProps; picker: OpenPicker; onPicked: () => void }) {
+/** Above the text: the reply or edit quote and the files waiting. */
+function Above({ props }: { props: ComposerAreaProps }) {
   const { t } = useTranslation();
-  const { view, visit, attachments, replyingTo, editing, onDone } = props;
+  const { attachments, replyingTo, editing, onDone } = props;
   const quote = editing ?? replyingTo;
-  const sendExtra = (content: Outgoing) => (view.chat.send(content, undefined, replyingTo?.id), onPicked(), onDone());
   return (
     <>
       {quote ? (
@@ -141,8 +139,6 @@ function Above({ props, picker, onPicked }: { props: ComposerAreaProps; picker: 
         />
       ) : null}
       <WaitingFiles attachments={attachments} />
-      {picker === "gif" ? <GifPanel visit={visit} onPick={(gif) => sendExtra({ gif })} /> : null}
-      {picker === "sticker" ? <StickerPanel onPick={(sticker) => sendExtra({ sticker })} /> : null}
     </>
   );
 }
@@ -165,22 +161,18 @@ function sendFrom({ view, visit, attachments, replyingTo, editing }: ComposerAre
 export function ComposerArea(props: ComposerAreaProps) {
   const { t } = useTranslation();
   const { view, visit, attachments, replyingTo, editing, onDone } = props;
-  const emoji = useEmojiSettings();
-  const gifs = useGifSettings(visit);
-  const [picker, setPicker] = useState<OpenPicker>();
+  // A GIF or sticker goes at once, with the reply if replying.
+  const expressions = useExpressions(visit, (content: Outgoing) => {
+    view.chat.send(content, undefined, replyingTo?.id);
+    onDone();
+  });
   const labels = Object.fromEntries(
     COMPOSER_KEYS.map((key) => [key, t(`meetings.chat.composer.${key}`)]),
   ) as unknown as ChatComposerLabels;
   const send = (body: MessageDocument) => (sendFrom(props, body), onDone());
   const tools = (
     <>
-      <ToolButtons
-        canAttach={view.rights.attach}
-        canGif={Boolean(gifs.data)}
-        open={picker}
-        onOpen={setPicker}
-        onFiles={attachments.add}
-      />
+      <ToolButtons canAttach={view.rights.attach} onFiles={attachments.add} />
       {view.rights.createPoll ? <PollButton visit={visit} onFailed={view.onFailed} /> : null}
     </>
   );
@@ -194,12 +186,11 @@ export function ComposerArea(props: ComposerAreaProps) {
         tooManyLabel={(over) => t("meetings.chat.tooMany", { count: over })}
         onSend={(body) => send(body as MessageDocument)}
         allowEmpty={!editing && attachments.readyIds.length > 0 && !attachments.busy}
-        onEscape={(editing ?? replyingTo) ? onDone : picker ? () => setPicker(undefined) : undefined}
+        onEscape={(editing ?? replyingTo) ? onDone : undefined}
         onPasteFiles={view.rights.attach ? attachments.add : undefined}
-        above={<Above props={props} picker={picker} onPicked={() => setPicker(undefined)} />}
+        above={<Above props={props} />}
         tools={tools}
-        emoji={emoji.settings}
-        onEmojiUsed={emoji.used}
+        expressions={expressions}
       />
     </>
   );

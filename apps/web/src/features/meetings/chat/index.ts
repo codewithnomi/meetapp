@@ -7,6 +7,7 @@ export {
   gifSettings,
   saveFile,
   searchGifs,
+  trendingGifs,
   uploadFile,
   type FoundGif,
   type UploadProblem,

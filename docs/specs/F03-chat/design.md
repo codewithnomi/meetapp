@@ -49,7 +49,8 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
 - **Pointing at the bubble (not the row), or Tab into the message:** a small toolbar, above the message and kept inside the panel (on the right for own messages, on the left for others), with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
 - **Composer:**
   - a rich text box (section 5.1) with the Format toolbar (shown or hidden by the Format button);
-  - buttons: Format, Emoji, GIF, Sticker, Attach (not for guests), Create a poll (organizer, co-organizers, presenters), Send;
+  - buttons: Format, Emoji, Attach (not for guests), Create a poll (organizer, co-organizers, presenters), Send;
+  - **Emoji opens one popup above the box, as in Teams (owner, 2026-10-21):** tabs All, Emoji, GIFs (only when the workspace allows GIFs), Stickers. "All" has the GIF notice (once), a "Find something fun" search (it searches GIFs), a row of 6 emoji (recently used first), 3 GIFs (trending at KLIPY until something is typed; nothing is asked of KLIPY before the notice is accepted) and 4 stickers, each with "See all", which opens its tab. An emoji goes into the text; a GIF or sticker is sent at once (with the reply, if replying) and closes the popup. Escape or a press outside closes it. The `ExpressionPicker` organism holds it; the separate GIF and Sticker buttons are gone.
   - Enter sends, Shift+Enter makes a new line, Esc cancels a reply or an edit;
   - a counter appears near the limit, and over it shows "212 characters too many" and disables Send (AC-03);
   - dropped or pasted files show as chips with progress before sending (AC-29).

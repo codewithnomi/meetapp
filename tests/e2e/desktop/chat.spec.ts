@@ -114,7 +114,13 @@ test("TC-F03-07 TC-F03-22 [AC-F03-03] [AC-F03-12] the counter stops long message
   await expect(host.page.getByRole("button", { name: "Send (Enter)" })).toBeEnabled();
 
   await box.fill("");
+  // One popup for emoji, GIFs and stickers, with tabs as in Teams.
   await host.page.getByRole("button", { name: "Emoji" }).click();
+  const popup = host.page.getByRole("dialog", { name: "Emoji, GIFs and stickers" });
+  await expect(popup.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "true");
+  await host.page.waitForTimeout(400);
+  await host.page.screenshot({ path: `${process.env["TMPDIR"] ?? "/tmp"}/meetapp-chat-popup.png` });
+  await popup.getByRole("button", { name: "See all: Emoji" }).click();
   await host.page.getByRole("searchbox", { name: "Search emoji" }).fill("party popper");
   await host.page
     .getByRole("gridcell", { name: /party popper/i })
@@ -279,15 +285,20 @@ test("TC-F03-46 TC-F03-49 TC-F03-59 [AC-F03-26] [AC-F03-27] [AC-F03-33] stickers
   await openChat(guest.page);
 
   await expect(guest.page.getByRole("button", { name: "Attach a file" })).toHaveCount(0);
-  await guest.page.getByRole("button", { name: "Sticker" }).click();
+  await guest.page.getByRole("button", { name: "Emoji" }).click();
+  await guest.page.getByRole("tab", { name: "Stickers" }).click();
   await guest.page.getByRole("button", { name: "Sticker: Thank you" }).click();
+  await expect(guest.page.getByRole("dialog", { name: "Emoji, GIFs and stickers" })).toHaveCount(0);
   await expect(hostLog.getByRole("img", { name: "Sticker: Thank you" })).toBeVisible({ timeout: 5_000 });
 
   // Without a GIF key (development), the picker says GIFs aren't available, after the one-time notice.
-  await host.page.getByRole("button", { name: "GIF" }).click();
+  await host.page.getByRole("button", { name: "Emoji" }).click();
   await expect(host.page.getByRole("note")).toContainText("sent to our GIF service");
   await host.page.getByRole("button", { name: "Got it" }).click();
   await expect(host.page.getByText("GIFs aren't available right now")).toBeVisible();
+  // A press outside closes the popup.
+  await host.page.getByRole("heading", { name: "Chat", exact: true }).click();
+  await expect(host.page.getByRole("dialog", { name: "Emoji, GIFs and stickers" })).toHaveCount(0);
 });
 
 const setChat = async (page: Page, mode: "on" | "in_meeting" | "off") => {
