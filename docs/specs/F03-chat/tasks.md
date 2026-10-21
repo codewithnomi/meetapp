@@ -1,7 +1,7 @@
 ---
 feature: F03
 title: In-meeting chat
-status: in-progress
+status: done
 updated: 2026-10-20
 ---
 
