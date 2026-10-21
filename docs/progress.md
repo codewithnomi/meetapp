@@ -59,7 +59,8 @@
 - Owner look notes on the F14 screens (2026-10-21): buttons had no size (fixed); the side menu folds to icons with tooltips, as in Teams (added as AC-F14-36, owner request).
 - **F14 screen designs approved** (2026-10-21).
 - **F14 design drafted** (2026-10-21, `docs/specs/F14-chats/design.md`): one conversation model (D065), a live line for news, typing, Seen and status (D064), reviewed by spec-reviewer and fixed; two cross-workspace rules decided as in Teams.
-- **Next step:** owner approves the F14 design, then `/spec-tasks F14`.
+- **F14 design approved** (2026-10-21; D064, D065 accepted). Owner: "do auto … match with MS Teams if confused".
+- **Next step:** `/spec-tasks F14` (tests.md and tasks.md).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

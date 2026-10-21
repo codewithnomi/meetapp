@@ -409,14 +409,14 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none.
 
 ### D064: A live line (WebSocket) for chats outside calls (F14)
-- **Date:** 2026-10-21. **Status:** proposed (F14 design).
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 design, 2026-10-21).
 - **Decision:** while the app is open it keeps one WebSocket to the backend (`@fastify/websocket`, Fastify team, MIT; vetted with `/add-dependency` in F14 T1). It carries new messages, edits, reactions, "is typing", "Seen", status and chat-list changes. Servers share news through Redis publish/subscribe (ioredis, already used), so it works with several API servers. Everything that changes data still goes through normal requests with their checks; the line only delivers.
 - **Why:** F03's chat news travels through the call server, which exists only during a call. Teams-style chats need instant delivery any time. Polling every few seconds would be slow and heavy for 100+ people.
 - **Cost:** none (inside the existing backend and Redis).
 - **Alternatives:** Server-Sent Events (one direction only; typing and activity would need extra requests); a separate realtime service (more to run, not needed at our size).
 
 ### D065: One conversation model for direct, group and meeting chats (F14)
-- **Date:** 2026-10-21. **Status:** proposed (F14 design).
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 design, 2026-10-21).
 - **Decision:** a `conversations` table (kinds: direct, group, meeting); F03's chat tables gain `conversation_id`, filled for existing meeting chats by a re-runnable step, so messages, reactions, pins, polls and files work the same in every chat. Meeting chats keep F03's rules and their call-server delivery during calls.
 - **Why:** Teams treats meeting chats as chats in the same list; one model means one set of checks and one set of tests.
 - **Cost:** none; a careful two-step migration (no column dropped in F14).
