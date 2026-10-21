@@ -8,6 +8,8 @@
 | F01 | Accounts & workspaces | 1 | approved | approved | approved | approved | done | PASS 2026-10-13 (verification.md) |
 | F02 | Meetings & calling | 1 | approved | approved | approved | approved | done | PASS 2026-10-20 (verification.md) |
 | F03 | In-meeting chat | 1 | approved | approved | approved | approved | in progress | - |
+| F14 | Chats (one to one and groups) | 1 | not started | not started | not started | not started | not started | - |
+| F15 | Calls from chat (audio and video) | 1 | not started | not started | not started | not started | not started | - |
 | F04 | Desktop app | 1 | not started | not started | not started | not started | not started | - |
 | F13 | Scheduling & calendar | 1 | not started | not started | not started | not started | not started | - |
 | F05 | Live transcription | 2 | not started | not started | not started | not started | not started | - |

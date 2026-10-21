@@ -395,3 +395,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** one reaction per person per message (a different emoji replaces it; the same one removes it); messages of only 1–3 emoji show larger without a bubble; a person's messages within the same minute are grouped as connected bubbles under one name and time. Replaces the earlier "up to 20 reactions per person" and "messages are not grouped".
 - **Why:** the owner wants the chat to behave as in Microsoft Teams, which people already know.
 - **Cost:** none.
+
+### D062: MeetApp is a complete Teams-style app, not only a meeting app
+- **Date:** 2026-10-21. **Status:** accepted (owner: "this is not just a meeting app … it's a complete app like MS Teams … we should do [it] right now").
+- **Decision:** add **F14 Chats** (one-to-one and group chats that stay, contacts for personal accounts and colleagues in organizations, meeting chats in the same list) and **F15 Calls from chat** (audio and video calls from any chat, ringing, missed calls), built right after F03 and before F04. They reuse F03's chat building blocks and F02's calling. When unsure how something works, follow Teams.
+- **Why:** the owner wants people to use MeetApp every day like Teams, not only for scheduled meetings.
+- **Cost:** none now (same free tools and call server); more work in Phase 1.
