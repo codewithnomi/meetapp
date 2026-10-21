@@ -401,3 +401,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** add **F14 Chats** (one-to-one and group chats that stay, contacts for personal accounts and colleagues in organizations, meeting chats in the same list) and **F15 Calls from chat** (audio and video calls from any chat, ringing, missed calls), built right after F03 and before F04. They reuse F03's chat building blocks and F02's calling. When unsure how something works, follow Teams.
 - **Why:** the owner wants people to use MeetApp every day like Teams, not only for scheduled meetings.
 - **Cost:** none now (same free tools and call server); more work in Phase 1.
+
+### D063: Typing an exact email in "New chat" shows whether it uses MeetApp (F14)
+- **Date:** 2026-10-21. **Status:** proposed (with the F14 requirements; owner: "follow Teams").
+- **Decision:** as in Teams, a person who types an exact email in New chat sees whether it has a MeetApp account, so they can chat or invite. Only exact emails (no lists, no partial matches), at most 30 lookups a minute per person.
+- **Why:** chatting with people outside the workspace needs it, and Teams does the same. F01 hides it at sign-in (AC-F01-02, 13), where it would help someone guess passwords; here the lookup is signed in, limited and logged.
+- **Cost:** none.
