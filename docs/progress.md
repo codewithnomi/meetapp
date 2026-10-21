@@ -60,7 +60,8 @@
 - **F14 screen designs approved** (2026-10-21).
 - **F14 design drafted** (2026-10-21, `docs/specs/F14-chats/design.md`): one conversation model (D065), a live line for news, typing, Seen and status (D064), reviewed by spec-reviewer and fixed; two cross-workspace rules decided as in Teams.
 - **F14 design approved** (2026-10-21; D064, D065 accepted). Owner: "do auto … match with MS Teams if confused".
-- **Next step:** `/spec-tasks F14` (tests.md and tasks.md).
+- **F14 tests.md (82 test cases) and tasks.md (19 steps) drafted** (2026-10-21).
+- **Next step:** owner approves tests and tasks, then building starts (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
