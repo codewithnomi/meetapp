@@ -46,7 +46,8 @@
 - **F03 T16 done:** "Meeting chat" On / In-meeting only / Off in Meeting options, with the notes and the "Chat is turned off" message; a removed person's window drops the chat; the Meetings screen has a new **Recent meetings** list with Open chat for reading past chats (not in the design before; design.md 2.2 updated); 10 real-app chat tests pass.
 - **F03 look fixes (owner, after T16, D061):** Teams-style chat: one reaction per person, bigger emoji-only messages, grouped bubbles in the same minute, hover bar kept inside the panel, no sideways scroll, no double message while sending. 11 real-app chat tests pass.
 - **F03 look fixes, rounds 2 and 3 (owner, 2026-10-21):** full-height side panel, bubble-only fading actions, Teams-style reactions with "Add reaction", steady polls, and one emoji/GIF/sticker popup with tabs. Open for before going online: confirm KLIPY's trending answer format with a real key.
-- **Next step:** F03 T17, the chat load test (`/next`), unless the owner sends more look changes.
+- **F03 T17 done:** chat in the 100-person load meeting: 95% of messages shown within 318 ms (target 1 s). Watch: the F02 video-smoothness check missed in the same run (a numbers-reading hiccup and a busy Mac); rerun on an idle Mac at spec-verify.
+- **Next step:** F03 T18, keyboard, screen reader, translations and documentation (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

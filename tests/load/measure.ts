@@ -156,3 +156,25 @@ export function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
   return sorted[Math.min(sorted.length - 1, Math.ceil((p / 100) * sorted.length) - 1)] ?? Number.NaN;
 }
+
+type ChatWatched = Window & { meetappChatSeen?: Record<string, number> };
+
+/** Notes when each message with the given prefix first shows in the chat list (the panel must be open). */
+export function watchChat(page: Page, prefix: string): Promise<void> {
+  return page.evaluate((start) => {
+    const w = window as ChatWatched;
+    w.meetappChatSeen = {};
+    const log = document.querySelector('[role="log"]');
+    if (!log) throw new Error("The chat panel is not open");
+    new MutationObserver(() => {
+      for (const node of log.querySelectorAll("article")) {
+        const text = node.textContent ?? "";
+        const found = text.match(new RegExp(`${start}\\d+`));
+        if (found && !(found[0] in (w.meetappChatSeen ?? {}))) (w.meetappChatSeen ?? {})[found[0]] = Date.now();
+      }
+    }).observe(log, { childList: true, subtree: true, characterData: true });
+  }, prefix);
+}
+
+export const chatSeen = (page: Page): Promise<Record<string, number>> =>
+  page.evaluate(() => (window as ChatWatched).meetappChatSeen ?? {});

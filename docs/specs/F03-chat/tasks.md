@@ -124,10 +124,11 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - **Owner look fixes, round 2 (2026-10-21):** full-height side panel; toolbar only when pointing at the bubble, fading in; new messages fade in; Teams-style reaction chips overlapping the bubble with "Add reaction" (full emoji list); polls no longer blink when someone votes. 11 chat desktop tests pass (the poll test now watches that the card never disappears).
 - **Owner look fixes, round 3 (2026-10-21):** one Teams-style popup for emoji, GIFs and stickers with tabs (All, Emoji, GIFs, Stickers), search, "See all" and trending GIFs (new `ExpressionPicker` organism with story and tests; the GIF and Sticker buttons are gone). Bug found by a new unit test and fixed: the popup closed itself on a press inside it. 11 chat desktop tests pass.
 
-- [ ] **T17: Load test.**
+- [x] **T17: Load test.**
   - `pnpm test:load` sends messages from the simulated people's side and measures delivery to the desktop app.
   - Covers: AC-F03-01 (100 people).
   - Tests: TC-F03-02.
+  - **Built in T17:** in the 100-person load meeting, a sender joins through the backend as a guest (the organizer's app lets it in) and sends 50 messages 1.5 s apart (under the sending limit); the app notes when each shows. Result 2026-10-21: 95% within **318 ms** (slowest 648 ms), target 1 s: PASS. The same run's F02 video check missed (one sample read no WebRTC numbers, another drew 66% of frames while the Mac was busy); the screen looked normal. The whole load test runs again on an idle Mac at spec-verify.
 
 - [ ] **T18: Keyboard, screen reader, translations and documentation.**
   - Keyboard-only run, announcements, translation keys, docs (API, runbooks, privacy-legal, project-structure, code map).
