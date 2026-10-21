@@ -52,7 +52,9 @@
 - **F03 fixes T-fix-1..10 done (2026-10-21):** reactions no longer shown as someone else's; news numbers and pins reliable after reconnects; poll versions from the database; past-chat delete, Send waits for uploads, own messages after rejoining, ©/®/™, load failure with Retry; tests for AC-08; security lows (links hidden in logs, per-person limits, recent-chats limit); files split and tidied; documents match the code; older desktop tests updated for F03.
 - **F03 /spec-verify round 2 (2026-10-21):** reviews: ACs all covered, security PASS (no issues), bugs: all round-1 fixed, one new Low (Edit/Delete on own messages from an earlier call) fixed; docs and quality small items fixed (messages, reactions and votes limited per person; votes share the reactions' limit). Full run: 1920 unit/integration passed; desktop 78 passed, 3 failed only under the long run's load and passed alone.
 - **Product direction (D062, 2026-10-21):** MeetApp is a complete Teams-style app. **F14 Chats** and **F15 Calls from chat** come right after F03, before F04.
-- **Next step:** finish F03 round 2 (screenshots, container check, load test, report), then F14 Chats requirements (`/next`).
+- **F03 done: /spec-verify round 2 PASS (2026-10-21).** Screenshots 529/529 after saving the new F03 pictures; container healthy; chat 253 ms with 100 people; F02 tile smoothness again missed on a busy Mac (64%/69%, D056, re-check before going online). Pull Request opened for the owner to merge.
+- **Owner check when merging (optional):** try the chat with two windows, including the right-click spelling menu in the message box.
+- **Next step:** after the merge, F14 Chats requirements (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
