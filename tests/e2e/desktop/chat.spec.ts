@@ -567,3 +567,26 @@ test("TC-F03-75 [AC-F03-45] the whole chat works with the keyboard only; news is
   // Focus is never lost to the page itself.
   expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
 });
+
+test("TC-F03-16 [AC-F03-08] reading older messages, new ones don't move the view; New messages goes to them", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  const hostLog = await openChat(host.page);
+  await openChat(mo.page);
+  // Enough messages to scroll, paced under the 10-in-10-seconds limit.
+  for (let i = 0; i < 24; i += 1) {
+    await send(mo.page, `filler ${String(i)}`);
+    if (i % 8 === 7) await mo.page.waitForTimeout(10_500);
+  }
+  await expect(hostLog.getByText("filler 23", { exact: true })).toBeVisible({ timeout: 10_000 });
+  await hostLog.evaluate((node) => node.scrollTo({ top: 0 }));
+  await expect(hostLog.getByText("filler 0", { exact: true })).toBeInViewport();
+  const before = await hostLog.evaluate((node) => node.scrollTop);
+  await send(mo.page, "something new");
+  const newMessages = host.page.getByRole("button", { name: "New messages" });
+  await expect(newMessages).toBeVisible({ timeout: 5_000 });
+  expect(await hostLog.evaluate((node) => node.scrollTop)).toBe(before);
+  await newMessages.click();
+  await expect(hostLog.getByText("something new", { exact: true })).toBeInViewport();
+});

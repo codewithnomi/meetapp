@@ -57,3 +57,4 @@ If it stops early: `docker compose -f infra/load/docker-compose.load.yml --env-f
   3. A refused upload names its reason in the app ("This kind of file can't be sent", "This meeting has reached its file limit").
   4. Uploads from the app need the backend to accept the `X-File-Name` header (CORS list in `apps/api/src/app.ts`); a missing header there blocks every upload.
 - **After the meeting:** people who took part open the chat from **Meetings → Recent meetings → Open chat** (read-only; organizers can still delete messages).
+- **A person asks to delete their account (until F10):** removing their chat text and files is one backend step, `chatUpkeep.forgetPerson(<their user id>)`; run it within 30 days of the request (privacy-legal.md). It keeps "Deleted user · message removed" in place of their messages.

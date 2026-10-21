@@ -280,3 +280,7 @@ Tests are listed in tests.md (`TC-F03-…`). Per D052, each task runs its own te
 - **D058 (accepted):** new libraries for F03: TipTap (editor), Frimousse (emoji picker) with emojibase-data bundled, file-type (content check), `@fastify/multipart` (uploads); vetted in T1.
 - **D059 (accepted by the owner, 2026-10-20; changed in T1):** GIF service: KLIPY's free API, searched from each person's app as KLIPY's rules require, GIFs loaded from KLIPY; we store only which GIF was sent; no ads.
 - **D060 (proposed):** how chat is built: one chat per meeting; backend saves, LiveKit delivers server-only events on `meetapp.chat`; messages as a strict JSON document drawn by our own renderer; files checked by content and kept privately.
+
+## Account deletion and meeting deletion (verification round 1)
+- **AC-44:** `chatUpkeep.forgetPerson(userId)` removes a deleted account's message text and files and keeps "Deleted user · message removed" (tested in after.integration.test.ts); `exportFor(userId)` lists their own messages and files. Account deletion itself arrives with F10: its job must call `forgetPerson` within the 30-day window (privacy-legal.md). Until then, a deletion request is handled by support with that same step (runbooks/calls.md).
+- **AC-43:** meeting rows cascade to every chat table, and the clean-up job removes the files; the trigger arrives when F06/F10 delete meetings.

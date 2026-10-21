@@ -142,7 +142,7 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
 - [x] **T-fix-3: Pin news says pinned or unpinned** (no flipping); a repeated or late packet changes nothing. Unit test.
 - [x] **T-fix-4: Poll versions come from the database** (`UPDATE … RETURNING`), so two votes at once announce two versions. Integration test.
 - [x] **T-fix-5: App fixes.** Deleting in a past chat updates that message wherever it is; Send waits while a file is still uploading (files never dropped silently); "own" also matches the same account after a rejoin; ©, ® and ™ are not big emoji; a failed history load shows a message with Retry. Unit tests.
-- [ ] **T-fix-6: Missing tests.** AC-08 (the view stays still while reading older messages), AC-20 (a non-organizer can't unpin), AC-44 (the account-deletion step and its 30-day window documented).
+- [x] **T-fix-6: Missing tests.** AC-08 (the view stays still while reading older messages), AC-20 (a non-organizer can't unpin), AC-44 (the account-deletion step and its 30-day window documented).
 - [ ] **T-fix-7: Security lows.** Download links hidden in logs; the 10-files-a-minute limit per person; a rate limit on `GET /me/meeting-chats`.
 - [ ] **T-fix-8: Code-quality and UI should-fixes.** Typed poll labels; split the files at the 300-line limit; ChatTools split; name the swallowed errors; GIF pause/play icons; panel and GIF sizes as named values; decide virtualization (paging is the limit for now, written in frontend.md).
 - [ ] **T-fix-9: Documents.** All 10 Must-fix and 16 Should-fix items from the docs check, plus the guest download rule (guests can read chat but not open files, as in Teams) written into the requirements and design.
