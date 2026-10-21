@@ -32,6 +32,20 @@ describe("ChatComposer", () => {
     expect(screen.queryByRole("button", { name: "Picker" })).not.toBeInTheDocument();
   });
 
+  it("TC-F03-53 [AC-F03-28] Send waits while files are still uploading", () => {
+    render(
+      <ChatComposer
+        labels={SAMPLE_LABELS}
+        tooManyLabel={(n) => `${String(n)} too many`}
+        onSend={vi.fn()}
+        expressions={() => null}
+        allowEmpty
+        waiting
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+  });
+
   it("a press inside the popup keeps it open; a press outside closes it (as in Teams)", async () => {
     setup();
     await userEvent.click(screen.getByRole("button", { name: SAMPLE_LABELS.emoji }));

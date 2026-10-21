@@ -4,9 +4,23 @@ import type { TFunction } from "i18next";
 
 export const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-/** "You" for the viewer's own messages in a call (`viewerId` is unknown after the meeting). */
-export function senderName(t: TFunction, message: ChatMessageView, viewerId: string | undefined): string {
-  if (viewerId !== undefined && message.sender.attendanceId === viewerId) return t("meetings.chat.you");
+/**
+ * The viewer's own message: from this join, or from an earlier join of the same account (after a rejoin;
+ * the server allows editing those too). Unknown after the meeting.
+ */
+export function isOwn(message: ChatMessageView, viewerId: string | undefined, viewerUserId?: string): boolean {
+  if (viewerId !== undefined && message.sender.attendanceId === viewerId) return true;
+  return viewerUserId !== undefined && message.sender.userId === viewerUserId;
+}
+
+/** "You" for the viewer's own messages in a call. */
+export function senderName(
+  t: TFunction,
+  message: ChatMessageView,
+  viewerId: string | undefined,
+  viewerUserId?: string,
+): string {
+  if (isOwn(message, viewerId, viewerUserId)) return t("meetings.chat.you");
   const { name, group } = message.sender;
   return group === "member" ? name : t(`meetings.call.${group}`, { name });
 }

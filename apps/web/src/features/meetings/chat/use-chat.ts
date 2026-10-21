@@ -94,9 +94,9 @@ function usePages(place: ChatPlace, initial: ChatState) {
     });
   }, [place]);
 
-  useEffect(() => {
-    void loadNewest().catch(() => undefined);
-  }, [loadNewest]);
+  // A failed first load is shown with Retry; later reloads keep what is on screen.
+  const reload = useCallback(() => void loadNewest().catch(() => dispatch({ type: "loadFailed" })), [loadNewest]);
+  useEffect(reload, [reload]);
 
   const loadOlder = useCallback(async () => {
     const oldest = latest.current.messages[0];
@@ -104,7 +104,7 @@ function usePages(place: ChatPlace, initial: ChatState) {
     const page = await messagesPage(place, oldest.cursor);
     dispatch({ type: "page", messages: page.messages, hasMore: page.hasMore, older: true });
   }, [place]);
-  return { state, dispatch, latest, loadNewest, loadOlder };
+  return { state, dispatch, latest, loadNewest, loadOlder, reload };
 }
 
 /** Pages keep these in the query cache; they go when the call screen closes (AC-F03-40, 41). */
@@ -124,7 +124,7 @@ function useForgetOnLeave() {
 export function useChat(visit: Joined) {
   useForgetOnLeave();
   const place = useMemo(() => callPlace(visit), [visit]);
-  const { state, dispatch, latest, loadNewest, loadOlder } = usePages(place, emptyChat);
+  const { state, dispatch, latest, loadNewest, loadOlder, reload } = usePages(place, emptyChat);
 
   const catchUp = useCallback(
     () => catchUpOn(visit, latest, dispatch, loadNewest),
@@ -152,7 +152,8 @@ export function useChat(visit: Joined) {
   );
 
   const setOpen = useCallback((open: boolean) => dispatch({ type: "open", open }), [dispatch]);
-  return { place, state, onEvent, send, retry: send, loadOlder, catchUp, setOpen };
+  const markDeleted = useCallback((id: string) => dispatch({ type: "deleted", id }), [dispatch]);
+  return { place, state, onEvent, send, retry: send, loadOlder, catchUp, setOpen, reload, markDeleted };
 }
 
 export type Chat = ReturnType<typeof useChat>;
@@ -163,7 +164,8 @@ const openChat: ChatState = { ...emptyChat, open: true };
 /** A past meeting's chat, read-only (AC-F03-42): pages only, nothing live; "catch up" reloads the newest. */
 export function usePastChat(meetingId: string): Chat {
   const place = useMemo(() => pastPlace(meetingId), [meetingId]);
-  const { state, loadNewest, loadOlder } = usePages(place, openChat);
+  const { state, dispatch, loadNewest, loadOlder, reload } = usePages(place, openChat);
+  const markDeleted = (id: string) => dispatch({ type: "deleted", id });
   return {
     place,
     state,
@@ -173,6 +175,8 @@ export function usePastChat(meetingId: string): Chat {
     loadOlder,
     catchUp: loadNewest,
     setOpen: nothing,
+    reload,
+    markDeleted,
   };
 }
 

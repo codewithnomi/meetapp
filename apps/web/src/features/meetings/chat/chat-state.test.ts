@@ -116,6 +116,21 @@ describe("chat state", () => {
     expect(run(twice, { type: "event", event: pin(2, false), mine: false }).pinned).toEqual([]);
   });
 
+  it("TC-F03-21 [AC-F03-10] a message deleted here shows as deleted at once and leaves the pinned list", () => {
+    const m = message();
+    const state = run(emptyChat, { type: "page", messages: [m], hasMore: false, older: false, pinned: [m] });
+    const after = run(state, { type: "deleted", id: m.id });
+    expect(after.messages[0]?.deletedAt).not.toBeNull();
+    expect(after.messages[0]?.body).toBeNull();
+    expect(after.pinned).toEqual([]);
+  });
+
+  it("TC-F03-04 [AC-F03-02] a failed load is noted until a page arrives", () => {
+    const failed = run(emptyChat, { type: "loadFailed" });
+    expect(failed.loadFailed).toBe(true);
+    expect(run(failed, { type: "page", messages: [], hasMore: false, older: false }).loadFailed).toBe(false);
+  });
+
   it("TC-F03-92 [AC-F03-01] a page sets the news number, so later news is not taken for a gap", () => {
     const state = run(emptyChat, { type: "page", messages: [], hasMore: false, older: false, lastSeq: 40 });
     expect(missedNews(state, created(41, message()))).toBe(false);

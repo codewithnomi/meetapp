@@ -1,24 +1,18 @@
 // The messages in the meeting chat (F03, approved "Chat" screens): each with its actions (react,
 // reply, and the More menu with Edit, Copy text, Pin and Delete for those allowed), polls drawn as
 // poll cards, and messages being sent with "Not sent" and Retry.
-import type { ChatMessageView, PollView } from "@meetapp/contracts";
-import { ChatMessage, EmojiPicker, MessageActions, PollCard, SystemNote, type MenuAction } from "@meetapp/ui";
-import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ChatMessageView } from "@meetapp/contracts";
+import { ChatMessage, EmojiPicker, MessageActions, SystemNote, type MenuAction } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useEmojiSettings } from "./chat-emoji.ts";
-import {
-  closePoll,
-  pollOf,
-  setPinned,
-  setReaction,
-  votePoll,
-  type Chat,
-  type ChatPlace,
-  type Sending,
-} from "../../features/meetings/chat/index.ts";
-import { allTextOf, copyText, noteText, senderName, time } from "./chat-texts.ts";
+import { setPinned, setReaction, type Chat, type Sending } from "../../features/meetings/chat/index.ts";
+import type { ChatView } from "./chat-view.ts";
+import { PollMessage } from "./ChatPoll.tsx";
+
+export type { ChatRights, ChatView } from "./chat-view.ts";
+import { allTextOf, copyText, isOwn, noteText, senderName, time } from "./chat-texts.ts";
 import { MessageExtras } from "./ChatExtras.tsx";
 import { openLink } from "./open-link.ts";
 
@@ -36,26 +30,6 @@ const sameEmoji = (a: string, b: string) => a.replaceAll("\uFE0F", "") === b.rep
 function reactWith(view: ChatView, message: ChatMessageView, emoji: string) {
   const mine = message.reactions.some((reaction) => reaction.mine && sameEmoji(reaction.emoji, emoji));
   void setReaction(view.place, message.id, emoji, !mine).catch(view.onFailed);
-}
-
-/** What the viewer may do in the chat, from their meeting role (the server checks again). */
-export interface ChatRights {
-  moderate: boolean;
-  createPoll: boolean;
-  /** Everyone in the call but guests (AC-F03-33). */
-  attach: boolean;
-}
-
-export interface ChatView {
-  chat: Chat;
-  place: ChatPlace;
-  rights: ChatRights;
-  /** Chat is off, or the meeting has ended: read only; organizers may still remove messages (AC-F03-35, 42). */
-  readOnly: boolean;
-  onReply: (message: ChatMessageView) => void;
-  onEdit: (message: ChatMessageView) => void;
-  onDelete: (message: ChatMessageView) => void;
-  onFailed: () => void;
 }
 
 function moreActions(t: TFunction, view: ChatView, message: ChatMessageView, own: boolean): MenuAction[] {
@@ -127,57 +101,6 @@ function Actions({
   );
 }
 
-/** A poll in the chat: fetched for this viewer (results only after voting), again after poll news. */
-function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
-  const { t } = useTranslation();
-  const queries = useQueryClient();
-  const version = view.chat.state.pollVersions[pollId] ?? 0;
-  const key = ["chat-poll", pollId, version];
-  // A vote raises the version: keep showing the last result while the new one loads, so the card never blinks.
-  const poll = useQuery<PollView>({
-    queryKey: key,
-    queryFn: () => pollOf(view.place, pollId),
-    placeholderData: keepPreviousData,
-  });
-  if (!poll.data) return null;
-  const p = poll.data;
-  const vote = (optionIds: string[]) =>
-    void votePoll(view.place, pollId, optionIds).then((next) => queries.setQueryData(key, next), view.onFailed);
-  const kind = t(p.multiple ? "meetings.chat.poll.several" : "meetings.chat.poll.one");
-  const names = t(p.anonymous ? "meetings.chat.poll.anonymous" : "meetings.chat.poll.named");
-  return (
-    <PollCard
-      question={p.question}
-      about={t("meetings.chat.poll.about", { name: p.creatorName, kind, names })}
-      options={p.options}
-      multiple={p.multiple}
-      chosen={p.yourChoice}
-      results={
-        p.results
-          ? {
-              summary: t("meetings.chat.poll.voters", { count: p.results.voters }),
-              options: p.results.options.map((o) => ({
-                ...o,
-                label: t("meetings.chat.poll.result", { percent: o.percent, votes: o.votes }),
-              })),
-            }
-          : undefined
-      }
-      hint={t("meetings.chat.poll.voteToSee")}
-      closedLabel={p.closed ? t("meetings.chat.poll.closed") : undefined}
-      onVote={vote}
-      close={
-        view.rights.moderate && !view.readOnly
-          ? {
-              label: t("meetings.chat.poll.close"),
-              onClose: () => void closePoll(view.place, pollId).catch(view.onFailed),
-            }
-          : undefined
-      }
-    />
-  );
-}
-
 /** The reactions under a message; read-only chat only shows them. */
 function reactionChips(t: TFunction, view: ChatView, message: ChatMessageView) {
   return message.reactions.map((reaction) => ({
@@ -230,8 +153,8 @@ function useReactionPicker(view: ChatView, message: ChatMessageView) {
 function PersonMessage({ view, message, continued = false }: MessageProps) {
   const { t } = useTranslation();
   const reacting = useReactionPicker(view, message);
-  const name = senderName(t, message, view.place.attendanceId);
-  const own = message.sender.attendanceId === view.place.attendanceId;
+  const name = senderName(t, message, view.place.attendanceId, view.viewerUserId);
+  const own = isOwn(message, view.place.attendanceId, view.viewerUserId);
   const shown = time(message.createdAt);
   return (
     <ChatMessage

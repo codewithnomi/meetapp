@@ -185,7 +185,8 @@ export function ComposerArea(props: ComposerAreaProps) {
         labels={editing ? { ...labels, send: t("meetings.chat.save") } : labels}
         tooManyLabel={(over) => t("meetings.chat.tooMany", { count: over })}
         onSend={(body) => send(body as MessageDocument)}
-        allowEmpty={!editing && attachments.readyIds.length > 0 && !attachments.busy}
+        allowEmpty={!editing && attachments.readyIds.length > 0}
+        waiting={!editing && attachments.busy}
         onEscape={(editing ?? replyingTo) ? onDone : undefined}
         onPasteFiles={view.rights.attach ? attachments.add : undefined}
         above={<Above props={props} />}

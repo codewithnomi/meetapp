@@ -160,7 +160,8 @@ export function toEditorDocument(document: RichDocument): EditorNode {
 }
 
 const MAX_BIG_EMOJI = 3;
-const EMOJI = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u;
+// Shown as a picture by default, or marked so (FE0F); ©, ® and ™ alone are text, not emoji.
+const EMOJI = /\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F|\p{Regional_Indicator}/u;
 
 /** 1–3 emoji and nothing else (spaces aside), so the message shows them larger (AC-F03-47). */
 export function emojiOnly(document: RichDocument): boolean {

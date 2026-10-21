@@ -3,7 +3,7 @@
 // messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
 // Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
-import { Button, ChatPanel, Dialog } from "@meetapp/ui";
+import { Button, ChatPanel, Dialog, Notice } from "@meetapp/ui";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
@@ -66,6 +66,16 @@ function usePinnedBar(pinned: ChatMessageView[]) {
   };
 }
 
+/** The messages could not be loaded: say so, with Retry. */
+function LoadFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Notice tone="danger" action={{ label: t("meetings.chat.retry"), onClick: onRetry }}>
+      {t("meetings.chat.loadFailed")}
+    </Notice>
+  );
+}
+
 /** "Delete this message?" before anything is removed (AC-F03-10). */
 function DeleteDialog({
   chat,
@@ -94,8 +104,8 @@ function DeleteDialog({
         <Button
           variant="danger"
           onClick={() => {
-            // During a call the news shows the deletion; afterwards the chat is read again.
-            if (message) void deleteMessage(chat.place, message.id).then(() => chat.catchUp(), onFailed);
+            // Shown as deleted at once, wherever the message is (also in a past meeting's chat, which gets no news).
+            if (message) void deleteMessage(chat.place, message.id).then(() => chat.markDeleted(message.id), onFailed);
             onClose();
           }}
         >
@@ -113,6 +123,8 @@ export interface ChatAreaProps {
   /** Files are being dragged over the meeting window (AC-F03-29). */
   dropping: boolean;
   rights: ChatRights;
+  /** The signed-in viewer's account (none for guests). */
+  viewerUserId?: string | undefined;
   /** The panel's title; "Chat" by default, the meeting's title after it. */
   title?: string | undefined;
   onClose: () => void;
@@ -170,14 +182,15 @@ function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaPro
   );
 }
 
-export function ChatArea({ chat, writing, dropping, rights, title, onClose, onFailed }: ChatAreaProps) {
+export function ChatArea(props: ChatAreaProps) {
+  const { chat, writing, dropping, rights, title, onClose, onFailed, viewerUserId } = props;
   const { t } = useTranslation();
   const { messages, sending, loaded, pinned } = chat.state;
   const scroll = useStickToBottom(messages.length + sending.length, chat);
   const pinBar = usePinnedBar(pinned);
   const act = useInteraction();
   const readOnly = !writing || writing.off;
-  const view: ChatView = { chat, place: chat.place, rights, readOnly, onFailed, ...act.handlers };
+  const view: ChatView = { chat, place: chat.place, viewerUserId, rights, readOnly, onFailed, ...act.handlers };
   return (
     <>
       <ChatPanel
@@ -197,6 +210,7 @@ export function ChatArea({ chat, writing, dropping, rights, title, onClose, onFa
         dropArea={
           dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
+        notice={chat.state.loadFailed ? <LoadFailed onRetry={chat.reload} /> : undefined}
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
         composer={<Composer view={view} writing={writing} act={act} />}
       />

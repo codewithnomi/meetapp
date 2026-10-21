@@ -32,6 +32,8 @@ export interface ChatState {
   tooFast: boolean;
   /** Each poll's version, raised by poll_changed news, so the poll is fetched again (AC-F03-22). */
   pollVersions: Record<string, number>;
+  /** The newest messages could not be loaded; the panel offers Retry. */
+  loadFailed: boolean;
 }
 
 export const emptyChat: ChatState = {
@@ -45,6 +47,7 @@ export const emptyChat: ChatState = {
   open: false,
   tooFast: false,
   pollVersions: {},
+  loadFailed: false,
 };
 
 export type ChatAction =
@@ -61,7 +64,10 @@ export type ChatAction =
   | { type: "sending"; item: Sending }
   | { type: "sent"; clientId: string; message: ChatMessageView }
   | { type: "failed"; clientId: string; tooFast: boolean }
-  | { type: "open"; open: boolean };
+  | { type: "open"; open: boolean }
+  | { type: "loadFailed" }
+  /** Deleted here (e.g. in a past meeting's chat, which gets no news): shown as deleted at once. */
+  | { type: "deleted"; id: string };
 
 const order = (a: ChatMessageView, b: ChatMessageView) =>
   a.createdAt === b.createdAt ? (a.id < b.id ? -1 : 1) : a.createdAt < b.createdAt ? -1 : 1;
@@ -108,6 +114,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         pinned: action.pinned ?? state.pinned,
         lastSeq: Math.max(state.lastSeq, action.lastSeq ?? 0),
         loaded: true,
+        loadFailed: false,
       };
     case "event":
       return applyEvent(state, action.event, action.mine);
@@ -131,7 +138,31 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       };
     case "open":
       return { ...state, open: action.open, unread: action.open ? 0 : state.unread };
+    case "loadFailed":
+      return { ...state, loadFailed: true };
+    case "deleted":
+      return markDeleted(state, action.id);
   }
+}
+
+function markDeleted(state: ChatState, id: string): ChatState {
+  const gone = (message: ChatMessageView): ChatMessageView =>
+    message.id === id
+      ? {
+          ...message,
+          deletedAt: message.deletedAt ?? new Date().toISOString(),
+          body: null,
+          attachments: [],
+          reactions: [],
+          gif: null,
+          sticker: null,
+        }
+      : message;
+  return {
+    ...state,
+    messages: state.messages.map(gone),
+    pinned: state.pinned.filter((message) => message.id !== id),
+  };
 }
 
 /** True when news skipped numbers, so the app asks for what it missed (design 3.4). */

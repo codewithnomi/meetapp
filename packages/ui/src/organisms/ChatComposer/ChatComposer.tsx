@@ -11,33 +11,14 @@ import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OPENER, focusOpener, useCloseOnOutside } from "../../lib/useCloseOnOutside.ts";
 import { IconButton } from "../../atoms/IconButton/index.ts";
-import type { IconName } from "../../atoms/Icon/index.ts";
-import { Input } from "../../atoms/Input/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 import { toEditorDocument, toRichDocument, visibleText, type EditorNode } from "../../lib/rich-document.ts";
 import type { RichDocument } from "../../molecules/MessageBody/index.ts";
+import { FormatBar, type ChatComposerLabels } from "./FormatBar.tsx";
+
+export type { ChatComposerLabels };
 
 export const MAX_MESSAGE_CHARS = 4000;
-
-export interface ChatComposerLabels {
-  placeholder: string;
-  send: string;
-  format: string;
-  emoji: string;
-  formatting: string;
-  bold: string;
-  italic: string;
-  underline: string;
-  strike: string;
-  bulletList: string;
-  orderedList: string;
-  quote: string;
-  link: string;
-  linkAddress: string;
-  applyLink: string;
-  code: string;
-  codeBlock: string;
-}
 
 export interface ChatComposerProps {
   labels: ChatComposerLabels;
@@ -46,12 +27,14 @@ export interface ChatComposerProps {
   onSend: (document: RichDocument) => void;
   /** True when something else (files) may be sent without text. */
   allowEmpty?: boolean;
+  /** Files still uploading: Send waits. */
+  waiting?: boolean | undefined;
   /**
    * The emoji, GIF and sticker popup opened by the smiley button, above the box (as in Teams). It gets
    * `insert` to put a picked emoji into the text and `close` to shut the popup.
    */
   expressions: (insert: (emoji: string) => void, close: () => void) => ReactNode;
-  /** A reply quote or files waiting to be sent, above the text. */
+  /** A reply quote or waiting files, above the text. */
   above?: ReactNode;
   /** More tools after the emoji button: attach, GIF, sticker, poll. */
   tools?: ReactNode;
@@ -62,24 +45,6 @@ export interface ChatComposerProps {
   onPasteFiles?: ((files: File[]) => void) | undefined;
 }
 
-const TOOLS: { mark: string; icon: IconName; label: keyof ChatComposerLabels; run: (editor: Editor) => void }[] = [
-  { mark: "bold", icon: "bold", label: "bold", run: (e) => e.chain().focus().toggleBold().run() },
-  { mark: "italic", icon: "italic", label: "italic", run: (e) => e.chain().focus().toggleItalic().run() },
-  { mark: "underline", icon: "underline", label: "underline", run: (e) => e.chain().focus().toggleUnderline().run() },
-  { mark: "strike", icon: "strike", label: "strike", run: (e) => e.chain().focus().toggleStrike().run() },
-  { mark: "bulletList", icon: "list", label: "bulletList", run: (e) => e.chain().focus().toggleBulletList().run() },
-  {
-    mark: "orderedList",
-    icon: "list-ordered",
-    label: "orderedList",
-    run: (e) => e.chain().focus().toggleOrderedList().run(),
-  },
-  { mark: "blockquote", icon: "quote", label: "quote", run: (e) => e.chain().focus().toggleBlockquote().run() },
-  { mark: "code", icon: "code", label: "code", run: (e) => e.chain().focus().toggleCode().run() },
-  { mark: "codeBlock", icon: "code-block", label: "codeBlock", run: (e) => e.chain().focus().toggleCodeBlock().run() },
-];
-
-/** Enter sends, except inside lists and code blocks; Ctrl/Cmd+Enter always sends; Escape cancels. */
 function sendKeys(send: { current: () => void }, escape: { current: (() => void) | undefined }) {
   return Extension.create({
     name: "meetappSendKeys",
@@ -138,68 +103,12 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
   return editor;
 }
 
-function LinkForm({ editor, labels, onDone }: { editor: Editor; labels: ChatComposerLabels; onDone: () => void }) {
-  const [href, setHref] = useState("https://");
-  const valid = /^https?:\/\/\S+$/i.test(href);
-  return (
-    <form
-      className="flex items-end gap-2"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (valid) editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
-        onDone();
-      }}
-    >
-      <div className="min-w-0 flex-1">
-        <Input
-          id="chat-link-address"
-          label={labels.linkAddress}
-          value={href}
-          onChange={(event) => setHref(event.target.value)}
-        />
-      </div>
-      <IconButton icon="check" label={labels.applyLink} variant="ghost" size="sm" type="submit" disabled={!valid} />
-    </form>
-  );
-}
-
-function FormatBar({ editor, labels }: { editor: Editor; labels: ChatComposerLabels }) {
-  const [linking, setLinking] = useState(false);
-  return (
-    <div className="flex flex-col gap-2 border-b border-line pb-1.5">
-      <div role="toolbar" aria-label={labels.formatting} className="flex flex-wrap gap-0.5">
-        {TOOLS.map((tool) => (
-          <IconButton
-            key={tool.mark}
-            icon={tool.icon}
-            label={labels[tool.label]}
-            variant="ghost"
-            size="sm"
-            active={editor.isActive(tool.mark)}
-            onClick={() => tool.run(editor)}
-          />
-        ))}
-        <IconButton
-          icon="link"
-          label={labels.link}
-          variant="ghost"
-          size="sm"
-          active={editor.isActive("link")}
-          onClick={() => setLinking(!linking)}
-        />
-      </div>
-      {linking ? <LinkForm editor={editor} labels={labels} onDone={() => setLinking(false)} /> : null}
-    </div>
-  );
-}
-
-/** What is in the box now, whether it may be sent, and how many characters are too many. */
-function useDraft(editor: Editor | null, allowEmpty: boolean) {
+function useDraft(editor: Editor | null, allowEmpty: boolean, waiting: boolean) {
   const document = editor ? toRichDocument(editor.getJSON() as EditorNode) : { v: 1 as const, blocks: [] };
   const text = visibleText(document);
   const over = Math.max(0, [...text].length - MAX_MESSAGE_CHARS);
   const empty = text.trim() === "";
-  return { document, over, empty, canSend: over === 0 && (!empty || allowEmpty) };
+  return { document, over, empty, canSend: !waiting && over === 0 && (!empty || allowEmpty) };
 }
 
 interface ToolRowProps {
@@ -269,7 +178,7 @@ export function ChatComposer(props: ChatComposerProps) {
   const pasteFiles = useRef(props.onPasteFiles);
   const editor = useComposerEditor(props.initial, labels, { send, escape, pasteFiles });
   const [formatting, setFormatting] = useState(false);
-  const draft = useDraft(editor, allowEmpty);
+  const draft = useDraft(editor, allowEmpty, props.waiting === true);
   const submit = () => {
     if (!editor || !draft.canSend) return;
     onSend(draft.empty ? { v: 1, blocks: [] } : draft.document);

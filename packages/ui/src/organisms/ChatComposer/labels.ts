@@ -1,5 +1,5 @@
 // Sample labels for the ChatComposer stories and tests (the app passes translated words).
-import type { ChatComposerLabels } from "./ChatComposer.tsx";
+import type { ChatComposerLabels } from "./FormatBar.tsx";
 
 export const SAMPLE_LABELS: ChatComposerLabels = {
   placeholder: "Message everyone",

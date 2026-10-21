@@ -943,7 +943,8 @@
         "seeAll": "See all",
         "search": "Find something fun"
       },
-      "announce": "New message from {{name}}: {{text}}"
+      "announce": "New message from {{name}}: {{text}}",
+      "loadFailed": "The messages couldn't be loaded."
     },
     "recent": {
       "title": "Recent meetings",

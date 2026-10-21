@@ -2,6 +2,7 @@
 // stage (gallery of 16 a page, or speaker view), the control bar with shortcuts, the side panels, and
 // announcements for screen readers. When the call drops or ends, the app asks the backend what
 // happened (removed, ended, …) and shows that message.
+import { useSession } from "../../features/auth/index.ts";
 import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useEffect, useState } from "react";
@@ -115,6 +116,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const view = useView();
   const { setOpen } = call.chat;
   const files = useAttachments(visit);
+  const session = useSession();
   const canAttach = call.me !== undefined && call.me.group !== "guest";
   const dropping = useFileDrop(
     canAttach,
@@ -138,7 +140,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions, files, dropping };
+  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id };
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -226,6 +228,7 @@ function ScreenPanel({ screen }: { screen: Screen }) {
     return (
       <ChatArea
         chat={call.chat}
+        viewerUserId={screen.userId}
         writing={{ visit: call.visit, attachments: screen.files, off: call.room.state.options?.chatMode === "off" }}
         dropping={screen.dropping && rights.attach}
         rights={rights}
