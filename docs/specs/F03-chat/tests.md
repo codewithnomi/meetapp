@@ -588,7 +588,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F03-13 [AC-F03-06] 11th mess
 
 ### TC-F03-78: Language change in the app
 - **Covers:** AC-F03-46
-- **Level:** e2e
+- **Level:** unit (the app ships English only; a made-up test language stands in until a second language exists)
 - **Given** a chat with messages written in English and system notes
 - **When** the app language changes
 - **Then** buttons, errors, notes ("pinned a message") and the empty state change language; people's own messages stay as written

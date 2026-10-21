@@ -40,7 +40,20 @@ Fills a meeting with simulated people and measures the app (TC-F02-25, 41, 92; t
 | Join time, Join now to the first sound (20 joins, 95th percentile) | under 3 s |
 | Each tile's shown frames against the frames it receives | at least 90% |
 | Memory of the app in a 25-person meeting, 5 minutes | under 700 MB |
+| Chat: a message shown in the app (100 people, 50 messages, 95th percentile; F03) | under 1 s |
+
+For chat, a sender joins the 100-person meeting through the backend as a guest (the app's organizer lets it in) and sends 50 messages 1.5 s apart (under the 10-in-10-seconds limit); the app notes when each one shows (`chat` in the results).
 
 The 20 joins are spaced 7 seconds apart: the backend allows 10 joins a minute from one address (S5).
 
 If it stops early: `docker compose -f infra/load/docker-compose.load.yml --env-file .env --profile tool down --remove-orphans` removes what's left.
+
+## Meeting chat (F03)
+- **GIFs:** set `GIF_API_KEY` in `.env` (a free KLIPY key; `GIF_API_URL` stays `https://api.klipy.com`) and restart `pnpm dev`. Without a key the GIF tab says "GIFs aren't available right now"; nothing else changes. Each workspace's owner or admin can turn GIFs off in Workspace settings. The app asks KLIPY itself (KLIPY's rules), only after the person accepts the one-time notice.
+- **Files:** up to 25 MB each, 500 MB per meeting, 10 a minute per person; old Office files and programs are refused. They sit in the private storage bucket (RustFS at http://127.0.0.1:9001 locally); downloads use 5-minute links through the backend.
+- **A message or file doesn't arrive:**
+  1. Is chat turned on for the meeting? (Meeting options, "Meeting chat").
+  2. Does the backend log show the request? Chat text and file names are never logged; look for the message id.
+  3. A refused upload names its reason in the app ("This kind of file can't be sent", "This meeting has reached its file limit").
+  4. Uploads from the app need the backend to accept the `X-File-Name` header (CORS list in `apps/api/src/app.ts`); a missing header there blocks every upload.
+- **After the meeting:** people who took part open the chat from **Meetings → Recent meetings → Open chat** (read-only; organizers can still delete messages).

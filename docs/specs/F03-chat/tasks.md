@@ -130,7 +130,8 @@ Small steps, done in order, on branch `feat/F03-chat`. Each step is committed an
   - Tests: TC-F03-02.
   - **Built in T17:** in the 100-person load meeting, a sender joins through the backend as a guest (the organizer's app lets it in) and sends 50 messages 1.5 s apart (under the sending limit); the app notes when each shows. Result 2026-10-21: 95% within **318 ms** (slowest 648 ms), target 1 s: PASS. The same run's F02 video check missed (one sample read no WebRTC numbers, another drew 66% of frames while the Mac was busy); the screen looked normal. The whole load test runs again on an idle Mac at spec-verify.
 
-- [ ] **T18: Keyboard, screen reader, translations and documentation.**
+- [x] **T18: Keyboard, screen reader, translations and documentation.**
   - Keyboard-only run, announcements, translation keys, docs (API, runbooks, privacy-legal, project-structure, code map).
   - Covers: AC-F03-45, 46.
   - Tests: TC-F03-75, 77, 78; TC-F03-95 (screenshots, run at `/spec-verify`).
+  - **Built in T18:** a keyboard-only desktop test runs the whole chat (open, write, bold, send, react, reply, pin, the emoji/GIF/sticker popup with arrow keys, poll create and vote, edit, delete, the file dialog); the popup now takes the focus when it opens and gives it back to its button when it closes. While the chat panel is closed, a new message from someone else is announced ("New message from <name>: <text>"); with it open, the message list (a log) is read out. Translations: the existing key check covers every chat key; the app ships English only, so TC-78 uses a made-up test language to show the app's words and notes change while people's messages stay as written (tests.md updated). Docs: backend README, calls runbook (GIF key, files, chat troubleshooting, chat in the load test), architecture overview.

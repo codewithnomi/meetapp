@@ -450,3 +450,115 @@ test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, 
   await bar.getByRole("button", { name: "React with heart" }).click();
   await expect(message.getByRole("button", { name: /❤/ })).toHaveCount(0, { timeout: 5_000 });
 });
+
+/** Presses Tab (or Shift+Tab) until `target` has the focus; fails if it never comes (focus lost or trapped). */
+async function tabTo(page: Page, target: ReturnType<Page["getByRole"]>, back = false): Promise<void> {
+  for (let i = 0; i < 80; i += 1) {
+    if (await target.evaluate((node) => node === document.activeElement).catch(() => false)) return;
+    await page.keyboard.press(back ? "Shift+Tab" : "Tab");
+  }
+  throw new Error("The keyboard never reached the target");
+}
+
+test("TC-F03-75 [AC-F03-45] the whole chat works with the keyboard only; news is announced", async () => {
+  const who = await team();
+  const { host, link } = await hostMeeting(who);
+  const mo = await joinWindow(who.member, link);
+  const page = host.page;
+
+  // While the panel is closed, a new message is announced with sender and text.
+  await openChat(mo.page);
+  await send(mo.page, "hello from Mo");
+  await expect(
+    page.locator("[aria-live=polite]").filter({ hasText: "New message from Mo Member: hello from Mo" }),
+  ).toHaveCount(1, {
+    timeout: 10_000,
+  });
+
+  // Open the chat and write, format and send.
+  await controls(page).getByRole("button", { name: /^Chat/ }).focus();
+  await page.keyboard.press("Enter");
+  const log = page.getByRole("log", { name: "Messages" });
+  const box = page.getByRole("textbox", { name: "Message everyone" });
+  await tabTo(page, box);
+  await page.keyboard.type("plain ");
+  await page.keyboard.press(`${process.platform === "darwin" ? "Meta" : "Control"}+b`);
+  await page.keyboard.type("bold");
+  await page.keyboard.press("Enter");
+  await expect(log.locator("strong", { hasText: "bold" })).toBeVisible({ timeout: 5_000 });
+
+  // React to and reply to Mo's message (its toolbar shows while focus is inside it).
+  // The first match: the reply further down quotes these words too.
+  const mos = log.getByRole("article").filter({ hasText: "hello from Mo" }).first();
+  await tabTo(page, mos.getByRole("button", { name: "React with thumbs up" }), true);
+  await page.keyboard.press("Enter");
+  await expect(mos.getByRole("button", { name: /👍/ })).toBeVisible({ timeout: 5_000 });
+  await tabTo(page, mos.getByRole("button", { name: "Reply" }));
+  await page.keyboard.press("Enter");
+  await tabTo(page, box);
+  await page.keyboard.type("a reply");
+  await page.keyboard.press("Enter");
+  await expect(log.getByRole("article").filter({ hasText: "a reply" })).toContainText("hello from Mo", {
+    timeout: 5_000,
+  });
+
+  // Pin it for everyone from the More menu (organizer), with the arrow keys.
+  await tabTo(page, mos.getByRole("button", { name: "More actions" }), true);
+  await page.keyboard.press("Enter");
+  await page.getByRole("menuitem", { name: "Pin for everyone" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Pinned · Mo Member: hello from Mo" })).toBeVisible({ timeout: 5_000 });
+
+  // The emoji, GIF and sticker popup: arrow keys move between tabs; a sticker is sent with Enter.
+  await tabTo(page, page.getByRole("button", { name: "Emoji" }));
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("tab", { name: "All" })).toBeFocused();
+  await page.keyboard.press("End");
+  await expect(page.getByRole("tab", { name: "Stickers" })).toHaveAttribute("aria-selected", "true");
+  await tabTo(page, page.getByRole("button", { name: "Sticker: Thank you" }));
+  await page.keyboard.press("Enter");
+  await expect(log.getByRole("img", { name: "Sticker: Thank you" })).toBeVisible({ timeout: 5_000 });
+
+  // Create a poll and vote in it.
+  await tabTo(page, page.getByRole("button", { name: "Create a poll" }));
+  await page.keyboard.press("Enter");
+  const dialog = page.getByRole("dialog", { name: "Create a poll" });
+  await tabTo(page, dialog.getByLabel("Question"));
+  await page.keyboard.type("Lunch?");
+  await tabTo(page, dialog.getByRole("textbox", { name: "Answer 1" }));
+  await page.keyboard.type("Yes");
+  await tabTo(page, dialog.getByRole("textbox", { name: "Answer 2" }));
+  await page.keyboard.type("No");
+  await tabTo(page, dialog.getByRole("button", { name: "Post poll" }));
+  await page.keyboard.press("Enter");
+  const poll = log.getByRole("region", { name: "Lunch?" });
+  await tabTo(page, poll.getByRole("radio", { name: /Yes/ }), true);
+  await page.keyboard.press("Space");
+  await expect(poll).toContainText("1 person voted", { timeout: 5_000 });
+
+  // Edit, then delete, an own message.
+  const mine = log.getByRole("article").filter({ hasText: "a reply" }).first();
+  await tabTo(page, mine.getByRole("button", { name: "More actions" }), true);
+  await page.keyboard.press("Enter");
+  await page.getByRole("menuitem", { name: "Edit" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(box).toBeFocused();
+  await page.keyboard.type(" (edited)");
+  await page.keyboard.press("Enter");
+  await expect(log.getByText("a reply (edited)")).toBeVisible({ timeout: 5_000 });
+  await tabTo(page, mine.getByRole("button", { name: "More actions" }), true);
+  await page.keyboard.press("Enter");
+  await page.getByRole("menuitem", { name: "Delete" }).focus();
+  await page.keyboard.press("Enter");
+  await tabTo(page, page.getByRole("dialog").getByRole("button", { name: "Delete" }));
+  await page.keyboard.press("Enter");
+  await expect(log.getByText("This message was deleted")).toBeVisible({ timeout: 5_000 });
+
+  // Attach opens the file dialog from the keyboard.
+  await tabTo(page, page.getByRole("button", { name: "Attach a file" }));
+  const chooser = page.waitForEvent("filechooser");
+  await page.keyboard.press("Enter");
+  await chooser;
+  // Focus is never lost to the page itself.
+  expect(await page.evaluate(() => document.activeElement !== document.body)).toBe(true);
+});

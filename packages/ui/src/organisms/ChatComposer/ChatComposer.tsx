@@ -9,7 +9,7 @@ import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, Extension, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { useCloseOnOutside } from "../../lib/useCloseOnOutside.ts";
+import { OPENER, focusOpener, useCloseOnOutside } from "../../lib/useCloseOnOutside.ts";
 import { IconButton } from "../../atoms/IconButton/index.ts";
 import type { IconName } from "../../atoms/Icon/index.ts";
 import { Input } from "../../atoms/Input/index.ts";
@@ -225,7 +225,7 @@ function ToolRow({ props, editor, over, canSend, formatting, onFormatting, onSen
     <>
       {picking ? (
         <div ref={popup} className="absolute right-0 bottom-full left-0 z-20 mb-2">
-          {expressions(insert, () => setPicking(false))}
+          {expressions(insert, () => (setPicking(false), focusOpener()))}
         </div>
       ) : null}
       <div className="flex items-center gap-0.5">
@@ -239,7 +239,7 @@ function ToolRow({ props, editor, over, canSend, formatting, onFormatting, onSen
         />
         <IconButton
           icon="smile"
-          data-expressions-button=""
+          {...OPENER}
           label={labels.emoji}
           variant="ghost"
           size="sm"

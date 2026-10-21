@@ -1,5 +1,5 @@
 // Words and small helpers for the meeting chat (F03): names as shown, notes, times, first lines.
-import type { ChatMessageView } from "@meetapp/contracts";
+import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
 import type { TFunction } from "i18next";
 
 export const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -49,4 +49,21 @@ export function allTextOf(message: ChatMessageView): string {
 
 export function copyText(text: string) {
   void navigator.clipboard.writeText(text).catch(() => undefined);
+}
+
+/**
+ * What a screen reader hears for news while the chat panel is closed: "New message from Bilal Ahmed: hi"
+ * (AC-F03-45). With the panel open, its message list (a log) is read out instead; own messages and notes
+ * are not announced.
+ */
+export function chatAnnouncement(
+  t: TFunction,
+  event: ChatEvent,
+  viewerId: string,
+  panelOpen: boolean,
+): string | undefined {
+  const message = event.message;
+  if (event.type !== "message_created" || !message || panelOpen || message.kind === "system") return undefined;
+  if (message.sender.attendanceId === viewerId) return undefined;
+  return t("meetings.chat.announce", { name: senderName(t, message, viewerId), text: firstLineOf(message) });
 }

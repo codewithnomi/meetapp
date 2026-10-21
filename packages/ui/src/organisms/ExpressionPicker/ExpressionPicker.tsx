@@ -243,6 +243,10 @@ export function ExpressionPicker(props: ExpressionPickerProps) {
   const available: ExpressionTab[] = gifs ? ["all", "emoji", "gifs", "stickers"] : ["all", "emoji", "stickers"];
   const frame = useRef<HTMLDivElement>(null);
   useEscapeInside(frame, onClose);
+  // Opening moves the focus to the chosen tab, so the keyboard starts inside the popup (as in Teams).
+  useEffect(() => {
+    frame.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
+  }, []);
   return (
     <div
       ref={frame}

@@ -3,7 +3,7 @@
 import type { ChatMessageView } from "@meetapp/contracts";
 import i18n from "i18next";
 import { describe, expect, it } from "vitest";
-import { continuesGroup, noteText, senderName } from "./chat-texts.ts";
+import { chatAnnouncement, continuesGroup, noteText, senderName } from "./chat-texts.ts";
 
 const note = (mode: "on" | "off" | "in_meeting") =>
   ({ kind: "system", system: { event: "chat_mode", name: "Aisha Khan", mode } }) as ChatMessageView;
@@ -35,5 +35,25 @@ describe("grouping", () => {
     expect(continuesGroup(said("a", "2026-10-20T10:41:10.000Z", "system"), said("a", "2026-10-20T10:41:20.000Z"))).toBe(
       false,
     );
+  });
+});
+
+describe("announcements", () => {
+  const news = (from: string, kind = "text") => ({
+    seq: 1,
+    type: "message_created" as const,
+    message: {
+      kind,
+      sender: { attendanceId: from, name: "Bilal Ahmed", group: "member" },
+      body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: "hi there" }] }] },
+    } as ChatMessageView,
+  });
+
+  it("TC-F03-75 [AC-F03-45] a new message from someone else is announced while the panel is closed", () => {
+    expect(chatAnnouncement(i18n.t, news("b"), "me", false)).toBe("New message from Bilal Ahmed: hi there");
+    // Open panel (its list is read out), own messages and notes: nothing extra.
+    expect(chatAnnouncement(i18n.t, news("b"), "me", true)).toBeUndefined();
+    expect(chatAnnouncement(i18n.t, news("me"), "me", false)).toBeUndefined();
+    expect(chatAnnouncement(i18n.t, news("b", "system"), "me", false)).toBeUndefined();
   });
 });

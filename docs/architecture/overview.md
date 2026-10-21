@@ -44,6 +44,9 @@ Plain-English version first, technical names in brackets.
 | Mobile app | Flutter (Dart language) | Looks exactly the same on iPhone and Android (D019) |
 | Call server | LiveKit (open source) | Built for big meetings; we host it ourselves, so it's cheaper |
 | Calling in the app | livekit-client (D055) | LiveKit's own library for joining calls from the desktop and web app |
+| Meeting chat | our backend + the call server's data channel (D060) | The backend checks and saves every message, then the call server delivers it to everyone in the meeting |
+| Chat message box | TipTap (rich text), Frimousse (emoji) | Formatting, code and emoji, saved as a strict document, never as HTML |
+| GIFs in chat | KLIPY, free (D059) | Searched by each person's app; nothing about GIFs is stored on our server |
 | Backend | Node.js + Fastify | Fast, same language as the apps |
 | Database | PostgreSQL + pgvector | One database for normal data **and** AI search |
 | Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app |

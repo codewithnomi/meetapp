@@ -1,6 +1,9 @@
 // The call and what the person can do in it (F02 design.md sections 3.5–3.8): the room, the server's
 // messages, the lobby, devices and connection, the hand, reactions, shortcuts, leaving, and what happened
 // after an unexpected disconnect.
+import type { ChatEvent } from "@meetapp/contracts";
+import { chatAnnouncement } from "./chat-texts.ts";
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState } from "react";
 import { apiRequest } from "../../features/api/index.ts";
 import {
@@ -38,6 +41,24 @@ async function outcomeOf(visit: Joined): Promise<Attendance> {
   return answer.status === "admitted" || answer.status === "in_call" ? lost : answer;
 }
 
+/**
+ * Meeting chat in the call (F03): the room's handlers are read once at connect, so they reach the chat
+ * through a ref; news is announced while the panel is closed (AC-F03-45).
+ */
+function useCallChat(visit: Joined, announce: (kind: string, text: string) => void) {
+  const chatRef = useRef<Chat>(undefined as unknown as Chat);
+  const chat = (chatRef.current = useChat(visit));
+  const { t } = useTranslation();
+  const latestT = useRef(t);
+  latestT.current = t;
+  const onChat = (event: ChatEvent) => {
+    const heard = chatAnnouncement(latestT.current, event, visit.attendanceId, chatRef.current.state.open);
+    if (heard) announce(`chat-${event.message?.id ?? ""}`, heard);
+    chatRef.current.onEvent(event);
+  };
+  return { chat, chatRef, onChat };
+}
+
 /** The call and what the person can do in it: devices, hand, sharing, shortcuts, leaving. */
 export function useCall(visit: Joined, { onLeft, onOutcome }: MeetingPageProps) {
   const [prefs, setPrefs] = useState(loadPrefs);
@@ -48,14 +69,12 @@ export function useCall(visit: Joined, { onLeft, onOutcome }: MeetingPageProps) 
     lobbyChanged: () => lobbyRefresh.current(),
   });
   const end = useVisit((state) => state.end);
-  // Meeting chat (F03): the room's handlers are read once at connect, so they reach the chat through a ref.
-  const chatRef = useRef<Chat>(undefined as unknown as Chat);
-  const chat = (chatRef.current = useChat(visit));
+  const { chat, chatRef, onChat } = useCallChat(visit, events.announcer.announce);
   const finish = (go: () => void) => (end(), go());
   const room = useMeetingRoom(visit, prefs, {
     onReaction: events.showReaction,
     onControl: events.onControl,
-    onChat: (event) => chatRef.current.onEvent(event),
+    onChat,
     onReconnected: () => void chatRef.current.catchUp().catch(() => undefined),
     onDisconnected: () => {
       if (leaving.current) return;

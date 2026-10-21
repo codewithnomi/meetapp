@@ -942,7 +942,8 @@
         "stickers": "Stickers",
         "seeAll": "See all",
         "search": "Find something fun"
-      }
+      },
+      "announce": "New message from {{name}}: {{text}}"
     },
     "recent": {
       "title": "Recent meetings",
