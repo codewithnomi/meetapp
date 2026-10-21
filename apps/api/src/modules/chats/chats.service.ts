@@ -6,7 +6,8 @@ import { AppError } from "../../plugins/errors.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
 import { matchesNames } from "./chats.search.ts";
 import type { ChatsRepository, Conversation, ConversationMember } from "./chats.repository.ts";
-import { requestCutoff, startExternalDirect, type RequestsDeps } from "./chats-requests.service.ts";
+import { groupFull } from "./chats-groups.service.ts";
+import { assertReachable, requestCutoff, startExternalDirect, type RequestsDeps } from "./chats-requests.service.ts";
 
 interface ReadableMeeting {
   id: string;
@@ -175,25 +176,29 @@ async function start(deps: ChatsDeps, membership: Membership, body: { userIds: s
   const { userId, workspaceId } = membership;
   const others = [...new Set(body.userIds)].filter((id) => id !== userId);
   if (others.length === 0) throw invalid();
-  if (others.length + 1 > CHATS_LIMITS.groupMax) {
-    throw new AppError(409, "CHAT_GROUP_FULL", `A group chat can have up to ${String(CHATS_LIMITS.groupMax)} people.`);
-  }
+  if (others.length + 1 > CHATS_LIMITS.groupMax) throw groupFull();
   const members = membership.kind === "personal" ? [] : await deps.chats.workspaceMemberIds(workspaceId, others);
   const accepted = (id: string) => ({ userId: id, external: false, state: "accepted" as const });
   const [first] = others;
   // Someone outside the workspace (everyone, from Personal) gets a chat request (AC-F14-10, 24).
   if (others.length === 1 && first && members.length === 0) return startExternalDirect(deps, membership, first);
-  // Groups with people from outside arrive in T7; until then they are refused like strangers.
-  if (membership.kind === "personal" || members.length !== others.length) throw notFound();
   if (others.length === 1 && first) {
     const made = await deps.chats.direct(workspaceId, userId, [accepted(userId), accepted(first)]);
     return { id: made.conversation.id, created: made.created };
   }
+  // A group: colleagues join at once, people from outside get a request (AC-F14-14, 15).
+  const inside = new Set(members);
+  const outside = others.filter((id) => !inside.has(id));
+  for (const id of outside) await assertReachable(deps, membership, id);
   const group = await deps.chats.group({
     workspaceId,
     by: userId,
     name: body.name,
-    members: [accepted(userId), ...others.map(accepted)],
+    members: [
+      accepted(userId),
+      ...members.map(accepted),
+      ...outside.map((id) => ({ userId: id, external: true, state: "pending" as const })),
+    ],
   });
   return { id: group.id, created: true };
 }

@@ -251,7 +251,16 @@ export const chatMessageSchema = z
     pollId: z.uuid().nullable(),
     /** A note such as "Aisha Khan pinned a message" (kind "system"). */
     system: z
-      .object({ event: z.enum(["pinned", "chat_mode"]), name: z.string(), mode: z.enum(CHAT_MODES).optional() })
+      .object({
+        /** F14 groups: named, added, removed, left, didnt_join (AC-F14-14, 16, 17, 18). */
+        event: z.enum(["pinned", "chat_mode", "named", "added", "removed", "left", "didnt_join"]),
+        name: z.string(),
+        mode: z.enum(CHAT_MODES).optional(),
+        /** The people added or removed. */
+        names: z.array(z.string()).optional(),
+        /** The group's new name. */
+        groupName: z.string().optional(),
+      })
       .nullable(),
   })
   .meta({ id: "ChatMessage" });

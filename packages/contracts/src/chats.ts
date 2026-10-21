@@ -75,10 +75,8 @@ export const listQuerySchema = z.object({
 /** Start a chat: one person opens the direct chat, two or more make a group (AC-F14-07, 09, 15). */
 export const startConversationBodySchema = z
   .object({
-    userIds: z
-      .array(z.uuid())
-      .max(CHATS_LIMITS.groupMax - 1)
-      .default([]),
+    /** Up to 250 so a 251st is refused with the limit's own message (CHAT_GROUP_FULL). */
+    userIds: z.array(z.uuid()).max(CHATS_LIMITS.groupMax).default([]),
     emails: z
       .array(z.email())
       .max(CHATS_LIMITS.groupMax - 1)
@@ -112,8 +110,17 @@ export const historyChoiceSchema = z.discriminatedUnion("from", [
 ]);
 
 export const addPeopleBodySchema = z
-  .object({ userIds: z.array(z.uuid()).min(1).max(CHATS_LIMITS.groupMax), history: historyChoiceSchema })
+  .object({
+    userIds: z.array(z.uuid()).min(1).max(CHATS_LIMITS.groupMax),
+    /** All history is the default, as in Teams (AC-F14-17). */
+    history: historyChoiceSchema.default({ from: "all" }),
+  })
   .meta({ id: "AddChatPeople" });
+
+export const renameBodySchema = z
+  .object({ name: z.string().trim().min(1).max(CHATS_LIMITS.groupName) })
+  .meta({ id: "RenameChat" });
+export const chatMemberParamsSchema = z.object({ conversationId: z.string(), userId: z.uuid() });
 
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
 /** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */

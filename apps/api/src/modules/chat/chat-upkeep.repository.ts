@@ -5,6 +5,7 @@ import {
   chatAttachments,
   chatEvents,
   conversationMembers,
+  conversations,
   chatMessages,
   chatPollVotes,
   chatReactions,
@@ -100,15 +101,40 @@ function forgetPerson(db: Database, userId: string) {
   });
 }
 
+/** F14: group chats whose last member left before `before`, with their files (AC-F14-18). */
+async function groupsToDelete(db: Database, before: Date) {
+  const gone = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(and(eq(conversations.kind, "group"), lt(conversations.deletedAt, before)))
+    .limit(100);
+  const ids = gone.map((row) => row.id);
+  const files =
+    ids.length === 0
+      ? []
+      : await db
+          .select({ storageKey: chatAttachments.storageKey, previewKey: chatAttachments.previewKey })
+          .from(chatAttachments)
+          .where(inArray(chatAttachments.conversationId, ids));
+  return { ids, files };
+}
+
+/** F14: chat requests not answered in 30 days are tidied away (AC-F14-12; reads hide them already). */
+function expireRequests(db: Database, before: Date) {
+  return db
+    .update(conversationMembers)
+    .set({ state: "declined", updatedAt: new Date() })
+    .where(and(eq(conversationMembers.state, "pending"), lt(conversationMembers.requestedAt, before)));
+}
+
 export function createChatUpkeepRepository(db: Database) {
   return {
     fillConversations: () => fillConversations(db),
-    /** F14: chat requests not answered in 30 days are tidied away (AC-F14-12; reads hide them already). */
-    expireRequests: (before: Date) =>
-      db
-        .update(conversationMembers)
-        .set({ state: "declined", updatedAt: new Date() })
-        .where(and(eq(conversationMembers.state, "pending"), lt(conversationMembers.requestedAt, before))),
+    expireRequests: (before: Date) => expireRequests(db, before),
+    groupsToDelete: (before: Date) => groupsToDelete(db, before),
+    /** Messages, files' rows, pins, polls and news go with it (cascade). */
+    forgetConversations: (ids: string[]) =>
+      ids.length === 0 ? Promise.resolve() : db.delete(conversations).where(inArray(conversations.id, ids)),
     /** Catch-up news is kept a day (design 3.4). */
     /**
      * Old news goes, except each meeting's newest piece: news numbers continue from it and never start

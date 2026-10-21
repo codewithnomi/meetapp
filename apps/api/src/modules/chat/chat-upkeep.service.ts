@@ -40,6 +40,16 @@ async function modeChanged(deps: UpkeepDeps, meetingId: string, byName: string):
   await broadcast(deps, call.id, { seq: saved.seq, type: "chat_mode_changed", id: view.id, message: view });
 }
 
+/** Groups whose last member left 30 days ago go, files first (F14 AC-F14-18). */
+async function forgetEmptyGroups(deps: UpkeepDeps, before: Date) {
+  const { ids, files } = await deps.upkeep.groupsToDelete(before);
+  for (const file of files) {
+    await deps.storage.delete(file.storageKey);
+    if (file.previewKey) await deps.storage.delete(file.previewKey);
+  }
+  await deps.upkeep.forgetConversations(ids);
+}
+
 /** Old catch-up news, deleted messages' files and files never sent are removed (design 3.4, 6). */
 async function cleanUp(deps: UpkeepDeps): Promise<void> {
   // F14 step 2: fill any meeting chat row still without its conversation (nothing to do once filled).
@@ -47,6 +57,7 @@ async function cleanUp(deps: UpkeepDeps): Promise<void> {
   const now = deps.calls.now().getTime();
   await deps.upkeep.forgetEventsBefore(new Date(now - EVENTS_KEPT_MS));
   await deps.upkeep.expireRequests(new Date(now - REQUESTS_KEPT_MS));
+  await forgetEmptyGroups(deps, new Date(now - REQUESTS_KEPT_MS));
   for (const file of await deps.upkeep.filesToRemove(new Date(now - UNSENT_KEPT_MS))) {
     // A file that is already gone is fine; the row goes only after its file, so nothing is left behind.
     await deps.storage.delete(file.storageKey);

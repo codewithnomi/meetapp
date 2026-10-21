@@ -7,11 +7,17 @@ import type { ConversationKind } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
+import type { ChatRepository } from "../chat/chat.repository.ts";
+import { saveNote } from "./chats-notes.ts";
 import { canChats, type ChatsAction } from "./chats.permissions.ts";
 import { directKeyOf, type ChatsRepository, type Conversation } from "./chats.repository.ts";
 import type { ChatsRequestsRepository } from "./chats-requests.repository.ts";
 
+/** Who asks and from which workspace. */
+export type Place = Pick<Membership, "userId" | "workspaceId" | "kind">;
+
 export interface RequestsDeps {
+  chat: ChatRepository;
   chats: ChatsRepository;
   requests: ChatsRequestsRepository;
   limiter: RateLimiter;
@@ -48,10 +54,10 @@ async function reopen(deps: RequestsDeps, conversation: Conversation, starterId:
   return { id: conversation.id, created: false };
 }
 
-/** A direct chat with someone outside the workspace, or anyone from Personal: a request (AC-F14-10, 24).
- * Blocked, outside chat off, or within 30 days of a deleted request: refused like "not found". */
-export async function startExternalDirect(deps: RequestsDeps, membership: Membership, targetId: string) {
-  const { userId, workspaceId } = membership;
+/** Someone outside may be asked from here (AC-F14-13, 27): they exist, neither blocked the other, outside
+ * chat is on both sides and no 30-day wait is running. Anything else is refused like "not found". */
+export async function assertReachable(deps: RequestsDeps, place: Place, targetId: string) {
+  const { userId, workspaceId } = place;
   const refused =
     !(await deps.requests.exists(targetId)) ||
     (await deps.requests.blocksBetween(userId, [targetId])).length > 0 ||
@@ -59,6 +65,12 @@ export async function startExternalDirect(deps: RequestsDeps, membership: Member
     !(await deps.requests.reachableFromOutside(targetId)) ||
     (await deps.requests.coolingDown(userId, targetId, deps.now()));
   if (refused) throw notFound();
+}
+
+/** A direct chat with someone outside the workspace, or anyone from Personal: a request (AC-F14-10, 24). */
+export async function startExternalDirect(deps: RequestsDeps, membership: Membership, targetId: string) {
+  const { userId, workspaceId } = membership;
+  await assertReachable(deps, membership, targetId);
   const rows = await deps.requests.directsByKey(directKeyOf(userId, targetId), userId);
   const existing = rows.find(
     (row) => row.conversation.workspaceId === workspaceId || (membership.kind === "personal" && row.member.external),
@@ -138,6 +150,10 @@ async function decline(deps: RequestsDeps, userId: string, conversationId: strin
   const sender = row.member.addedBy;
   if (block && sender) await blockPerson(deps, userId, sender);
   await deps.requests.setState(conversationId, userId, { state: "declined" });
+  if (row.conversation.kind === "group") {
+    const me = (await deps.chats.peopleOf([conversationId])).find((p) => p.userId === userId);
+    await saveNote(deps.chat, row.conversation, { id: userId, name: me?.name ?? "" }, { event: "didnt_join" });
+  }
   if (row.conversation.kind === "direct" && sender) {
     await deps.requests.coolDown(sender, userId, new Date(deps.now().getTime() + REQUEST_DAYS * DAY_MS));
   }

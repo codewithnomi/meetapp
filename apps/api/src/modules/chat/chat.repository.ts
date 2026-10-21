@@ -83,13 +83,16 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
       if (!existing) throw new Error("message neither saved nor found");
       return { message: existing, created: false as const };
     }
-    const claim = {
-      ids: attachmentIds,
-      messageId: saved.id,
-      meetingId: meetingOf(saved),
-      uploaderAttendanceId: saved.senderAttendanceId ?? "",
-    };
-    if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
+    // Files only come with meeting messages for now; chats' own files arrive with F14 T8.
+    if (attachmentIds.length > 0) {
+      const claim = {
+        ids: attachmentIds,
+        messageId: saved.id,
+        meetingId: meetingOf(saved),
+        uploaderAttendanceId: saved.senderAttendanceId ?? "",
+      };
+      if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();
+    }
     // The chat list orders chats by their newest activity (F14 AC-F14-01).
     await tx.update(conversations).set({ lastMessageAt: saved.createdAt }).where(eq(conversations.id, conversationId));
     const seq = await recordEvent(tx, saved, eventType, { id: saved.id });

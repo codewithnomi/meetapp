@@ -48,10 +48,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-16, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 66.
   - Built in T6: requests, preview, accept, delete (+block), 30-day wait, 20 a day, expiry, block/unblock (`POST /me/blocked` added for blocking from an accepted chat); 10 tests. Moved: the 10-message limit (TC-21), sending in a blocked or shared group chat (TC-25 send part, TC-27) to T8 where sending lands; status parts (TC-18, 25) to T10; the `list` news item (TC-16) to T9; the all-states sweep TC-66 to T12. The "next day" part of TC-22 relies on the 24-hour rate window (rate-limit unit tests).
 
-- [ ] **T7: Group chats.**
+- [x] **T7: Group chats.**
   - 3–250 people, rename, add with history (none, 1–365 days, all), remove and leave (`left_seq`), external members' requests, last member leaves.
   - Covers: AC-F14-14–18.
   - Tests: TC-F14-29, 30, 31, 32, 33, 34, 35.
+  - Built in T7: rename, add with history, remove anyone, leave, groups with outside people at creation, notes (named, added, removed, left, didn't join), empty groups deleted by the clean-up after 30 days; 5 tests. Reading only up to `left_seq` and refused sends (TC-34) are checked in T8, the live line's part in T9.
 
 - [ ] **T8: Messages in conversations, mentions and reads.**
   - F03's message, reaction, reply, pin, poll, file and GIF routes per conversation (any member pins and creates polls); edit and delete any time; `mention` parts; read marks, unread, "Seen" and "who has seen" with the receipts setting.

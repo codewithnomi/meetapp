@@ -164,6 +164,8 @@ export {
   MEMBER_STATES,
   STATUSES,
   addPeopleBodySchema,
+  renameBodySchema,
+  chatMemberParamsSchema,
   conversationListItemSchema,
   conversationListSchema,
   conversationParamsSchema,
