@@ -55,7 +55,8 @@
 - **F03 done: /spec-verify round 2 PASS (2026-10-21).** Screenshots 529/529 after saving the new F03 pictures; container healthy; chat 253 ms with 100 people; F02 tile smoothness again missed on a busy Mac (64%/69%, D056, re-check before going online). Pull Request opened for the owner to merge.
 - **Owner check when merging (optional):** try the chat with two windows, including the right-click spelling menu in the message box.
 - **F03 merged** (PR #15, 2026-10-21). **F14 Chats:** requirements **approved** (2026-10-21) on branch `feat/F14-chats` (`docs/specs/F14-chats/requirements.md`, 35 ACs), reviewed by spec-reviewer, owner choices recorded (follow Teams; 250 per group; read receipts on; D063 accepted).
-- **Next step:** F14 screen designs (canvas, for the owner to approve), then design.md (`/next`).
+- **F14 screen designs drafted** (2026-10-21) on the canvas, row "Chats (F14)": Chat screen, New chat, Chat requests, Group chat with the outside-chat setting.
+- **Next step:** owner approves the F14 screens, then design.md (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
