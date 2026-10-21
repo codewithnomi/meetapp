@@ -36,10 +36,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-01, 03, 05, 06, 07, 08, 09, 12, 15, 57, 72.
   - **Built in T4:** `chats.repository.ts`, `chats.service.ts`, `chats.routes.ts`, `chats.search.ts`: start a direct chat (one per pair per workspace, also under races) or a group (up to 250); the list (own workspace's chats, meeting chats by F03's rules through `chatAfter.readable`, newest first, pinned on top up to 15, unread counts after the read mark, filters, name search ignoring case and accents in the service); per-person pin, mute and hide; read marks that never move back; conversations' last activity updated on every message. 16 tests. Moved: a hidden chat coming back with a new message is tested in T8 (sending); workspace deletion in T11. People outside the workspace are refused until T6.
 
-- [ ] **T5: People lookup and invitations.**
+- [x] **T5: People lookup and invitations.**
   - To: suggestions from members; exact email returns one account (30 a minute, D063, logged without the email); Personal "Join me on MeetApp" invitations (20 a day); team workspaces use F01's invitation.
   - Covers: AC-F14-07, 08.
   - Tests: TC-F14-11, 13, 14.
+  - Built in T5: `GET /workspaces/:id/people?q=`, `POST /me/invitations`; 3 tests. Suggestions show no job title (F01 accounts have none).
 
 - [ ] **T6: Chat requests and blocking.**
   - Pending requests, preview, accept, delete (30-day wait), block and unblock, 10 messages while pending, 20 requests a day, 30-day expiry (read-time hiding plus the daily job), Personal everyone-external.

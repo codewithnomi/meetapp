@@ -147,6 +147,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
     chatFiles,
     chatAfter,
     chats,
+    chatsPeople,
   } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
@@ -157,5 +158,5 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(chatPollsRoutes, { polls: chatPolls });
   await app.register(chatFilesRoutes, { files: chatFiles });
   await app.register(chatAfterRoutes, { after: chatAfter });
-  await app.register(chatsRoutes, { chats, lookup: membershipLookup });
+  await app.register(chatsRoutes, { chats, people: chatsPeople, lookup: membershipLookup });
 }

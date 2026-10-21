@@ -36,7 +36,9 @@ import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
 import { createChatsRepository } from "./modules/chats/chats.repository.ts";
+import { createChatsPeopleService } from "./modules/chats/chats-people.service.ts";
 import { createChatsService } from "./modules/chats/chats.service.ts";
+import type { Outbox } from "./emails/outbox.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -44,6 +46,8 @@ interface MeetingWiring {
   livekit: LiveKitProvider;
   /** Private file storage for chat files (F03). */
   storage: FileStorage;
+  /** Emails (F14: "Join me on MeetApp"). */
+  outbox: Outbox;
 }
 
 function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimiter): CallsDeps {
@@ -67,7 +71,7 @@ const keyFor = (config: Config, label: string) =>
   Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", label, 32)).toString("hex");
 
 /** Meeting chat (F03): messages, what people do to them, polls and files. */
-function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
+function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: CallsDeps) {
   const chatDeps = {
     calls,
     chat: createChatRepository(db),
@@ -79,6 +83,7 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     gifService: { apiUrl: config.GIF_API_URL, key: config.GIF_API_KEY },
   };
   const chatAfter = createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) });
+  const chatsRepository = createChatsRepository(db);
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
@@ -86,9 +91,12 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     chatFiles: createChatFilesService(chatDeps, storage),
     chatAfter,
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
-    chats: createChatsService({
-      chats: createChatsRepository(db),
-      readableMeetings: (userId) => chatAfter.readable(userId),
+    chats: createChatsService({ chats: chatsRepository, readableMeetings: (userId) => chatAfter.readable(userId) }),
+    chatsPeople: createChatsPeopleService({
+      chats: chatsRepository,
+      limiter: calls.limiter,
+      outbox,
+      publicUrl: config.APP_PUBLIC_URL,
     }),
     chatUpkeep: createChatUpkeepService({ ...chatDeps, upkeep: createChatUpkeepRepository(db), storage }),
     chatDeps,

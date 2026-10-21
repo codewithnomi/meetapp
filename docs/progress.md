@@ -66,6 +66,7 @@
 - **F14 T2 done:** migration 0006 (adds only), meeting conversations, F03 writes conversation ids; 132 chat/meeting tests pass.
 - **F14 T3 done:** fill (before serving and every clean-up) and F03 reads by conversation; 199 backend tests pass.
 - **F14 T4 done:** chat list, starting chats, pins, mute, hide, read marks; 16 tests.
+- **F14 T5 done:** New chat people search (members by name; exact email finds one account, 30 a minute), "Join me on MeetApp" email from Personal (20 a day); 3 tests.
 - **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)

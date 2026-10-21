@@ -99,6 +99,9 @@ export const peopleResultSchema = z
   })
   .meta({ id: "ChatPeople" });
 
+export const peopleQuerySchema = z.object({ q: z.string().max(254).default("") });
+export const inviteToMeetAppBodySchema = z.object({ email: z.email().max(254) }).meta({ id: "InviteToMeetApp" });
+
 export const historyChoiceSchema = z.discriminatedUnion("from", [
   z.object({ from: z.literal("none") }),
   z.object({ from: z.literal("days"), days: z.number().int().min(1).max(CHATS_LIMITS.historyDaysMax) }),

@@ -47,5 +47,11 @@
   "roles": {
     "admin": "an admin",
     "member": "a member"
+  },
+  "joinMe": {
+    "subject": "{{inviter}} wants to chat with you on MeetApp",
+    "intro": "{{inviter}} invited you to MeetApp, an app for chats, calls and meetings.",
+    "howTo": "Create a free account with {{email}}. Then {{inviter}} can send you a chat request.",
+    "button": "Get MeetApp"
   }
 }

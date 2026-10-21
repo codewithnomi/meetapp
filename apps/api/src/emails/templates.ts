@@ -11,7 +11,8 @@ export type EmailTemplate =
   | { kind: "invitation"; inviter: string; workspace: string; role: "admin" | "member"; email: string; link: string }
   | { kind: "joinRequest"; person: string; email: string; workspace: string }
   | { kind: "requestDecided"; outcome: "approved" | "rejected"; workspace: string }
-  | { kind: "someoneTried" };
+  | { kind: "someoneTried" }
+  | { kind: "joinMe"; inviter: string; email: string; link: string };
 
 export interface RenderedEmail {
   subject: string;
@@ -100,6 +101,13 @@ function bodyFor(template: EmailTemplate): Body {
         subject: messages.requestDecided.subject[template.outcome],
         paragraphs: [messages.requestDecided.intro[template.outcome]],
         values: template,
+      };
+    case "joinMe":
+      return {
+        subject: messages.joinMe.subject,
+        paragraphs: [messages.joinMe.intro, messages.joinMe.howTo],
+        values: template,
+        button: { label: messages.joinMe.button, link: template.link },
       };
     case "someoneTried":
       return {

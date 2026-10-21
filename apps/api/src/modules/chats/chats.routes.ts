@@ -4,6 +4,9 @@
 import {
   conversationListSchema,
   conversationParamsSchema,
+  inviteToMeetAppBodySchema,
+  peopleQuerySchema,
+  peopleResultSchema,
   listQuerySchema,
   myChatSettingsBodySchema,
   readMarkBodySchema,
@@ -14,6 +17,7 @@ import {
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { signedInUser } from "../../plugins/session.ts";
 import { idParam, memberOf, workspaceAccess, type MembershipLookup } from "../../plugins/workspace-access.ts";
+import type { ChatsPeopleService } from "./chats-people.service.ts";
 import type { ChatsService } from "./chats.service.ts";
 
 const tags = ["chats"];
@@ -63,10 +67,33 @@ const READ = {
   },
 };
 
-export const chatsRoutes: FastifyPluginAsyncZod<{ chats: ChatsService; lookup: MembershipLookup }> = async (
-  app,
-  { chats, lookup },
-) => {
+const PEOPLE = {
+  schema: {
+    summary: "Find people for New chat",
+    description:
+      "Members of the workspace. A name matches the workspace's members; an exact email finds that one account anywhere, or says no account uses it (30 email lookups a minute, 429). Never a list of emails.",
+    tags,
+    params: workspaceParamsSchema,
+    querystring: peopleQuerySchema,
+    response: { 200: peopleResultSchema },
+  },
+};
+
+const INVITE = {
+  schema: {
+    summary: "Invite someone to MeetApp by email (Personal)",
+    description:
+      'Sends a "Join me on MeetApp" email; 20 a day per person (429). The answer is the same whether or not the email has an account.',
+    tags,
+    body: inviteToMeetAppBodySchema,
+  },
+};
+
+export const chatsRoutes: FastifyPluginAsyncZod<{
+  chats: ChatsService;
+  people: ChatsPeopleService;
+  lookup: MembershipLookup;
+}> = async (app, { chats, people, lookup }) => {
   app.addHook("preValidation", workspaceAccess(lookup));
 
   app.get("/api/v1/workspaces/:workspaceId/conversations", LIST, (request) =>
@@ -75,6 +102,14 @@ export const chatsRoutes: FastifyPluginAsyncZod<{ chats: ChatsService; lookup: M
   app.post("/api/v1/workspaces/:workspaceId/conversations", START, (request) =>
     chats.start(memberOf(request), request.body),
   );
+  app.get("/api/v1/workspaces/:workspaceId/people", PEOPLE, (request) =>
+    people.find(memberOf(request), request.query.q),
+  );
+  app.post("/api/v1/me/invitations", INVITE, async (request, reply) => {
+    const { id, name } = signedInUser(request);
+    await people.inviteToMeetApp({ id, name }, request.body.email);
+    return reply.status(204).send();
+  });
   app.patch("/api/v1/conversations/:conversationId/me", MINE, async (request, reply) => {
     await chats.setMine(signedInUser(request).id, idParam(request.params.conversationId), request.body);
     return reply.status(204).send();

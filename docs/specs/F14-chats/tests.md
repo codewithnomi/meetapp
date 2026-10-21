@@ -102,7 +102,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F14-19 [AC-F14-11] Delete hi
 - **Level:** integration
 - **Given** W1 with M1, M2, M3 (title "Designer"), and E1 outside
 - **When** M1 asks `people?q=des` and `q=m2name`
-- **Then** members matching by name come back with title and status; E1 and people of W2 do not appear for a name search; an outsider's name is never listed
+- **Then** members matching by name come back with status (no job title: F01 accounts have none); E1 and people of W2 do not appear for a name search; an outsider's name is never listed
 
 ### TC-F14-12: One person opens the direct chat, two or more make a group
 - **Covers:** AC-F14-07, AC-F14-09

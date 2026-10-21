@@ -211,6 +211,24 @@ function markRead(db: Database, mark: { conversationId: string; workspaceId: str
     });
 }
 
+/** The one account with exactly this email (case ignored), or nothing (D063). */
+async function userByEmail(db: Database, email: string) {
+  const [row] = await db
+    .select({ userId: user.id, name: user.name, avatarKey: user.avatarKey })
+    .from(user)
+    .where(sql`lower(${user.email}) = lower(${email})`);
+  return row;
+}
+
+/** The workspace's people with names and photos, for name suggestions (a workspace is small). */
+function workspacePeople(db: Database, workspaceId: string) {
+  return db
+    .select({ userId: user.id, name: user.name, avatarKey: user.avatarKey })
+    .from(workspaceMembers)
+    .innerJoin(user, eq(user.id, workspaceMembers.userId))
+    .where(eq(workspaceMembers.workspaceId, workspaceId));
+}
+
 export function createChatsRepository(db: Database) {
   return {
     direct: (workspaceId: string, by: string, members: [NewMember, NewMember]) => direct(db, workspaceId, by, members),
@@ -227,6 +245,8 @@ export function createChatsRepository(db: Database) {
     workspaceMemberIds: (workspaceId: string, userIds: string[]) => workspaceMemberIds(db, workspaceId, userIds),
     member: (conversationId: string, userId: string) => member(db, conversationId, userId),
     pinnedCount: (userId: string) => pinnedCount(db, userId),
+    userByEmail: (email: string) => userByEmail(db, email),
+    workspacePeople: (workspaceId: string) => workspacePeople(db, workspaceId),
     setMine: (conversationId: string, userId: string, change: MyChoices) =>
       db
         .update(conversationMembers)
