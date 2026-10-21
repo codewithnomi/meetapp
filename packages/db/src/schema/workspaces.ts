@@ -44,6 +44,8 @@ export const workspaces = pgTable(
     allowGuests: boolean("allow_guests").notNull().default(true),
     /** GIFs in meeting chat (AC-F03-27). */
     allowGifs: boolean("allow_gifs").notNull().default(true),
+    /** Members may chat with people outside the workspace (F14 AC-F14-27; on by default, as in Teams). */
+    allowOutsideChat: boolean("allow_outside_chat").notNull().default(true),
     ...timestamps(),
   },
   (table) => [

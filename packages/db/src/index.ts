@@ -13,6 +13,7 @@ export {
   chatPollVotes,
   chatPolls,
   chatReactions,
+  conversations,
   calls,
   featureFlags,
   livekitEvents,

@@ -2,6 +2,7 @@
 // row locked, so two uploads at once can't both slip under it; unsent files count too (AC-F03-34).
 import { chatAttachments, meetings, type ChatAttachment, type Database, type Executor } from "@meetapp/db";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { meetingConversation, meetingOf } from "./meeting-conversation.repository.ts";
 
 /** All the files of one meeting together, sent or not (AC-F03-34). */
 const MAX_MEETING_FILE_BYTES = 500 * 1024 * 1024;
@@ -35,13 +36,19 @@ export function createChatFilesRepository(db: Database) {
     /** A new upload's record, or "full" when the meeting's files would pass 500 MB. */
     reserve: (attachment: NewAttachment): Promise<ChatAttachment | "full"> =>
       db.transaction(async (tx) => {
-        await tx.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${attachment.meetingId} for update`);
+        const meetingId = meetingOf({ meetingId: attachment.meetingId ?? null });
+        await tx.execute(sql`select 1 from ${meetings} where ${meetings.id} = ${meetingId} for update`);
         const [used] = await tx
           .select({ bytes: sql<number>`coalesce(sum(${chatAttachments.sizeBytes}), 0)::bigint` })
           .from(chatAttachments)
-          .where(and(eq(chatAttachments.meetingId, attachment.meetingId), ne(chatAttachments.status, "deleted")));
+          .where(and(eq(chatAttachments.meetingId, meetingId), ne(chatAttachments.status, "deleted")));
         if (Number(used?.bytes ?? 0) + attachment.sizeBytes > MAX_MEETING_FILE_BYTES) return "full";
-        const [row] = await tx.insert(chatAttachments).values(attachment).returning();
+        const conversationId =
+          attachment.conversationId ?? (await meetingConversation(tx, attachment.workspaceId, meetingId));
+        const [row] = await tx
+          .insert(chatAttachments)
+          .values({ ...attachment, conversationId })
+          .returning();
         if (!row) throw new Error("no attachment row");
         return row;
       }),

@@ -11,6 +11,7 @@ import type { ChatFilesRepository } from "./chat-files.repository.ts";
 import type { ChatPollsRepository } from "./chat-polls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import type { ChatRepository, Cursor } from "./chat.repository.ts";
+import { meetingOf } from "./meeting-conversation.repository.ts";
 
 /** Bigger news goes out as `{ type, id, seq }` only and apps fetch the message (design 3.4). */
 export const MAX_PACKET_BYTES = 14 * 1024;
@@ -180,7 +181,7 @@ export async function viewsOf(
 
 /** One message as apps see it. */
 export async function viewOne(deps: ChatDeps, message: ChatMessage, viewer?: string): Promise<ChatMessageView> {
-  const [view] = await viewsOf(deps, message.meetingId, [message], viewer);
+  const [view] = await viewsOf(deps, meetingOf(message), [message], viewer);
   if (!view) throw notFound();
   return view;
 }

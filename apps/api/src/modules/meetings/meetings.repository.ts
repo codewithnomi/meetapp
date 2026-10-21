@@ -2,6 +2,7 @@
 // through its id together with a check of who asks (the service), and every list filters by workspace
 // (S2). A meeting ID already taken is drawn again.
 import {
+  conversations,
   meetingCoOrganizers,
   meetings,
   user,
@@ -70,6 +71,11 @@ async function insertMeeting(executor: Executor, build: () => NewMeeting): Promi
     try {
       const [row] = await executor.insert(meetings).values(build()).returning();
       if (!row) throw new Error("no meeting row");
+      // Its chat conversation (F14 D065); older meetings get theirs from the fill step or on first message.
+      await executor
+        .insert(conversations)
+        .values({ workspaceId: row.workspaceId, kind: "meeting", meetingId: row.id })
+        .onConflictDoNothing({ target: conversations.meetingId });
       return row;
     } catch (error) {
       if (!isNumberTaken(error) || draw >= MAX_NUMBER_DRAWS) throw error;

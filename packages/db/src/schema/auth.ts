@@ -20,6 +20,8 @@ export const user = pgTable("user", {
   lastWorkspaceId: uuid("last_workspace_id"),
   /** Names the current photo in storage (avatars/<userId>/<avatarKey>.webp); empty means initials. */
   avatarKey: text("avatar_key"),
+  /** Shares and sees "Seen" in chats (F14 AC-F14-24, as in Teams); a person can turn it off. */
+  readReceipts: boolean("read_receipts").notNull().default(true),
   ...timestamps(),
 });
 

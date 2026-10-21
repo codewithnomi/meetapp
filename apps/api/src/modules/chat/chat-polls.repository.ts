@@ -12,6 +12,7 @@ import {
 import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { recordEvent } from "./chat.repository.ts";
 import type { NewChatMessage } from "./chat.repository.ts";
+import { meetingConversation, meetingOf } from "./meeting-conversation.repository.ts";
 
 export interface NewPoll {
   message: NewChatMessage;
@@ -47,13 +48,25 @@ async function repeated(tx: Executor, message: NewChatMessage) {
 
 async function create(db: Database, poll: NewPoll) {
   return db.transaction(async (tx) => {
-    const [message] = await tx.insert(chatMessages).values(poll.message).onConflictDoNothing().returning();
+    const conversationId =
+      poll.message.conversationId ??
+      (await meetingConversation(
+        tx,
+        poll.message.workspaceId,
+        meetingOf({ meetingId: poll.message.meetingId ?? null }),
+      ));
+    const [message] = await tx
+      .insert(chatMessages)
+      .values({ ...poll.message, conversationId })
+      .onConflictDoNothing()
+      .returning();
     if (!message) return repeated(tx, poll.message);
     const [row] = await tx
       .insert(chatPolls)
       .values({
         workspaceId: message.workspaceId,
         meetingId: message.meetingId,
+        conversationId: message.conversationId,
         messageId: message.id,
         question: poll.question,
         multiple: poll.multiple,

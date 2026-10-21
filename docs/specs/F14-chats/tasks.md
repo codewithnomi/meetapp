@@ -17,10 +17,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-65.
   - **Built in T1:** `@fastify/websocket` 11.3.1 vetted (D064; installed in T9 where it is first used); `packages/contracts/src/chats.ts` (kinds, member states, statuses, limits, list items, start/add/read/decline bodies, people results, live-line messages both ways); `apps/api/src/modules/chats/chats.permissions.ts` with 7 unit tests over every state, kind and setting.
 
-- [ ] **T2: Migration `0006_chats`, step 1 (expand).**
+- [x] **T2: Migration `0006_chats`, step 1 (expand).**
   - `/db-migration`: `conversations`, `conversation_members`, `conversation_reads`, `chat_blocks`, `chat_request_cooldowns`, `workspaces.allow_outside_chat`, `user_settings.read_receipts`; nullable `conversation_id` on F03's tables; a conversation for every meeting (unique `meeting_id`); F02's meeting creation creates it; F03 code writes both columns.
   - Covers: AC-F14-28 (base), D065.
   - Tests: TC-F14-77 (first part), TC-F14-78.
+  - **Built in T2:** schema `conversations.ts` (5 tables, each with `id`, `workspace_id` where owned) and migration `0006_chats` (adds only: meeting columns optional, empty `conversation_id` on F03's 5 tables with indexes, `user.read_receipts` and `workspaces.allow_outside_chat` default on); `meetingConversation` (find or create, safe to repeat) used by every F03 save, so new rows and news carry their conversation; new meetings get theirs at creation. Tests: migration on an F03 database loses nothing; one conversation per meeting; one direct chat per pair; F03's chat and meetings backend suites pass (132).
 
 - [ ] **T3: Migration steps 2 and 3 (fill, then read by conversation).**
   - The re-runnable fill until no message is left without a conversation; F03's reads switch to `conversation_id`; F03's routes find the meeting's conversation.

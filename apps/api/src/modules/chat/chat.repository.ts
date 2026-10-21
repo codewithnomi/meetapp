@@ -1,6 +1,9 @@
 // Chat storage (F03 design.md sections 3.2–3.4 and 4). Database access only: every query is limited
 // to one meeting, which the service reached through the caller's ticket (S2).
 import { type Database, type Executor, chatEvents, chatMessages, meetings, type ChatMessage } from "@meetapp/db";
+import { meetingConversation, meetingOf, type ChatPlace } from "./meeting-conversation.repository.ts";
+
+export type { ChatPlace };
 import { and, asc, desc, eq, gt, lt, or, sql } from "drizzle-orm";
 import { claimAttachments } from "./chat-files.repository.ts";
 
@@ -31,14 +34,16 @@ async function nextSeq(executor: Executor, meetingId: string): Promise<number> {
 /** Keeps a piece of chat news for catching up, and returns its number (design 3.4). */
 export async function recordEvent(
   executor: Executor,
-  where: { workspaceId: string; meetingId: string },
+  where: ChatPlace,
   type: string,
   payload: Record<string, unknown>,
 ): Promise<number> {
-  const seq = await nextSeq(executor, where.meetingId);
-  // Only these two fields: callers may pass a whole message or poll row.
-  const { workspaceId, meetingId } = where;
-  await executor.insert(chatEvents).values({ workspaceId, meetingId, seq, type, payload });
+  const meetingId = meetingOf(where);
+  const seq = await nextSeq(executor, meetingId);
+  // Only these fields: callers may pass a whole message or poll row.
+  const { workspaceId } = where;
+  const conversationId = where.conversationId ?? (await meetingConversation(executor, workspaceId, meetingId));
+  await executor.insert(chatEvents).values({ workspaceId, meetingId, conversationId, seq, type, payload });
   return seq;
 }
 
@@ -56,7 +61,14 @@ export class AttachmentsNotYoursError extends Error {
 
 async function insertMessage(db: Database, message: NewChatMessage, eventType: string, attachmentIds: string[] = []) {
   return db.transaction(async (tx) => {
-    const [saved] = await tx.insert(chatMessages).values(message).onConflictDoNothing().returning();
+    const conversationId =
+      message.conversationId ??
+      (await meetingConversation(tx, message.workspaceId, meetingOf({ meetingId: message.meetingId ?? null })));
+    const [saved] = await tx
+      .insert(chatMessages)
+      .values({ ...message, conversationId })
+      .onConflictDoNothing()
+      .returning();
     if (!saved) {
       const [existing] = await tx
         .select()
@@ -73,7 +85,7 @@ async function insertMessage(db: Database, message: NewChatMessage, eventType: s
     const claim = {
       ids: attachmentIds,
       messageId: saved.id,
-      meetingId: saved.meetingId,
+      meetingId: meetingOf(saved),
       uploaderAttendanceId: saved.senderAttendanceId ?? "",
     };
     if (!(await claimAttachments(tx, claim))) throw new AttachmentsNotYoursError();

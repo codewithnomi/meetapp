@@ -1,7 +1,7 @@
 // Sending, reading and delivering chat messages (F03 T3; design.md 3.2–3.4; AC-F03-01–06, 17). Real
 // routes and database; the call server's side is recorded. Own database; needs the `pnpm dev` services.
 import { randomUUID } from "node:crypto";
-import { chatMessages } from "@meetapp/db";
+import { chatEvents, chatMessages, conversations } from "@meetapp/db";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ticketFingerprint } from "../../plugins/meeting-ticket.ts";
@@ -58,6 +58,24 @@ const storedFor = async (meetingId: string) =>
   t.database.db.select().from(chatMessages).where(eq(chatMessages.meetingId, meetingId));
 
 describe("sending", { timeout: 30_000 }, () => {
+  it("TC-F14-77 [AC-F14-28] a new meeting has its conversation; messages and their news carry it (D065)", async () => {
+    const room = await callOfTwo("conversation");
+    const { chat } = recordedChat();
+    const view = await chat.send(room.callId, ticketFingerprint(room.other.ticket), {
+      clientId: randomUUID(),
+      body: text("hello") as never,
+    });
+    const [conversation] = await t.database.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.meetingId, room.meeting.id));
+    expect(conversation?.kind).toBe("meeting");
+    const [message] = await t.database.db.select().from(chatMessages).where(eq(chatMessages.id, view.id));
+    expect(message?.conversationId).toBe(conversation?.id);
+    const news = await t.database.db.select().from(chatEvents).where(eq(chatEvents.meetingId, room.meeting.id));
+    expect(news.map((event) => event.conversationId)).toEqual(news.map(() => conversation?.id));
+  });
+
   it("TC-F03-01 [AC-F03-01] a message is saved with the sender's name and group and delivered to the room", async () => {
     const room = await callOfTwo("send");
     const { chat, packets } = recordedChat();

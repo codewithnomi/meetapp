@@ -94,7 +94,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 ### 3.5 Reading, unread and "Seen" (AC-02, 24)
 - `conversation_reads (conversation_id, user_id, last_read_seq, last_read_at)`. Opening a chat at the bottom (or scrolling to the newest message) sends `PUT /conversations/:id/read` with the newest seen news number, at most once every 2 seconds.
 - **Unread** for a chat = messages after `last_read_seq` not sent by the person; the list asks the server for counts (one query per list load, then updated by news). The side menu counts chats with unread messages (AC-02).
-- **Seen:** in direct chats and groups of up to 20, readers' marks go to members as `read` on the live line, unless the reader turned read receipts off (`user_settings.read_receipts`), in which case they neither send nor receive marks (AC-24, as in Teams). Because `conv:<id>` reaches everyone, the sending server filters `read` per receiver. **Who has seen** a group message: `GET /conversations/:id/messages/:mid/seen`. Groups of 21–250: none.
+- **Seen:** in direct chats and groups of up to 20, readers' marks go to members as `read` on the live line, unless the reader turned read receipts off (`user.read_receipts`), in which case they neither send nor receive marks (AC-24, as in Teams). Because `conv:<id>` reaches everyone, the sending server filters `read` per receiver. **Who has seen** a group message: `GET /conversations/:id/messages/:mid/seen`. Groups of 21–250: none.
 - **Mentions (AC-22):** the message document gains a `mention` inline part (user id + name as shown); a mentioned person's unread counts even when muted. Only members can be mentioned.
 ### 3.6 Typing (AC-23)
 - The app sends `typing` at most every 3 seconds while the person types; the server forwards it to the other members (not stored). The others show "<name> is typing…" and hide it 5 seconds after the last signal.
@@ -127,7 +127,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 | `chat_blocks` | `blocker_id`, `blocked_id`, `created_at`; primary key on both |
 | `chat_request_cooldowns` | `from_user`, `to_user`, `until` (30 days after a deleted request) |
 | `workspaces.allow_outside_chat` | boolean, default true |
-| `user_settings.read_receipts` | boolean, default true |
+| `user.read_receipts` | boolean, default true (on the user's own row, where F01 keeps theme and accent; there is no `user_settings` table) |
 | F03 tables | `chat_messages`, `chat_events`, `chat_pins`, `chat_polls`, `chat_attachments` gain `conversation_id` (filled by the migration from the meeting's conversation); `meeting_id` and `call_id` stay for meeting chats and become optional; new indexes on `conversation_id` |
 - The migration follows backend.md's "expand, then contract" (order below). No column is dropped in F14.
 - Indexes: members by user (the list), conversations by `(workspace_id, last_message_at)`, reads by user, `workspace_id` on every table (S2). Name search ignores case and accents (`unaccent` + lower-case, AC-04).

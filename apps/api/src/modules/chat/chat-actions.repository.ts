@@ -17,7 +17,8 @@ const CHECK_VIOLATION = "23514";
 
 export type Change<T> = { row: T; seq: number } | undefined;
 
-const where = (message: Pick<ChatMessage, "workspaceId" | "meetingId">) => ({
+const where = (message: Pick<ChatMessage, "workspaceId" | "meetingId" | "conversationId">) => ({
+  conversationId: message.conversationId,
   workspaceId: message.workspaceId,
   meetingId: message.meetingId,
 });
