@@ -28,6 +28,7 @@ import {
   Signal,
   SlidersHorizontal,
   Smile,
+  SmilePlus,
   Sparkles,
   Sun,
   Ticket,
@@ -91,6 +92,7 @@ export const ICONS = {
   // F02, drawn in the approved meeting screens: Meeting info, React, gallery pages, the Leave menu, Pin.
   info: Info,
   smile: Smile,
+  smilePlus: SmilePlus,
   "chevron-left": ChevronLeft,
   "chevron-down": ChevronDown,
   pin: Pin,

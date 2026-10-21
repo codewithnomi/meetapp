@@ -844,7 +844,9 @@
           "heart": "React with heart",
           "laugh": "React with laughing face",
           "surprised": "React with surprised face"
-        }
+        },
+        "moreReactions": "More reactions",
+        "addReaction": "Add reaction"
       },
       "poll": {
         "about": "Poll by {{name}} · {{kind}} · {{names}}",

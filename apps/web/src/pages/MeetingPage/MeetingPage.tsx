@@ -248,7 +248,7 @@ function Call(props: MeetingPageProps & { visit: Joined }) {
         lobby={context.canAdmit ? lobbyBar(t, call, () => view.setPanel("people")) : undefined}
         notices={<ScreenNotices screen={screen} />}
         stage={<ScreenStage screen={screen} />}
-        panel={<ScreenPanel screen={screen} />}
+        panel={view.panel ? <ScreenPanel screen={screen} /> : undefined}
         controls={<Controls screen={screen} />}
         announcement={call.events.announcer.current}
       />

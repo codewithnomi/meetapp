@@ -2,10 +2,12 @@
 // reply, and the More menu with Edit, Copy text, Pin and Delete for those allowed), polls drawn as
 // poll cards, and messages being sent with "Not sent" and Retry.
 import type { ChatMessageView, PollView } from "@meetapp/contracts";
-import { ChatMessage, MessageActions, PollCard, SystemNote, type MenuAction } from "@meetapp/ui";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChatMessage, EmojiPicker, MessageActions, PollCard, SystemNote, type MenuAction } from "@meetapp/ui";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useEmojiSettings } from "./chat-emoji.ts";
 import {
   closePoll,
   pollOf,
@@ -29,6 +31,12 @@ const QUICK = [
 
 /** The invisible "show as emoji" mark (FE0F) aside, the server keeps it on some emoji. */
 const sameEmoji = (a: string, b: string) => a.replaceAll("\uFE0F", "") === b.replaceAll("\uFE0F", "");
+
+/** One reaction per person (D061): another emoji replaces it, the same one takes it back. */
+function reactWith(view: ChatView, message: ChatMessageView, emoji: string) {
+  const mine = message.reactions.some((reaction) => reaction.mine && sameEmoji(reaction.emoji, emoji));
+  void setReaction(view.place, message.id, emoji, !mine).catch(view.onFailed);
+}
 
 /** What the viewer may do in the chat, from their meeting role (the server checks again). */
 export interface ChatRights {
@@ -82,18 +90,16 @@ function Actions({
   message,
   name,
   own,
+  onMoreReactions,
 }: {
   view: ChatView;
   message: ChatMessageView;
   name: string;
   own: boolean;
+  onMoreReactions: () => void;
 }) {
   const { t } = useTranslation();
-  // One reaction per person (D061): another emoji replaces it, the same one takes it back.
-  const react = (emoji: string) => () => {
-    const mine = message.reactions.some((reaction) => reaction.mine && sameEmoji(reaction.emoji, emoji));
-    void setReaction(view.place, message.id, emoji, !mine).catch(view.onFailed);
-  };
+  const react = (emoji: string) => () => reactWith(view, message, emoji);
   const more = moreActions(t, view, message, own);
   if (view.readOnly) {
     return more.length > 0 ? (
@@ -113,6 +119,7 @@ function Actions({
         label: t(`meetings.chat.actions.react.${key}`),
         onReact: react(emoji),
       }))}
+      moreReactions={{ label: t("meetings.chat.actions.moreReactions"), onClick: onMoreReactions }}
       reply={{ label: t("meetings.chat.actions.reply"), onReply: () => view.onReply(message) }}
       moreLabel={t("meetings.chat.actions.more")}
       more={more}
@@ -126,7 +133,12 @@ function PollMessage({ view, pollId }: { view: ChatView; pollId: string }) {
   const queries = useQueryClient();
   const version = view.chat.state.pollVersions[pollId] ?? 0;
   const key = ["chat-poll", pollId, version];
-  const poll = useQuery<PollView>({ queryKey: key, queryFn: () => pollOf(view.place, pollId) });
+  // A vote raises the version: keep showing the last result while the new one loads, so the card never blinks.
+  const poll = useQuery<PollView>({
+    queryKey: key,
+    queryFn: () => pollOf(view.place, pollId),
+    placeholderData: keepPreviousData,
+  });
   if (!poll.data) return null;
   const p = poll.data;
   const vote = (optionIds: string[]) =>
@@ -183,18 +195,41 @@ function reactionChips(t: TFunction, view: ChatView, message: ChatMessageView) {
   }));
 }
 
-export function Message({
-  view,
-  message,
-  continued = false,
-}: {
+interface MessageProps {
   view: ChatView;
   message: ChatMessageView;
   /** Continues the same person's group from the same minute (AC-F03-48). */
   continued?: boolean;
-}) {
+}
+
+export function Message(props: MessageProps) {
   const { t } = useTranslation();
-  if (message.kind === "system") return <SystemNote text={noteText(t, message)} />;
+  if (props.message.kind === "system") return <SystemNote text={noteText(t, props.message)} />;
+  return <PersonMessage {...props} />;
+}
+
+/** "Add reaction" and "More reactions" open the full emoji picker under the message. */
+function useReactionPicker(view: ChatView, message: ChatMessageView) {
+  const { t } = useTranslation();
+  const emoji = useEmojiSettings();
+  const [open, setOpen] = useState(false);
+  const pick = (chosen: string) => {
+    setOpen(false);
+    emoji.used(chosen);
+    reactWith(view, message, chosen);
+  };
+  return {
+    open: () => setOpen(true),
+    add: view.readOnly
+      ? undefined
+      : { label: t("meetings.chat.actions.addReaction"), onClick: () => setOpen((o) => !o) },
+    picker: open && !view.readOnly ? <EmojiPicker {...emoji.settings} onPick={pick} /> : undefined,
+  };
+}
+
+function PersonMessage({ view, message, continued = false }: MessageProps) {
+  const { t } = useTranslation();
+  const reacting = useReactionPicker(view, message);
   const name = senderName(t, message, view.place.attendanceId);
   const own = message.sender.attendanceId === view.place.attendanceId;
   const shown = time(message.createdAt);
@@ -224,7 +259,13 @@ export function Message({
         )
       }
       reactions={reactionChips(t, view, message)}
-      actions={message.deletedAt ? undefined : <Actions view={view} message={message} name={name} own={own} />}
+      actions={
+        message.deletedAt ? undefined : (
+          <Actions view={view} message={message} name={name} own={own} onMoreReactions={reacting.open} />
+        )
+      }
+      addReaction={reacting.add}
+      picker={reacting.picker}
       onOpenLink={openLink}
       onCopyCode={copyText}
       copyLabel={t("meetings.chat.copy")}

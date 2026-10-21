@@ -1,12 +1,14 @@
 // ChatMessage (organism): one message in the meeting chat, as in the approved "Chat" screen (F03): the
 // sender's picture or initials, name and time, then the message, any reply quote, files, GIF or poll
-// (passed in as `extras`), and the reactions. Own messages sit on the right. States: "Edited",
+// (passed in as `extras`), and the reactions with "Add reaction", as in Teams. Pointing at the bubble fades
+// in its actions; new messages fade in. Own messages sit on the right. States: "Edited",
 // "This message was deleted", sending, and "Not sent" with Retry (AC-F03-05, 10). A message that only
 // continues the same person's group (same minute) shows no name, time or picture, as a connected bubble;
 // a message of only 1–3 emoji shows them larger without a bubble (AC-F03-47, 48). Words arrive as props.
 import type { ReactNode } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Button } from "../../atoms/Button/index.ts";
+import { IconButton } from "../../atoms/IconButton/index.ts";
 import { ReactionChip, type ReactionChipProps } from "../../atoms/ReactionChip/index.ts";
 import { MessageBody, type RichDocument } from "../../molecules/MessageBody/index.ts";
 import { ReplyQuote, type ReplyQuoteProps } from "../../molecules/ReplyQuote/index.ts";
@@ -32,8 +34,12 @@ export interface ChatMessageProps {
   extras?: ReactNode;
   /** Without `onToggle` (read-only chat) the chips only show the reactions. */
   reactions?: (Omit<ReactionChipProps, "onClick"> & { onToggle?: (() => void) | undefined })[];
-  /** The pointing/keyboard toolbar (reply, react, more). */
+  /** The pointing/keyboard toolbar (reply, react, more): shows when pointing at the bubble. */
   actions?: ReactNode;
+  /** "Add reaction", shown beside the reactions (as in Teams). */
+  addReaction?: { label: string; onClick: () => void } | undefined;
+  /** The full emoji picker, open under the message to react with any emoji. */
+  picker?: ReactNode;
   status?:
     { kind: "sending"; label: string } | { kind: "failed"; label: string; retryLabel: string; onRetry: () => void };
   onOpenLink: (href: string) => void;
@@ -89,13 +95,52 @@ function Content(props: ChatMessageProps) {
   );
 }
 
-function Reactions({ reactions }: { reactions: NonNullable<ChatMessageProps["reactions"]> }) {
+function Reactions({
+  reactions,
+  addReaction,
+}: {
+  reactions: NonNullable<ChatMessageProps["reactions"]>;
+  addReaction: ChatMessageProps["addReaction"];
+}) {
   if (reactions.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-1.5">
+    // Overlapping the bubble's lower edge, as in Teams.
+    <div className="relative z-[1] -mt-3 flex flex-wrap items-center gap-1 px-2">
       {reactions.map(({ onToggle, ...chip }) => (
         <ReactionChip key={chip.emoji} {...chip} onClick={onToggle} disabled={!onToggle} />
       ))}
+      {addReaction ? (
+        <IconButton
+          icon="smilePlus"
+          label={addReaction.label}
+          variant="ghost"
+          size="sm"
+          onClick={addReaction.onClick}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** The bubble and, while pointing at it (or with focus inside the message), its actions, fading in. */
+function Bubble(props: ChatMessageProps) {
+  const { own = false, actions } = props;
+  return (
+    <div className={cx("group/bubble relative flex min-w-0 flex-col gap-1", own && "items-end")}>
+      <Content {...props} />
+      {actions ? (
+        <div
+          className={cx(
+            // Above the bubble, kept inside the panel: from its right edge for own messages, its left for others'.
+            "pointer-events-none absolute -top-9 z-10 opacity-0 transition-opacity duration-150 motion-reduce:transition-none",
+            "group-hover/bubble:pointer-events-auto group-hover/bubble:opacity-100",
+            "group-focus-within/message:pointer-events-auto group-focus-within/message:opacity-100",
+            own ? "right-0" : "left-0",
+          )}
+        >
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -107,13 +152,14 @@ function Picture({ name, photoUrl, continued }: Pick<ChatMessageProps, "name" | 
 }
 
 export function ChatMessage(props: ChatMessageProps) {
-  const { id, name, photoUrl, time, own = false, continued = false, reactions = [], actions, status } = props;
+  const { id, name, photoUrl, time, own = false, continued = false, reactions = [], status } = props;
   return (
     <article
       id={`chat-message-${id}`}
       aria-label={`${name}, ${time}`}
       className={cx(
-        "group relative flex max-w-full min-w-0 items-start gap-2",
+        // New messages fade in (not with reduced motion).
+        "group/message relative flex max-w-full min-w-0 items-start gap-2 transition-opacity duration-200 starting:opacity-0 motion-reduce:transition-none",
         own && "flex-row-reverse self-end",
         continued && "-mt-2.5",
       )}
@@ -127,22 +173,11 @@ export function ChatMessage(props: ChatMessageProps) {
             <span className="text-ink-muted">{time}</span>
           </div>
         )}
-        <Content {...props} />
-        <Reactions reactions={reactions} />
+        <Bubble {...props} />
+        <Reactions reactions={reactions} addReaction={props.addReaction} />
+        {props.picker}
         {status ? <Status status={status} /> : null}
       </div>
-      {actions ? (
-        <div
-          className={cx(
-            // Above the message and inside the panel: from the right edge for own messages, after the
-            // picture for others', so a short message never pushes the bar out of view.
-            "pointer-events-none absolute -top-9 z-10 opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100",
-            own ? "right-0" : "left-10",
-          )}
-        >
-          {actions}
-        </div>
-      ) : null}
     </article>
   );
 }

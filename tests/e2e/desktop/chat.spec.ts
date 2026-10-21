@@ -128,7 +128,8 @@ test("TC-F03-07 TC-F03-22 [AC-F03-03] [AC-F03-12] the counter stops long message
 const onMessage = async (page: Page, text: string) => {
   // The first match: a reply further down also shows the quoted words.
   const message = page.getByRole("log", { name: "Messages" }).getByRole("article").filter({ hasText: text }).first();
-  await message.hover();
+  // The actions show while pointing at the bubble itself.
+  await message.getByText(text).first().hover();
   return message;
 };
 
@@ -197,8 +198,25 @@ test("TC-F03-42 [AC-F03-21] [AC-F03-22] [AC-F03-23] create a poll, vote, see res
   const poll = moLog.getByRole("region", { name: "Which day should we release?" });
   await expect(poll).toBeVisible({ timeout: 5_000 });
   await expect(poll).toContainText("Vote to see the results");
+  // The host's card must never disappear while votes arrive (it used to blink, owner 2026-10-21).
+  const hostPoll = host.page
+    .getByRole("log", { name: "Messages" })
+    .getByRole("region", { name: "Which day should we release?" });
+  await expect(hostPoll).toBeVisible();
+  await hostPoll.evaluate((card) => {
+    const log = card.closest("[role=log]");
+    const seen = { gone: false };
+    (window as unknown as { pollWatch: typeof seen }).pollWatch = seen;
+    new MutationObserver(() => {
+      if (!log?.querySelector('[role=region][aria-label="Which day should we release?"]')) seen.gone = true;
+    }).observe(log ?? document.body, { childList: true, subtree: true });
+  });
   await poll.getByRole("radio", { name: /Thursday/ }).click();
   await expect(poll).toContainText("1 person voted", { timeout: 5_000 });
+  await expect(hostPoll).toContainText("1 person voted", { timeout: 5_000 });
+  expect(await host.page.evaluate(() => (window as unknown as { pollWatch: { gone: boolean } }).pollWatch.gone)).toBe(
+    false,
+  );
   await expect(poll.getByRole("radio", { name: /Thursday/ })).toContainText("100% · 1");
 
   await host.page.getByRole("log", { name: "Messages" }).getByRole("button", { name: "Close poll" }).click();
@@ -394,10 +412,15 @@ test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, 
   await expect(hostLog.getByText("You", { exact: true })).toHaveCount(1);
   expect(await hostLog.getByText("🎉").evaluate((node) => getComputedStyle(node).fontSize)).toBe("32px");
 
-  // The actions bar of a short own message stays inside the list; nothing scrolls sideways.
+  // The actions bar shows only when pointing at the bubble (not beside it), fading in, inside the list.
   const message = hostLog.getByRole("article").filter({ has: host.page.getByText("hi", { exact: true }) });
-  await message.hover();
   const bar = message.getByRole("group", { name: /^Actions for / });
+  const opacity = () => bar.evaluate((node) => getComputedStyle(node.parentElement ?? node).opacity);
+  const box = await hostLog.boundingBox();
+  if (box) await host.page.mouse.move(box.x + 20, box.y + box.height / 2);
+  expect(await opacity()).toBe("0");
+  await hostLog.getByText("hi", { exact: true }).hover();
+  await expect.poll(opacity).toBe("1");
   const [barBox, logBox] = [await bar.boundingBox(), await hostLog.boundingBox()];
   expect(barBox && logBox && barBox.x >= logBox.x && barBox.x + barBox.width <= logBox.x + logBox.width).toBe(true);
   expect(await hostLog.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
@@ -405,11 +428,13 @@ test("TC-F03-95 [AC-F03-13] [AC-F03-47] [AC-F03-48] grouped bubbles, big emoji, 
   // One reaction per person: another emoji replaces it, the same one takes it back.
   await bar.getByRole("button", { name: "React with thumbs up" }).click();
   await expect(message.getByRole("button", { name: /👍/ })).toBeVisible({ timeout: 5_000 });
-  await message.hover();
+  // As in Teams: "Add reaction" beside the reactions opens the full emoji list.
+  await expect(message.getByRole("button", { name: "Add reaction" })).toBeVisible();
+  await hostLog.getByText("hi", { exact: true }).hover();
   await bar.getByRole("button", { name: "React with heart" }).click();
   await expect(message.getByRole("button", { name: /❤/ })).toBeVisible({ timeout: 5_000 });
   await expect(message.getByRole("button", { name: /👍/ })).toHaveCount(0);
-  await message.hover();
+  await hostLog.getByText("hi", { exact: true }).hover();
   await host.page.screenshot({ path: `${process.env["TMPDIR"] ?? "/tmp"}/meetapp-chat-look.png` });
   await bar.getByRole("button", { name: "React with heart" }).click();
   await expect(message.getByRole("button", { name: /❤/ })).toHaveCount(0, { timeout: 5_000 });

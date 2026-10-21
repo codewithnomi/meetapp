@@ -44,7 +44,9 @@ packages/ui/src/assets/stickers/          our own sticker set (SVG)
   - shows system notes ("Aisha Khan pinned a message", "… turned chat off") centred and small;
   - while scrolled up, new messages don't move the view; the button appears (AC-08);
   - empty: "No messages yet" (AC-09).
-- **Pointing at a message, or Tab to it:** a small toolbar, above the message and kept inside the panel (on the right for own messages, on the left for others), with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
+- **Panel frame (owner, 2026-10-21):** side panels (chat, participants, info, devices) run the window's full height on the right, beside the stage and the control bar, as in Teams.
+- **Reactions (owner, 2026-10-21):** chips overlap the bubble's lower edge, the count shows only above 1, and an "Add reaction" button beside them opens the full emoji list under the message (also "More reactions" in the toolbar). New messages and the toolbar fade in (not with reduced motion). A poll keeps its last result on screen while a new one loads, so it never blinks.
+- **Pointing at the bubble (not the row), or Tab into the message:** a small toolbar, above the message and kept inside the panel (on the right for own messages, on the left for others), with 4 quick reactions, More reactions, Reply and More (Edit, Copy text, Pin for everyone, Delete). Only allowed actions are shown (F03Pickers).
 - **Composer:**
   - a rich text box (section 5.1) with the Format toolbar (shown or hidden by the Format button);
   - buttons: Format, Emoji, GIF, Sticker, Attach (not for guests), Create a poll (organizer, co-organizers, presenters), Send;
