@@ -411,6 +411,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 ### D064: A live line (WebSocket) for chats outside calls (F14)
 - **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 design, 2026-10-21).
 - **Decision:** while the app is open it keeps one WebSocket to the backend (`@fastify/websocket`, Fastify team, MIT; vetted with `/add-dependency` in F14 T1). It carries new messages, edits, reactions, "is typing", "Seen", status and chat-list changes. Servers share news through Redis publish/subscribe (ioredis, already used), so it works with several API servers. Everything that changes data still goes through normal requests with their checks; the line only delivers.
+- **Vetted (F14 T1, 2026-10-21):** `@fastify/websocket` 11.3.1 (18 September 2026, at least two weeks old; 11.3.4 was too new), MIT, Fastify team (3 maintainers), regular releases, about 100 KB, depends only on `ws` 8, `duplexify` and `fastify-plugin`; licenses check passes; no new audit findings. Installed in T9, the task that first uses it.
 - **Why:** F03's chat news travels through the call server, which exists only during a call. Teams-style chats need instant delivery any time. Polling every few seconds would be slow and heavy for 100+ people.
 - **Cost:** none (inside the existing backend and Redis).
 - **Alternatives:** Server-Sent Events (one direction only; typing and activity would need extra requests); a separate realtime service (more to run, not needed at our size).

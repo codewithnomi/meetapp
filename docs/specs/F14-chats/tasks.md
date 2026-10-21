@@ -1,7 +1,7 @@
 ---
 feature: F14
 title: Chats (one to one and groups)
-status: approved
+status: in-progress
 updated: 2026-10-21
 ---
 
@@ -11,10 +11,11 @@ Small steps, done in order. Each step should be finishable and testable in one s
 Tick `[x]` when done and verified. While building, each step runs only its own tests plus typecheck and lint; the whole suite runs at `/spec-verify` (D052).
 
 ## Foundation
-- [ ] **T1: Library, contracts and the permissions table.**
+- [x] **T1: Library, contracts and the permissions table.**
   - Vet `@fastify/websocket` with `/add-dependency` (D064). Zod contracts in `packages/contracts/src/chats.ts` (conversations, members, requests, reads, status, live-line messages). `chats.permissions.ts`: every state × action, including pending, declined, left, removed, blocked, external, outside chat off.
   - Covers: AC-F14-13, 18, 27, 31, 34.
   - Tests: TC-F14-65.
+  - **Built in T1:** `@fastify/websocket` 11.3.1 vetted (D064; installed in T9 where it is first used); `packages/contracts/src/chats.ts` (kinds, member states, statuses, limits, list items, start/add/read/decline bodies, people results, live-line messages both ways); `apps/api/src/modules/chats/chats.permissions.ts` with 7 unit tests over every state, kind and setting.
 
 - [ ] **T2: Migration `0006_chats`, step 1 (expand).**
   - `/db-migration`: `conversations`, `conversation_members`, `conversation_reads`, `chat_blocks`, `chat_request_cooldowns`, `workspaces.allow_outside_chat`, `user_settings.read_receipts`; nullable `conversation_id` on F03's tables; a conversation for every meeting (unique `meeting_id`); F02's meeting creation creates it; F03 code writes both columns.
