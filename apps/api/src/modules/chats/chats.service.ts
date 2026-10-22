@@ -184,6 +184,7 @@ async function start(deps: ChatsDeps, membership: Membership, body: { userIds: s
   if (others.length === 1 && first && members.length === 0) return startExternalDirect(deps, membership, first);
   if (others.length === 1 && first) {
     const made = await deps.chats.direct(workspaceId, userId, [accepted(userId), accepted(first)]);
+    if (made.created) await deps.live.list([userId, first], made.conversation.id, "added");
     return { id: made.conversation.id, created: made.created };
   }
   // A group: colleagues join at once, people from outside get a request (AC-F14-14, 15).
@@ -200,6 +201,7 @@ async function start(deps: ChatsDeps, membership: Membership, body: { userIds: s
       ...outside.map((id) => ({ userId: id, external: true, state: "pending" as const })),
     ],
   });
+  await deps.live.list([userId, ...others], group.id, "added");
   return { id: group.id, created: true };
 }
 
@@ -219,11 +221,21 @@ async function setMine(deps: ChatsDeps, userId: string, conversationId: string, 
   await deps.chats.setMine(conversationId, userId, change);
 }
 
+/** "Seen" for the others, live: only when receipts apply (AC-F14-24); the line drops it for people
+ * with receipts off. */
+async function tellRead(deps: ChatsDeps, conversation: Conversation, userId: string, seq: number) {
+  if (conversation.kind === "meeting" || !(await deps.chats.readReceipts(userId))) return;
+  const members = (await deps.chats.peopleOf([conversation.id])).filter((p) => p.state === "accepted");
+  if (conversation.kind === "group" && members.length > CHATS_LIMITS.seenGroupMax) return;
+  await deps.live.read(conversation.id, userId, seq);
+}
+
 /** "Read up to here" for a chat the person is in, or a meeting chat they may read (AC-F14-02, 24). */
 async function markRead(deps: ChatsDeps, userId: string, conversationId: string, seq: number) {
   const row = await deps.chats.member(conversationId, userId);
   if (row) {
     await deps.chats.markRead({ conversationId, workspaceId: row.conversation.workspaceId, userId, seq });
+    await tellRead(deps, row.conversation, userId, seq);
     return;
   }
   const readable = await deps.readableMeetings(userId);

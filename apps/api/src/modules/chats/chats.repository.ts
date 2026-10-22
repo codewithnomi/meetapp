@@ -251,6 +251,23 @@ export function createChatsRepository(db: Database) {
     workspaceMemberIds: (workspaceId: string, userIds: string[]) => workspaceMemberIds(db, workspaceId, userIds),
     member: (conversationId: string, userId: string) => member(db, conversationId, userId),
     pinnedCount: (userId: string) => pinnedCount(db, userId),
+    readReceipts: async (userId: string) =>
+      (await db.select({ on: user.readReceipts }).from(user).where(eq(user.id, userId)))[0]?.on ?? false,
+    /** The chats a person is in now, for their live line (D064). */
+    activeConversationIds: async (userId: string) =>
+      (
+        await db
+          .select({ id: conversations.id })
+          .from(conversationMembers)
+          .innerJoin(conversations, eq(conversations.id, conversationMembers.conversationId))
+          .where(
+            and(
+              eq(conversationMembers.userId, userId),
+              eq(conversationMembers.state, "accepted"),
+              isNull(conversations.deletedAt),
+            ),
+          )
+      ).map((row) => row.id),
     userByEmail: (email: string) => userByEmail(db, email),
     workspacePeople: (workspaceId: string) => workspacePeople(db, workspaceId),
     setMine: (conversationId: string, userId: string, change: MyChoices) =>

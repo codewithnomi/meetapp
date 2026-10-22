@@ -17,13 +17,13 @@ import { createRecordService } from "./modules/calls/record.service.ts";
 import { createRejoinService } from "./modules/calls/rejoin.service.ts";
 import { createWebhookService } from "./modules/calls/webhook.service.ts";
 import { createChatRepository } from "./modules/chat/chat.repository.ts";
-import { createChatService } from "./modules/chat/chat.service.ts";
+import { createChatService, type ChatDeps } from "./modules/chat/chat.service.ts";
 import { createChatActionsRepository } from "./modules/chat/chat-actions.repository.ts";
 import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
 import { createChatPollsRepository } from "./modules/chat/chat-polls.repository.ts";
 import { createChatPollsService } from "./modules/chat/chat-polls.service.ts";
 import { createChatAfterRepository } from "./modules/chat/chat-after.repository.ts";
-import { createChatAfterService } from "./modules/chat/chat-after.service.ts";
+import { createChatAfterService, type ChatAfterService } from "./modules/chat/chat-after.service.ts";
 import { createChatUpkeepRepository } from "./modules/chat/chat-upkeep.repository.ts";
 import { createChatUpkeepService } from "./modules/chat/chat-upkeep.service.ts";
 import { createChatFilesRepository } from "./modules/chat/chat-files.repository.ts";
@@ -45,7 +45,10 @@ import { createChatsGroupsService } from "./modules/chats/chats-groups.service.t
 import { createChatsRequestsRepository } from "./modules/chats/chats-requests.repository.ts";
 import { createChatsRequestsService } from "./modules/chats/chats-requests.service.ts";
 import { createChatsService } from "./modules/chats/chats.service.ts";
+import type { ChatEvent } from "@meetapp/contracts";
+import type { Redis } from "ioredis";
 import type { Outbox } from "./emails/outbox.ts";
+import { createLivePublisher } from "./modules/chats/chats-live.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -55,6 +58,8 @@ interface MeetingWiring {
   storage: FileStorage;
   /** Emails (F14: "Join me on MeetApp"). */
   outbox: Outbox;
+  /** F14's live line shares news through Redis (D064). */
+  redis: Redis;
 }
 
 function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimiter): CallsDeps {
@@ -77,8 +82,58 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
 const keyFor = (config: Config, label: string) =>
   Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", label, 32)).toString("hex");
 
+/** One-to-one and group chats (F14), built on meeting chat's pieces. */
+function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
+  const { config, db, storage, outbox, redis } = wiring;
+  const chatsRepository = createChatsRepository(db);
+  const requestsDeps = {
+    chat: chatDeps.chat,
+    chats: chatsRepository,
+    requests: createChatsRequestsRepository(db),
+    limiter: calls.limiter,
+    now: calls.now,
+    live: createLivePublisher(redis),
+  };
+  const messagesDeps = {
+    ...requestsDeps,
+    meetingChat: chatDeps,
+    messages: createChatsMessagesRepository(db),
+    // News goes out on the live line (D064); apps also catch up from the saved news.
+    publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
+  };
+  return {
+    /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
+    chats: createChatsService({ ...requestsDeps, readableMeetings: (userId) => chatAfter.readable(userId) }),
+    chatsRequests: createChatsRequestsService(requestsDeps),
+    chatsMessages: createChatsMessagesService(messagesDeps),
+    chatsExtras: createChatsExtrasService({ ...messagesDeps, storage }),
+    /** What each server's live line needs (D064). */
+    chatsLine: {
+      redis,
+      live: requestsDeps.live,
+      conversationsOf: (userId: string) => chatsRepository.activeConversationIds(userId),
+      person: (userId: string) => messagesDeps.messages.person(userId),
+    },
+    chatsGroups: createChatsGroupsService({ ...requestsDeps, groups: createChatsGroupsRepository(db) }),
+    chatsPeople: createChatsPeopleService({
+      chats: chatsRepository,
+      limiter: calls.limiter,
+      outbox,
+      publicUrl: config.APP_PUBLIC_URL,
+    }),
+  };
+}
+
+interface ChatsWiring {
+  wiring: MeetingWiring;
+  calls: CallsDeps;
+  chatDeps: ChatDeps;
+  chatAfter: ChatAfterService;
+}
+
 /** Meeting chat (F03): messages, what people do to them, polls and files. */
-function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: CallsDeps) {
+function chatPieces(wiring: MeetingWiring, calls: CallsDeps) {
+  const { config, db, storage } = wiring;
   const chatDeps = {
     calls,
     chat: createChatRepository(db),
@@ -90,39 +145,13 @@ function chatPieces({ config, db, storage, outbox }: MeetingWiring, calls: Calls
     gifService: { apiUrl: config.GIF_API_URL, key: config.GIF_API_KEY },
   };
   const chatAfter = createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) });
-  const chatsRepository = createChatsRepository(db);
-  const requestsDeps = {
-    chat: chatDeps.chat,
-    chats: chatsRepository,
-    requests: createChatsRequestsRepository(db),
-    limiter: calls.limiter,
-    now: calls.now,
-  };
-  const messagesDeps = {
-    ...requestsDeps,
-    meetingChat: chatDeps,
-    messages: createChatsMessagesRepository(db),
-    // The live line (T9) delivers news; until then apps catch up from the saved news.
-    publish: () => Promise.resolve(),
-  };
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
     chatPolls: createChatPollsService(chatDeps),
     chatFiles: createChatFilesService(chatDeps, storage),
     chatAfter,
-    /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
-    chats: createChatsService({ ...requestsDeps, readableMeetings: (userId) => chatAfter.readable(userId) }),
-    chatsRequests: createChatsRequestsService(requestsDeps),
-    chatsMessages: createChatsMessagesService(messagesDeps),
-    chatsExtras: createChatsExtrasService({ ...messagesDeps, storage }),
-    chatsGroups: createChatsGroupsService({ ...requestsDeps, groups: createChatsGroupsRepository(db) }),
-    chatsPeople: createChatsPeopleService({
-      chats: chatsRepository,
-      limiter: calls.limiter,
-      outbox,
-      publicUrl: config.APP_PUBLIC_URL,
-    }),
+    ...chatsPieces({ wiring, calls, chatDeps, chatAfter }),
     chatUpkeep: createChatUpkeepService({ ...chatDeps, upkeep: createChatUpkeepRepository(db), storage }),
     chatDeps,
   };

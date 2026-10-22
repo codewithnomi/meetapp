@@ -40,10 +40,14 @@ async function groupFor(deps: GroupsDeps, userId: string, conversationId: string
 }
 
 async function rename(deps: GroupsDeps, userId: string, conversationId: string, name: string) {
-  const { conversation, me } = await groupFor(deps, userId, conversationId, "rename");
+  const { conversation, people, me } = await groupFor(deps, userId, conversationId, "rename");
   await deps.groups.rename(conversationId, name);
-  await saveNote(deps.chat, conversation, me, { event: "named", groupName: name });
+  await saveNote(deps, conversation, me, { event: "named", groupName: name });
+  await deps.live.list(membersOf(people), conversationId, "changed");
 }
+
+const membersOf = (people: { userId: string; state: string }[]) =>
+  people.filter((p) => p.state === "accepted").map((p) => p.userId);
 
 function historyStart(history: History, createdAt: Date, now: Date) {
   if (history.from === "none") return now;
@@ -73,7 +77,9 @@ async function addPeople(deps: GroupsDeps, userId: string, conversationId: strin
     me.id,
   );
   const names = (await deps.chats.peopleOf([conversationId])).filter((p) => added.includes(p.userId));
-  await saveNote(deps.chat, conversation, me, { event: "added", names: names.map((p) => p.name) });
+  await saveNote(deps, conversation, me, { event: "added", names: names.map((p) => p.name) });
+  await deps.live.list(added, conversationId, "added");
+  await deps.live.list(membersOf(people), conversationId, "changed");
 }
 
 interface AddBody {
@@ -87,15 +93,17 @@ async function remove(deps: GroupsDeps, userId: string, conversationId: string, 
   const target = people.find((p) => p.userId === targetId && (p.state === "accepted" || p.state === "pending"));
   if (!target || targetId === userId) throw notFound();
   // They read up to and including the note that says they were removed.
-  await saveNote(deps.chat, conversation, me, { event: "removed", names: [target.name] });
+  await saveNote(deps, conversation, me, { event: "removed", names: [target.name] });
   await deps.groups.stop(conversationId, targetId, "removed", await deps.chat.lastSeq(conversationId));
+  await deps.live.list([targetId], conversationId, "removed");
 }
 
 async function leave(deps: GroupsDeps, userId: string, conversationId: string) {
   const { conversation, me } = await groupFor(deps, userId, conversationId, "leave");
-  await saveNote(deps.chat, conversation, me, { event: "left" });
+  await saveNote(deps, conversation, me, { event: "left" });
   // They read up to and including their own "left" note.
   await deps.groups.stop(conversationId, userId, "left", await deps.chat.lastSeq(conversationId));
+  await deps.live.list([userId], conversationId, "removed");
   if ((await deps.groups.accepted(conversationId)) === 0) await deps.groups.markDeleted(conversationId);
 }
 

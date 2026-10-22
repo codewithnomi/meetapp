@@ -8,6 +8,7 @@ import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
 import type { ChatRepository } from "../chat/chat.repository.ts";
+import type { LivePublisher } from "./chats-live.ts";
 import { saveNote } from "./chats-notes.ts";
 import { canChats, type ChatsAction } from "./chats.permissions.ts";
 import { directKeyOf, type ChatsRepository, type Conversation } from "./chats.repository.ts";
@@ -18,6 +19,8 @@ export type Place = Pick<Membership, "userId" | "workspaceId" | "kind">;
 
 export interface RequestsDeps {
   chat: ChatRepository;
+  /** The live line (D064): list changes and news reach people's apps. */
+  live: LivePublisher;
   chats: ChatsRepository;
   requests: ChatsRequestsRepository;
   limiter: RateLimiter;
@@ -51,6 +54,7 @@ async function reopen(deps: RequestsDeps, conversation: Conversation, starterId:
   if (other.member.state !== "pending" && other.member.state !== "declined") throw notFound();
   await takeRequest(deps, starterId);
   await deps.requests.setState(conversation.id, targetId, { state: "pending", requestedAt: now });
+  await deps.live.list([targetId], conversation.id, "added");
   return { id: conversation.id, created: false };
 }
 
@@ -81,6 +85,7 @@ export async function startExternalDirect(deps: RequestsDeps, membership: Member
     { userId, external: false, state: "accepted" },
     { userId: targetId, external: true, state: "pending" },
   ]);
+  if (made.created) await deps.live.list([userId, targetId], made.conversation.id, "added");
   return { id: made.conversation.id, created: made.created };
 }
 
@@ -133,6 +138,13 @@ async function ownRequest(deps: RequestsDeps, userId: string, conversationId: st
 async function accept(deps: RequestsDeps, userId: string, conversationId: string) {
   await ownRequest(deps, userId, conversationId, "accept");
   await deps.requests.setState(conversationId, userId, { state: "accepted", joinedAt: deps.now() });
+  const others = (await deps.chats.peopleOf([conversationId])).filter((p) => p.userId !== userId);
+  await deps.live.list([userId], conversationId, "added");
+  await deps.live.list(
+    others.map((p) => p.userId),
+    conversationId,
+    "changed",
+  );
 }
 
 /** Only people outside every team workspace you're in can be blocked (AC-F14-13, as in Teams). */
@@ -142,6 +154,8 @@ async function blockPerson(deps: RequestsDeps, userId: string, targetId: string)
     throw new AppError(400, "CHAT_INVALID", "This person can't be blocked.");
   }
   await deps.requests.block(userId, targetId);
+  // Their one-to-one chat turns read-only for both; both apps reload their lists (and status, T10).
+  await Promise.all([userId, targetId].map((id) => deps.live.control(id, { control: "refresh" })));
 }
 
 /** Delete: gone for the receiver, unchanged for the sender, no new request for 30 days (AC-F14-11). */
@@ -150,9 +164,10 @@ async function decline(deps: RequestsDeps, userId: string, conversationId: strin
   const sender = row.member.addedBy;
   if (block && sender) await blockPerson(deps, userId, sender);
   await deps.requests.setState(conversationId, userId, { state: "declined" });
+  await deps.live.list([userId], conversationId, "removed");
   if (row.conversation.kind === "group") {
     const me = (await deps.chats.peopleOf([conversationId])).find((p) => p.userId === userId);
-    await saveNote(deps.chat, row.conversation, { id: userId, name: me?.name ?? "" }, { event: "didnt_join" });
+    await saveNote(deps, row.conversation, { id: userId, name: me?.name ?? "" }, { event: "didnt_join" });
   }
   if (row.conversation.kind === "direct" && sender) {
     await deps.requests.coolDown(sender, userId, new Date(deps.now().getTime() + REQUEST_DAYS * DAY_MS));

@@ -66,10 +66,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-37, 38.
   - Built in T8b: migration `0008_chat_pins_per_conversation` (the 3-pin limit per chat), pins/polls/files/GIF settings on the shared seat (meeting organizers keep their poll rights), `/conversations/:id/pins`, `…/polls`, `…/attachments`, `…/gif-settings`; the file total is counted per conversation (500 MB meetings, 2 GB chats); 5 tests; F03's chat tests still pass. Virus scanning is still the open item before going online (progress.md).
 
-- [ ] **T9: The live line.**
+- [x] **T9: The live line.**
   - `GET /realtime` WebSocket: sign-in before opening, session end closes lines within 2 seconds, Redis channels per conversation and person, subscriptions updated within 2 seconds, typing, limits (64 KB, 5 lines, ping), catch-up after reconnect.
   - Covers: AC-F14-18, 20, 23, 34.
   - Tests: TC-F14-41, 43, 47, 64, 73, 74, 75.
+  - Built in T9: `@fastify/websocket` 11.3.1 (registered first in the app so every route sees upgrades), `GET /api/v1/realtime`, a hub per server (`chats-line.ts`) following `conv:<id>` and `user:<id>` Redis channels, news/notes/typing/read/list published by the services, the session re-checked every second, 64 KB / 5 lines / 2-minute ping limits, the typing timing helpers for the app (`apps/web/src/features/chats/typing.ts`); 10 integration + 2 unit tests. Found and fixed: the hub's Redis listener must queue subscriptions until connected. Note: the test helper `injectWS` never settles when a line is refused, so refusals are checked over a real connection. The desktop side (token on the upgrade, `connect-src`) is T13; `status` news is T10.
 
 - [ ] **T10: Status.**
   - Available, Away, Offline from the line (offline within 35 seconds), In a meeting from calls, locked computer; only colleagues and accepted contacts see it.

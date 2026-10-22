@@ -92,7 +92,7 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
     providers,
     profile: createProfileService(createProfileRepository(db), storage),
     ...workspacePieces({ config, db, redis, outbox }, limiter),
-    ...createMeetingPieces({ config, db, livekit, storage, outbox }, limiter),
+    ...createMeetingPieces({ config, db, livekit, storage, outbox, redis }, limiter),
   };
 }
 

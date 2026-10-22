@@ -20,6 +20,7 @@ import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
 import { chatAfterRoutes } from "./modules/chat/chat-after.routes.ts";
+import { chatsLineRoutes, registerWebSockets } from "./modules/chats/chats-line.routes.ts";
 import { chatsExtrasRoutes } from "./modules/chats/chats-extras.routes.ts";
 import { chatsMessagesRoutes } from "./modules/chats/chats-messages.routes.ts";
 import { chatsGroupsRoutes } from "./modules/chats/chats-groups.routes.ts";
@@ -91,6 +92,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     requestIdHeader: false,
   });
 
+  // First, so every route sees WebSocket upgrades (F14 live line, D064).
+  await registerWebSockets(app);
   recordRoutes(app);
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -108,12 +111,14 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
   // After CORS, so a 401 still carries its CORS headers and the app can read "signed out" (T8).
-  registerSessionCheck(app, options.accounts ? authSessionReader(options.accounts.auth) : undefined);
+  const sessions = options.accounts ? authSessionReader(options.accounts.auth) : undefined;
+  registerSessionCheck(app, sessions);
   if (config.NODE_ENV === "development") await registerDocs(app);
 
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) await registerAccountRoutes(app, config, options.accounts);
+  if (options.accounts && sessions) await app.register(chatsLineRoutes, { line: options.accounts.chatsLine, sessions });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }
