@@ -214,6 +214,9 @@
     },
     "nav": {
       "label": "Main",
+      "fold": "Collapse menu",
+      "unfold": "Expand menu",
+      "workspaceLetter": "Workspace: {{name}}",
       "home": "Home",
       "settings": "Settings",
       "people": "People",

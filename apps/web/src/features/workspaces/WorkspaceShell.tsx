@@ -6,6 +6,7 @@
 import { AppLayout, Notice, WorkspaceSwitcher, type AppNavItem, type IconName } from "@meetapp/ui";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavFolded } from "../chats/nav-folded.ts";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog.tsx";
 import { useCurrentWorkspace } from "./current-workspace.tsx";
 import type { MyWorkspace } from "./me.ts";
@@ -100,12 +101,32 @@ export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellP
   const { current, switchTo } = useCurrentWorkspace();
   const [creating, setCreating] = useState(false);
   const items = useNavItems(current, { screen, onNavigate });
+  const [folded, toggleFolded] = useNavFolded();
+  const nameOf = useWorkspaceName();
+  const name = current ? nameOf(current) : "";
   return (
     <>
       <AppLayout
         switcher={<Switcher onCreate={() => setCreating(true)} onJoin={() => onNavigate("join")} />}
         navLabel={t("workspaces.nav.label")}
         items={items}
+        fold={{
+          folded,
+          onToggle: toggleFolded,
+          foldLabel: t("workspaces.nav.fold"),
+          unfoldLabel: t("workspaces.nav.unfold"),
+          // Folded: the workspace's first letter; choosing it opens the menu with the switcher (as in Teams).
+          foldedSwitcher: (
+            <button
+              type="button"
+              aria-label={t("workspaces.nav.workspaceLetter", { name })}
+              onClick={toggleFolded}
+              className="grid size-9 place-items-center rounded-full bg-accent font-bold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            >
+              {name.slice(0, 1).toUpperCase()}
+            </button>
+          ),
+        }}
       >
         <ShellNotice />
         {children}

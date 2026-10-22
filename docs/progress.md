@@ -76,6 +76,7 @@
 - **F14 T11 done:** "Chat with people outside the workspace" setting (on by default; off makes outside chats read-only and refuses new ones), leaving or being removed from a workspace takes you out of its chats (one-to-one chats there turn read-only for the other person), account deletion's chat step, chats in the data export; 5 tests. **Open:** when workspace deletion is built, it must also delete the workspace's chat files from storage.
 - **F14 T12 done:** security sweeps: every chat address answers outsiders exactly like a chat that doesn't exist (the list of addresses is read from the server, so a new one can't be missed), each request state gets only what it may, refusals look alike, nothing private in logs. Found and fixed: an email typed into New chat's search was written into the server logs.
 - **F14 T13 done:** the desktop app's side of the live line: the token goes with it only to our backend, the security policy allows only that address, and "computer locked/unlocked" reaches the screens for the Away status; 5 tests.
+- **F14 T14 done:** the chat screen's building blocks in the approved look: status dot, chat list row, chat request card, To: people picker, typing indicator, Seen mark, history choice, chat list, conversation header, group details and the folding side menu (as in Teams, remembered on this computer); the time label; 28 tests. Next: T15, the Chat screen itself (milestone: the owner tries it).
 - **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)

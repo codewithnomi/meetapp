@@ -97,10 +97,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-76.
   - Built in T13: `applyApiAuth` covers the backend's `ws`/`wss` address, `connect-src` adds exactly that address, main forwards `powerMonitor` lock/unlock to the window, preload exposes `power.onLockChange(listener)` (returns "stop listening"); 3 unit tests, 2 desktop tests (`live-line.spec.ts`), the bridge list in `tests/e2e/desktop/desktop.ts` updated (TC-F02-113 still passes).
 
-- [ ] **T14: New UI building blocks.**
+- [x] **T14: New UI building blocks.**
   - `StatusDot`, `ChatListItem`, `ChatRequestCard`, `PeoplePicker`, `TypingIndicator`, `SeenMark`, `HistoryChoice`, `ChatList`, `ConversationHeader`, `GroupDetails`, `NavRail` (the folding menu in `AppLayout`), with stories, tests and screenshots.
   - Covers: AC-F14-01, 02, 36.
   - Tests: TC-F14-02, 79, 81.
+  - Built in T14: atoms `StatusDot` (+ icons `menu`, `phone`, `mail`, `muted`; Tooltip `side="right"`); molecules `ChatListItem`, `ChatRequestCard`, `PeoplePicker` (combobox), `TypingIndicator`, `SeenMark`, `HistoryChoice`; organisms `ChatList`, `ConversationHeader`, `GroupDetails`, `NavRail`; `AppLayout` now uses `NavRail` (folding is optional: the main menu folds, Settings' menu doesn't); the main menu folds with the choice kept in `meetapp.nav.folded` (`features/chats/nav-folded.ts`); the time label (`features/chats/time-label.ts`); stories for every state, 28 component and unit tests. Screenshot baselines for the new stories are made at `/spec-verify` with the other screenshots (D052); the `ui-reviewer` check runs there too.
 
 - [ ] **T15: The Chat screen (milestone).**
   - Side-menu Chat with its badge, the chat list and the conversation, New chat, the app's live-line client with reconnect and catch-up, meeting chats from the list.

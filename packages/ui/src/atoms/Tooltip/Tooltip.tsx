@@ -6,7 +6,8 @@ import type { ReactElement } from "react";
 export interface TooltipProps {
   /** Already translated; repeats a name, never new information. */
   label: string;
-  side?: "top" | "bottom";
+  /** "right": beside an item in the folded side menu (F14). */
+  side?: "top" | "bottom" | "right";
   /** Force open (for previews); normally hover/focus opens it. */
   open?: boolean;
   /** The trigger; it must be focusable (usually a button). */
