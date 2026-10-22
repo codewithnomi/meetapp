@@ -1,6 +1,7 @@
 // `pnpm test:load` (F02 T18, design.md section 10): the 100-person and 25-person load tests. Starts the
 // normal services, a call server of its own on port 7890 (infra/load, no reports to the backend), the
 // backend pointed at that call server, and builds the app; runs tests/load; then stops what it started.
+// Extra arguments go to Playwright (`pnpm test:load -- -g TC-F14-42` runs one test).
 // Takes about 15 minutes and much of the Mac's power; close `pnpm dev` first and leave the Mac idle.
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { join } from "node:path";
@@ -55,13 +56,26 @@ async function main(): Promise<number> {
   const backend = startBackend();
   try {
     if (!(await waitForBackend(apiUrl))) fail("The backend did not start.");
-    return run("caffeinate", ["-dims", "pnpm", "exec", "playwright", "test", "-c", "tests/load/playwright.config.ts"], {
-      ...process.env,
-      VITE_API_URL: apiUrl,
-      MEETAPP_E2E_API_URL: apiUrl,
-      MEETAPP_E2E_MAILPIT_URL: `http://${env["MAILPIT_HOST"] ?? "127.0.0.1"}:${env["MAILPIT_WEB_PORT"] ?? ""}`,
-      MEETAPP_E2E_LIVEKIT_PORT: LOAD_CALL_PORT,
-    });
+    return run(
+      "caffeinate",
+      [
+        "-dims",
+        "pnpm",
+        "exec",
+        "playwright",
+        "test",
+        "-c",
+        "tests/load/playwright.config.ts",
+        ...process.argv.slice(2).filter((arg) => arg !== "--"),
+      ],
+      {
+        ...process.env,
+        VITE_API_URL: apiUrl,
+        MEETAPP_E2E_API_URL: apiUrl,
+        MEETAPP_E2E_MAILPIT_URL: `http://${env["MAILPIT_HOST"] ?? "127.0.0.1"}:${env["MAILPIT_WEB_PORT"] ?? ""}`,
+        MEETAPP_E2E_LIVEKIT_PORT: LOAD_CALL_PORT,
+      },
+    );
   } finally {
     if (backend.pid) process.kill(-backend.pid);
     run("docker", [...LOAD, "--profile", "tool", "down", "--remove-orphans"]);

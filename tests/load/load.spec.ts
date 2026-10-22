@@ -1,12 +1,23 @@
 // Load tests (F02 T18; `pnpm test:load`, which starts the test call server and the backend first): the
 // desktop app in a meeting with 99 simulated people (TC-F02-41 gallery and sound, TC-F02-25 join time)
-// and with 24 (TC-F02-92 memory); chat delivery in the 100-person meeting (F03 TC-F03-02). The numbers are written to test-results/load-results.json; a target
+// and with 24 (TC-F02-92 memory); chat delivery in the 100-person meeting (F03 TC-F03-02); a 250-person
+// group chat delivering to the app (F14 TC-F14-42). The numbers are written to test-results/load-results.json; a target
 // that is missed fails the test, after every number was measured. The simulated people run on this same
 // Mac, so run it on an idle Mac (other work on it lowers every number; seen 2026-10-15).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { FAKE_MEDIA, launchNewAccount } from "../e2e/desktop/desktop.ts";
+import {
+  addMembers,
+  openLines,
+  removeMembers,
+  send,
+  startGroup,
+  userIdOf,
+  workspaceIdOf,
+  type Member,
+} from "./chat-crowd.ts";
 import { knockAsGuest } from "./chat-sender.ts";
 import {
   appMemoryMb,
@@ -23,6 +34,7 @@ import {
   type TileRate,
 } from "./measure.ts";
 import { simulate } from "./simulated.ts";
+import { createWorkspace, openScreen } from "../e2e/desktop/workspace-steps.ts";
 
 const RESULTS = join(import.meta.dirname, "test-results");
 const JOIN_RUNS = 20;
@@ -192,5 +204,51 @@ test("TC-F02-92 [AC-F02-47] 25 people for 5 minutes stay under 700 MB", async ()
     expect(highest, "Electron's memory under 700 MB (D056)").toBeLessThan(700);
   } finally {
     crowd.stop();
+  }
+});
+
+const GROUP_SIZE = 250;
+/** About three minutes of messages, one every 0.6 s from members in turn (well under 10 in 10 s each). */
+const GROUP_MESSAGES = 300;
+const GROUP_SPACING_MS = 600;
+
+test("TC-F14-42 [AC-F14-20] a 250-person group: messages reach the app within 1 s for 95%, no line dropped", async () => {
+  test.setTimeout(15 * 60_000);
+  const { page, email } = await launchNewAccount(undefined, undefined, [], "Load Owner");
+  const workspace = `Load ${String(Date.now())}`;
+  await createWorkspace(page, "Personal", workspace);
+  let members: Member[] = [];
+  try {
+    members = addMembers(workspace, GROUP_SIZE - 1);
+    const [starter] = members;
+    if (!starter) throw new Error("no simulated members");
+    const everyone = [userIdOf(email), ...members.slice(1).map((m) => m.id)];
+    const group = await startGroup(starter, workspaceIdOf(workspace), everyone, "Load group");
+    const lines = await openLines(members, group);
+    try {
+      await openScreen(page, "Chat");
+      await page.getByRole("button", { name: /^Load group/ }).click();
+      await expect(page.getByRole("log", { name: "Messages" })).toBeVisible();
+      await watchChat(page, "crowd-");
+      const sent: Record<string, number> = {};
+      for (let i = 0; i < GROUP_MESSAGES; i += 1) {
+        const sender = members[i % members.length] ?? starter;
+        const text = `crowd-${String(i)}`;
+        void send(sender, group, text).then((at) => (sent[text] = at));
+        await page.waitForTimeout(GROUP_SPACING_MS);
+      }
+      await expect.poll(async () => Object.keys(await chatSeen(page)).length, { timeout: 30_000 }).toBe(GROUP_MESSAGES);
+      await expect.poll(() => Math.min(...lines.received()), { timeout: 30_000 }).toBe(GROUP_MESSAGES);
+      const seen = await chatSeen(page);
+      const delays = Object.entries(sent).map(([text, at]) => (seen[text] ?? Number.POSITIVE_INFINITY) - at);
+      const p95 = percentile(delays, 95);
+      record("group250", { delays, p95, dropped: lines.dropped(), fewestReceived: Math.min(...lines.received()) });
+      expect.soft(lines.dropped(), "no live line dropped").toBe(0);
+      expect.soft(p95, "messages shown in the app within 1 s for 95% (AC-F14-20)").toBeLessThan(1_000);
+    } finally {
+      lines.stop();
+    }
+  } finally {
+    removeMembers(members);
   }
 });

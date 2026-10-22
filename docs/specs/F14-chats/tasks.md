@@ -121,10 +121,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-40, 44, 50.
   - Built in T17: announcing on Redis never fails the change (the publisher swallows Redis errors; saved news is caught up); the hub tells its lines `{ t: "polling", on }` when its Redis connection closes and returns; the app then refreshes the open chat every 10 s and the list every 30 s; `chats-line-parts.ts` holds the line's shapes (file-size rule). Tests: 2 desktop (`chats.spec.ts`: 20 messages, 95% under 1 second between windows; "Not sent", Retry twice, stored once), 1 integration (TC-F14-44 at server level: polling on and off, sending still works). The desktop half of TC-F14-44 (stopping the shared Redis while windows are open) is left for `/spec-verify`. **Watch:** TC-F14-53's "Offline" step took longer than 60 s once in a combined run on a busy Mac; it passed in the other runs.
 
-- [ ] **T18: Load test.**
+- [x] **T18: Load test.**
   - A 250-person group of simulated members on live lines delivering to the desktop app (`pnpm test:load`).
   - Covers: AC-F14-20.
   - Tests: TC-F14-42.
+  - Built in T18: `tests/load/chat-crowd.ts` writes the 249 simulated people straight into the test database (the backend allows 50 sign-ups an hour), each with a session only the test knows; each opens a live line with Node's own WebSocket and sends through the normal API. 300 messages over 3 minutes. First run (2026-10-22): 95% shown in the app within 337 ms (slowest 510 ms), every line got all 300, none dropped. `pnpm test:load -- -g TC-F14-42` runs just this test.
 
 - [ ] **T19: Keyboard, screen reader, translations and documentation.**
   - Keyboard-only run, announcements, translation keys, docs (API, runbooks, privacy-legal, project structure, READMEs).

@@ -41,8 +41,11 @@ Fills a meeting with simulated people and measures the app (TC-F02-25, 41, 92; t
 | Each tile's shown frames against the frames it receives | at least 90% |
 | Memory of the app in a 25-person meeting, 5 minutes | under 700 MB |
 | Chat: a message shown in the app (100 people, 50 messages, 95th percentile; F03) | under 1 s |
+| Group chat of 250: a message shown in the app (300 messages, 95th percentile; F14), no live line dropped | under 1 s |
 
 For chat, a sender joins the 100-person meeting through the backend as a guest (the app's organizer lets it in) and sends 50 messages 1.5 s apart (under the 10-in-10-seconds limit); the app notes when each one shows (`chat` in the results).
+
+For the 250-person group (F14 TC-F14-42, `group250` in the results), 249 people are written straight into the test database (the backend allows only 50 sign-ups an hour) with sessions only the test knows; each opens a live line and they send 300 messages over 3 minutes; they are removed afterwards. `pnpm test:load -- -g TC-F14-42` runs only this one (about 3 minutes).
 
 The 20 joins are spaced 7 seconds apart: the backend allows 10 joins a minute from one address (S5).
 
