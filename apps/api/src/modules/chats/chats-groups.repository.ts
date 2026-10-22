@@ -59,8 +59,25 @@ async function size(db: Database, conversationId: string) {
   return row?.n ?? 0;
 }
 
+/** The person's chats in a workspace (not meeting chats), for leaving it (AC-F14-34). */
+function inWorkspace(db: Database, workspaceId: string, userId: string) {
+  return db
+    .select({ conversation: conversations })
+    .from(conversationMembers)
+    .innerJoin(conversations, eq(conversations.id, conversationMembers.conversationId))
+    .where(
+      and(
+        eq(conversations.workspaceId, workspaceId),
+        eq(conversationMembers.userId, userId),
+        inArray(conversationMembers.state, ["accepted", "pending"]),
+        inArray(conversations.kind, ["direct", "group"]),
+      ),
+    );
+}
+
 export function createChatsGroupsRepository(db: Database) {
   return {
+    inWorkspace: (workspaceId: string, userId: string) => inWorkspace(db, workspaceId, userId),
     add: (conversation: { id: string; workspaceId: string }, people: GroupAddition[], by: string) =>
       add(db, conversation, people, by),
     size: (conversationId: string) => size(db, conversationId),

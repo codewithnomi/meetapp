@@ -41,6 +41,7 @@ import { createChatsExtrasService } from "./modules/chats/chats-extras.service.t
 import { createChatsMessagesRepository } from "./modules/chats/chats-messages.repository.ts";
 import { createChatsMessagesService } from "./modules/chats/chats-messages.service.ts";
 import { createChatsGroupsRepository } from "./modules/chats/chats-groups.repository.ts";
+import { createChatsMembershipService } from "./modules/chats/chats-membership.service.ts";
 import { createChatsGroupsService } from "./modules/chats/chats-groups.service.ts";
 import { createChatsRequestsRepository } from "./modules/chats/chats-requests.repository.ts";
 import { createChatsRequestsService } from "./modules/chats/chats-requests.service.ts";
@@ -85,8 +86,9 @@ const keyFor = (config: Config, label: string) =>
   Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", label, 32)).toString("hex");
 
 /** One-to-one and group chats (F14), built on meeting chat's pieces. */
-function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
-  const { config, db, storage, outbox, redis } = wiring;
+/** What the chats services share (F14). */
+function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter">) {
+  const { db, redis } = wiring;
   const chatsRepository = createChatsRepository(db);
   const requestsDeps = {
     chat: chatDeps.chat,
@@ -103,8 +105,19 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
     // News goes out on the live line (D064); apps also catch up from the saved news.
     publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
   };
+  const groupsDeps = { ...requestsDeps, groups: createChatsGroupsRepository(db) };
   const presence = createPresenceStore(redis);
   const status = createChatsStatusService({ ...requestsDeps, presence });
+  return { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status };
+}
+
+function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
+  const { config, storage, outbox, redis } = wiring;
+  const { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status } = chatsDepsFor({
+    wiring,
+    calls,
+    chatDeps,
+  });
   return {
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
     chats: createChatsService({
@@ -125,7 +138,8 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
       conversationsOf: (userId: string) => chatsRepository.activeConversationIds(userId),
       person: (userId: string) => messagesDeps.messages.person(userId),
     },
-    chatsGroups: createChatsGroupsService({ ...requestsDeps, groups: createChatsGroupsRepository(db) }),
+    chatsGroups: createChatsGroupsService(groupsDeps),
+    chatsMembership: createChatsMembershipService(groupsDeps),
     chatsPeople: createChatsPeopleService({
       chats: chatsRepository,
       limiter: calls.limiter,

@@ -26,6 +26,10 @@ export const CHATS_LIMITS = {
   linesPerPerson: 5,
 } as const;
 
+/** Why a chat is read-only (the app's note): a block, outside chat off, the other person left. */
+export const READ_ONLY_REASONS = ["blocked", "outside_off", "left_workspace", "left"] as const;
+export type ReadOnlyReason = (typeof READ_ONLY_REASONS)[number];
+
 export const LIST_FILTERS = ["all", "unread", "chats", "meetings"] as const;
 
 const person = z.object({
@@ -56,6 +60,8 @@ export const conversationListItemSchema = z
     muted: z.boolean(),
     /** Read-only: blocked direct chat, outside chat off, or left/removed (design 3.2). */
     readOnly: z.boolean(),
+    /** Why (for the note); `left`: this person left or was removed. */
+    readOnlyReason: z.enum(READ_ONLY_REASONS).nullable(),
     /** The starter's side of an unanswered request: "Waiting for <name> to accept" or, after 30 days,
      * "<name> didn't accept" (AC-F14-10, 12). A deleted request still reads "waiting" (AC-F14-11). */
     request: z.enum(["waiting", "not_accepted"]).nullable(),

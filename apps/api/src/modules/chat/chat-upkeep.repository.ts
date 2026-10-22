@@ -48,29 +48,37 @@ async function fillConversations(db: Database): Promise<number> {
 const joinsOf = (db: Executor, userId: string) =>
   db.select({ id: callAttendances.id }).from(callAttendances).where(eq(callAttendances.userId, userId));
 
+/** Files a person uploaded: through their joins of calls (F03) or their account (F14 chats, D066). */
+const uploadedBy = (userId: string, joins: string[]) =>
+  joins.length === 0
+    ? eq(chatAttachments.uploaderUserId, userId)
+    : or(inArray(chatAttachments.uploaderAttendanceId, joins), eq(chatAttachments.uploaderUserId, userId));
+
+const byJoinOrAccount = (table: typeof chatReactions, userId: string, joins: string[]) =>
+  joins.length === 0 ? eq(table.userId, userId) : or(inArray(table.attendanceId, joins), eq(table.userId, userId));
+
 /** A person's own messages and files, for a data request (privacy-legal.md). */
 async function exportFor(db: Database, userId: string) {
   const joins = (await joinsOf(db, userId)).map((join) => join.id);
   const messages = await db
     .select({
       meetingId: chatMessages.meetingId,
+      // F14: messages in one-to-one and group chats too (AC-F14-33).
+      conversationId: chatMessages.conversationId,
       createdAt: chatMessages.createdAt,
       kind: chatMessages.kind,
       text: chatMessages.plainText,
     })
     .from(chatMessages)
     .where(and(eq(chatMessages.senderUserId, userId), isNull(chatMessages.deletedAt)));
-  const files =
-    joins.length === 0
-      ? []
-      : await db
-          .select({
-            id: chatAttachments.id,
-            fileName: chatAttachments.fileName,
-            storageKey: chatAttachments.storageKey,
-          })
-          .from(chatAttachments)
-          .where(and(inArray(chatAttachments.uploaderAttendanceId, joins), eq(chatAttachments.status, "ready")));
+  const files = await db
+    .select({
+      id: chatAttachments.id,
+      fileName: chatAttachments.fileName,
+      storageKey: chatAttachments.storageKey,
+    })
+    .from(chatAttachments)
+    .where(and(uploadedBy(userId, joins), eq(chatAttachments.status, "ready")));
   return { messages, files };
 }
 
@@ -90,14 +98,16 @@ function forgetPerson(db: Database, userId: string) {
         deletedAt: new Date(),
       })
       .where(and(eq(chatMessages.senderUserId, userId), ne(chatMessages.kind, "system")));
-    if (joins.length === 0) return;
-    await tx
-      .update(chatAttachments)
-      .set({ status: "deleted" })
-      .where(inArray(chatAttachments.uploaderAttendanceId, joins));
-    await tx.delete(chatReactions).where(inArray(chatReactions.attendanceId, joins));
+    await tx.update(chatAttachments).set({ status: "deleted" }).where(uploadedBy(userId, joins));
+    await tx.delete(chatReactions).where(byJoinOrAccount(chatReactions, userId, joins));
     // Only named votes can be found; anonymous ones never point to a person.
-    await tx.delete(chatPollVotes).where(inArray(chatPollVotes.attendanceId, joins));
+    await tx
+      .delete(chatPollVotes)
+      .where(
+        joins.length === 0
+          ? eq(chatPollVotes.voterUserId, userId)
+          : or(inArray(chatPollVotes.attendanceId, joins), eq(chatPollVotes.voterUserId, userId)),
+      );
   });
 }
 

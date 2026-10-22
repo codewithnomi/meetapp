@@ -201,6 +201,25 @@ async function inCall(db: Database, userIds: string[]) {
   return new Set(rows.flatMap((row) => (row.userId ? [row.userId] : [])));
 }
 
+/** A deleted account (F14 AC-F14-33; F10 calls it with F03's step): requests it sent are withdrawn,
+ * requests it received removed, its blocks and 30-day waits go. */
+function forgetPerson(db: Database, userId: string) {
+  return db.transaction(async (tx) => {
+    await tx
+      .update(conversationMembers)
+      .set({ state: "declined" })
+      .where(and(eq(conversationMembers.addedBy, userId), eq(conversationMembers.state, "pending")));
+    await tx
+      .update(conversationMembers)
+      .set({ state: "declined" })
+      .where(and(eq(conversationMembers.userId, userId), eq(conversationMembers.state, "pending")));
+    await tx.delete(chatBlocks).where(or(eq(chatBlocks.blockerId, userId), eq(chatBlocks.blockedId, userId)));
+    await tx
+      .delete(chatRequestCooldowns)
+      .where(or(eq(chatRequestCooldowns.fromUser, userId), eq(chatRequestCooldowns.toUser, userId)));
+  });
+}
+
 export function createChatsRequestsRepository(db: Database) {
   return {
     pendingFor: (userId: string, since: Date) => pendingFor(db, userId, since),
@@ -231,6 +250,7 @@ export function createChatsRequestsRepository(db: Database) {
           set: { until, updatedAt: new Date() },
         }),
     statusAudience: (viewer: string) => statusAudience(db, viewer),
+    forgetPerson: (userId: string) => forgetPerson(db, userId),
     inCall: (userIds: string[]) => inCall(db, userIds),
     exists: async (userId: string) =>
       (await db.select({ id: user.id }).from(user).where(eq(user.id, userId))).length > 0,

@@ -183,6 +183,8 @@ export function createChatsRequestsService(deps: RequestsDeps) {
     unblock: async (userId: string, targetId: string) => {
       await deps.requests.unblock(userId, targetId);
     },
+    /** Account deletion's chats step (AC-F14-33); F03's `chatUpkeep.forgetPerson` removes the messages. */
+    forgetPerson: (userId: string) => deps.requests.forgetPerson(userId),
     blocked: async (userId: string) => ({
       people: (await deps.requests.blockedBy(userId)).map((p) => ({
         userId: p.userId,

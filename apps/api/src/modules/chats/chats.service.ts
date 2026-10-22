@@ -1,10 +1,11 @@
 // The chat list and starting chats (F14 design.md 3.1, 3.5; AC-F14-01–05, 07, 09, 15, 28, 35): one list
 // for one-to-one, group and meeting chats, newest activity first with pinned chats on top, unread counts,
 // filters and name search. A chat with someone outside the workspace is a request (chats-requests.service.ts).
-import { CHATS_LIMITS, type ConversationListItem, type Status } from "@meetapp/contracts";
+import { CHATS_LIMITS, type ConversationListItem, type ReadOnlyReason, type Status } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
 import { matchesNames } from "./chats.search.ts";
+import { readOnlyReason } from "./chats-readonly.ts";
 import type { ChatsRepository, Conversation, ConversationMember } from "./chats.repository.ts";
 import { groupFull } from "./chats-groups.service.ts";
 import { assertReachable, requestCutoff, startExternalDirect, type RequestsDeps } from "./chats-requests.service.ts";
@@ -91,7 +92,25 @@ async function directFacts(deps: ChatsDeps, userId: string, entries: Entry[], pe
   const others = people.filter((p) => p.userId !== userId && directIds.has(p.conversationId)).map((p) => p.userId);
   const blocks = await deps.requests.blocksBetween(userId, others);
   const blocked = new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId]));
-  return { blocked, statuses: await deps.statuses(userId, others) };
+  const workspaces = [...new Set(entries.map((e) => e.conversation.workspaceId))];
+  const allowed = await Promise.all(workspaces.map(async (id) => [id, await deps.requests.allowsOutside(id)] as const));
+  return { blocked, statuses: await deps.statuses(userId, others), outsideAllowed: new Map(allowed) };
+}
+
+type ListFacts = Awaited<ReturnType<typeof directFacts>>;
+
+/** The note a read-only chat shows (AC-F14-13, 18, 27, 34); meeting chats follow F03's rules. */
+function reasonFor(entry: Entry, userId: string, people: Person[], facts: ListFacts): ReadOnlyReason | null {
+  if (!entry.member) return null;
+  if (entry.member.state !== "accepted") return "left";
+  const mine = people.filter((p) => p.conversationId === entry.conversation.id);
+  return readOnlyReason({
+    kind: entry.conversation.kind,
+    userId,
+    people: mine,
+    blocked: mine.some((p) => p.userId !== userId && facts.blocked.has(p.userId)),
+    outsideAllowed: facts.outsideAllowed.get(entry.conversation.workspaceId) ?? true,
+  });
 }
 
 async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise<Built[]> {
@@ -101,7 +120,8 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
     deps.chats.lastMessages(ids),
     deps.chats.unreadCounts(userId, ids),
   ]);
-  const { blocked, statuses } = await directFacts(deps, userId, entries, people);
+  const facts = await directFacts(deps, userId, entries, people);
+  const { statuses } = facts;
   const now = deps.now();
   return entries.map((entry) => {
     const id = entry.conversation.id;
@@ -120,10 +140,8 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
       mentioned: unread.find((row) => row.conversationId === id)?.mentioned ?? false,
       pinned: Boolean(entry.member?.pinnedAt),
       muted: entry.member?.muted ?? false,
-      readOnly: entry.member
-        ? entry.member.state !== "accepted" ||
-          (entry.conversation.kind === "direct" && others.some((p) => blocked.has(p.userId)))
-        : false,
+      readOnly: reasonFor(entry, userId, people, facts) !== null,
+      readOnlyReason: reasonFor(entry, userId, people, facts),
       request: requestOf(entry, others, now),
     };
     const activity = (last?.createdAt ?? entry.conversation.createdAt).getTime();

@@ -78,10 +78,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-51, 52.
   - Built in T10: the status rule (`chats-status.ts`), presence in Redis per line (`chats-presence.ts`), the status service (who may see: colleagues and accepted contacts, minus blocks), `status` news on `status:<id>` channels followed only by allowed lines, a 30-second sweep (Away after 5 idle minutes, calls), Offline 30 seconds after the last line closes, `GET /people/status?ids=`, status in the chat list and New chat suggestions; 2 tests. The hub now finishes its status work before the server closes. The locked-computer signal from the desktop is T13; removal from a workspace stopping status is T11.
 
-- [ ] **T11: Workspace setting, leaving a workspace, deletion and export.**
+- [x] **T11: Workspace setting, leaving a workspace, deletion and export.**
   - Outside chat on and off (both sides, several workspaces), removed from or leaving a workspace, account deletion step and data export, workspace deletion.
   - Covers: AC-F14-27, 33, 34, 35.
   - Tests: TC-F14-54, 55, 56, 69, 70, 71.
+  - Built in T11: `allowOutsideChat` in the workspace settings (owner and admins), read-only reasons for the app's note (`readOnlyReason` in the list: blocked, outside_off, left_workspace, left; `CHAT_OUTSIDE_OFF` on sends), `chats.forgetMembership` called by F01's remove and leave (notes, read-only one-to-one chats, lines refreshed), `chatsRequests.forgetPerson` for account deletion (F10 calls it with F03's `chatUpkeep.forgetPerson`, which now also covers the account columns of D066), the export includes chats; 5 tests. Workspace deletion doesn't exist yet: the database already removes a workspace's chats with it (cascade); removing their stored files belongs to the step that builds workspace deletion.
 
 - [ ] **T12: Security sweeps.**
   - The outsider sweep over every new route and the live line; same-looking refusals; no chat text, file names or emails in logs.

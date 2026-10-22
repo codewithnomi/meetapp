@@ -65,6 +65,7 @@ const summary = {
   role: workspaceMembers.role,
   allowGuests: workspaces.allowGuests,
   allowGifs: workspaces.allowGifs,
+  allowOutsideChat: workspaces.allowOutsideChat,
 };
 
 export function createWorkspacesRepository(executor: Executor) {
@@ -146,7 +147,7 @@ function changes(executor: Executor) {
           .returning({ id: workspaces.id, name: workspaces.name });
         if (!created) throw new Error("the new workspace row was not returned");
         await tx.insert(workspaceMembers).values({ workspaceId: created.id, userId, role: "owner" });
-        const switches = { allowGuests: true, allowGifs: true };
+        const switches = { allowGuests: true, allowGifs: true, allowOutsideChat: true };
         return { id: created.id, name: created.name, kind: "company", role: "owner", ...switches };
       }),
     setSettings: async (workspaceId: string, settings: WorkspaceSettings): Promise<void> => {

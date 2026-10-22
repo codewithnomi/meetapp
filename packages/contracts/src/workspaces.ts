@@ -18,6 +18,8 @@ export const workspaceSchema = z
     allowGuests: z.boolean(),
     /** GIFs in meeting chat (AC-F03-27). */
     allowGifs: z.boolean(),
+    /** Chat with people outside the workspace (AC-F14-27). */
+    allowOutsideChat: z.boolean(),
   })
   .meta({ id: "Workspace" });
 

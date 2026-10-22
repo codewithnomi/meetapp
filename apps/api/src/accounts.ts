@@ -24,7 +24,7 @@ import { createJoinLinkService } from "./modules/join-requests/join-link.service
 import { createJoinRequestsRepository } from "./modules/join-requests/join-requests.repository.ts";
 import { createJoinRequestsService } from "./modules/join-requests/join-requests.service.ts";
 import { createJoinSecrets } from "./modules/join-requests/join-secret.ts";
-import { createWorkspacesService } from "./modules/workspaces/workspaces.service.ts";
+import { createWorkspacesService, type MembershipHooks } from "./modules/workspaces/workspaces.service.ts";
 import { createAuth, hashPassword, issueSession } from "./plugins/auth.ts";
 import { createIdempotency, redisIdempotencyStore } from "./plugins/idempotency.ts";
 import { passwordAuth, providerAuth } from "./plugins/auth-bridges.ts";
@@ -66,7 +66,33 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
   });
   const passwords = createPasswordsService({ auth: passwordAuth(auth), limiter });
   const providers = signInProviders(config);
-  const desktopSignIn = createDesktopSignInService({
+  const desktopSignIn = desktopSignInFor(
+    { config, redis, storage, log },
+    { auth, workspaces, limiter, accountsRepository, providers },
+  );
+  const meetingPieces = createMeetingPieces({ config, db, livekit, storage, outbox, redis }, limiter);
+  return {
+    auth,
+    limiter,
+    service,
+    signUp,
+    passwords,
+    desktopSignIn,
+    providers,
+    profile: createProfileService(createProfileRepository(db), storage),
+    ...workspacePieces({ config, db, redis, outbox }, limiter, {
+      memberGone: (workspaceId, userId) => meetingPieces.chatsMembership.forgetMembership(workspaceId, userId),
+    }),
+    ...meetingPieces,
+  };
+}
+
+/** Google and Microsoft sign-in through the browser (F01). */
+function desktopSignInFor(
+  { config, redis, storage, log }: Pick<AccountsWiring, "config" | "redis" | "storage" | "log">,
+  { auth, workspaces, limiter, accountsRepository, providers }: SignInParts,
+) {
+  return createDesktopSignInService({
     repository: createDesktopSignInsRepository(redis),
     auth: providerAuth(auth),
     enabled: providers,
@@ -82,28 +108,25 @@ export function createAccounts({ config, db, redis, outbox, log, trustedOrigins,
         log.warn({ problem: problem instanceof Error ? problem.name : "unknown" }, "provider photo not copied"),
     }),
   });
-  return {
-    auth,
-    limiter,
-    service,
-    signUp,
-    passwords,
-    desktopSignIn,
-    providers,
-    profile: createProfileService(createProfileRepository(db), storage),
-    ...workspacePieces({ config, db, redis, outbox }, limiter),
-    ...createMeetingPieces({ config, db, livekit, storage, outbox, redis }, limiter),
-  };
+}
+
+interface SignInParts {
+  auth: ReturnType<typeof createAuth>;
+  workspaces: ReturnType<typeof createWorkspacesRepository>;
+  limiter: ReturnType<typeof createRateLimiter>;
+  accountsRepository: ReturnType<typeof createAccountsRepository>;
+  providers: ReturnType<typeof signInProviders>;
 }
 
 /** Workspaces, invitations, joining, the membership check and repeat-safe creates. */
 function workspacePieces(
   { config, db, redis, outbox }: Pick<AccountsWiring, "config" | "db" | "redis" | "outbox">,
   limiter: ReturnType<typeof createRateLimiter>,
+  hooks: MembershipHooks,
 ) {
   const workspaces = createWorkspacesRepository(db);
   return {
-    workspaces: createWorkspacesService(workspaces),
+    workspaces: createWorkspacesService(workspaces, hooks),
     invitations: createInvitationsService({
       repository: createInvitationsRepository(db),
       memberRole: workspaces.memberRole,

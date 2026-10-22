@@ -49,6 +49,7 @@ export const ERROR_CODES = [
   "CHAT_PIN_LIMIT",
   "CHAT_GROUP_FULL",
   "CHAT_READ_ONLY",
+  "CHAT_OUTSIDE_OFF",
   "CHAT_REQUEST_LIMIT",
 ] as const;
 

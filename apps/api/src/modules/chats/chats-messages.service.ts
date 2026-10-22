@@ -11,7 +11,9 @@ import { CHAT_FILE_BYTES, type ChatSeat } from "../chat/chat-seat.ts";
 import { eventsFor, oneFor, pageFor, readable, sendFrom, type SendInput } from "../chat/chat.service.ts";
 import { cleanMentions, seenApplies } from "./chats-mentions.ts";
 import type { ChatsMessagesRepository } from "./chats-messages.repository.ts";
+import type { Conversation, ConversationMember } from "./chats.repository.ts";
 import { canChats, type ChatsAction } from "./chats.permissions.ts";
+import { readOnlyReason } from "./chats-readonly.ts";
 import type { RequestsDeps } from "./chats-requests.service.ts";
 
 export interface MessagesDeps extends RequestsDeps {
@@ -23,7 +25,37 @@ export interface MessagesDeps extends RequestsDeps {
 }
 
 const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
+const outsideOff = () => new AppError(403, "CHAT_OUTSIDE_OFF", "Chat with people outside the workspace is turned off.");
 const readOnly = () => new AppError(403, "CHAT_READ_ONLY", "You can't send messages in this chat.");
+
+interface Place {
+  userId: string;
+  conversation: Conversation;
+  member: ConversationMember;
+  people: Awaited<ReturnType<MessagesDeps["chats"]["peopleOf"]>>;
+  other: Place["people"][number] | undefined;
+}
+
+/** The facts the rights table needs, with why a member's chat may be read-only (AC-F14-13, 27, 34). */
+async function factsOf(deps: MessagesDeps, { userId, conversation, member, people, other }: Place) {
+  const reason = readOnlyReason({
+    kind: conversation.kind,
+    userId,
+    people,
+    blocked: other ? (await deps.requests.blocksBetween(userId, [other.userId])).length > 0 : false,
+    outsideAllowed: await deps.requests.allowsOutside(conversation.workspaceId),
+  });
+  return {
+    kind: conversation.kind === "direct" ? ("direct" as const) : ("group" as const),
+    state: member.state,
+    outOfWorkspace: false,
+    external: member.external,
+    otherExternal: other?.external ?? false,
+    blocked: reason === "blocked" || reason === "left_workspace",
+    outsideOffWithExternal: reason === "outside_off",
+    reason,
+  };
+}
 
 /** The person's seat in the chat, if `action` is allowed; 404 for anyone outside it. */
 export async function seatIn(deps: MessagesDeps, userId: string, conversationId: string, action: ChatsAction) {
@@ -32,20 +64,11 @@ export async function seatIn(deps: MessagesDeps, userId: string, conversationId:
   const { conversation, member } = row;
   const people = await deps.chats.peopleOf([conversationId]);
   const other = conversation.kind === "direct" ? people.find((p) => p.userId !== userId) : undefined;
-  const blocked = other ? (await deps.requests.blocksBetween(userId, [other.userId])).length > 0 : false;
-  const facts = {
-    kind: conversation.kind === "direct" ? ("direct" as const) : ("group" as const),
-    state: member.state,
-    outOfWorkspace: false,
-    external: member.external,
-    otherExternal: other?.external ?? false,
-    blocked,
-    outsideOffWithExternal: false,
-  };
+  const facts = await factsOf(deps, { userId, conversation, member, people, other });
   if (!canChats(action, facts)) {
     const openChat = { ...facts, blocked: false, outsideOffWithExternal: false };
-    if (member.state === "accepted" && canChats(action, openChat)) throw readOnly();
-    throw notFound();
+    if (member.state !== "accepted" || !canChats(action, openChat)) throw notFound();
+    throw facts.reason === "outside_off" ? outsideOff() : readOnly();
   }
   const me = await deps.messages.person(userId);
   const ended = member.state === "left" || member.state === "removed";

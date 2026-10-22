@@ -163,6 +163,8 @@ export {
   LIST_FILTERS,
   MEMBER_STATES,
   STATUSES,
+  READ_ONLY_REASONS,
+  type ReadOnlyReason,
   addPeopleBodySchema,
   conversationMessageParamsSchema,
   conversationReactionParamsSchema,
