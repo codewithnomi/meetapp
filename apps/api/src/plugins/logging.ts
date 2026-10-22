@@ -70,6 +70,8 @@ export const SENSITIVE_QUERY_PARAMS = [
   // The desktop sign-in's request id (desktop/start and desktop/done, F01): with it a browser could
   // finish someone else's sign-in, so it is treated like a secret.
   "request",
+  // Search words (F14 chat list and New chat): names and whole email addresses people typed (AC-F14-32).
+  "q",
 ];
 
 const SENSITIVE_NAMES = new Set(SENSITIVE_QUERY_PARAMS);

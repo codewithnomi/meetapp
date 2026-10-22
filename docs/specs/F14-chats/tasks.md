@@ -84,10 +84,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-54, 55, 56, 69, 70, 71.
   - Built in T11: `allowOutsideChat` in the workspace settings (owner and admins), read-only reasons for the app's note (`readOnlyReason` in the list: blocked, outside_off, left_workspace, left; `CHAT_OUTSIDE_OFF` on sends), `chats.forgetMembership` called by F01's remove and leave (notes, read-only one-to-one chats, lines refreshed), `chatsRequests.forgetPerson` for account deletion (F10 calls it with F03's `chatUpkeep.forgetPerson`, which now also covers the account columns of D066), the export includes chats; 5 tests. Workspace deletion doesn't exist yet: the database already removes a workspace's chats with it (cascade); removing their stored files belongs to the step that builds workspace deletion.
 
-- [ ] **T12: Security sweeps.**
+- [x] **T12: Security sweeps.**
   - The outsider sweep over every new route and the live line; same-looking refusals; no chat text, file names or emails in logs.
   - Covers: AC-F14-31, 32.
   - Tests: TC-F14-63, 67, 68.
+  - Built in T12: `chats-security.integration.test.ts`: the outsider sweep generated from the server's route list (every `:conversationId` route answers three kinds of outsiders exactly as for a missing chat), each membership state (TC-F14-66, moved here from T6), same-looking refusals with timing, and a log scan with marker strings. Found and fixed: search words (`?q=`, which can hold a typed email) were written into request logs and traces; `q` is now hidden like other sensitive query values.
 
 ## Desktop and app
 - [ ] **T13: Desktop: the live line's token, security policy and lock events.**
