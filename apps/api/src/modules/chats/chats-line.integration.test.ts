@@ -299,3 +299,48 @@ describe("catching up", { timeout: 60_000 }, () => {
     expect(list.conversations.find((c) => c.id === id)?.unread).toBe(29);
   });
 });
+
+describe("status", { timeout: 60_000 }, () => {
+  const statusOf = async (viewer: Person, target: Person) =>
+    (await call(viewer.token, "GET", `/api/v1/people/status?ids=${target.id}`)).json<{
+      statuses: { userId: string; status: string }[];
+    }>().statuses;
+
+  it("TC-F14-52 [AC-F14-26, AC-F14-13] colleagues and accepted contacts see status; others never do", async () => {
+    const { people, workspaceId } = await team("s52", 2);
+    const [m1, m2] = people as [Person, Person];
+    const [e1, e2, e3, x1] = await Promise.all(
+      ["e1", "e2", "e3", "x1"].map((label) => namedPerson(t, `s52-${label}`, label.toUpperCase())),
+    );
+    const outside = [e1, e2, e3] as Person[];
+    const ids = await Promise.all(outside.map((p) => start(m1, workspaceId, [p])));
+    await call((e1 as Person).token, "POST", `/api/v1/conversations/${ids[0] ?? ""}/accept`);
+    await call((e3 as Person).token, "POST", `/api/v1/conversations/${ids[2] ?? ""}/accept`);
+    await call(m1.token, "POST", "/api/v1/me/blocked", { userId: (e3 as Person).id });
+
+    const watchers = [m2, e1, e2, e3, x1] as Person[];
+    const lines = await Promise.all(watchers.map((p) => line(p)));
+    const m1Line = await line(m1);
+    await until(() => lines[0]?.got.find((m) => m.t === "status"));
+    await settle(500);
+    const gotStatus = lines.map((l) => l.got.some((m) => m.t === "status" && m.userId === m1.id));
+    expect(gotStatus).toEqual([true, true, false, false, false]);
+
+    const seen = await Promise.all(watchers.map((p) => statusOf(p, m1)));
+    expect(seen.map((list) => list[0]?.status ?? null)).toEqual(["available", "available", null, null, null]);
+    const list = (await call(m2.token, "GET", `/api/v1/workspaces/${workspaceId}/conversations`)).json<{
+      conversations: { status: string | null }[];
+    }>();
+    expect(list.conversations).toEqual([]); // M2 has no chat with M1 yet: status shows where they are listed
+
+    // Blocking E1 stops E1's status news at once.
+    await call(m1.token, "POST", "/api/v1/me/blocked", { userId: (e1 as Person).id });
+    await settle(500);
+    const before = lines[1]?.got.length ?? 0;
+    m1Line.ws.send(JSON.stringify({ t: "active", active: false }));
+    await until(() => lines[0]?.got.find((m) => m.t === "status" && m.status === "away"));
+    await settle(300);
+    expect(lines[1]?.got.slice(before).some((m) => m.t === "status")).toBe(false);
+    for (const opened of [...lines, m1Line]) opened.ws.terminate();
+  });
+});

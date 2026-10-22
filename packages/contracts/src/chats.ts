@@ -136,6 +136,17 @@ export const seenSchema = z
   .meta({ id: "ChatSeen" });
 export const myChatPrefsBodySchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefs" });
 
+/** Statuses of up to 100 people (AC-F14-26); people the asker may not see are left out. */
+export const statusQuerySchema = z.object({
+  ids: z
+    .string()
+    .transform((value) => value.split(",").filter(Boolean))
+    .pipe(z.array(z.uuid()).max(100)),
+});
+export const statusesSchema = z
+  .object({ statuses: z.array(z.object({ userId: z.uuid(), status: z.enum(STATUSES) })) })
+  .meta({ id: "ChatStatuses" });
+
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
 /** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */
 const chatRequestSchema = z

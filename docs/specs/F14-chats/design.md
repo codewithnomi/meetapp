@@ -152,6 +152,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 | `GET /me/blocked`, `POST /me/blocked` (`{ userId }`, block from an accepted chat), `DELETE /me/blocked/:userId` | Settings → Privacy, AC-13 |
 | `PATCH /me/settings` (`{ readReceipts }`) | AC-24 |
 | `GET /realtime` (WebSocket) | the live line, 3.4 |
+| `GET /people/status?ids=` | statuses the asker may see (others left out), AC-26; added in T10 |
 - Meeting chat keeps F03's `/calls/:callId/chat/…` routes during a call (they find the meeting's conversation).
 
 ## Edge cases & errors

@@ -118,7 +118,12 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) await registerAccountRoutes(app, config, options.accounts);
-  if (options.accounts && sessions) await app.register(chatsLineRoutes, { line: options.accounts.chatsLine, sessions });
+  if (options.accounts && sessions)
+    await app.register(chatsLineRoutes, {
+      line: options.accounts.chatsLine,
+      sessions,
+      status: options.accounts.chatsStatus,
+    });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }

@@ -1,12 +1,13 @@
 // What goes out on the live line (D064; F14 design.md 3.4): news of a chat on `conv:<id>`, list changes
 // and line controls on `user:<id>`. Published through Redis so every API server hears it and passes it
 // to its own connected lines (one Redis message per news item, TC-F14-43).
-import type { ChatEvent, LineServerMessage } from "@meetapp/contracts";
+import type { ChatEvent, LineServerMessage, Status } from "@meetapp/contracts";
 import type { Redis } from "ioredis";
 
 export const channels = {
   conversation: (id: string) => `meetapp:chats:conv:${id}`,
   user: (id: string) => `meetapp:chats:user:${id}`,
+  status: (id: string) => `meetapp:chats:status:${id}`,
 };
 
 /** Internal notes between servers on a person's channel; never forwarded to apps. */
@@ -30,6 +31,7 @@ export function createLivePublisher(redis: Redis) {
       send(channels.conversation(conversationId), { t: "read", conversationId, userId, seq }),
     typing: (conversationId: string, userId: string, name: string) =>
       send(channels.conversation(conversationId), { t: "typing", conversationId, userId, name }),
+    status: (userId: string, status: Status) => send(channels.status(userId), { t: "status", userId, status }),
     control: (userId: string, control: LineControl) => send(channels.user(userId), control),
   };
 }

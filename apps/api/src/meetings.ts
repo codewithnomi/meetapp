@@ -49,6 +49,8 @@ import type { ChatEvent } from "@meetapp/contracts";
 import type { Redis } from "ioredis";
 import type { Outbox } from "./emails/outbox.ts";
 import { createLivePublisher } from "./modules/chats/chats-live.ts";
+import { createPresenceStore } from "./modules/chats/chats-presence.ts";
+import { createChatsStatusService } from "./modules/chats/chats-status.service.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -101,16 +103,25 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
     // News goes out on the live line (D064); apps also catch up from the saved news.
     publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
   };
+  const presence = createPresenceStore(redis);
+  const status = createChatsStatusService({ ...requestsDeps, presence });
   return {
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
-    chats: createChatsService({ ...requestsDeps, readableMeetings: (userId) => chatAfter.readable(userId) }),
+    chats: createChatsService({
+      ...requestsDeps,
+      readableMeetings: (userId) => chatAfter.readable(userId),
+      statuses: (viewer, ids) => status.visible(viewer, ids),
+    }),
     chatsRequests: createChatsRequestsService(requestsDeps),
     chatsMessages: createChatsMessagesService(messagesDeps),
     chatsExtras: createChatsExtrasService({ ...messagesDeps, storage }),
     /** What each server's live line needs (D064). */
+    chatsStatus: status,
     chatsLine: {
       redis,
       live: requestsDeps.live,
+      presence,
+      status,
       conversationsOf: (userId: string) => chatsRepository.activeConversationIds(userId),
       person: (userId: string) => messagesDeps.messages.person(userId),
     },
@@ -120,6 +131,7 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
       limiter: calls.limiter,
       outbox,
       publicUrl: config.APP_PUBLIC_URL,
+      statuses: (viewer, ids) => status.visible(viewer, ids),
     }),
   };
 }

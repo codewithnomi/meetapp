@@ -3,6 +3,7 @@
 // Database access only.
 import {
   type Database,
+  callAttendances,
   chatBlocks,
   chatMessages,
   chatRequestCooldowns,
@@ -156,6 +157,50 @@ function directsByKey(db: Database, directKey: string, userId: string) {
     );
 }
 
+/** People whose status `viewer` may see (AC-F14-26): colleagues in shared team workspaces and people in
+ * a chat where both have accepted; never anyone blocked either way. */
+async function statusAudience(db: Database, viewer: string) {
+  const colleagues = await db
+    .selectDistinct({ userId: workspaceMembers.userId })
+    .from(workspaceMembers)
+    .innerJoin(workspaces, eq(workspaces.id, workspaceMembers.workspaceId))
+    .where(
+      and(
+        ne(workspaces.kind, "personal"),
+        inArray(
+          workspaceMembers.workspaceId,
+          db
+            .select({ id: workspaceMembers.workspaceId })
+            .from(workspaceMembers)
+            .where(eq(workspaceMembers.userId, viewer)),
+        ),
+      ),
+    );
+  const mine = db
+    .select({ id: conversationMembers.conversationId })
+    .from(conversationMembers)
+    .where(and(eq(conversationMembers.userId, viewer), eq(conversationMembers.state, "accepted")));
+  const contacts = await db
+    .selectDistinct({ userId: conversationMembers.userId })
+    .from(conversationMembers)
+    .where(and(inArray(conversationMembers.conversationId, mine), eq(conversationMembers.state, "accepted")));
+  const people = new Set([...colleagues, ...contacts].map((row) => row.userId));
+  people.delete(viewer);
+  const blocks = await blocksBetween(db, viewer, [...people]);
+  for (const block of blocks) people.delete(block.blockerId === viewer ? block.blockedId : block.blockerId);
+  return people;
+}
+
+/** Which of these people are in a call now ("In a meeting", AC-F14-26). */
+async function inCall(db: Database, userIds: string[]) {
+  if (userIds.length === 0) return new Set<string>();
+  const rows = await db
+    .selectDistinct({ userId: callAttendances.userId })
+    .from(callAttendances)
+    .where(and(inArray(callAttendances.userId, userIds), inArray(callAttendances.status, ["admitted", "in_call"])));
+  return new Set(rows.flatMap((row) => (row.userId ? [row.userId] : [])));
+}
+
 export function createChatsRequestsRepository(db: Database) {
   return {
     pendingFor: (userId: string, since: Date) => pendingFor(db, userId, since),
@@ -185,6 +230,8 @@ export function createChatsRequestsRepository(db: Database) {
           target: [chatRequestCooldowns.fromUser, chatRequestCooldowns.toUser],
           set: { until, updatedAt: new Date() },
         }),
+    statusAudience: (viewer: string) => statusAudience(db, viewer),
+    inCall: (userIds: string[]) => inCall(db, userIds),
     exists: async (userId: string) =>
       (await db.select({ id: user.id }).from(user).where(eq(user.id, userId))).length > 0,
     coolingDown: (fromUser: string, toUser: string, now: Date) => coolingDown(db, fromUser, toUser, now),

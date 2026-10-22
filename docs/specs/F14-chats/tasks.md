@@ -72,10 +72,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-41, 43, 47, 64, 73, 74, 75.
   - Built in T9: `@fastify/websocket` 11.3.1 (registered first in the app so every route sees upgrades), `GET /api/v1/realtime`, a hub per server (`chats-line.ts`) following `conv:<id>` and `user:<id>` Redis channels, news/notes/typing/read/list published by the services, the session re-checked every second, 64 KB / 5 lines / 2-minute ping limits, the typing timing helpers for the app (`apps/web/src/features/chats/typing.ts`); 10 integration + 2 unit tests. Found and fixed: the hub's Redis listener must queue subscriptions until connected. Note: the test helper `injectWS` never settles when a line is refused, so refusals are checked over a real connection. The desktop side (token on the upgrade, `connect-src`) is T13; `status` news is T10.
 
-- [ ] **T10: Status.**
+- [x] **T10: Status.**
   - Available, Away, Offline from the line (offline within 35 seconds), In a meeting from calls, locked computer; only colleagues and accepted contacts see it.
   - Covers: AC-F14-26.
   - Tests: TC-F14-51, 52.
+  - Built in T10: the status rule (`chats-status.ts`), presence in Redis per line (`chats-presence.ts`), the status service (who may see: colleagues and accepted contacts, minus blocks), `status` news on `status:<id>` channels followed only by allowed lines, a 30-second sweep (Away after 5 idle minutes, calls), Offline 30 seconds after the last line closes, `GET /people/status?ids=`, status in the chat list and New chat suggestions; 2 tests. The hub now finishes its status work before the server closes. The locked-computer signal from the desktop is T13; removal from a workspace stopping status is T11.
 
 - [ ] **T11: Workspace setting, leaving a workspace, deletion and export.**
   - Outside chat on and off (both sides, several workspaces), removed from or leaving a workspace, account deletion step and data export, workspace deletion.

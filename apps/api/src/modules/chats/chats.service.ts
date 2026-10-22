@@ -1,7 +1,7 @@
 // The chat list and starting chats (F14 design.md 3.1, 3.5; AC-F14-01–05, 07, 09, 15, 28, 35): one list
 // for one-to-one, group and meeting chats, newest activity first with pinned chats on top, unread counts,
 // filters and name search. A chat with someone outside the workspace is a request (chats-requests.service.ts).
-import { CHATS_LIMITS, type ConversationListItem } from "@meetapp/contracts";
+import { CHATS_LIMITS, type ConversationListItem, type Status } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
 import { matchesNames } from "./chats.search.ts";
@@ -17,6 +17,8 @@ interface ReadableMeeting {
 
 export interface ChatsDeps extends RequestsDeps {
   chats: ChatsRepository;
+  /** Statuses `viewer` may see (AC-F14-26). */
+  statuses: (viewer: string, userIds: string[]) => Promise<Map<string, Status>>;
   /** Meetings whose chat the person may read now (F03's rules, AC-F14-28). */
   readableMeetings: (userId: string) => Promise<ReadableMeeting[]>;
 }
@@ -83,6 +85,15 @@ function requestOf(entry: Entry, others: Person[], now: Date): ConversationListI
 const shownIn = (entry: Entry, person: Person) =>
   person.state === "accepted" || (entry.conversation.kind === "direct" && person.state !== "left");
 
+/** For one-to-one chats: who is blocked either way, and the statuses the person may see. */
+async function directFacts(deps: ChatsDeps, userId: string, entries: Entry[], people: Person[]) {
+  const directIds = new Set(entries.filter((e) => e.conversation.kind === "direct").map((e) => e.conversation.id));
+  const others = people.filter((p) => p.userId !== userId && directIds.has(p.conversationId)).map((p) => p.userId);
+  const blocks = await deps.requests.blocksBetween(userId, others);
+  const blocked = new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId]));
+  return { blocked, statuses: await deps.statuses(userId, others) };
+}
+
 async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise<Built[]> {
   const ids = entries.map((entry) => entry.conversation.id);
   const [people, lasts, unread] = await Promise.all([
@@ -90,16 +101,7 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
     deps.chats.lastMessages(ids),
     deps.chats.unreadCounts(userId, ids),
   ]);
-  const directOthers = people.filter(
-    (p) =>
-      p.userId !== userId &&
-      entries.some((e) => e.conversation.id === p.conversationId && e.conversation.kind === "direct"),
-  );
-  const blocks = await deps.requests.blocksBetween(
-    userId,
-    directOthers.map((p) => p.userId),
-  );
-  const blocked = new Set(blocks.flatMap((b) => [b.blockerId, b.blockedId]));
+  const { blocked, statuses } = await directFacts(deps, userId, entries, people);
   const now = deps.now();
   return entries.map((entry) => {
     const id = entry.conversation.id;
@@ -112,7 +114,7 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
       people: others
         .slice(0, SHOWN_NAMES)
         .map((p) => ({ userId: p.userId, name: p.name, photoUrl: photoOf(p), external: p.external })),
-      status: null,
+      status: entry.conversation.kind === "direct" ? (statuses.get(others[0]?.userId ?? "") ?? null) : null,
       lastMessage: lastLine(last, userId),
       unread: unread.find((row) => row.conversationId === id)?.unread ?? 0,
       mentioned: unread.find((row) => row.conversationId === id)?.mentioned ?? false,

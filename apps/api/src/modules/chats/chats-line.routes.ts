@@ -2,19 +2,39 @@
 // line opens, like any route (no token, a bad or an expired one: 401, no upgrade). Messages over 64 KB
 // close the line. Each server has its own hub of open lines.
 import websocket from "@fastify/websocket";
-import { CHATS_LIMITS } from "@meetapp/contracts";
-import type { FastifyInstance, FastifyPluginAsync } from "fastify";
+import { CHATS_LIMITS, statusQuerySchema, statusesSchema } from "@meetapp/contracts";
+import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
+import type { FastifyInstance } from "fastify";
 import { signedInUser, type SessionReader } from "../../plugins/session.ts";
 import { createLineHub, type LineDeps } from "./chats-line.ts";
+import type { ChatsStatusService } from "./chats-status.service.ts";
 
 /** WebSocket support for the whole server (registered at the top, so tests can open lines too). */
 export const registerWebSockets = (app: FastifyInstance) =>
   app.register(websocket, { options: { maxPayload: CHATS_LIMITS.lineMessageBytes } });
 
-export const chatsLineRoutes: FastifyPluginAsync<{ line: LineDeps; sessions: SessionReader }> = async (
-  app,
-  { line, sessions },
-) => {
+export const chatsLineRoutes: FastifyPluginAsyncZod<{
+  line: LineDeps;
+  sessions: SessionReader;
+  status: ChatsStatusService;
+}> = async (app, { line, sessions, status }) => {
+  app.get(
+    "/api/v1/people/status",
+    {
+      schema: {
+        summary: "Statuses of people (Available, Away, In a meeting, Offline)",
+        description:
+          "Only colleagues in shared team workspaces and accepted contacts; anyone else (blocked, pending, strangers) is left out of the answer. Up to 100 ids, comma-separated.",
+        tags: ["chats"],
+        querystring: statusQuerySchema,
+        response: { 200: statusesSchema },
+      },
+    },
+    async (request) => {
+      const found = await status.visible(signedInUser(request).id, request.query.ids);
+      return { statuses: [...found].map(([userId, value]) => ({ userId, status: value })) };
+    },
+  );
   const hub = createLineHub(line);
   app.addHook("onClose", () => hub.close());
   app.get(

@@ -3,6 +3,7 @@
 // (30 lookups a minute per person; logged as the searcher and a count, never the email). People without
 // an account can be invited: F01's invitation in a team workspace, a "Join me on MeetApp" email in
 // Personal (20 a day per person).
+import type { Status } from "@meetapp/contracts";
 import { z } from "zod";
 import type { Outbox } from "../../emails/outbox.ts";
 import { AppError } from "../../plugins/errors.ts";
@@ -16,6 +17,8 @@ export interface PeopleDeps {
   limiter: RateLimiter;
   outbox: Outbox;
   publicUrl: string;
+  /** Statuses the asker may see (AC-F14-26). */
+  statuses: (viewer: string, userIds: string[]) => Promise<Map<string, Status>>;
 }
 
 const SUGGESTIONS = 10;
@@ -66,10 +69,25 @@ async function inviteToMeetApp(deps: PeopleDeps, inviter: { id: string; name: st
   });
 }
 
+/** Adds each person's status, where the asker may see it. */
+async function withStatus(deps: PeopleDeps, viewer: string, found: Found) {
+  const statuses = await deps.statuses(
+    viewer,
+    found.people.map((p) => p.userId),
+  );
+  return { ...found, people: found.people.map((p) => ({ ...p, status: statuses.get(p.userId) ?? null })) };
+}
+
+type Found = Awaited<ReturnType<typeof byName>>;
+
 export function createChatsPeopleService(deps: PeopleDeps) {
   return {
-    find: (membership: Membership, query: string) =>
-      isEmail(query) ? byEmail(deps, membership, query) : byName(deps, membership, query),
+    find: async (membership: Membership, query: string) =>
+      withStatus(
+        deps,
+        membership.userId,
+        await (isEmail(query) ? byEmail(deps, membership, query) : byName(deps, membership, query)),
+      ),
     inviteToMeetApp: (inviter: { id: string; name: string }, email: string) => inviteToMeetApp(deps, inviter, email),
   };
 }
