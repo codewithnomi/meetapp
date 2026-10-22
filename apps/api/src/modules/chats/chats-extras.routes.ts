@@ -76,7 +76,7 @@ function pollRoutes(app: App, extras: ChatsExtrasService) {
     route("A poll, as you may see it", { params: conversationPollParamsSchema, response: { 200: pollSchema } }),
     (request) => extras.poll(where(request, signedInUser(request).id), idParam(request.params.pollId)),
   );
-  app.post(
+  app.put(
     `${BASE}/polls/:pollId/vote`,
     route("Vote", { params: conversationPollParamsSchema, body: voteBodySchema, response: { 200: pollSchema } }),
     (request) =>

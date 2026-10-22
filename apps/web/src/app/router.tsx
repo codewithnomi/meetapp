@@ -12,6 +12,8 @@ import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from ".
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
+import { LiveLineProvider } from "../features/chats/index.ts";
+import { ChatsPage } from "../pages/ChatsPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
 import {
   meetingErrorText,
@@ -187,6 +189,7 @@ function SignedOutRoutes() {
 
 const PATHS: Record<AppScreen, string> = {
   home: "/",
+  chat: "/chat",
   meetings: "/meetings",
   people: "/people",
   requests: "/requests",
@@ -213,6 +216,7 @@ function SignedInScreens() {
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
+      <Route path="/chat" element={<ChatsPage onNavigate={go} />} />
       <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
       {meetingRoutes({ ...MEMBER_PLACES, userName: user?.name })}
       <Route
@@ -245,7 +249,10 @@ function SignedInRoutes() {
   useAccountLook(user);
   return (
     <CurrentWorkspaceProvider>
-      <SignedInScreens />
+      {/* One live line while signed in (F14, D064). */}
+      <LiveLineProvider>
+        <SignedInScreens />
+      </LiveLineProvider>
     </CurrentWorkspaceProvider>
   );
 }

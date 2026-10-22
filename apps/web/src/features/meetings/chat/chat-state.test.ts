@@ -46,8 +46,8 @@ describe("asSeenBy", () => {
     const news = message({
       reactions: [{ emoji: "👍", count: 1, names: ["Alice"], attendanceIds: ["alice"], userIds: [], mine: false }],
     });
-    expect(asSeenBy(news, "alice").reactions[0]?.mine).toBe(true);
-    expect(asSeenBy(news, "bob").reactions[0]?.mine).toBe(false);
+    expect(asSeenBy(news, { attendanceId: "alice" }).reactions[0]?.mine).toBe(true);
+    expect(asSeenBy(news, { attendanceId: "bob" }).reactions[0]?.mine).toBe(false);
   });
 });
 

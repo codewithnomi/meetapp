@@ -130,6 +130,7 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
     const item: ConversationListItem = {
       id,
       kind: entry.conversation.kind,
+      meetingId: entry.conversation.meetingId,
       title: titleOf(entry, others),
       people: others
         .slice(0, SHOWN_NAMES)

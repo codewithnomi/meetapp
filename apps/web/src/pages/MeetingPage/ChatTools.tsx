@@ -8,7 +8,7 @@ import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import type { Outgoing } from "../../features/meetings/chat/index.ts";
 import { useGifPicker } from "./chat-gifs.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import type { ChatPlace } from "../../features/meetings/chat/index.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { useEmojiSettings } from "./chat-emoji.ts";
 import { sizeText } from "./ChatExtras.tsx";
@@ -33,10 +33,10 @@ const FEATURED = 6;
  * The popup behind the message box's smiley: an emoji goes into the text; a GIF or sticker is sent at once
  * (with the reply, if replying), as in Teams.
  */
-export function useExpressions(visit: Joined, sendNow: (content: Outgoing) => void) {
+export function useExpressions(place: ChatPlace, sendNow: (content: Outgoing) => void) {
   const { t } = useTranslation();
   const emoji = useEmojiSettings();
-  const gifs = useGifPicker(visit, (gif) => sendNow({ gif }));
+  const gifs = useGifPicker(place, (gif) => sendNow({ gif }));
   const stickers = useStickerPicker((sticker) => sendNow({ sticker }));
   const featured = [...new Set([...emoji.settings.recent, ...DEFAULT_FEATURED])].slice(0, FEATURED);
   return (insert: (emoji: string) => void, close: () => void) => (

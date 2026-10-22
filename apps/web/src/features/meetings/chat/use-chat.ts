@@ -1,13 +1,11 @@
-// The meeting chat for one person in a call (F03 design.md 3.2–3.4): loads the newest page and older
+// A chat for one person, in a call (F03 design.md 3.2–3.4) or a one-to-one or group chat (F14): loads the newest page and older
 // pages, applies the server's news, catches up after a reconnect or a gap, and sends messages with an
 // id made here, so a retry never makes a copy (AC-F03-05). "Not sent" after the 10-second limit.
 import type { ChatEvent, ChatMessageView } from "@meetapp/contracts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { ApiError } from "../../api/index.ts";
-import type { Joined } from "../visit.ts";
 import {
-  callPlace,
   eventsAfter,
   messagesPage,
   oneMessage,
@@ -30,47 +28,49 @@ const MAX_CATCH_UP = 50;
 
 /** What happened while this app missed news: changed messages fetched one by one, or the newest page. */
 async function catchUpOn(
-  visit: Joined,
+  place: ChatPlace,
   latest: { current: ChatState },
   dispatch: (action: ChatAction) => void,
   loadNewest: () => Promise<void>,
 ) {
   const since = latest.current.lastSeq;
-  const missed = await eventsAfter(visit, since).catch(() => undefined);
+  const missed = await eventsAfter(place, since).catch(() => undefined);
   if (!missed || missed.gap || since === 0) return loadNewest();
   const ids = [...new Set(missed.events.flatMap((event) => (event.id ? [event.id] : [])))].slice(0, MAX_CATCH_UP);
-  const messages = await Promise.all(ids.map((id) => oneMessage(visit, id).catch(() => undefined)));
+  const messages = await Promise.all(ids.map((id) => oneMessage(place, id).catch(() => undefined)));
   for (const event of missed.events) {
     const message = messages[ids.indexOf(event.id ?? "")] ?? undefined;
-    const mine = message?.sender.attendanceId === visit.attendanceId;
-    dispatch({ type: "event", event: { ...event, ...(message ? { message } : {}) }, mine });
+    dispatch({ type: "event", event: { ...event, ...(message ? { message } : {}) }, mine: sentBy(place, message) });
   }
 }
 
+/** The viewer sent it: the same join of the call, or (chats) the same account. */
+function sentBy(place: ChatPlace, message: ChatMessageView | undefined): boolean {
+  if (!message) return false;
+  if (place.attendanceId !== undefined) return message.sender.attendanceId === place.attendanceId;
+  return place.userId !== undefined && message.sender.userId === place.userId;
+}
+
 interface NewsContext {
-  visit: Joined;
+  place: ChatPlace;
   latest: { current: ChatState };
   dispatch: (action: ChatAction) => void;
   catchUp: () => Promise<void>;
 }
 
 /** One piece of news from the server; a gap means news was missed, so the app catches up first. */
-function applyNews({ visit, latest, dispatch, catchUp }: NewsContext, event: ChatEvent): void {
+function applyNews({ place, latest, dispatch, catchUp }: NewsContext, event: ChatEvent): void {
   if (missedNews(latest.current, event)) {
     void catchUp().catch(() => undefined);
     return;
   }
   const apply = (fetched?: ChatMessageView) => {
-    const message = fetched ?? (event.message ? asSeenBy(event.message, visit.attendanceId) : undefined);
-    dispatch({
-      type: "event",
-      event: { ...event, ...(message ? { message } : {}) },
-      mine: message?.sender.attendanceId === visit.attendanceId,
-    });
+    const message = fetched ?? (event.message ? asSeenBy(event.message, place) : undefined);
+    dispatch({ type: "event", event: { ...event, ...(message ? { message } : {}) }, mine: sentBy(place, message) });
   };
   // News too big for one packet carries only the id (design 3.4).
   if (!event.message && event.id && event.type !== "poll_changed") {
-    void oneMessage(visit, event.id)
+    void oneMessage(place, event.id)
       .then(apply)
       .catch(() => undefined);
   } else apply();
@@ -121,19 +121,19 @@ function useForgetOnLeave() {
   );
 }
 
-export function useChat(visit: Joined) {
+/** A live chat at a place: a running call (`callPlace`) or a one-to-one or group chat (`conversationPlace`). */
+export function useChat(place: ChatPlace, initial: ChatState = emptyChat) {
   useForgetOnLeave();
-  const place = useMemo(() => callPlace(visit), [visit]);
-  const { state, dispatch, latest, loadNewest, loadOlder, reload } = usePages(place, emptyChat);
+  const { state, dispatch, latest, loadNewest, loadOlder, reload } = usePages(place, initial);
 
   const catchUp = useCallback(
-    () => catchUpOn(visit, latest, dispatch, loadNewest),
-    [visit, latest, dispatch, loadNewest],
+    () => catchUpOn(place, latest, dispatch, loadNewest),
+    [place, latest, dispatch, loadNewest],
   );
 
   const onEvent = useCallback(
-    (event: ChatEvent) => applyNews({ visit, latest, dispatch, catchUp }, event),
-    [visit, latest, dispatch, catchUp],
+    (event: ChatEvent) => applyNews({ place, latest, dispatch, catchUp }, event),
+    [place, latest, dispatch, catchUp],
   );
 
   const send = useCallback(
@@ -142,13 +142,13 @@ export function useChat(visit: Joined) {
         type: "sending",
         item: { clientId, content, status: "sending", ...(replyToId ? { replyToId } : {}) },
       });
-      void sendMessage(visit, { clientId, ...content, ...(replyToId ? { replyToId } : {}) })
+      void sendMessage(place, { clientId, ...content, ...(replyToId ? { replyToId } : {}) })
         .then((message) => dispatch({ type: "sent", clientId, message }))
         .catch((error: unknown) =>
           dispatch({ type: "failed", clientId, tooFast: error instanceof ApiError && error.code === "CHAT_TOO_FAST" }),
         );
     },
-    [visit, dispatch],
+    [place, dispatch],
   );
 
   const setOpen = useCallback((open: boolean) => dispatch({ type: "open", open }), [dispatch]);

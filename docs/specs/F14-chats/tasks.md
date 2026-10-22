@@ -103,10 +103,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-02, 79, 81.
   - Built in T14: atoms `StatusDot` (+ icons `menu`, `phone`, `mail`, `muted`; Tooltip `side="right"`); molecules `ChatListItem`, `ChatRequestCard`, `PeoplePicker` (combobox), `TypingIndicator`, `SeenMark`, `HistoryChoice`; organisms `ChatList`, `ConversationHeader`, `GroupDetails`, `NavRail`; `AppLayout` now uses `NavRail` (folding is optional: the main menu folds, Settings' menu doesn't); the main menu folds with the choice kept in `meetapp.nav.folded` (`features/chats/nav-folded.ts`); the time label (`features/chats/time-label.ts`); stories for every state, 28 component and unit tests. Screenshot baselines for the new stories are made at `/spec-verify` with the other screenshots (D052); the `ui-reviewer` check runs there too.
 
-- [ ] **T15: The Chat screen (milestone).**
+- [x] **T15: The Chat screen (milestone).**
   - Side-menu Chat with its badge, the chat list and the conversation, New chat, the app's live-line client with reconnect and catch-up, meeting chats from the list.
   - Covers: AC-F14-01–09, 20, 28, 29.
   - Tests: TC-F14-04, 10, 58, 59.
+  - Built in T15: `pages/ChatsPage` (list, open chat, New chat), the Chat item in the side menu with its unread badge, `features/chats` (requests, live-line client with reconnect and catch-up, activity and lock reporting, the list hook), meeting chat's screen code now works from a "place" (a call or a chat) so chats reuse it (messages, replies, reactions, files, GIFs, polls, pins), `ChatPanel`/`ChatArea` take an optional header and message-box text, the chat vote is `PUT` like meeting chat's, the list item carries `meetingId`; 2 unit test files, 2 desktop tests (`chats.spec.ts`), all F03 desktop chat tests still pass. Found and fixed: opening a chat didn't refresh the app's own unread count. TC-F03-13's flakiness (progress.md watch item) was the test's timing (a slow rejoin inside the 10-second window); the rejoin now happens first. Open: TC-F14-58's "live meeting chat from the list during a call" opens it read-only for now (the call screen's chat stays the place to write during a call); TC-F14-59's paging is covered by the shared page code and its F03 tests, with a 120-message desktop check left for `/spec-verify`.
 
 - [ ] **T16: Requests, groups, status, typing, Seen and mentions in the app.**
   - Chat requests screen, group details, status dots, "is typing", "Seen", mentions, Settings → Privacy (blocked people, read receipts), the folding menu.

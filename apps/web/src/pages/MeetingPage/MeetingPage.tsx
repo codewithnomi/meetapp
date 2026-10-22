@@ -5,7 +5,8 @@
 import { useSession } from "../../features/auth/index.ts";
 import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { callPlace } from "../../features/meetings/chat/index.ts";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 import {
@@ -115,7 +116,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const { room, me } = call;
   const view = useView();
   const { setOpen } = call.chat;
-  const files = useAttachments(visit);
+  const files = useAttachments(useMemo(() => callPlace(visit), [visit]));
   const session = useSession();
   const canAttach = call.me !== undefined && call.me.group !== "guest";
   const dropping = useFileDrop(
@@ -229,7 +230,11 @@ function ScreenPanel({ screen }: { screen: Screen }) {
       <ChatArea
         chat={call.chat}
         viewerUserId={screen.userId}
-        writing={{ visit: call.visit, attachments: screen.files, off: call.room.state.options?.chatMode === "off" }}
+        writing={{
+          place: call.chat.place,
+          attachments: screen.files,
+          off: call.room.state.options?.chatMode === "off",
+        }}
         dropping={screen.dropping && rights.attach}
         rights={rights}
         onClose={close}

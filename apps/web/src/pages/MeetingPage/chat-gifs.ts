@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { gifSettings, searchGifs, trendingGifs, type FoundGif } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import type { ChatPlace } from "../../features/meetings/chat/index.ts";
 import { prefersReducedMotion } from "./reduced-motion.ts";
 import { readSaved, save } from "./safe-storage.ts";
 
@@ -19,10 +19,10 @@ const SEARCH_TIMEOUT_MS = 2_000;
 const seenNotice = () => readSaved(NOTICE_KEY) === "yes";
 
 /** The GIF settings for this call; undefined (button hidden) when the workspace turned GIFs off. */
-function useGifSettings(visit: Joined) {
+function useGifSettings(place: ChatPlace) {
   return useQuery({
-    queryKey: ["chat-gif-settings", visit.call?.callId],
-    queryFn: () => gifSettings(visit),
+    queryKey: ["chat-gif-settings", place.path],
+    queryFn: () => gifSettings(place),
     retry: false,
     staleTime: Infinity,
   });
@@ -62,9 +62,9 @@ function useGifNotice() {
 }
 
 /** The GIF part of the popup; undefined when the workspace turned GIFs off (AC-F03-25, 27). */
-export function useGifPicker(visit: Joined, onPick: (gif: NonNullable<ChatMessageView["gif"]>) => void) {
+export function useGifPicker(place: ChatPlace, onPick: (gif: NonNullable<ChatMessageView["gif"]>) => void) {
   const { t } = useTranslation();
-  const settings = useGifSettings(visit);
+  const settings = useGifSettings(place);
   const [query, setQuery] = useState("");
   const notice = useGifNotice();
   const search = useGifSearch(notice.seen ? settings.data : undefined, query);

@@ -1,5 +1,6 @@
 // HomePage: the starter home screen (design.md section 6) and TC-F00-72/74 at component level (the demo
 // element guarded by useFlag("demo") shows only while the flag is on).
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -16,7 +17,12 @@ function flagsReply(enabled: boolean | "fail") {
 }
 
 function renderHome(fetcher: typeof fetch, onNavigate = vi.fn()) {
-  render(<HomePage onNavigate={onNavigate} flagOptions={{ apiUrl: API, fetcher }} />);
+  // The side menu asks for the chat list's unread count (F14), so the page needs the data cache.
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <HomePage onNavigate={onNavigate} flagOptions={{ apiUrl: API, fetcher }} />
+    </QueryClientProvider>,
+  );
   return onNavigate;
 }
 

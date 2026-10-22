@@ -222,7 +222,8 @@
       "people": "People",
       "requests": "Requests and invitations",
       "meetings": "Meetings",
-      "workspace": "Workspace settings"
+      "workspace": "Workspace settings",
+      "chat": "Chat"
     },
     "create": {
       "title": "Create a company workspace",
@@ -957,5 +958,83 @@
       "openChatFor": "Open chat of {{title}}",
       "failed": "That didn't work. Check your connection and try again."
     }
+  },
+  "chats": {
+    "heading": "Chat",
+    "newChat": "New chat",
+    "search": "Find a chat or person",
+    "filters": {
+      "label": "Show",
+      "all": "All",
+      "unread": "Unread",
+      "chats": "Chats",
+      "meetings": "Meeting chats"
+    },
+    "requests": "Chat requests",
+    "pinned": "Pinned",
+    "list": "Chats",
+    "empty": {
+      "title": "No chats yet",
+      "action": "New chat"
+    },
+    "pick": {
+      "title": "Choose a chat",
+      "hint": "Or start a new one."
+    },
+    "you": "You: {{text}}",
+    "from": "{{name}}: {{text}}",
+    "waiting": "Waiting for {{name}} to accept",
+    "notAccepted": "{{name}} didn't accept",
+    "rowLabel": "{{title}}, {{details}}",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "muted": "Muted",
+    "status": {
+      "available": "Available",
+      "away": "Away",
+      "in_meeting": "In a meeting",
+      "offline": "Offline"
+    },
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "calls": {
+      "video": "Video call",
+      "audio": "Audio call"
+    },
+    "more": "More for this chat",
+    "actions": {
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "hide": "Hide"
+    },
+    "readOnly": {
+      "blocked": "You can't send messages in this chat.",
+      "outside_off": "Chat with people outside the workspace is turned off.",
+      "left_workspace": "This person is no longer in the workspace.",
+      "left": "You're no longer in this chat."
+    },
+    "hello": "Say hello to {{name}}",
+    "helloHint": "Messages you send appear here.",
+    "new": {
+      "title": "New chat",
+      "close": "Close new chat",
+      "to": "To:",
+      "hint": "Type a name, or anyone's email. One person opens a one-to-one chat; two or more start a group.",
+      "suggestions": "Suggestions",
+      "remove": "Remove {{name}}",
+      "external": "(External)",
+      "externalDetail": "Not in this workspace · they'll get a chat request first",
+      "noAccount": "No one with this email uses MeetApp yet. Invite them by email; you can chat once they join.",
+      "invite": "Invite {{email}}",
+      "invited": "Invitation sent to {{email}}.",
+      "groupName": "Group name",
+      "groupNameHint": "Optional",
+      "cancel": "Cancel",
+      "start": "Start chat"
+    },
+    "failed": "Something went wrong. Try again.",
+    "messageTo": "Message {{name}}"
   }
 }

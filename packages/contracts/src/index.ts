@@ -178,6 +178,7 @@ export {
   chatMemberParamsSchema,
   conversationListItemSchema,
   conversationListSchema,
+  type ConversationList,
   conversationParamsSchema,
   startedConversationSchema,
   declineBodySchema,

@@ -3,7 +3,7 @@
 // and sent with the next message. The server checks every file again by its content.
 import { useState } from "react";
 import { uploadFile, type UploadProblem } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import type { ChatPlace } from "../../features/meetings/chat/index.ts";
 
 export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const ALLOWED = /\.(png|jpe?g|gif|webp|pdf|txt|csv|docx|xlsx|pptx)$/i;
@@ -25,13 +25,13 @@ export function quickCheck(file: File): "CHAT_FILE_TOO_BIG" | "CHAT_FILE_TYPE" |
   return undefined;
 }
 
-export function useAttachments(visit: Joined) {
+export function useAttachments(place: ChatPlace) {
   const [waiting, setWaiting] = useState<Waiting[]>([]);
   const [refused, setRefused] = useState<{ name: string; problem: UploadProblem }>();
   const change = (key: string, update: Partial<Waiting>) =>
     setWaiting((list) => list.map((item) => (item.key === key ? { ...item, ...update } : item)));
   const start = (item: Waiting) =>
-    void uploadFile(visit, item.file, (percent) => change(item.key, { percent })).then(
+    void uploadFile(place, item.file, (percent) => change(item.key, { percent })).then(
       (uploaded) => change(item.key, { state: "ready", uploadedId: uploaded.id, percent: 100 }),
       (problem: UploadProblem) => {
         if (problem === "failed") change(item.key, { state: "failed" });

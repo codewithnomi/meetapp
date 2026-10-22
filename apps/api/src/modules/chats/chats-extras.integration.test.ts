@@ -101,7 +101,7 @@ describe("pins, polls and GIFs in chats", { timeout: 60_000 }, () => {
     expect(created.statusCode).toBe(200);
     const poll = created.json<{ id: string; options: { id: string }[]; creatorName: string }>();
     expect(poll.creatorName).toBe("Person 2");
-    const voted = await call(m3.token, "POST", `/api/v1/conversations/${id}/polls/${poll.id}/vote`, {
+    const voted = await call(m3.token, "PUT", `/api/v1/conversations/${id}/polls/${poll.id}/vote`, {
       optionIds: [poll.options[0]?.id],
     });
     expect(voted.json<{ results: { options: { names: string[] }[] } }>().results.options[0]?.names).toEqual([
@@ -109,7 +109,7 @@ describe("pins, polls and GIFs in chats", { timeout: 60_000 }, () => {
     ]);
     expect((await call(m3.token, "POST", `/api/v1/conversations/${id}/polls/${poll.id}/close`)).statusCode).toBe(404);
     expect((await call(m2.token, "POST", `/api/v1/conversations/${id}/polls/${poll.id}/close`)).statusCode).toBe(204);
-    const late = await call(m3.token, "POST", `/api/v1/conversations/${id}/polls/${poll.id}/vote`, {
+    const late = await call(m3.token, "PUT", `/api/v1/conversations/${id}/polls/${poll.id}/vote`, {
       optionIds: [poll.options[1]?.id],
     });
     expect(errorCode(late)).toBe("CHAT_POLL_CLOSED");

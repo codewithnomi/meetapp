@@ -143,6 +143,8 @@ describe("sending", { timeout: 30_000 }, () => {
 
   it("TC-F03-13 [AC-F03-06] the 11th message in 10 seconds is refused with the wait time", async () => {
     const room = await callOfTwo("fast");
+    // A second join of the same person, made first: joining is slow, and the 10 seconds must not pass meanwhile.
+    const again = await joined(t, room.meeting, room.organizer);
     for (let i = 0; i < 10; i++)
       expect((await send(room.host, room.callId, text(`m${String(i)}`))).statusCode).toBe(200);
     const eleventh = await send(room.host, room.callId, text("one too many"));
@@ -154,7 +156,6 @@ describe("sending", { timeout: 30_000 }, () => {
     // The limit is the sender's own: the other person still sends.
     expect((await send(room.other, room.callId, text("still fine"))).statusCode).toBe(200);
     // Per person, not per ticket: joining again gives no fresh 10 (F03 verification round 2).
-    const again = await joined(t, room.meeting, room.organizer);
     expect(errorCode(await send(again, room.callId, text("after rejoining")))).toBe("CHAT_TOO_FAST");
   });
 

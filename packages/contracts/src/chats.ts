@@ -45,6 +45,8 @@ export const conversationListItemSchema = z
   .object({
     id: z.uuid(),
     kind: z.enum(CONVERSATION_KINDS),
+    /** A meeting chat's meeting (opened with F03's rules), else null. */
+    meetingId: z.uuid().nullable(),
     /** The other person, the group's name, its members' names, or the meeting's title. */
     title: z.string(),
     /** Up to 3 people for the picture (direct: the other person; group: first members). */
@@ -72,6 +74,7 @@ export type ConversationListItem = z.infer<typeof conversationListItemSchema>;
 export const conversationListSchema = z
   .object({ conversations: z.array(conversationListItemSchema), unreadChats: z.number().int().min(0) })
   .meta({ id: "ConversationList" });
+export type ConversationList = z.infer<typeof conversationListSchema>;
 
 export const listQuerySchema = z.object({
   filter: z.enum(LIST_FILTERS).default("all"),

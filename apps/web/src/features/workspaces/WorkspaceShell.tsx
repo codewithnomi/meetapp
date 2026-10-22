@@ -7,13 +7,14 @@ import { AppLayout, Notice, WorkspaceSwitcher, type AppNavItem, type IconName } 
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavFolded } from "../chats/nav-folded.ts";
+import { useUnreadChats } from "../chats/use-chat-list.ts";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog.tsx";
 import { useCurrentWorkspace } from "./current-workspace.tsx";
 import type { MyWorkspace } from "./me.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
-export type AppScreen = "home" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
+export type AppScreen = "home" | "chat" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
 
 export interface WorkspaceShellProps {
   screen: AppScreen;
@@ -23,6 +24,7 @@ export interface WorkspaceShellProps {
 
 const ICONS: Record<Exclude<AppScreen, "join">, IconName> = {
   home: "home",
+  chat: "chat",
   meetings: "camera",
   people: "users",
   requests: "send",
@@ -35,8 +37,10 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
   const company = current?.kind === "company";
   // Workspace settings: the owner and admins (in Personal, its user).
   const manages = current !== undefined && current.role !== "member";
+  const unreadChats = useUnreadChats(current?.id);
   const screens: Exclude<AppScreen, "join">[] = [
     "home",
+    "chat",
     "meetings",
     ...(company ? (["people", "requests"] as const) : []),
     ...(manages ? (["workspace"] as const) : []),
@@ -49,6 +53,8 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
     current: id === screen,
     onSelect: () => onNavigate(id),
     ...(id === "requests" && current ? { badge: current.pendingRequests } : {}),
+    // Chats with unread messages (AC-F14-02).
+    ...(id === "chat" ? { badge: unreadChats } : {}),
   }));
 }
 

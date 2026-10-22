@@ -30,16 +30,19 @@ export interface ChatPanelProps {
   notice?: ReactNode;
   composer?: ReactNode;
   dropArea?: DropAreaProps | undefined;
+  /** F14 Chat screen: the conversation's own header (name, status, calls) instead of the side panel's
+   * title and close button; the chat then fills its column. */
+  header?: ReactNode;
   /** The scrolling list, so the page can keep the view still and load older messages. */
   listRef?: Ref<HTMLDivElement> | undefined;
   onScroll?: ((event: UIEvent<HTMLDivElement>) => void) | undefined;
 }
 
-export function ChatPanel(props: ChatPanelProps) {
-  const { title, closeLabel, onClose, pinned, messages, empty, loadingOlder, listLabel } = props;
+function Body(props: ChatPanelProps) {
+  const { pinned, messages, empty, loadingOlder, listLabel } = props;
   const { newMessages, notice, composer, dropArea, listRef, onScroll } = props;
   return (
-    <SidePanel title={title} closeLabel={closeLabel} onClose={onClose} className="relative min-h-0">
+    <>
       {pinned ? <PinnedBar {...pinned} /> : null}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <div
@@ -74,6 +77,24 @@ export function ChatPanel(props: ChatPanelProps) {
       {notice}
       {composer}
       {dropArea ? <DropArea {...dropArea} /> : null}
+    </>
+  );
+}
+
+export function ChatPanel(props: ChatPanelProps) {
+  if (props.header) {
+    return (
+      <section aria-label={props.title} className="relative flex h-full min-h-0 flex-col bg-bg text-ink">
+        {props.header}
+        <div className="relative flex min-h-0 flex-1 flex-col gap-3 px-6 pb-4">
+          <Body {...props} />
+        </div>
+      </section>
+    );
+  }
+  return (
+    <SidePanel title={props.title} closeLabel={props.closeLabel} onClose={props.onClose} className="relative min-h-0">
+      <Body {...props} />
     </SidePanel>
   );
 }

@@ -4,10 +4,9 @@
 // Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
 import { Button, ChatPanel, Dialog, Notice } from "@meetapp/ui";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import { deleteMessage, type Chat, type ChatPlace } from "../../features/meetings/chat/index.ts";
 import { continuesGroup, firstLineOf, isOwn, time } from "./chat-texts.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ComposerArea } from "./ChatComposerArea.tsx";
@@ -119,12 +118,21 @@ function DeleteDialog({
 export interface ChatAreaProps {
   chat: Chat;
   /** In a call: the message box, or "Chat is turned off" when `off`. Absent after the meeting. */
-  writing?: { visit: Joined; attachments: Attachments; off: boolean } | undefined;
+  writing?:
+    | {
+        place: ChatPlace;
+        attachments: Attachments;
+        off: boolean;
+        /** F14: "Message Bilal Ahmed". */ placeholder?: string;
+      }
+    | undefined;
   /** Files are being dragged over the meeting window (AC-F03-29). */
   dropping: boolean;
   rights: ChatRights;
   /** The signed-in viewer's account (none for guests). */
   viewerUserId?: string | undefined;
+  /** F14 Chat screen: the conversation header shown above the messages instead of the panel's title. */
+  header?: ReactNode;
   /** The panel's title; "Chat" by default, the meeting's title after it. */
   title?: string | undefined;
   onClose: () => void;
@@ -180,7 +188,8 @@ function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaPro
   return (
     <ComposerArea
       view={view}
-      visit={writing.visit}
+      place={writing.place}
+      placeholder={writing.placeholder}
       attachments={writing.attachments}
       replyingTo={act.replyingTo}
       editing={act.editing}
@@ -202,6 +211,7 @@ export function ChatArea(props: ChatAreaProps) {
     <>
       <ChatPanel
         title={title ?? t("meetings.chat.title")}
+        header={props.header}
         closeLabel={t("meetings.chat.close")}
         onClose={onClose}
         listLabel={t("meetings.chat.messages")}

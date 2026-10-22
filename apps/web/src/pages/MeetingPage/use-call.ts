@@ -4,7 +4,7 @@
 import type { ChatEvent } from "@meetapp/contracts";
 import { chatAnnouncement } from "./chat-texts.ts";
 import { useTranslation } from "react-i18next";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiRequest } from "../../features/api/index.ts";
 import {
   can,
@@ -19,7 +19,7 @@ import {
   type Joined,
   type Reaction,
 } from "../../features/meetings/index.ts";
-import { useChat, type Chat } from "../../features/meetings/chat/index.ts";
+import { callPlace, useChat, type Chat } from "../../features/meetings/chat/index.ts";
 import { useCallEvents, usePeopleAnnouncements } from "./call-events.ts";
 import { useConnectionCare } from "./connection.ts";
 import { useLobby } from "./lobby.ts";
@@ -47,7 +47,8 @@ async function outcomeOf(visit: Joined): Promise<Attendance> {
  */
 function useCallChat(visit: Joined, announce: (kind: string, text: string) => void) {
   const chatRef = useRef<Chat>(undefined as unknown as Chat);
-  const chat = (chatRef.current = useChat(visit));
+  const place = useMemo(() => callPlace(visit), [visit]);
+  const chat = (chatRef.current = useChat(place));
   const { t } = useTranslation();
   const latestT = useRef(t);
   latestT.current = t;
