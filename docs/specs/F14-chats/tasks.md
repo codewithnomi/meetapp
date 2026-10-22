@@ -115,10 +115,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-17, 46, 53, 82.
   - Built in T16: Chat requests pane, group details with Add people (history choice), rename, remove, leave; Block in a chat's More menu; "… is typing" and "Seen" above the message box; @mentions in the composer (`@tiptap/extension-mention` and `@tiptap/suggestion` 3.31.4, MIT, the tiptap team, released 30 Sep 2026; with `@floating-ui/dom` 1.8.0 they need); Settings → Privacy (read receipts, blocked people with Unblock); the workspace's "Chat with people outside the workspace" switch; server: `GET /conversations/:id/members` and `GET /me/settings`; 4 desktop tests (`chats-more.spec.ts`), 2 unit/integration tests. Found and fixed: (1) a late presence write could undo a closed line, leaving people Available after closing the app; writes per line now run in order; (2) a line that stops pinging counts as gone after 75 s (two missed pings), not 3 minutes; a server shutting down clears its own lines; (3) `packages/ui`'s `.test.ts` files weren't run at all (only `.test.tsx`); they now are, and pass.
 
-- [ ] **T17: Delivery, failures and the Redis fallback.**
+- [x] **T17: Delivery, failures and the Redis fallback.**
   - Delivery within a second between windows, "Not sent" with Retry, refreshing while Redis is down.
   - Covers: AC-F14-20, 25.
   - Tests: TC-F14-40, 44, 50.
+  - Built in T17: announcing on Redis never fails the change (the publisher swallows Redis errors; saved news is caught up); the hub tells its lines `{ t: "polling", on }` when its Redis connection closes and returns; the app then refreshes the open chat every 10 s and the list every 30 s; `chats-line-parts.ts` holds the line's shapes (file-size rule). Tests: 2 desktop (`chats.spec.ts`: 20 messages, 95% under 1 second between windows; "Not sent", Retry twice, stored once), 1 integration (TC-F14-44 at server level: polling on and off, sending still works). The desktop half of TC-F14-44 (stopping the shared Redis while windows are open) is left for `/spec-verify`. **Watch:** TC-F14-53's "Offline" step took longer than 60 s once in a combined run on a busy Mac; it passed in the other runs.
 
 - [ ] **T18: Load test.**
   - A 250-person group of simulated members on live lines delivering to the desktop app (`pnpm test:load`).

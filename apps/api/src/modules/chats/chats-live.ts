@@ -16,8 +16,13 @@ export type LineControl = { control: "close"; lineId: string } | { control: "ref
 type ListChange = "added" | "changed" | "removed";
 
 export function createLivePublisher(redis: Redis) {
+  // Never fails what caused it: the change is saved, and apps catch up from the saved news (also while
+  // Redis is down, TC-F14-44).
   const send = (channel: string, message: LineServerMessage | LineControl) =>
-    redis.publish(channel, JSON.stringify(message)).then(() => undefined);
+    redis.publish(channel, JSON.stringify(message)).then(
+      () => undefined,
+      () => undefined,
+    );
   return {
     news: (conversationId: string, event: ChatEvent) =>
       send(channels.conversation(conversationId), { t: "news", conversationId, event }),

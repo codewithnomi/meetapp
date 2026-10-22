@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bearer, startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { caller, namedPerson, seedWorkspace, type Call, type Person } from "../../test-support/workspaces-setup.ts";
 import { CLOSE, createLineHub } from "./chats-line.ts";
+import { createLivePublisher } from "./chats-live.ts";
 
 let t: AuthTestApp;
 let call: Call;
@@ -342,5 +343,32 @@ describe("status", { timeout: 60_000 }, () => {
     await settle(300);
     expect(lines[1]?.got.slice(before).some((m) => m.t === "status")).toBe(false);
     for (const opened of [...lines, m1Line]) opened.ws.terminate();
+  });
+});
+
+describe("when Redis goes away", { timeout: 60_000 }, () => {
+  it("TC-F14-44 [AC-F14-20] lines are told to check for themselves; sending still works; normal news resumes", async () => {
+    const { people, workspaceId } = await team("r44", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await start(m1, workspaceId, [m2]);
+    const hub = createLineHub(t.accounts.chatsLine);
+    const socket = fakeSocket();
+    await hub.open(socket as unknown as WebSocket, m2.id, () => Promise.resolve(true));
+    const subscriber = (hub as unknown as { subscriber: { disconnect: () => void; connect: () => Promise<void> } })
+      .subscriber;
+
+    subscriber.disconnect();
+    await until(() => socket.sent.find((m) => m.t === "polling" && m.on));
+    // Publishing on a Redis connection that is gone never fails the change that caused it.
+    const closed = t.accounts.chatsLine.redis.duplicate();
+    closed.disconnect();
+    await expect(closed.publish("meetapp:test", "x")).rejects.toThrow();
+    const gone = createLivePublisher(closed);
+    await expect(gone.news(id, { seq: 1, type: "message_created" })).resolves.toBeUndefined();
+    expect((await send(m1, id, "while Redis is away")).statusCode).toBe(200);
+
+    await subscriber.connect();
+    await until(() => socket.sent.find((m) => m.t === "polling" && !m.on));
+    await hub.close();
   });
 });

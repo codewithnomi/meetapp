@@ -200,6 +200,9 @@ export const lineServerMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("status"), userId: z.uuid(), status: z.enum(STATUSES) }),
   z.object({ t: z.literal("list"), conversationId: z.uuid(), change: z.enum(["added", "changed", "removed"]) }),
   z.object({ t: z.literal("pong") }),
+  /** The server lost Redis (`on`), so news from other servers can't arrive: the app checks for itself
+   * (open chat every 10 s, list every 30 s) until `on: false` (TC-F14-44). */
+  z.object({ t: z.literal("polling"), on: z.boolean() }),
 ]);
 export type LineServerMessage = z.infer<typeof lineServerMessageSchema>;
 

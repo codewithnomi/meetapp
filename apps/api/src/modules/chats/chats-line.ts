@@ -7,44 +7,16 @@ import { randomUUID } from "node:crypto";
 import { CHATS_LIMITS, lineAppMessageSchema, type LineServerMessage } from "@meetapp/contracts";
 import type { Redis } from "ioredis";
 import type { WebSocket } from "@fastify/websocket";
-import { channels, type LineControl, type LivePublisher } from "./chats-live.ts";
-import type { PresenceStore } from "./chats-presence.ts";
+import { channels, type LineControl } from "./chats-live.ts";
 import { OFFLINE_GRACE_MS } from "./chats-status.ts";
+import type { Line, LineDeps } from "./chats-line-parts.ts";
+
+export type { LineDeps } from "./chats-line-parts.ts";
 
 export const CLOSE = { invalid: 4400, signedOut: 4401, idle: 4408, replaced: 4001 } as const;
 const IDLE_MS = 2 * 60 * 1000;
 const CHECK_MS = 1000;
 const TYPING = { max: 10, windowMs: 10_000 };
-
-export interface LineDeps {
-  redis: Redis;
-  live: LivePublisher;
-  /** The chats the person is in now (accepted members). */
-  conversationsOf: (userId: string) => Promise<string[]>;
-  person: (userId: string) => Promise<{ name: string; readReceipts: boolean } | undefined>;
-  /** Status (AC-F14-26): where lines report activity, and the status service. */
-  presence: PresenceStore;
-  status: { announce: (userId: string) => Promise<void>; audience: (viewer: string) => Promise<Set<string>> };
-  now?: () => number;
-}
-
-interface Line {
-  id: string;
-  userId: string;
-  socket: WebSocket;
-  stillSignedIn: () => Promise<boolean>;
-  conversations: Set<string>;
-  name: string;
-  readReceipts: boolean;
-  lastPing: number;
-  typing: number[];
-  /** This line's presence writes, one after another, so the "closed" clean-up always comes last. */
-  writes: Promise<unknown>;
-  /** People whose status this person may see; their status channels are followed. */
-  audience: Set<string>;
-  activeAt: number;
-  locked: boolean;
-}
 
 /** Status is worked out again this often for the people with lines here (Away after 5 minutes idle). */
 const STATUS_SWEEP_MS = 30 * 1000;
@@ -68,6 +40,13 @@ class LineHub {
     this.subscriber = deps.redis.duplicate({ enableOfflineQueue: true });
     this.subscriber.on("message", (channel: string, raw: string) => {
       this.heard(channel, raw);
+    });
+    // Without Redis, news from other servers can't arrive: the apps check for themselves meanwhile.
+    this.subscriber.on("close", () => {
+      this.setPolling(true);
+    });
+    this.subscriber.on("ready", () => {
+      this.setPolling(false);
     });
   }
 
@@ -113,6 +92,14 @@ class LineHub {
     void this.deps.redis.zrem(linesKey(line.userId), line.id);
     this.track(this.inOrder(line, () => this.statusAfterClose(line.userId, line.id)));
     if (line.socket.readyState === line.socket.OPEN) line.socket.close(code);
+  }
+
+  private polling = false;
+
+  private setPolling(on: boolean) {
+    if (this.stopping || on === this.polling) return;
+    this.polling = on;
+    for (const line of this.lines.values()) this.send(line, { t: "polling", on });
   }
 
   private send(line: Line, message: LineServerMessage) {
@@ -265,6 +252,7 @@ class LineHub {
     await this.refresh(line);
     await this.limitLines(line);
     await this.reportPresence(line);
+    if (this.polling) this.send(line, { t: "polling", on: true });
     this.timer ??= setInterval(() => void this.check(), CHECK_MS);
   }
 

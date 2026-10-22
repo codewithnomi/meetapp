@@ -13,6 +13,7 @@ import {
   setMine,
   useLiveLine,
   useMembers,
+  usePolling,
   useSeen,
   useTyping,
   type ChatItem,
@@ -92,6 +93,18 @@ function Header({ item, onDetails }: { item: ChatItem; onDetails: () => void }) 
   );
 }
 
+const CHAT_POLL_MS = 10_000;
+
+/** While news can't arrive on the line, the open chat catches up every 10 seconds (TC-F14-44). */
+function useCatchUpWhilePolling(catchUp: () => Promise<void>) {
+  const polling = usePolling();
+  useEffect(() => {
+    if (!polling) return;
+    const timer = setInterval(() => void catchUp().catch(() => undefined), CHAT_POLL_MS);
+    return () => clearInterval(timer);
+  }, [polling, catchUp]);
+}
+
 /** Marks the newest news as read, at most every 2 seconds (design 3.5, AC-F14-02, 24). */
 function useReadMark(conversationId: string, lastSeq: number) {
   const queries = useQueryClient();
@@ -165,6 +178,7 @@ function LiveConversation({ item, userId, onFailed, onDetails }: PaneProps) {
     ),
   );
   useReadMark(item.id, chat.state.lastSeq);
+  useCatchUpWhilePolling(catchUp);
   const typing = useTyping(item.id, userId);
   const seen = useSeen(item.id, chat.state.messages, userId);
   const mentions = useMentions(item.id, userId);

@@ -7,6 +7,8 @@ import { apiFileUrl } from "../api/index.ts";
 import { LiveLine, type LineListener, type LineSocket } from "./live-line.ts";
 
 const LineContext = createContext<LiveLine | undefined>(undefined);
+/** True while the server can't pass on news from other servers (Redis down): the app checks itself. */
+const PollingContext = createContext(false);
 const ACTIVE_EVERY_MS = 60_000;
 
 type PowerBridge = { power?: { onLockChange: (listener: (locked: boolean) => void) => () => void } };
@@ -41,12 +43,16 @@ function useActivity(line: LiveLine) {
 
 export function LiveLineProvider({ children }: { children: ReactNode }) {
   const queries = useQueryClient();
+  const [polling, setPolling] = useState(false);
   const [line] = useState(
     () => new LiveLine({ url: lineUrl(), open: (url) => new WebSocket(url) as unknown as LineSocket }),
   );
   useEffect(() => {
     line.start();
     const stop = line.listen((message) => {
+      if (message.t === "polling") setPolling(message.on);
+      // A fresh line starts normal again; the server says so if it still can't pass news on.
+      if (message.t === "connected") setPolling(false);
       // The list's order, unread counts and requests change with these (AC-F14-01, 02, 10).
       if (message.t === "list" || message.t === "news" || message.t === "connected" || message.t === "status") {
         void queries.invalidateQueries({ queryKey: ["chats"] });
@@ -58,8 +64,15 @@ export function LiveLineProvider({ children }: { children: ReactNode }) {
     };
   }, [line, queries]);
   useActivity(line);
-  return <LineContext.Provider value={line}>{children}</LineContext.Provider>;
+  return (
+    <LineContext.Provider value={line}>
+      <PollingContext.Provider value={polling}>{children}</PollingContext.Provider>
+    </LineContext.Provider>
+  );
 }
+
+/** Whether the app must check for news itself (TC-F14-44). */
+export const usePolling = () => useContext(PollingContext);
 
 /** Listen to the live line while the component is shown. */
 export function useLiveLine(listener: LineListener): LiveLine | undefined {

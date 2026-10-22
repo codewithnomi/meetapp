@@ -76,3 +76,74 @@ test("TC-F14-04 [AC-F14-02, AC-F14-07, AC-F14-20] a message arrives live; the ba
   await reply.press("Enter");
   await expect(olivia.page.getByRole("log", { name: "Messages" })).toContainText("Hi Olivia", { timeout: 5000 });
 });
+
+test("TC-F14-40 [AC-F14-20] messages reach the other window within a second, without a call", async () => {
+  test.setTimeout(180_000);
+  const { workspace, owner, member } = await team();
+  const [olivia, mo] = await Promise.all([windowFor(owner), windowFor(member)]);
+  windows.push(olivia, mo);
+  await Promise.all([inWorkspace(olivia.page, workspace), inWorkspace(mo.page, workspace)]);
+  for (const [page, query, name] of [
+    [olivia.page, "Mo", /Mo Member/],
+    [mo.page, "Olivia", /Olivia Owner/],
+  ] as const) {
+    await openScreen(page, "Chat");
+    await page.getByRole("button", { name: "New chat" }).first().click();
+    await page.getByRole("combobox", { name: "To:" }).fill(query);
+    await page.getByRole("option", { name }).click();
+    await page.getByRole("button", { name: "Start chat" }).click();
+  }
+  const box = olivia.page.getByRole("textbox", { name: "Message Mo Member" });
+  const log = mo.page.getByRole("log", { name: "Messages" });
+  const times: number[] = [];
+  for (let i = 0; i < 20; i += 1) {
+    const text = `Speed check ${String(i)} ${String(Date.now())}`;
+    await box.fill(text);
+    const sent = Date.now();
+    await box.press("Enter");
+    await expect(log).toContainText(text, { timeout: 5000 });
+    times.push(Date.now() - sent);
+    // Stay under 10 messages in 10 seconds (AC-F14-19).
+    await olivia.page.waitForTimeout(1100);
+  }
+  times.sort((a, b) => a - b);
+  // 95% of messages within a second (AC-F14-20).
+  expect(times[Math.ceil(times.length * 0.95) - 1]).toBeLessThan(1000);
+});
+
+test("TC-F14-50 [AC-F14-25] a message that couldn't be sent says so; Retry twice sends it once", async () => {
+  test.setTimeout(120_000);
+  const { workspace, owner, member } = await team();
+  const olivia = await windowFor(owner);
+  windows.push(olivia);
+  await inWorkspace(olivia.page, workspace);
+  await openScreen(olivia.page, "Chat");
+  await olivia.page.getByRole("button", { name: "New chat" }).first().click();
+  await olivia.page.getByRole("combobox", { name: "To:" }).fill("Mo");
+  await olivia.page.getByRole("option", { name: /Mo Member/ }).click();
+  await olivia.page.getByRole("button", { name: "Start chat" }).click();
+  // The connection to the backend drops for sending.
+  await olivia.page.route("**/api/v1/conversations/*/messages", (route) =>
+    route.request().method() === "POST" ? route.abort() : route.continue(),
+  );
+  const text = `Retry once ${String(Date.now())}`;
+  const box = olivia.page.getByRole("textbox", { name: "Message Mo Member" });
+  await box.fill(text);
+  await box.press("Enter");
+  const log = olivia.page.getByRole("log", { name: "Messages" });
+  await expect(log.getByText("Not sent")).toBeVisible({ timeout: 15_000 });
+  await olivia.page.unroute("**/api/v1/conversations/*/messages");
+  const retry = olivia.page.getByRole("button", { name: /Retry/ }).first();
+  await Promise.all([retry.click(), retry.click({ force: true }).catch(() => undefined)]);
+  await expect(log.getByText("Not sent")).toBeHidden({ timeout: 10_000 });
+  // Opened fresh, the chat holds the message once (the same client message id).
+  const mo = await windowFor(member);
+  windows.push(mo);
+  await inWorkspace(mo.page, workspace);
+  await openScreen(mo.page, "Chat");
+  await mo.page
+    .getByRole("button", { name: /^Olivia Owner/ })
+    .first()
+    .click();
+  await expect(mo.page.getByRole("log", { name: "Messages" }).getByText(text)).toHaveCount(1);
+});
