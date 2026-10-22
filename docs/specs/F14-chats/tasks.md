@@ -91,10 +91,11 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Built in T12: `chats-security.integration.test.ts`: the outsider sweep generated from the server's route list (every `:conversationId` route answers three kinds of outsiders exactly as for a missing chat), each membership state (TC-F14-66, moved here from T6), same-looking refusals with timing, and a log scan with marker strings. Found and fixed: search words (`?q=`, which can hold a typed email) were written into request logs and traces; `q` is now hidden like other sensitive query values.
 
 ## Desktop and app
-- [ ] **T13: Desktop: the live line's token, security policy and lock events.**
+- [x] **T13: Desktop: the live line's token, security policy and lock events.**
   - `applyApiAuth` with the `ws`/`wss` pattern, `connect-src` with exactly that address, `powerMonitor` lock events through `window.meetapp.power.onLockChange` (bridge tests updated).
   - Covers: AC-F14-26, 31.
   - Tests: TC-F14-76.
+  - Built in T13: `applyApiAuth` covers the backend's `ws`/`wss` address, `connect-src` adds exactly that address, main forwards `powerMonitor` lock/unlock to the window, preload exposes `power.onLockChange(listener)` (returns "stop listening"); 3 unit tests, 2 desktop tests (`live-line.spec.ts`), the bridge list in `tests/e2e/desktop/desktop.ts` updated (TC-F02-113 still passes).
 
 - [ ] **T14: New UI building blocks.**
   - `StatusDot`, `ChatListItem`, `ChatRequestCard`, `PeoplePicker`, `TypingIndicator`, `SeenMark`, `HistoryChoice`, `ChatList`, `ConversationHeader`, `GroupDetails`, `NavRail` (the folding menu in `AppLayout`), with stories, tests and screenshots.

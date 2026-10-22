@@ -75,6 +75,7 @@
 - **F14 T10 done:** status (Available, Away, In a meeting, Offline), set automatically from the live line and calls, seen only by colleagues and accepted contacts (never blocked people or pending requests), announced live; in the chat list and New chat; 2 tests (62 chat tests pass).
 - **F14 T11 done:** "Chat with people outside the workspace" setting (on by default; off makes outside chats read-only and refuses new ones), leaving or being removed from a workspace takes you out of its chats (one-to-one chats there turn read-only for the other person), account deletion's chat step, chats in the data export; 5 tests. **Open:** when workspace deletion is built, it must also delete the workspace's chat files from storage.
 - **F14 T12 done:** security sweeps: every chat address answers outsiders exactly like a chat that doesn't exist (the list of addresses is read from the server, so a new one can't be missed), each request state gets only what it may, refusals look alike, nothing private in logs. Found and fixed: an email typed into New chat's search was written into the server logs.
+- **F14 T13 done:** the desktop app's side of the live line: the token goes with it only to our backend, the security policy allows only that address, and "computer locked/unlocked" reaches the screens for the Away status; 5 tests.
 - **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)

@@ -74,6 +74,8 @@ export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl, gif
   const connect = [
     "'self'",
     api,
+    // F14 D064: the live line to the same backend (ws/wss), and nowhere else.
+    ...(api ? [api.replace(/^http/, "ws")] : []),
     ...callServerSources(callServerUrl),
     ...(gifApiUrl ? [originOf(gifApiUrl) ?? ""] : []),
     ...(dev ? [dev.replace(/^http/, "ws")] : []),

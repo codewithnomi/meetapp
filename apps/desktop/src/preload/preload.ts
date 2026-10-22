@@ -5,7 +5,7 @@
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
-import { FILES_CHANNEL } from "../main/chat-desktop.ts";
+import { FILES_CHANNEL, POWER_CHANNEL } from "../main/chat-desktop.ts";
 import { MEDIA_ACTION_NAMES, MEDIA_CHANNEL } from "../main/media-actions.ts";
 
 const auth = Object.fromEntries(
@@ -22,4 +22,17 @@ const deviceKey = () => ipcRenderer.invoke(MEDIA_CHANNEL, "deviceKey", []);
 // F03: save a chat file from our backend with a "Save as" dialog.
 const files = { save: (url: string) => ipcRenderer.invoke(FILES_CHANNEL, "save", url) };
 
-contextBridge.exposeInMainWorld("meetapp", { platform: process.platform, auth, media, deviceKey, files });
+// F14: whether the computer is locked (Away). Only a yes/no reaches the screens; returns "stop listening".
+const power = {
+  onLockChange: (listener: (locked: boolean) => void) => {
+    const handler = (_event: unknown, locked: unknown) => {
+      listener(locked === true);
+    };
+    ipcRenderer.on(POWER_CHANNEL, handler);
+    return () => {
+      ipcRenderer.removeListener(POWER_CHANNEL, handler);
+    };
+  },
+};
+
+contextBridge.exposeInMainWorld("meetapp", { platform: process.platform, auth, media, deviceKey, files, power });

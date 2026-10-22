@@ -81,7 +81,7 @@ describe("canOpenExternally", () => {
 describe("contentSecurityPolicy", () => {
   const PRODUCTION =
     "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000; " +
-    "connect-src 'self' http://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+    "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
   it("TC-F00-61 [AC-F00-24] production string equals the design exactly", () => {
     expect(contentSecurityPolicy({ apiUrl: API })).toBe(PRODUCTION);
@@ -89,17 +89,19 @@ describe("contentSecurityPolicy", () => {
 
   it("TC-F00-61 [AC-F00-24] development adds the ws dev origin, inline styles and only the dev server's script nonce", () => {
     const parts = contentSecurityPolicy({ apiUrl: API, devServerUrl: DEV }).split("; ");
-    expect(parts).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:5173");
+    expect(parts).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 ws://127.0.0.1:5173");
     expect(parts).toContain("style-src 'self' 'unsafe-inline'");
     expect(parts).toContain(`script-src 'self' 'nonce-${DEV_CSP_NONCE}'`);
   });
 
   it("TC-F02-113 [AC-F02-54] the call server is allowed in connect-src, and nothing else is added", () => {
     const local = contentSecurityPolicy({ apiUrl: API, callServerUrl: "ws://127.0.0.1:7880" }).split("; ");
-    expect(local).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880");
+    expect(local).toContain(
+      "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880",
+    );
     const online = contentSecurityPolicy({ apiUrl: API, callServerUrl: "wss://calls.example.com" }).split("; ");
     expect(online).toContain(
-      "connect-src 'self' http://127.0.0.1:3000 wss://calls.example.com https://calls.example.com",
+      "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 wss://calls.example.com https://calls.example.com",
     );
     expect(contentSecurityPolicy({ apiUrl: API, callServerUrl: "not a url" })).toBe(PRODUCTION);
   });
@@ -164,5 +166,11 @@ describe("canOpenHandOffStart (F01)", () => {
       "file:///etc/passwd",
     ];
     for (const url of bad) expect(canOpenHandOffStart(url, false), url).toBe(false);
+  });
+  it("TC-F14-76 [AC-F14-31] the live line may reach exactly the backend's own ws/wss address", () => {
+    const local = contentSecurityPolicy({ apiUrl: "http://127.0.0.1:3000" }).split("; ");
+    expect(local).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000");
+    const online = contentSecurityPolicy({ apiUrl: "https://api.example.com" }).split("; ");
+    expect(online).toContain("connect-src 'self' https://api.example.com wss://api.example.com");
   });
 });

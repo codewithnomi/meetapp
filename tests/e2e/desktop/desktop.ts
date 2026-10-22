@@ -121,8 +121,10 @@ export function recordRequests(page: Page): string[] {
  * access with the share picker, the device key, and saving chat files (F03, design 6). Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth", "media", "deviceKey", "files"],
+  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power"],
   files: ["save"],
+  // F14: the computer locked or unlocked (status shows Away).
+  power: ["onLockChange"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
   auth: [
     "startProviderSignIn",
@@ -142,15 +144,17 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `meetapp.files`, `.media` and `.auth`. */
+/** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.media` and `.auth`. */
 export function bridgeKeys(
   page: Page,
-): Promise<{ meetapp: string[]; files: string[]; media: string[]; auth: string[] }> {
+): Promise<{ meetapp: string[]; files: string[]; power: string[]; media: string[]; auth: string[] }> {
   return page.evaluate(() => {
-    const bridge = (window as { meetapp?: { auth?: object; media?: object; files?: object } }).meetapp ?? {};
+    const bridge =
+      (window as { meetapp?: { auth?: object; media?: object; files?: object; power?: object } }).meetapp ?? {};
     return {
       meetapp: Object.keys(bridge),
       files: Object.keys(bridge.files ?? {}),
+      power: Object.keys(bridge.power ?? {}),
       media: Object.keys(bridge.media ?? {}),
       auth: Object.keys(bridge.auth ?? {}),
     };
@@ -175,7 +179,7 @@ export async function codeFor(email: string, since: Date): Promise<string> {
   throw new Error(`no code email to ${email}`);
 }
 
-const API_URL = process.env["MEETAPP_E2E_API_URL"];
+export const API_URL = process.env["MEETAPP_E2E_API_URL"];
 const MAILPIT = process.env["MEETAPP_E2E_MAILPIT_URL"];
 
 interface AuthBridgeForTests {
