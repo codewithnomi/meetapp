@@ -269,3 +269,21 @@ describe("Seen", { timeout: 60_000 }, () => {
     expect(await seen(b1, bigId, bigMessage.id)).toBeNull();
   });
 });
+
+describe("group details and my settings", { timeout: 60_000 }, () => {
+  it("TC-F14-79 [AC-F14-14, AC-F14-24] members list the chat's people; my settings show read receipts", async () => {
+    const { people, workspaceId } = await team("g14", 3);
+    const [m1] = people as [Person, Person, Person];
+    const id = await start(m1, workspaceId, people.slice(1));
+    const listed = (await call(m1.token, "GET", `/api/v1/conversations/${id}/members`)).json<{
+      people: { name: string; pending: boolean; external: boolean }[];
+    }>().people;
+    expect(listed.map((p) => p.name).sort()).toEqual(["Person 1", "Person 2", "Person 3"]);
+    expect(listed.every((p) => !p.pending && !p.external)).toBe(true);
+    const outsider = await namedPerson(t, "g14-x", "Outsider");
+    expect((await call(outsider.token, "GET", `/api/v1/conversations/${id}/members`)).statusCode).toBe(404);
+    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({ readReceipts: true });
+    await call(m1.token, "PATCH", "/api/v1/me/settings", { readReceipts: false });
+    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({ readReceipts: false });
+  });
+});

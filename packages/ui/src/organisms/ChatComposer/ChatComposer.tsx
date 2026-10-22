@@ -7,6 +7,8 @@
 
 import { Placeholder } from "@tiptap/extensions";
 import { EditorContent, Extension, useEditor, type Editor } from "@tiptap/react";
+import { Avatar } from "../../atoms/Avatar/index.ts";
+import { mentionExtension, type MentionBridge, type MentionMenu, type MentionPerson } from "./mentions.ts";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { OPENER, focusOpener, useCloseOnOutside } from "../../lib/useCloseOnOutside.ts";
@@ -43,6 +45,10 @@ export interface ChatComposerProps {
   initial?: RichDocument | undefined;
   /** Pictures or files pasted into the box (AC-F03-29). */
   onPasteFiles?: ((files: File[]) => void) | undefined;
+  /** F14 @mentions: the chat's members matching what was typed after "@", and the list's name. */
+  mentions?: { search: (query: string) => MentionPerson[]; listLabel: string } | undefined;
+  /** F14 "is typing": called as the text changes (the page decides how often to tell others). */
+  onTyping?: (() => void) | undefined;
 }
 
 /** Enter sends, except inside lists and code blocks; Ctrl/Cmd+Enter always sends; Escape cancels. */
@@ -65,13 +71,15 @@ function sendKeys(send: { current: () => void }, escape: { current: (() => void)
 
 /** The latest callbacks, read by the editor when a key is pressed or files are pasted. */
 interface Latest {
+  mentions?: MentionBridge | undefined;
+  typing: { current: (() => void) | undefined };
   send: { current: () => void };
   escape: { current: (() => void) | undefined };
   pasteFiles: { current: ((files: File[]) => void) | undefined };
 }
 
 function useComposerEditor(initial: RichDocument | undefined, labels: ChatComposerLabels, latest: Latest) {
-  const { send, escape, pasteFiles } = latest;
+  const { send, escape, pasteFiles, mentions, typing } = latest;
   const [, redraw] = useState(0);
   const editor = useEditor({
     extensions: [
@@ -87,6 +95,7 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
       }),
       Placeholder.configure({ placeholder: labels.placeholder }),
       sendKeys(send, escape),
+      ...(mentions ? [mentionExtension(mentions)] : []),
     ],
     ...(initial ? { content: toEditorDocument(initial) as never, autofocus: "end" as const } : {}),
     editorProps: {
@@ -98,7 +107,10 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
       },
       attributes: { "aria-label": labels.placeholder, role: "textbox", "aria-multiline": "true", spellcheck: "true" },
     },
-    onUpdate: () => redraw((n) => n + 1),
+    onUpdate: ({ transaction }) => {
+      if (transaction.docChanged) typing.current?.();
+      redraw((n) => n + 1);
+    },
     onSelectionUpdate: () => redraw((n) => n + 1),
   });
   return editor;
@@ -173,12 +185,47 @@ function ToolRow({ props, editor, over, canSend, formatting, onFormatting, onSen
 const EDITOR_CLASSES =
   "max-h-40 min-h-11 overflow-y-auto px-1.5 py-1 text-[14px] text-ink [&_.ProseMirror]:outline-none [&_.ProseMirror_pre]:rounded-sm [&_.ProseMirror_pre]:bg-stage [&_.ProseMirror_pre]:p-2 [&_.ProseMirror_pre]:font-mono [&_.ProseMirror_pre]:text-stage-ink [&_.is-editor-empty:first-child::before]:pointer-events-none [&_.is-editor-empty:first-child::before]:float-left [&_.is-editor-empty:first-child::before]:h-0 [&_.is-editor-empty:first-child::before]:text-ink-subtle [&_.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]";
 
+/** The members matching "@…", above the box; the editor's keys move through it (mentions.ts). */
+function MentionList({ menu, label }: { menu: MentionMenu; label: string }) {
+  return (
+    <ul
+      role="listbox"
+      aria-label={label}
+      className="absolute bottom-full left-2 z-20 mb-2 flex min-w-60 list-none flex-col gap-0.5 rounded-md border border-line bg-surface-raised p-1.5 shadow-2"
+    >
+      {menu.people.map((person, index) => (
+        <li
+          key={person.id}
+          role="option"
+          aria-selected={index === menu.active}
+          onMouseDown={(event) => {
+            event.preventDefault();
+            menu.pick(person);
+          }}
+          className={cx(
+            "flex min-h-10 cursor-pointer items-center gap-2.5 rounded-sm px-2.5 text-[14px] text-ink",
+            index === menu.active && "bg-surface-sunken",
+          )}
+        >
+          <Avatar name={person.name} size="sm" />
+          {person.name}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export function ChatComposer(props: ChatComposerProps) {
   const { labels, onSend, allowEmpty = false, above, onEscape } = props;
   const send = useRef<() => void>(() => undefined);
   const escape = useRef(onEscape);
   const pasteFiles = useRef(props.onPasteFiles);
-  const editor = useComposerEditor(props.initial, labels, { send, escape, pasteFiles });
+  const typing = useRef(props.onTyping);
+  const search = useRef(props.mentions?.search ?? (() => []));
+  const [menu, setMenu] = useState<MentionMenu>();
+  // Made once: the editor's extensions are fixed when it starts.
+  const [bridge] = useState<MentionBridge | undefined>(() => (props.mentions ? { search, show: setMenu } : undefined));
+  const editor = useComposerEditor(props.initial, labels, { send, escape, pasteFiles, mentions: bridge, typing });
   const [formatting, setFormatting] = useState(false);
   const draft = useDraft(editor, allowEmpty, props.waiting === true);
   const submit = () => {
@@ -191,9 +238,14 @@ export function ChatComposer(props: ChatComposerProps) {
     send.current = submit;
     escape.current = onEscape;
     pasteFiles.current = props.onPasteFiles;
+    typing.current = props.onTyping;
+    search.current = props.mentions?.search ?? (() => []);
   });
   return (
     <div className="relative flex flex-col gap-1.5 rounded-lg border border-line-strong bg-surface-sunken p-2">
+      {menu && menu.people.length > 0 && props.mentions ? (
+        <MentionList menu={menu} label={props.mentions.listLabel} />
+      ) : null}
       {above}
       {editor && formatting ? <FormatBar editor={editor} labels={labels} /> : null}
       <EditorContent editor={editor} className={cx(EDITOR_CLASSES, FOCUS_RING)} />

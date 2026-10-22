@@ -12,6 +12,8 @@ import {
   messagesPageSchema,
   messagesQuerySchema,
   myChatPrefsBodySchema,
+  myChatPrefsSchema,
+  chatMembersSchema,
   reactionBodySchema,
   seenSchema,
   sendMessageBodySchema,
@@ -118,8 +120,21 @@ function writingRoutes(app: App, messages: ChatsMessagesService) {
   );
 }
 
-/** The read-receipts setting (AC-F14-24). */
+/** The read-receipts setting (AC-F14-24) and a chat's people (AC-F14-14). */
 function settingsRoutes(app: App, messages: ChatsMessagesService) {
+  app.get(
+    "/api/v1/me/settings",
+    { schema: { summary: "My chat settings", tags, response: { 200: myChatPrefsSchema } } },
+    (request) => messages.readReceipts(signedInUser(request).id),
+  );
+  app.get(
+    `${BASE}/members`,
+    route("The chat's people, with status where visible", {
+      params: conversationParamsSchema,
+      response: { 200: chatMembersSchema },
+    }),
+    (request) => messages.members(signedInUser(request).id, idParam(request.params.conversationId)),
+  );
   app.patch(
     "/api/v1/me/settings",
     { schema: { summary: "My chat settings: read receipts", tags, body: myChatPrefsBodySchema } },

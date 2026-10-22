@@ -3,7 +3,7 @@
 // messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
 // Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
-import { Button, ChatPanel, Dialog, Notice } from "@meetapp/ui";
+import { Button, ChatPanel, Dialog, Notice, type ChatComposerProps } from "@meetapp/ui";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat, type ChatPlace } from "../../features/meetings/chat/index.ts";
@@ -115,17 +115,23 @@ function DeleteDialog({
   );
 }
 
+/** The message box's place and extras: files, chat off, and (F14) its words, mentions and typing. */
+interface Writing {
+  place: ChatPlace;
+  attachments: Attachments;
+  off: boolean;
+  /** "Message Bilal Ahmed" instead of "Message everyone". */
+  placeholder?: string;
+  mentions?: ChatComposerProps["mentions"];
+  onTyping?: () => void;
+}
+
 export interface ChatAreaProps {
   chat: Chat;
   /** In a call: the message box, or "Chat is turned off" when `off`. Absent after the meeting. */
-  writing?:
-    | {
-        place: ChatPlace;
-        attachments: Attachments;
-        off: boolean;
-        /** F14: "Message Bilal Ahmed". */ placeholder?: string;
-      }
-    | undefined;
+  writing?: Writing | undefined;
+  /** F14: "… is typing" and "Seen", just above the message box. */
+  footer?: ReactNode;
   /** Files are being dragged over the meeting window (AC-F03-29). */
   dropping: boolean;
   rights: ChatRights;
@@ -190,6 +196,8 @@ function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaPro
       view={view}
       place={writing.place}
       placeholder={writing.placeholder}
+      mentions={writing.mentions}
+      onTyping={writing.onTyping}
       attachments={writing.attachments}
       replyingTo={act.replyingTo}
       editing={act.editing}
@@ -227,7 +235,7 @@ export function ChatArea(props: ChatAreaProps) {
         dropArea={
           dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
-        notice={chat.state.loadFailed ? <LoadFailed onRetry={chat.reload} /> : undefined}
+        notice={chat.state.loadFailed ? <LoadFailed onRetry={chat.reload} /> : props.footer}
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
         composer={<Composer view={view} writing={writing} act={act} />}
       />

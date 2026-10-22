@@ -98,16 +98,17 @@ function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter"
     now: calls.now,
     live: createLivePublisher(redis),
   };
+  const presence = createPresenceStore(redis);
+  const status = createChatsStatusService({ ...requestsDeps, presence });
   const messagesDeps = {
     ...requestsDeps,
+    statuses: (viewer: string, ids: string[]) => status.visible(viewer, ids),
     meetingChat: chatDeps,
     messages: createChatsMessagesRepository(db),
     // News goes out on the live line (D064); apps also catch up from the saved news.
     publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
   };
   const groupsDeps = { ...requestsDeps, groups: createChatsGroupsRepository(db) };
-  const presence = createPresenceStore(redis);
-  const status = createChatsStatusService({ ...requestsDeps, presence });
   return { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status };
 }
 

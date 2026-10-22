@@ -24,6 +24,13 @@ export function useAllowGuests(workspaceId: string) {
   );
 }
 
+/** Chat with people outside the workspace (F14 AC-F14-27). */
+export function useAllowOutsideChat(workspaceId: string) {
+  return useSaved((allowOutsideChat: boolean) =>
+    apiRequest<undefined>(`${base(workspaceId)}/settings`, { method: "PATCH", body: { allowOutsideChat } }),
+  );
+}
+
 /** GIFs in the workspace's meeting chat (F03 AC-F03-27). */
 export function useAllowGifs(workspaceId: string) {
   return useSaved((allowGifs: boolean) =>

@@ -143,6 +143,13 @@ export const conversationFileParamsSchema = z.object({ conversationId: z.string(
 export const seenSchema = z
   .object({ people: z.array(z.object({ userId: z.uuid(), name: z.string() })).nullable() })
   .meta({ id: "ChatSeen" });
+/** A chat's people for group details (AC-F14-14, 26); `pending`: asked, not yet accepted. */
+export const chatMembersSchema = z
+  .object({
+    people: z.array(person.extend({ pending: z.boolean(), status: z.enum(STATUSES).nullable() })),
+  })
+  .meta({ id: "ChatMembers" });
+export const myChatPrefsSchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefsView" });
 export const myChatPrefsBodySchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefs" });
 
 /** Statuses of up to 100 people (AC-F14-26); people the asker may not see are left out. */

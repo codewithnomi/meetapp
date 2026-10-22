@@ -2,7 +2,7 @@
 // box with the message and Save replaces it; the poll button opens "Create a poll" for those allowed;
 // "sending too fast" is said in words (AC-F03-06, 10, 14, 21).
 import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
-import { ChatComposer, IconButton, PollCreator, ReplyQuote } from "@meetapp/ui";
+import { ChatComposer, IconButton, PollCreator, ReplyQuote, type ChatComposerProps } from "@meetapp/ui";
 import { composerLabels, pollLabels } from "./chat-labels.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ToolButtons, WaitingFiles, useExpressions } from "./ChatTools.tsx";
@@ -48,6 +48,9 @@ export interface ComposerAreaProps {
   place: ChatPlace;
   /** Instead of "Message everyone" (F14 chats: "Message <name>"). */
   placeholder?: string | undefined;
+  /** F14: @mentions of the chat's members, and telling others that one is typing. */
+  mentions?: ChatComposerProps["mentions"];
+  onTyping?: (() => void) | undefined;
   attachments: Attachments;
   replyingTo: ChatMessageView | undefined;
   editing: ChatMessageView | undefined;
@@ -151,6 +154,8 @@ export function ComposerArea(props: ComposerAreaProps) {
         onEscape={(editing ?? replyingTo) ? onDone : undefined}
         onPasteFiles={view.rights.attach ? attachments.add : undefined}
         above={<Above props={props} />}
+        mentions={props.mentions}
+        onTyping={props.onTyping}
         tools={tools}
         expressions={expressions}
       />

@@ -3,7 +3,7 @@
 // reaction and reply rules then apply as they are. A sender whose request is unanswered sends at most
 // 10 messages; a blocked direct chat is read-only for both; left and removed people read only what they
 // saw. Mentions of people outside the chat become plain text.
-import { CHATS_LIMITS, type ChatEvent, type MessageDocument } from "@meetapp/contracts";
+import { CHATS_LIMITS, type ChatEvent, type MessageDocument, type Status } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { ChatDeps } from "../chat/chat-access.ts";
 import { deleteAs, editAs, reactAs, unreactAs } from "../chat/chat-actions.service.ts";
@@ -20,6 +20,8 @@ export interface MessagesDeps extends RequestsDeps {
   /** F03's chat pieces: messages, reactions, files, limits. */
   meetingChat: ChatDeps;
   messages: ChatsMessagesRepository;
+  /** Statuses the viewer may see (AC-F14-26). */
+  statuses: (viewer: string, userIds: string[]) => Promise<Map<string, Status>>;
   /** Delivers news to the members' live lines (T9); saved news is caught up meanwhile. */
   publish: (conversationId: string, event: ChatEvent) => Promise<void>;
 }
@@ -137,6 +139,26 @@ async function seen(deps: MessagesDeps, userId: string, conversationId: string, 
   return { people };
 }
 
+/** The people in a chat with their status and "(External)", for group details (AC-F14-14, 26). */
+async function members(deps: MessagesDeps, userId: string, conversationId: string) {
+  const { people } = await seatIn(deps, userId, conversationId, "read");
+  const inChat = people.filter((p) => p.state === "accepted" || p.state === "pending");
+  const statuses = await deps.statuses(
+    userId,
+    inChat.map((p) => p.userId),
+  );
+  return {
+    people: inChat.map((p) => ({
+      userId: p.userId,
+      name: p.name,
+      photoUrl: p.avatarKey ? `/api/v1/users/${p.userId}/avatar?v=${p.avatarKey}` : null,
+      external: p.external,
+      pending: p.state === "pending",
+      status: statuses.get(p.userId) ?? null,
+    })),
+  };
+}
+
 type OnMessage = { userId: string; conversationId: string; messageId: string };
 
 export function createChatsMessagesService(deps: MessagesDeps) {
@@ -162,7 +184,13 @@ export function createChatsMessagesService(deps: MessagesDeps) {
     seen: ({ userId, conversationId, messageId }: OnMessage) => seen(deps, userId, conversationId, messageId),
     setReadReceipts: async (userId: string, on: boolean) => {
       await deps.messages.setReadReceipts(userId, on);
+      // The person's own line now drops or passes "Seen" marks (AC-F14-24).
+      await deps.live.control(userId, { control: "refresh" });
     },
+    readReceipts: async (userId: string) => ({
+      readReceipts: (await deps.messages.person(userId))?.readReceipts ?? true,
+    }),
+    members: (userId: string, conversationId: string) => members(deps, userId, conversationId),
   };
 }
 

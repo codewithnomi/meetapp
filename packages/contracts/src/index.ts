@@ -174,6 +174,8 @@ export {
   conversationPollParamsSchema,
   conversationFileParamsSchema,
   myChatPrefsBodySchema,
+  myChatPrefsSchema,
+  chatMembersSchema,
   renameBodySchema,
   chatMemberParamsSchema,
   conversationListItemSchema,

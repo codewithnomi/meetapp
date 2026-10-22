@@ -47,19 +47,31 @@ function textOf(node: EditorNode): string {
   return (node.content ?? []).map(textOf).join("");
 }
 
-function inlines(node: EditorNode): Inline[] {
-  const parts: Inline[] = [];
-  for (const child of node.content ?? []) {
-    if (child.type === "hardBreak") parts.push({ type: "hardBreak" });
-    else if (child.type === "text" && child.text) {
-      const marks = marksOf(child);
-      parts.push({ type: "text", text: child.text, ...(marks.length > 0 ? { marks } : {}) });
-    } else {
-      const text = textOf(child);
-      if (text) parts.push({ type: "text", text });
-    }
+/** F14 @mentions: the person's account and the name as typed (AC-F14-22). */
+function mentionOf(node: EditorNode): Inline | undefined {
+  const id = node.attrs?.["id"];
+  if (typeof id !== "string") return undefined;
+  const label = typeof node.attrs?.["label"] === "string" ? node.attrs["label"] : "";
+  return { type: "mention", userId: id, text: `@${label}` };
+}
+
+/** One part of a paragraph, or nothing when it holds no text. */
+function inlineOf(child: EditorNode): Inline | undefined {
+  if (child.type === "hardBreak") return { type: "hardBreak" };
+  if (child.type === "mention") return mentionOf(child);
+  if (child.type === "text" && child.text) {
+    const marks = marksOf(child);
+    return { type: "text", text: child.text, ...(marks.length > 0 ? { marks } : {}) };
   }
-  return parts;
+  const text = textOf(child);
+  return text ? { type: "text", text } : undefined;
+}
+
+function inlines(node: EditorNode): Inline[] {
+  return (node.content ?? []).flatMap((child) => {
+    const part = inlineOf(child);
+    return part ? [part] : [];
+  });
 }
 
 function paragraph(node: EditorNode): Paragraph {
@@ -101,7 +113,7 @@ export function toRichDocument(doc: EditorNode): RichDocument {
 }
 
 function paragraphText(part: Paragraph): string {
-  return (part.content ?? []).map((inline) => (inline.type === "text" ? inline.text : "\n")).join("");
+  return (part.content ?? []).map((inline) => (inline.type === "hardBreak" ? "\n" : inline.text)).join("");
 }
 
 function blockLines(part: Block): string[] {
@@ -121,7 +133,7 @@ function editorInlines(content: Paragraph["content"]): EditorNode[] {
     part.type === "hardBreak"
       ? { type: "hardBreak" }
       : part.type === "mention"
-        ? { type: "text", text: part.text }
+        ? { type: "mention", attrs: { id: part.userId, label: part.text.replace(/^@/, "") } }
         : {
             type: "text",
             text: part.text,

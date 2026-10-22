@@ -38,6 +38,8 @@ interface Line {
   readReceipts: boolean;
   lastPing: number;
   typing: number[];
+  /** This line's presence writes, one after another, so the "closed" clean-up always comes last. */
+  writes: Promise<unknown>;
   /** People whose status this person may see; their status channels are followed. */
   audience: Set<string>;
   activeAt: number;
@@ -109,7 +111,7 @@ class LineHub {
     for (const id of line.audience) this.unfollow(channels.status(id), line);
     this.unfollow(channels.user(line.userId), line);
     void this.deps.redis.zrem(linesKey(line.userId), line.id);
-    this.track(this.statusAfterClose(line.userId, line.id));
+    this.track(this.inOrder(line, () => this.statusAfterClose(line.userId, line.id)));
     if (line.socket.readyState === line.socket.OPEN) line.socket.close(code);
   }
 
@@ -165,20 +167,28 @@ class LineHub {
     if (message.data.t === "typing") this.typing(line, message.data.conversationId);
   }
 
+  /** Runs a presence write after this line's earlier ones (a late activity write can't undo "closed"). */
+  private inOrder(line: Line, write: () => Promise<unknown>) {
+    line.writes = line.writes.catch(() => undefined).then(write);
+    return line.writes;
+  }
+
   private async reportPresence(line: Line) {
-    await this.deps.presence.line(line.userId, line.id, {
-      activeAt: line.activeAt,
-      locked: line.locked,
-      seenAt: this.now(),
+    const seen = { activeAt: line.activeAt, locked: line.locked, seenAt: this.now() };
+    await this.inOrder(line, async () => {
+      // A line already closed writes nothing more.
+      if (!this.lines.has(line.id)) return;
+      await this.deps.presence.line(line.userId, line.id, seen);
     });
     await this.deps.status.announce(line.userId);
   }
 
   /** Offline comes 30 seconds after the last line closed (a grace for reconnects). */
   private async statusAfterClose(userId: string, lineId: string) {
-    // A server shutting down leaves the lines to time out (LINE_LOST_MS) rather than writing on the way out.
-    if (this.stopping) return;
     await this.deps.presence.closed(userId, lineId, this.now());
+    // A server shutting down only clears its lines (a crashed one's lines time out: LINE_LOST_MS); the
+    // status is worked out again by the servers still running.
+    if (this.stopping) return;
     await this.deps.status.announce(userId);
     const later = setTimeout(() => {
       this.waiting.delete(later);
@@ -238,6 +248,7 @@ class LineHub {
       readReceipts: true,
       lastPing: this.now(),
       typing: [],
+      writes: Promise.resolve(),
       audience: new Set(),
       activeAt: this.now(),
       locked: false,

@@ -33,6 +33,7 @@ import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
 import { WorkspaceSettingsPage } from "../pages/WorkspaceSettingsPage/index.ts";
 import { PreJoinPage } from "../pages/PreJoinPage/index.ts";
+import { PrivacyPage } from "../pages/PrivacyPage/index.ts";
 import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
@@ -211,7 +212,7 @@ function SignedInScreens() {
   const go = (screen: AppScreen) => void navigate(PATHS[screen]);
   const home = () => go("home");
   const settings = (screen: SettingsScreen) =>
-    void navigate(screen === "profile" ? "/settings" : "/settings/appearance");
+    void navigate(screen === "profile" ? "/settings" : `/settings/${screen}`);
   const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
   return (
     <Routes>
@@ -239,6 +240,7 @@ function SignedInScreens() {
       <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
       <Route path="/settings" element={<ProfilePage onNavigate={settings} onBack={home} />} />
       <Route path="/settings/appearance" element={<SettingsPage onNavigate={settings} onBack={home} />} />
+      <Route path="/settings/privacy" element={<PrivacyPage onNavigate={settings} onBack={home} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

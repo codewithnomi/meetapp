@@ -1,7 +1,7 @@
 // The message box's content turned into the stored document (F03 TC-F03-31, 28, 05 app parts).
 import { describe, expect, it } from "vitest";
 import type { RichDocument } from "../molecules/MessageBody/index.ts";
-import { emojiOnly, toRichDocument, visibleText } from "./rich-document.ts";
+import { emojiOnly, toEditorDocument, toRichDocument, visibleText } from "./rich-document.ts";
 
 // Test nodes are loose on purpose (some are not valid TipTap nodes), so they are typed as `never`.
 const text = (value: string, marks?: object[]) => ({ type: "text", text: value, ...(marks ? { marks } : {}) }) as never;
@@ -106,5 +106,32 @@ describe("emojiOnly", () => {
     for (const text of ["👍", "🎉🎉🎉", "👍🏽 ❤️", "👨‍👩‍👧"]) expect(emojiOnly(plain(text))).toBe(true);
     for (const text of ["👍 ok", "🎉🎉🎉🎉", "hi", "1", "™", "©", "®"]) expect(emojiOnly(plain(text))).toBe(false);
     expect(emojiOnly(plain("👍", [{ type: "bold" }]))).toBe(false);
+  });
+});
+
+describe("mentions", () => {
+  it("TC-F14-45 [AC-F14-22] a mention keeps the person's account both ways and counts as its text", () => {
+    const editor = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "Hi " },
+            { type: "mention", attrs: { id: "4f2a6a8e-0000-4000-8000-000000000001", label: "Sara Malik" } },
+          ],
+        },
+      ],
+    };
+    const stored = toRichDocument(editor);
+    expect(stored.blocks[0]).toEqual({
+      type: "paragraph",
+      content: [
+        { type: "text", text: "Hi " },
+        { type: "mention", userId: "4f2a6a8e-0000-4000-8000-000000000001", text: "@Sara Malik" },
+      ],
+    });
+    expect(visibleText(stored)).toBe("Hi @Sara Malik");
+    expect(toEditorDocument(stored)).toEqual(editor);
   });
 });

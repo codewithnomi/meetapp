@@ -45,7 +45,16 @@
     "nav": {
       "label": "Settings",
       "profile": "Profile and account",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "privacy": "Privacy"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "readReceipts": "Read receipts",
+      "readReceiptsHint": "Others see when you've read their messages in one-to-one chats and small groups, and you see theirs. Turn off to stop both.",
+      "blockedTitle": "Blocked people",
+      "blockedNone": "You haven't blocked anyone.",
+      "unblock": "Unblock {{name}}"
     }
   },
   "auth": {
@@ -381,7 +390,9 @@
       "loading": "Loading workspace settings",
       "chatTitle": "Meeting chat",
       "allowGifs": "Allow GIFs",
-      "allowGifsHint": "People can search and send GIFs in this workspace's meeting chat. Their search words go to our GIF service (KLIPY); names and meetings never do."
+      "allowGifsHint": "People can search and send GIFs in this workspace's meeting chat. Their search words go to our GIF service (KLIPY); names and meetings never do.",
+      "allowOutsideChat": "Chat with people outside the workspace",
+      "allowOutsideChatHint": "Members can start chats with anyone on MeetApp by email, and people outside can send them chat requests. When off, existing outside chats become read-only."
     }
   },
   "profile": {
@@ -1007,7 +1018,9 @@
       "unpin": "Unpin",
       "mute": "Mute",
       "unmute": "Unmute",
-      "hide": "Hide"
+      "hide": "Hide",
+      "details": "Group details",
+      "block": "Block {{name}}"
     },
     "readOnly": {
       "blocked": "You can't send messages in this chat.",
@@ -1035,6 +1048,52 @@
       "start": "Start chat"
     },
     "failed": "Something went wrong. Try again.",
-    "messageTo": "Message {{name}}"
+    "messageTo": "Message {{name}}",
+    "typing_one": "{{names}} is typing…",
+    "typing_other": "{{names}} are typing…",
+    "and": " and ",
+    "seen": "Seen",
+    "seenBy": "Seen by {{names}}",
+    "mentionsLabel": "People in this chat",
+    "requestsPane": {
+      "title": "Chat requests",
+      "hint": "People outside your workspaces. They can't see your status until you accept.",
+      "none": "No chat requests",
+      "intro": "{{email}} wants to chat with you",
+      "introGroup": "{{name}} added you to {{group}}",
+      "preview": "Preview messages",
+      "previewList": "Preview of messages",
+      "explanation": "Accept to chat and share your status. Delete removes the request; {{name}} isn't told and can't ask again for 30 days.",
+      "accept": "Accept",
+      "delete": "Delete",
+      "deleteTitle": "Delete this chat request?",
+      "alsoBlock": "Also block {{name}} (they can't message you or see your status)",
+      "cancel": "Cancel"
+    },
+    "group": {
+      "close": "Close group details",
+      "name": "Group name",
+      "nameError": "Use 1 to 80 characters",
+      "people": "People ({{count}})",
+      "add": "Add people",
+      "remove": "Remove {{name}} from the group",
+      "leave": "Leave group",
+      "you": "{{name}} (you)",
+      "pending": "{{name}} (asked to join)",
+      "addTitle": "Add people to {{group}}",
+      "historyLegend": "What can they see?",
+      "history": {
+        "none": "Don't include history",
+        "days": "History from the last few days",
+        "all": "All history",
+        "daysField": "Days",
+        "daysError": "Choose 1 to 365 days"
+      },
+      "addButton": "Add",
+      "cancel": "Cancel",
+      "leaveTitle": "Leave this group?",
+      "leaveHint": "You'll keep what you've seen, but won't get new messages.",
+      "addHint": "Colleagues join at once; people from outside get a chat request first."
+    }
   }
 }

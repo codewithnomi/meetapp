@@ -6,8 +6,9 @@ import type { Status } from "@meetapp/contracts";
 
 const ACTIVE_FOR_MS = 5 * 60 * 1000;
 export const OFFLINE_GRACE_MS = 30 * 1000;
-/** A line that hasn't been heard from for this long is gone (its server stopped without closing it). */
-const LINE_LOST_MS = 3 * 60 * 1000;
+/** A line that hasn't been heard from for this long is gone (its server stopped without closing it): the
+ * app pings every 30 seconds, so two missed pings. */
+const LINE_LOST_MS = 75 * 1000;
 
 export interface LinePresence {
   activeAt: number;

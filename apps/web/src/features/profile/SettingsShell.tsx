@@ -5,7 +5,7 @@ import { AppLayout, Button, type AppNavItem } from "@meetapp/ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-export type SettingsScreen = "profile" | "appearance";
+export type SettingsScreen = "profile" | "appearance" | "privacy";
 
 export interface SettingsShellProps {
   screen: SettingsScreen;
@@ -30,6 +30,13 @@ export function SettingsShell({ screen, onNavigate, onBack, children }: Settings
       icon: "sliders",
       current: screen === "appearance",
       onSelect: () => onNavigate("appearance"),
+    },
+    {
+      id: "privacy",
+      label: t("settings.nav.privacy"),
+      icon: "lock",
+      current: screen === "privacy",
+      onSelect: () => onNavigate("privacy"),
     },
   ];
   return (

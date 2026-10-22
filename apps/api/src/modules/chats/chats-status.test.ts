@@ -15,9 +15,7 @@ describe("status", () => {
     expect(statusOf({ ...none, closedAt: NOW - 20_000 }, NOW)).toBe("away");
     expect(statusOf({ ...none, closedAt: NOW - 40_000 }, NOW)).toBe("offline");
     expect(statusOf(none, NOW)).toBe("offline");
-    // A line its server never closed counts as gone after 3 minutes without a word.
-    expect(statusOf({ ...none, lines: [{ activeAt: NOW, locked: false, seenAt: NOW - 4 * 60_000 }] }, NOW)).toBe(
-      "offline",
-    );
+    // A line its server never closed counts as gone after two missed pings (75 seconds).
+    expect(statusOf({ ...none, lines: [{ activeAt: NOW, locked: false, seenAt: NOW - 80_000 }] }, NOW)).toBe("offline");
   });
 });
