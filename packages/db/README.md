@@ -5,7 +5,7 @@ The database: table definitions (Drizzle), migrations, feature flags and sample 
 
 | File | What it is |
 |---|---|
-| `src/schema/` (re-exported by `src/schema.ts`) | The tables, one file per area (`auth.ts`, `workspaces.ts`, `flags.ts`, shared `columns.ts`): `feature_flags`; Better Auth's `user`, `session`, `account`, `verification`; `workspaces` (with `allow_guests` since F02), `workspace_members`, `invitations`, `join_requests`, `member_removals`; F02 (`meetings.ts`): `meetings`, `meeting_co_organizers`, `calls`, `call_attendances`, `livekit_events`. |
+| `src/schema/` (re-exported by `src/schema.ts`) | The tables, one file per area (`auth.ts`, `workspaces.ts`, `flags.ts`, shared `columns.ts`): `feature_flags`; Better Auth's `user`, `session`, `account`, `verification`; `workspaces` (with `allow_guests` since F02), `workspace_members`, `invitations`, `join_requests`, `member_removals`; F02 (`meetings.ts`): `meetings`, `meeting_co_organizers`, `calls`, `call_attendances`, `livekit_events`; F03 (`chat.ts`): meeting chat; F14 (`conversations.ts`): `conversations`, `conversation_members`, `conversation_reads`, `chat_blocks`, `chat_request_cooldowns`. |
 | `migrations/` | SQL files that build the database step by step. Never edit an existing one. |
 | `src/migrate.ts` | `runMigrations(url)`: applies new migrations, skips ones already applied. |
 | `src/flags.ts` | Read and switch feature flags; `isValidFlagKey`. |

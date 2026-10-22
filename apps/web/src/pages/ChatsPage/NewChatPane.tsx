@@ -83,6 +83,7 @@ function pickerProps(t: TFunction, chat: NewChat): PeoplePickerProps {
   const email = chat.query.trim();
   return {
     label: t("chats.new.to"),
+    focusOnOpen: true,
     hint: t("chats.new.hint"),
     picked: chat.picked.map((person) => ({
       id: person.userId,

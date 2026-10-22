@@ -77,19 +77,15 @@ function Actions({
   const { t } = useTranslation();
   const react = (emoji: string) => () => reactWith(view, message, emoji);
   const more = moreActions(t, view, message, own);
+  const label = own ? t("meetings.chat.actions.labelOwn") : t("meetings.chat.actions.label", { name });
   if (view.readOnly) {
     return more.length > 0 ? (
-      <MessageActions
-        label={t("meetings.chat.actions.label", { name })}
-        quickReactions={[]}
-        moreLabel={t("meetings.chat.actions.more")}
-        more={more}
-      />
+      <MessageActions label={label} quickReactions={[]} moreLabel={t("meetings.chat.actions.more")} more={more} />
     ) : null;
   }
   return (
     <MessageActions
-      label={t("meetings.chat.actions.label", { name })}
+      label={label}
       quickReactions={QUICK.map(([emoji, key]) => ({
         emoji,
         label: t(`meetings.chat.actions.react.${key}`),

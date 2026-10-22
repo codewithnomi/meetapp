@@ -2,7 +2,7 @@
 // 08): chosen people as chips, a text field, and suggestions below it (name, detail, status, "(External)").
 // An exact email with no account shows a note with Invite. A combobox: arrows move through the
 // suggestions, Enter picks, Backspace in an empty field removes the last chip.
-import { useId, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Button } from "../../atoms/Button/index.ts";
 import { Icon } from "../../atoms/Icon/index.ts";
@@ -42,6 +42,10 @@ export interface PeoplePickerProps {
   onRemove: (id: string) => void;
   /** An exact email nobody uses yet (AC-F14-08). */
   noAccount?: { email: string; message: string; inviteLabel: string; onInvite: () => void } | undefined;
+  /** Takes the focus when shown (New chat opens with the cursor in To:, as in Teams; AC-F14-30). */
+  focusOnOpen?: boolean | undefined;
+  /** The text field's id, e.g. for a dialog's `initialFocusId` (inside a dialog, use that, not focusOnOpen). */
+  inputId?: string | undefined;
 }
 
 function Chip({ person, onRemove }: { person: PickedPerson; onRemove: () => void }) {
@@ -124,6 +128,12 @@ interface FieldProps {
 
 /** "To:", the chips and the text field: the combobox itself. */
 function Field({ props, ids, open, current, onKeyDown, onTyped }: FieldProps) {
+  const input = useRef<HTMLInputElement>(null);
+  const focusFirst = props.focusOnOpen ?? false;
+  // Moved on purpose once, when the pane opens; a screen reader announces the field with its hint.
+  useEffect(() => {
+    if (focusFirst) input.current?.focus();
+  }, [focusFirst]);
   return (
     <div className="flex flex-wrap items-center gap-1.5 rounded-lg border-2 border-line-strong bg-surface px-2.5 py-2 focus-within:border-focus-ring">
       <label htmlFor={ids.inputId} className="pr-1 font-semibold text-ink-muted">
@@ -152,6 +162,7 @@ function Field({ props, ids, open, current, onKeyDown, onTyped }: FieldProps) {
           props.onQueryChange(event.target.value);
         }}
         onKeyDown={onKeyDown}
+        ref={input}
         className="h-8 min-w-40 flex-1 border-0 bg-transparent text-[15px] text-ink outline-none"
       />
     </div>
@@ -176,7 +187,8 @@ function useComboKeys({ picked, suggestions, query, onPick, onRemove }: PeoplePi
 
 export function PeoplePicker(props: PeoplePickerProps) {
   const { suggestions } = props;
-  const inputId = useId();
+  const ownId = useId();
+  const inputId = props.inputId ?? ownId;
   const listId = useId();
   const hintId = useId();
   const { open, current, setActive, onKeyDown } = useComboKeys(props);

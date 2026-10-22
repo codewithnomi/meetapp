@@ -70,11 +70,15 @@ function historyLabels(t: TFunction) {
 
 type Adding = ReturnType<typeof useAddPeople>;
 
+/** Add people opens with the cursor in its To: field; closing gives focus back to the button. */
+const ADD_FIELD = "add-people-to";
+
 /** Whom to add: chips and suggestions ("(External)" for people outside the workspace). */
 function AddPicker({ adding }: { adding: Adding }) {
   const { t } = useTranslation();
   return (
     <PeoplePicker
+      inputId={ADD_FIELD}
       label={t("chats.new.to")}
       picked={adding.picked.map((p) => ({
         id: p.userId,
@@ -109,6 +113,7 @@ function AddDialog({ item, open, onClose }: { item: ChatItem; open: boolean; onC
       title={t("chats.group.addTitle", { group: item.title })}
       description={t("chats.group.addHint")}
       closeLabel={t("chats.group.cancel")}
+      initialFocusId={ADD_FIELD}
     >
       <div className="flex flex-col gap-4">
         <AddPicker adding={adding} />
@@ -149,6 +154,29 @@ function personOf(t: TFunction, member: ChatMember, userId: string) {
   };
 }
 
+/** "Leave this group?" with Cancel and Leave group (approved canvas F14Group). */
+function LeaveDialog({ open, onClose, onLeave }: { open: boolean; onClose: () => void; onLeave: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => (next ? undefined : onClose())}
+      title={t("chats.group.leaveTitle")}
+      description={t("chats.group.leaveHint")}
+      closeLabel={t("chats.group.cancel")}
+    >
+      <div className="flex justify-end gap-2">
+        <Button variant="ghost" onClick={onClose}>
+          {t("chats.group.cancel")}
+        </Button>
+        <Button variant="danger" onClick={onLeave}>
+          {t("chats.group.leave")}
+        </Button>
+      </div>
+    </Dialog>
+  );
+}
+
 export function GroupPane({
   item,
   userId,
@@ -164,6 +192,7 @@ export function GroupPane({
   const queries = useQueryClient();
   const members = useMembers(item.id).data?.people ?? [];
   const [adding, setAdding] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [nameError, setNameError] = useState<string>();
   const refresh = () => queries.invalidateQueries({ queryKey: ["chats"] });
   return (
@@ -186,9 +215,14 @@ export function GroupPane({
         people={members.map((member) => personOf(t, member, userId))}
         onRemove={(id) => void removeFromGroup(item.id, id).then(refresh)}
         leaveLabel={t("chats.group.leave")}
-        onLeave={() => void leaveGroup(item.id).then(refresh).then(onLeft)}
+        onLeave={() => setLeaving(true)}
       />
       <AddDialog item={item} open={adding} onClose={() => setAdding(false)} />
+      <LeaveDialog
+        open={leaving}
+        onClose={() => setLeaving(false)}
+        onLeave={() => void leaveGroup(item.id).then(refresh).then(onLeft)}
+      />
     </main>
   );
 }

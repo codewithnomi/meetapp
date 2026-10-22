@@ -127,7 +127,8 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - Tests: TC-F14-42.
   - Built in T18: `tests/load/chat-crowd.ts` writes the 249 simulated people straight into the test database (the backend allows 50 sign-ups an hour), each with a session only the test knows; each opens a live line with Node's own WebSocket and sends through the normal API. 300 messages over 3 minutes. First run (2026-10-22): 95% shown in the app within 337 ms (slowest 510 ms), every line got all 300, none dropped. `pnpm test:load -- -g TC-F14-42` runs just this test.
 
-- [ ] **T19: Keyboard, screen reader, translations and documentation.**
+- [x] **T19: Keyboard, screen reader, translations and documentation.**
   - Keyboard-only run, announcements, translation keys, docs (API, runbooks, privacy-legal, project structure, READMEs).
   - Covers: AC-F14-30.
   - Tests: TC-F14-60, 61, 62.
+  - Built in T19: `chats-keyboard.spec.ts` (TC-F14-60 the whole Chat screen with the keyboard only, with axe on the Chat screen, New chat, Chat requests and Group details; TC-F14-61 announcements and names); the no-hard-coded-text check now covers `pages/ChatsPage` and `features/chats` (TC-F14-62); the keyboard helper `tabTo` moved to `keyboard-steps.ts`. Problems the keyboard test found and fixed: no focus in To: on New chat or Add people; no focus in the message box on opening a chat or pressing Reply; a chat started while a filter or search was on didn't open; closed tooltips stayed on the page (their fade-in also ran while closing) and caught Escape, so dialogs didn't close; Leave group left without the designed question; own messages' actions were read as "Actions for You's message" (now "Actions for your message", meeting chat too). Docs: privacy-legal (chats, requests and blocks, status), project structure, READMEs (web, api, ui, contracts, db), local-services runbook (Redis down, Offline).

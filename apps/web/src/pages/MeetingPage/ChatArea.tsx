@@ -124,6 +124,8 @@ interface Writing {
   placeholder?: string;
   mentions?: ChatComposerProps["mentions"];
   onTyping?: () => void;
+  /** F14: the box takes the focus when the chat opens. */
+  focusOnOpen?: boolean;
 }
 
 export interface ChatAreaProps {
@@ -198,6 +200,7 @@ function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaPro
       placeholder={writing.placeholder}
       mentions={writing.mentions}
       onTyping={writing.onTyping}
+      focusOnOpen={writing.focusOnOpen}
       attachments={writing.attachments}
       replyingTo={act.replyingTo}
       editing={act.editing}

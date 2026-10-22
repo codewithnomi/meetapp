@@ -16,7 +16,8 @@ export interface TooltipProps {
 
 export function Tooltip({ label, side = "top", open, children }: TooltipProps) {
   return (
-    // Shows at once on hover or focus, fading in over 120 ms, like the design system's tooltip.
+    // Shows at once on hover or focus, fading in over 120 ms, like the design system's tooltip. The fade runs
+    // only while open: an animation on the closed state kept closed tooltips on the page, catching Escape.
     <RadixTooltip.Provider delayDuration={0}>
       <RadixTooltip.Root {...(open === undefined ? {} : { open })}>
         <RadixTooltip.Trigger asChild>{children}</RadixTooltip.Trigger>
@@ -24,7 +25,7 @@ export function Tooltip({ label, side = "top", open, children }: TooltipProps) {
           <RadixTooltip.Content
             side={side}
             sideOffset={8}
-            className="z-50 animate-[ma-fade-in_120ms_ease-out] whitespace-nowrap rounded-sm bg-ink px-2.5 py-1.5 text-[12px] font-medium leading-4 text-bg shadow-2 motion-reduce:animate-none"
+            className="z-50 data-[state=delayed-open]:animate-[ma-fade-in_120ms_ease-out] data-[state=instant-open]:animate-[ma-fade-in_120ms_ease-out] whitespace-nowrap rounded-sm bg-ink px-2.5 py-1.5 text-[12px] font-medium leading-4 text-bg shadow-2 motion-reduce:animate-none"
           >
             {label}
           </RadixTooltip.Content>

@@ -39,7 +39,7 @@ meetapp/
 │   │   └── src/
 │   │       ├── app/               Routing, providers (theme, query, i18n), error boundary
 │   │       ├── pages/             One folder per screen: MeetingPage/, HomePage/ …
-│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02), meetings/chat/ (F03: chat data and state; its screen parts are in pages/MeetingPage/Chat*.tsx and chat-*.ts); later ask-ai/. Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
+│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02), meetings/chat/ (F03: chat data and state; its screen parts are in pages/MeetingPage/Chat*.tsx and chat-*.ts); chats/ (F14: the live line, chat list, conversation, typing and the folding menu; its screen is pages/ChatsPage); later ask-ai/. Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
 │   │       │   └── meetings/      API hooks (useCreateMeeting, useJoinMeeting…), the visit store (visit.ts), devices, pre-join; call/ holds the call itself (useMeetingRoom with livekit-client, people, reactions, sharing, shortcuts)
 │   │       └── locales/           Translation files: en.json …
 │   │
@@ -58,6 +58,7 @@ meetapp/
 │   │       │   │   ├── meetings.repository.ts   Database access only
 │   │       │   │   └── meetings.*.test.ts
 │   │       │   ├── chat/      In-meeting chat: messages, reactions, pins, polls, files, GIFs (F03)
+│   │       │   ├── chats/     Chats (F14): conversations, requests, groups, blocks, the live line (`/api/v1/realtime`), status and mentions
 │   │       │   └── calls/     Joining, the lobby, in-call controls, ending (F02): calls.permissions.ts (the role table),
 │   │       │                  livekit-webhook.routes.ts (joins and leaves from the call server), calls.jobs.ts (timeouts, the 30-hour limit)
 │   │       ├── test-support/      Test-only helpers: the test backend (auth-app.ts), fake Google/Microsoft, Mailpit, photos, workspace/invitation/join/sweep set-ups. modules/test-support/ holds test-only routes, registered only when NODE_ENV is "test"

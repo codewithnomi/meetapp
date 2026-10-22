@@ -51,6 +51,7 @@ export interface ComposerAreaProps {
   /** F14: @mentions of the chat's members, and telling others that one is typing. */
   mentions?: ChatComposerProps["mentions"];
   onTyping?: (() => void) | undefined;
+  focusOnOpen?: boolean | undefined;
   attachments: Attachments;
   replyingTo: ChatMessageView | undefined;
   editing: ChatMessageView | undefined;
@@ -156,6 +157,8 @@ export function ComposerArea(props: ComposerAreaProps) {
         above={<Above props={props} />}
         mentions={props.mentions}
         onTyping={props.onTyping}
+        focusOnOpen={props.focusOnOpen}
+        focusWhen={replyingTo?.id}
         tools={tools}
         expressions={expressions}
       />

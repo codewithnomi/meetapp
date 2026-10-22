@@ -49,6 +49,10 @@ export interface ChatComposerProps {
   mentions?: { search: (query: string) => MentionPerson[]; listLabel: string } | undefined;
   /** F14 "is typing": called as the text changes (the page decides how often to tell others). */
   onTyping?: (() => void) | undefined;
+  /** F14: the box takes the focus when a chat opens (as in Teams), so the keyboard can write at once. */
+  focusOnOpen?: boolean | undefined;
+  /** The box takes the focus again whenever this changes, e.g. the message a reply was started to. */
+  focusWhen?: string | undefined;
 }
 
 /** Enter sends, except inside lists and code blocks; Ctrl/Cmd+Enter always sends; Escape cancels. */
@@ -78,7 +82,11 @@ interface Latest {
   pasteFiles: { current: ((files: File[]) => void) | undefined };
 }
 
-function useComposerEditor(initial: RichDocument | undefined, labels: ChatComposerLabels, latest: Latest) {
+function useComposerEditor(
+  { initial, focusOnOpen = false, focusWhen }: Pick<ChatComposerProps, "initial" | "focusOnOpen" | "focusWhen">,
+  labels: ChatComposerLabels,
+  latest: Latest,
+) {
   const { send, escape, pasteFiles, mentions, typing } = latest;
   const [, redraw] = useState(0);
   const editor = useEditor({
@@ -98,6 +106,7 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
       ...(mentions ? [mentionExtension(mentions)] : []),
     ],
     ...(initial ? { content: toEditorDocument(initial) as never, autofocus: "end" as const } : {}),
+    ...(!initial && focusOnOpen ? { autofocus: "end" as const } : {}),
     editorProps: {
       handlePaste: (_view, event) => {
         const files = [...(event.clipboardData?.files ?? [])];
@@ -113,6 +122,10 @@ function useComposerEditor(initial: RichDocument | undefined, labels: ChatCompos
     },
     onSelectionUpdate: () => redraw((n) => n + 1),
   });
+  // Reply moves the keyboard to the box, as in Teams (F14 TC-F14-60).
+  useEffect(() => {
+    if (focusWhen) editor?.commands.focus("end");
+  }, [editor, focusWhen]);
   return editor;
 }
 
@@ -225,7 +238,7 @@ export function ChatComposer(props: ChatComposerProps) {
   const [menu, setMenu] = useState<MentionMenu>();
   // Made once: the editor's extensions are fixed when it starts.
   const [bridge] = useState<MentionBridge | undefined>(() => (props.mentions ? { search, show: setMenu } : undefined));
-  const editor = useComposerEditor(props.initial, labels, { send, escape, pasteFiles, mentions: bridge, typing });
+  const editor = useComposerEditor(props, labels, { send, escape, pasteFiles, mentions: bridge, typing });
   const [formatting, setFormatting] = useState(false);
   const draft = useDraft(editor, allowEmpty, props.waiting === true);
   const submit = () => {

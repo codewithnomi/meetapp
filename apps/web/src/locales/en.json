@@ -847,6 +847,7 @@
       "actionFailed": "That didn't work. Try again.",
       "actions": {
         "label": "Actions for {{name}}'s message",
+        "labelOwn": "Actions for your message",
         "reply": "Reply",
         "more": "More actions",
         "edit": "Edit",

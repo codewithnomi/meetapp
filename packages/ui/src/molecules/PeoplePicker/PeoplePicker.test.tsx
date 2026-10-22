@@ -21,6 +21,14 @@ const props = (overrides: Partial<PeoplePickerProps> = {}): PeoplePickerProps =>
 });
 
 describe("PeoplePicker", () => {
+  it("TC-F14-60 [AC-F14-30] with focusOnOpen the To: field takes the focus when shown; without, it doesn't", () => {
+    const { unmount } = render(<PeoplePicker {...props({ focusOnOpen: true })} />);
+    expect(screen.getByRole("combobox", { name: "To:" })).toHaveFocus();
+    unmount();
+    render(<PeoplePicker {...props()} />);
+    expect(screen.getByRole("combobox", { name: "To:" })).not.toHaveFocus();
+  });
+
   it("TC-F14-79 [AC-F14-07] arrows move through the suggestions; Enter picks", async () => {
     const p = props();
     render(<PeoplePicker {...p} />);

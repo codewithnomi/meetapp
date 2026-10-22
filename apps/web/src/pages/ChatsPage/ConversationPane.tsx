@@ -199,6 +199,7 @@ function LiveConversation({ item, userId, onFailed, onDetails }: PaneProps) {
               placeholder: t("chats.messageTo", { name: item.title }),
               mentions,
               onTyping: typing.onTyping,
+              focusOnOpen: true,
             }
           : undefined
       }

@@ -77,9 +77,12 @@ function RightPane({
   setOpen,
   items,
   userId,
+  showNew,
 }: {
   open: string | undefined;
   setOpen: (open: string | undefined) => void;
+  /** Opens a chat just started or accepted, clearing the list's filter and search so it is listed. */
+  showNew: (id: string) => void;
   items: ChatItem[];
   userId: string;
 }) {
@@ -88,8 +91,8 @@ function RightPane({
   const detailsOf = open?.startsWith(DETAILS) ? open.slice(DETAILS.length) : undefined;
   const openItem = items.find((item) => item.id === (detailsOf ?? open));
   let pane: ReactNode = <Placeholder />;
-  if (open === NEW_CHAT) pane = <NewChatPane onStarted={setOpen} onCancel={() => setOpen(undefined)} />;
-  else if (open === REQUESTS) pane = <RequestsPane onAccepted={setOpen} />;
+  if (open === NEW_CHAT) pane = <NewChatPane onStarted={showNew} onCancel={() => setOpen(undefined)} />;
+  else if (open === REQUESTS) pane = <RequestsPane onAccepted={showNew} />;
   else if (openItem && detailsOf)
     pane = (
       <GroupPane
@@ -132,6 +135,12 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
   const entry = (item: ChatItem) =>
     entryOf(t, item, { now, locale: i18n.language, current: item.id === open, onSelect: () => setOpen(item.id) });
   const requestCount = useChatRequests().data?.requests.length ?? 0;
+  // As in Teams: a chat just started or accepted opens with every chat listed again (AC-F14-30, TC-F14-60).
+  const showNew = (id: string) => {
+    setFilter("all");
+    setQuery("");
+    setOpen(id);
+  };
   return (
     <WorkspaceShell screen="chat" onNavigate={onNavigate}>
       <div className="grid h-screen min-h-0 grid-cols-1 md:grid-cols-[360px_1fr]">
@@ -147,7 +156,7 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
             requests: { count: requestCount, onOpen: () => setOpen(REQUESTS) },
           })}
         />
-        <RightPane open={open} setOpen={setOpen} items={items} userId={userId} />
+        <RightPane open={open} setOpen={setOpen} items={items} userId={userId} showNew={showNew} />
       </div>
     </WorkspaceShell>
   );
