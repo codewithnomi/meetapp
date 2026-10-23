@@ -49,10 +49,11 @@ const started = async (person: Person, workspaceId: string, body: object) =>
   (await start(person, workspaceId, body)).json<{ id: string; created: boolean }>();
 
 // Messages are stamped in the past, a second apart, so a read mark "now" covers them all.
-let clock = Date.now() - 3_600_000;
+let clock = 0;
 /** A message in a chat, written as T8's sending will (a later time each call). */
 async function say(conversationId: string, workspaceId: string, from: Person, text: string) {
-  clock += 1000;
+  // Each message strictly after the last and never before the chat existed (the read window, AC-F14-18).
+  clock = Math.max(clock + 1, Date.now());
   const at = new Date(clock);
   await t.database.db.insert(chatMessages).values({
     workspaceId,

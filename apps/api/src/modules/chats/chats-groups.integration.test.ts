@@ -183,6 +183,47 @@ describe("group chats", { timeout: 120_000 }, () => {
     expect((await notes(id)).filter((n) => (n as { event: string }).event === "added")).toHaveLength(3);
   });
 
+  it("TC-F14-33 TC-F14-35 [AC-F14-17] [AC-F14-18] the chat list shows only readable messages: no older history, nothing after removal", async () => {
+    const { m1, m2, w1, id } = await trio("g33l");
+    const n1 = await newPerson(t, "g33l-n1");
+    await t.database.db.insert(workspaceMembers).values({ workspaceId: w1, userId: n1.id, role: "member" });
+    await t.database.db
+      .update(conversations)
+      .set({ createdAt: new Date(Date.now() - 5 * DAY_MS) })
+      .where(eq(conversations.id, id));
+    await t.database.db
+      .update(conversationMembers)
+      .set({ historyFrom: new Date(Date.now() - 5 * DAY_MS) })
+      .where(eq(conversationMembers.conversationId, id));
+    await message(id, w1, m1, 2);
+    expect((await add(m1, id, { userIds: [n1.id], history: { from: "none" } })).statusCode).toBe(204);
+    const listOf = async (person: Person) =>
+      (await call(person.token, "GET", `/api/v1/workspaces/${w1}/conversations`))
+        .json<{ conversations: { id: string; unread: number; mentioned: boolean; lastMessage: unknown }[] }>()
+        .conversations.find((c) => c.id === id);
+    // "No history": the earlier message is neither shown nor counted.
+    expect(await listOf(n1)).toMatchObject({ unread: 0, mentioned: false, lastMessage: null });
+
+    // Removed: later messages (even ones naming them) stay hidden.
+    expect((await call(m2.token, "DELETE", `/api/v1/conversations/${id}/members/${n1.id}`)).statusCode).toBe(204);
+    await t.database.db.insert(chatMessages).values({
+      workspaceId: w1,
+      conversationId: id,
+      senderUserId: m1.id,
+      senderName: "Sender",
+      senderGroup: "member",
+      kind: "text",
+      plainText: "after removal",
+      body: { v: 1, blocks: [] },
+      clientId: randomUUID(),
+      mentionedUserIds: [n1.id],
+      createdAt: new Date(Date.now() + 60_000),
+    });
+    expect(await listOf(n1)).toMatchObject({ unread: 0, mentioned: false, lastMessage: null });
+    // Members still see it.
+    expect((await listOf(m2))?.unread).toBe(2);
+  });
+
   it("TC-F14-34 TC-F14-35 [AC-F14-18] any member removes anyone; leaving keeps what was seen; the last one out deletes it", async () => {
     const { m1, m2, m3, w1, id } = await trio("g35");
     await message(id, w1, m1, 0);

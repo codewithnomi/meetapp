@@ -113,12 +113,23 @@ function reasonFor(entry: Entry, userId: string, people: Person[], facts: ListFa
   });
 }
 
+/** The list shows only what the person may read: no older history, nothing after leaving (AC-F14-18). */
+function readWindow(entry: Entry) {
+  const ended = entry.member !== undefined && entry.member.state !== "accepted";
+  return {
+    conversationId: entry.conversation.id,
+    from: entry.member?.historyFrom ?? null,
+    until: ended ? (entry.member?.leftAt ?? null) : null,
+  };
+}
+
 async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise<Built[]> {
   const ids = entries.map((entry) => entry.conversation.id);
+  const windows = entries.map(readWindow);
   const [people, lasts, unread] = await Promise.all([
     deps.chats.peopleOf(ids),
-    deps.chats.lastMessages(ids),
-    deps.chats.unreadCounts(userId, ids),
+    deps.chats.lastMessages(windows),
+    deps.chats.unreadCounts(userId, windows),
   ]);
   const facts = await directFacts(deps, userId, entries, people);
   const { statuses } = facts;

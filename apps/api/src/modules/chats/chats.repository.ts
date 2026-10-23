@@ -14,6 +14,7 @@ import {
   type ConversationMember,
 } from "@meetapp/db";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
+import { inWindows, type ReadWindow } from "./chats-read-window.ts";
 
 export type { Conversation, ConversationMember };
 
@@ -108,9 +109,9 @@ async function listRows(db: Database, userId: string, workspaceId: string, withE
     );
 }
 
-/** Each conversation's newest message (not system notes). */
-async function lastMessages(db: Database, conversationIds: string[]) {
-  if (conversationIds.length === 0) return [];
+/** Each conversation's newest message the person may read (not system notes). */
+async function lastMessages(db: Database, windows: ReadWindow[]) {
+  if (windows.length === 0) return [];
   return db
     .selectDistinctOn([chatMessages.conversationId], {
       conversationId: chatMessages.conversationId,
@@ -122,13 +123,13 @@ async function lastMessages(db: Database, conversationIds: string[]) {
       createdAt: chatMessages.createdAt,
     })
     .from(chatMessages)
-    .where(and(inArray(chatMessages.conversationId, conversationIds), ne(chatMessages.kind, "system")))
+    .where(and(inWindows(windows), ne(chatMessages.kind, "system")))
     .orderBy(chatMessages.conversationId, desc(chatMessages.createdAt));
 }
 
-/** Messages from others after the person's read mark, per conversation (AC-F14-02). */
-async function unreadCounts(db: Database, userId: string, conversationIds: string[]) {
-  if (conversationIds.length === 0) return [];
+/** Readable messages from others after the person's read mark, per conversation (AC-F14-02). */
+async function unreadCounts(db: Database, userId: string, windows: ReadWindow[]) {
+  if (windows.length === 0) return [];
   return db
     .select({
       conversationId: chatMessages.conversationId,
@@ -143,7 +144,7 @@ async function unreadCounts(db: Database, userId: string, conversationIds: strin
     )
     .where(
       and(
-        inArray(chatMessages.conversationId, conversationIds),
+        inWindows(windows),
         ne(chatMessages.kind, "system"),
         isNull(chatMessages.deletedAt),
         or(isNull(chatMessages.senderUserId), ne(chatMessages.senderUserId, userId)),
@@ -246,8 +247,8 @@ export function createChatsRepository(db: Database) {
       meetingIds.length === 0
         ? Promise.resolve([])
         : db.select().from(conversations).where(inArray(conversations.meetingId, meetingIds)),
-    lastMessages: (conversationIds: string[]) => lastMessages(db, conversationIds),
-    unreadCounts: (userId: string, conversationIds: string[]) => unreadCounts(db, userId, conversationIds),
+    lastMessages: (windows: ReadWindow[]) => lastMessages(db, windows),
+    unreadCounts: (userId: string, windows: ReadWindow[]) => unreadCounts(db, userId, windows),
     workspaceMemberIds: (workspaceId: string, userIds: string[]) => workspaceMemberIds(db, workspaceId, userIds),
     member: (conversationId: string, userId: string) => member(db, conversationId, userId),
     pinnedCount: (userId: string) => pinnedCount(db, userId),
