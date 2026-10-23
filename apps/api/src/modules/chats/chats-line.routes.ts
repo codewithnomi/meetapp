@@ -1,6 +1,7 @@
 // `GET /api/v1/realtime`: the live line (D064; F14 design.md 3.4). The sign-in check runs before the
 // line opens, like any route (no token, a bad or an expired one: 401, no upgrade). Messages over 64 KB
-// close the line. Each server has its own hub of open lines.
+// close the line. Each server has its own hub of open lines. A page from another site can't open one: a
+// browser always names the page's origin on an upgrade, and only the app's own are accepted (security S5).
 import websocket from "@fastify/websocket";
 import { CHATS_LIMITS, statusQuerySchema, statusesSchema } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
@@ -17,7 +18,9 @@ export const chatsLineRoutes: FastifyPluginAsyncZod<{
   line: LineDeps;
   sessions: SessionReader;
   status: ChatsStatusService;
-}> = async (app, { line, sessions, status }) => {
+  /** The app's own pages; an upgrade naming any other origin is refused (403). */
+  allowedOrigins: string[];
+}> = async (app, { line, sessions, status, allowedOrigins }) => {
   app.get(
     "/api/v1/people/status",
     {
@@ -41,6 +44,15 @@ export const chatsLineRoutes: FastifyPluginAsyncZod<{
     "/api/v1/realtime",
     {
       websocket: true,
+      // Apps outside a browser send no origin and sign in with a token, which another site can't use.
+      preValidation: async (request, reply) => {
+        const origin = request.headers.origin;
+        if (origin !== undefined && !allowedOrigins.includes(origin)) {
+          await reply
+            .code(403)
+            .send({ error: { code: "FORBIDDEN", message: "Not allowed from this page.", requestId: request.id } });
+        }
+      },
       schema: {
         summary: "The live line (WebSocket)",
         description:

@@ -5,7 +5,7 @@ import { LiveLine, type LineSocket } from "./live-line.ts";
 
 function setUp() {
   const sockets: (LineSocket & { sent: string[] })[] = [];
-  const timers: { run: () => void; ms: number }[] = [];
+  const timers: { run: () => void; ms: number; cleared?: boolean }[] = [];
   const line = new LiveLine({
     url: "ws://127.0.0.1:3000/api/v1/realtime",
     open: () => {
@@ -20,13 +20,19 @@ function setUp() {
         },
         onopen: null as (() => void) | null,
         onmessage: null as ((event: { data: unknown }) => void) | null,
-        onclose: null as (() => void) | null,
+        onclose: null as ((event: { code: number }) => void) | null,
       };
       sockets.push(socket);
       return socket;
     },
-    setTimer: (run, ms) => timers.push({ run, ms }),
-    clearTimer: () => undefined,
+    setTimer: (run, ms) => {
+      const timer = { run, ms };
+      timers.push(timer);
+      return timer;
+    },
+    clearTimer: (timer) => {
+      (timer as { cleared?: boolean }).cleared = true;
+    },
   });
   return { line, sockets, timers };
 }
@@ -51,7 +57,7 @@ describe("the live line in the app", () => {
     opened(must(sockets[0]));
     expect(heard).toEqual(["connected"]);
     for (const expected of [1000, 2000, 4000]) {
-      must(sockets.at(-1)).onclose?.();
+      must(sockets.at(-1)).onclose?.({ code: 1006 });
       const wait = must(timers.filter((timer) => timer.ms !== 30_000).at(-1));
       expect(wait.ms).toBe(expected);
       wait.run();
@@ -72,5 +78,37 @@ describe("the live line in the app", () => {
     expect(heard).toEqual([{ t: "connected" }, { t: "pong" }]);
     must(timers.find((timer) => timer.ms === 30_000)).run();
     expect(must(sockets[0]).sent).toEqual([JSON.stringify({ t: "ping" })]);
+  });
+
+  it("TC-F14-41 [AC-F14-20] stays closed when replaced by a 6th window, refused, or signed out", () => {
+    for (const code of [4001, 4400, 4401]) {
+      const { line, sockets, timers } = setUp();
+      line.start();
+      opened(must(sockets[0]));
+      must(sockets[0]).onclose?.({ code });
+      expect(timers.filter((timer) => timer.ms !== 30_000)).toEqual([]);
+      expect(sockets).toHaveLength(1);
+      // Signing in again starts a new line.
+      line.start();
+      expect(sockets).toHaveLength(2);
+    }
+  });
+
+  it("TC-F14-41 [AC-F14-20] an old socket's close changes nothing, and only one ping timer runs", () => {
+    const { line, sockets, timers } = setUp();
+    line.start();
+    opened(must(sockets[0]));
+    must(sockets[0]).onclose?.({ code: 1006 });
+    must(timers.find((timer) => timer.ms === 1000)).run();
+    opened(must(sockets[1]));
+    const live = timers.filter((timer) => timer.ms === 30_000 && !timer.cleared);
+    expect(live).toHaveLength(1);
+    // The first socket closing late neither clears the new ping nor reconnects.
+    must(sockets[0]).onclose?.({ code: 1006 });
+    expect(must(live[0]).cleared).toBeUndefined();
+    expect(sockets).toHaveLength(2);
+    // Opening twice still leaves one ping timer.
+    opened(must(sockets[1]));
+    expect(timers.filter((timer) => timer.ms === 30_000 && !timer.cleared)).toHaveLength(1);
   });
 });

@@ -123,6 +123,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       line: options.accounts.chatsLine,
       sessions,
       status: options.accounts.chatsStatus,
+      allowedOrigins: ALLOWED_ORIGINS,
     });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;

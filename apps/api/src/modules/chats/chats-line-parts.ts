@@ -1,7 +1,8 @@
 // The live line's shapes (D064; F14 design.md 3.4): what a server's hub needs, and one open line.
+import type { LineServerMessage } from "@meetapp/contracts";
 import type { WebSocket } from "@fastify/websocket";
 import type { Redis } from "ioredis";
-import type { LivePublisher } from "./chats-live.ts";
+import type { LineControl, LivePublisher } from "./chats-live.ts";
 import type { PresenceStore } from "./chats-presence.ts";
 
 export interface LineDeps {
@@ -32,4 +33,23 @@ export interface Line {
   audience: Set<string>;
   activeAt: number;
   locked: boolean;
+}
+
+/** The app's message as JSON; not JSON gives undefined, which the schema then refuses (closing the line). */
+export function parseJson(data: Buffer): unknown {
+  try {
+    return JSON.parse(data.toString("utf8"));
+  } catch {
+    return undefined;
+  }
+}
+
+/** A message heard on Redis, or undefined when it isn't an object of JSON. */
+export function parseRedis(raw: string): LineServerMessage | LineControl | undefined {
+  try {
+    const value: unknown = JSON.parse(raw);
+    return typeof value === "object" && value !== null ? (value as LineServerMessage | LineControl) : undefined;
+  } catch {
+    return undefined;
+  }
 }

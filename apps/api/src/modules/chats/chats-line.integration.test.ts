@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bearer, startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import { caller, namedPerson, seedWorkspace, type Call, type Person } from "../../test-support/workspaces-setup.ts";
 import { CLOSE, createLineHub } from "./chats-line.ts";
-import { createLivePublisher } from "./chats-live.ts";
+import { channels, createLivePublisher } from "./chats-live.ts";
 
 let t: AuthTestApp;
 let call: Call;
@@ -167,6 +167,48 @@ describe("opening and closing", { timeout: 60_000 }, () => {
     fine.ws.send(JSON.stringify({ t: "ping" }));
     await until(() => fine.got.find((m) => m.t === "pong"));
     fine.ws.terminate();
+  });
+
+  it("TC-F14-74 [AC-F14-31] an upgrade from another site's page is refused", async () => {
+    const { people } = await team("l74o", 1);
+    const [m1] = people as [Person];
+    expect(await upgradeStatus(bearer(m1.token))).toBe(101);
+    expect(await upgradeStatus({ ...bearer(m1.token), origin: "https://evil.example" })).toBe(403);
+  });
+
+  it("TC-F14-74 [AC-F14-31] a line closed while starting follows nothing and doesn't count toward the 5", async () => {
+    const { people } = await team("l74c", 1);
+    const [m1] = people as [Person];
+    const deps = t.accounts.chatsLine;
+    let release: (value: undefined) => void = () => undefined;
+    const held = new Promise<undefined>((resolve) => {
+      release = resolve;
+    });
+    // The chats are read slowly, so the socket closes in the middle of opening.
+    const hub = createLineHub({ ...deps, conversationsOf: async (id) => (await held, deps.conversationsOf(id)) });
+    const socket = fakeSocket();
+    const opening = hub.open(socket as unknown as WebSocket, m1.id, () => Promise.resolve(true));
+    await settle(100);
+    socket.emit("close");
+    release(undefined);
+    await opening;
+    await settle();
+    expect(await deps.redis.zcard(`meetapp:chats:lines:${m1.id}`)).toBe(0);
+    const following = (hub as unknown as { following: Map<string, Set<unknown>> }).following;
+    expect([...following.values()].some((set) => set.size > 0)).toBe(false);
+    await hub.close();
+  });
+
+  it("TC-F14-74 [AC-F14-31] a malformed message on Redis is dropped; lines keep working", async () => {
+    const { people, workspaceId } = await team("l74r", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await start(m1, workspaceId, [m2]);
+    const opened = await line(m2);
+    await t.accounts.chatsLine.redis.publish(channels.conversation(id), "{not json");
+    await t.accounts.chatsLine.redis.publish(channels.conversation(id), "42");
+    await send(m1, id, "still fine");
+    expect(await until(() => opened.got.find((m) => m.t === "news"))).toMatchObject({ conversationId: id });
+    opened.ws.terminate();
   });
 
   it("TC-F14-74 [AC-F14-31] a 6th line closes the oldest with 4001", async () => {

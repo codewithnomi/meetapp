@@ -135,7 +135,7 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
 
 ## Fixes from the first verification (2026-10-23, verification.md)
 - [x] **T-fix-1: Chat list respects the read window (privacy, High).** `lastMessages`, `unreadCounts` and the mention flag use the member's `history_from` and, after leaving or removal, `left_seq`; integration tests for "no history" and "removed".
-- [ ] **T-fix-2: Live line clean-ups.** Server: a line closed during `open`/`refresh` follows nothing and leaves no id in the 5-line list. App: no reconnect after 4001/4400 (4401 until signed in again), ignore an old socket's close, one ping timer. Malformed Redis messages dropped. Origin checked on the upgrade (Medium security). Swallowed errors get a reason.
+- [x] **T-fix-2: Live line clean-ups.** Server: a line closed during `open`/`refresh` follows nothing and leaves no id in the 5-line list. App: no reconnect after 4001/4400 (4401 until signed in again), ignore an old socket's close, one ping timer. Malformed Redis messages dropped. Origin checked on the upgrade (Medium security). Swallowed errors get a reason.
 - [ ] **T-fix-3: The open chat stays open** when the filter or search no longer matches it (kept apart from the filtered list).
 - [ ] **T-fix-4: Loading and error states** for the chat list, Chat requests, a conversation and Group details (with Retry), read-mark failures retried; h2 in the panes; translated unread names; New chat's Start disabled while sending and Invite errors shown.
 - [ ] **T-fix-5: Read marks and mentions.** Unread by news number (clamped to the chat's last); "Seen" only from accepted members; editing cleans mentions.

@@ -9,7 +9,7 @@ import type { Redis } from "ioredis";
 import type { WebSocket } from "@fastify/websocket";
 import { channels, type LineControl } from "./chats-live.ts";
 import { OFFLINE_GRACE_MS } from "./chats-status.ts";
-import type { Line, LineDeps } from "./chats-line-parts.ts";
+import { parseJson, parseRedis, type Line, type LineDeps } from "./chats-line-parts.ts";
 
 export type { LineDeps } from "./chats-line-parts.ts";
 
@@ -73,6 +73,8 @@ class LineHub {
       this.deps.person(line.userId),
       this.deps.status.audience(line.userId),
     ]);
+    // Closed while reading: following now would leave subscriptions nobody removes.
+    if (!this.isOpen(line)) return;
     for (const id of line.audience) if (!audience.has(id)) this.unfollow(channels.status(id), line);
     for (const id of audience) if (!line.audience.has(id)) this.follow(channels.status(id), line);
     line.audience = audience;
@@ -82,6 +84,10 @@ class LineHub {
     line.conversations = next;
     line.name = me?.name ?? line.name;
     line.readReceipts = me?.readReceipts ?? line.readReceipts;
+  }
+
+  private isOpen(line: Line) {
+    return this.lines.has(line.id);
   }
 
   private closeLine(line: Line, code: number) {
@@ -108,7 +114,9 @@ class LineHub {
 
   /** What this server hears on Redis, passed to the lines that may have it. */
   private heard(channel: string, raw: string) {
-    const message = JSON.parse(raw) as LineServerMessage | LineControl;
+    const message = parseRedis(raw);
+    // Something other than our own JSON on our channel: dropped, it can't be passed on safely.
+    if (!message) return;
     for (const line of [...(this.following.get(channel) ?? [])]) {
       if ("control" in message) this.controlled(line, message);
       else this.deliver(line, message);
@@ -156,6 +164,7 @@ class LineHub {
 
   /** Runs a presence write after this line's earlier ones (a late activity write can't undo "closed"). */
   private inOrder(line: Line, write: () => Promise<unknown>) {
+    // An earlier write's failure must not stop later ones; each caller sees its own write's outcome.
     line.writes = line.writes.catch(() => undefined).then(write);
     return line.writes;
   }
@@ -189,6 +198,7 @@ class LineHub {
   private readonly running = new Set<Promise<unknown>>();
 
   private track(work: Promise<unknown>) {
+    // Status work is best effort: a failure is fixed by the next sweep (30 s) and mustn't crash the server.
     const done = work.catch(() => undefined).finally(() => this.running.delete(done));
     this.running.add(done);
   }
@@ -217,6 +227,11 @@ class LineHub {
   private async limitLines(line: Line) {
     const key = linesKey(line.userId);
     await this.deps.redis.zadd(key, this.now(), line.id);
+    // Closed meanwhile: its id must not count toward the 5 (closeLine's removal may have run first).
+    if (!this.isOpen(line)) {
+      await this.deps.redis.zrem(key, line.id);
+      return;
+    }
     const extra = await this.deps.redis.zrange(key, "0", String(-(CHATS_LIMITS.linesPerPerson + 1)));
     for (const old of extra) {
       await this.deps.redis.zrem(key, old);
@@ -251,6 +266,7 @@ class LineHub {
     this.follow(channels.user(userId), line);
     await this.refresh(line);
     await this.limitLines(line);
+    if (!this.isOpen(line)) return;
     await this.reportPresence(line);
     if (this.polling) this.send(line, { t: "polling", on: true });
     this.timer ??= setInterval(() => void this.check(), CHECK_MS);
@@ -263,14 +279,6 @@ class LineHub {
     for (const line of [...this.lines.values()]) this.closeLine(line, CLOSE.signedOut);
     await Promise.all(this.running);
     await this.subscriber.quit();
-  }
-}
-
-function parseJson(data: Buffer): unknown {
-  try {
-    return JSON.parse(data.toString("utf8"));
-  } catch {
-    return undefined;
   }
 }
 
