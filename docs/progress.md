@@ -84,7 +84,8 @@
 - **F14 first verification: FAIL (2026-10-23)**, see `docs/specs/F14-chats/verification.md`: a privacy bug in the chat list, three medium bugs, missing loading/error states, two weakly tested criteria, coverage 77.9% (<80%), docs gaps. Fix tasks T-fix-1…9 added. 35 desktop failures were the 50-sign-ups-an-hour limit (rerun later). Open question for the owner: show Away for 30 s after the app closes, or Offline at once?
 - **F14 T-fix-1 done (2026-10-23):** the chat list (last line, unread count, mention flag) now shows only what each person may read: nothing before their history start, nothing after they left or were removed; 2 integration tests, 74 chat tests pass. Next: T-fix-2.
 - **F14 T-fix-2 done (2026-10-23):** live line clean-ups: a line closed while opening leaves nothing behind; the app no longer reconnects after being replaced, refused or signed out, ignores old connections and runs one ping timer; bad Redis messages dropped; other sites' pages refused (403). 77 server + 4 app tests pass.
-- **Next step:** F14 T-fix-3, the open chat stays open under filters (`/next`).
+- **F14 T-fix-3 done (2026-10-23):** the open chat stays open (with its draft) when the filter or search hides it; 3 tests. Page tests follow in T-fix-6.
+- **Next step:** F14 T-fix-4, loading and error states (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

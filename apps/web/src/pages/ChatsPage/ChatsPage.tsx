@@ -8,6 +8,7 @@ import { useSession } from "../../features/auth/index.ts";
 import { useChatList, useChatRequests, type ChatFilter, type ChatItem } from "../../features/chats/index.ts";
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
 import { entryOf } from "./chat-entries.ts";
+import { openChatOf } from "./open-chat.ts";
 import { ConversationPane } from "./ConversationPane.tsx";
 import { GroupPane } from "./GroupPane.tsx";
 import { NewChatPane } from "./NewChatPane.tsx";
@@ -71,25 +72,23 @@ function listProps(t: TFunction, input: ListInput): ChatListProps {
   };
 }
 
-/** The right side: New chat, Chat requests, a group's details, the open chat, or "Choose a chat". */
-function RightPane({
-  open,
-  setOpen,
-  items,
-  userId,
-  showNew,
-}: {
+interface RightPaneProps {
   open: string | undefined;
   setOpen: (open: string | undefined) => void;
   /** Opens a chat just started or accepted, clearing the list's filter and search so it is listed. */
   showNew: (id: string) => void;
   items: ChatItem[];
+  /** Every chat, unfiltered: the open one stays open when the filter or search hides it. */
+  all: ChatItem[] | undefined;
   userId: string;
-}) {
+}
+
+/** The right side: New chat, Chat requests, a group's details, the open chat, or "Choose a chat". */
+function RightPane({ open, setOpen, items, all, userId, showNew }: RightPaneProps) {
   const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
   const detailsOf = open?.startsWith(DETAILS) ? open.slice(DETAILS.length) : undefined;
-  const openItem = items.find((item) => item.id === (detailsOf ?? open));
+  const openItem = openChatOf(detailsOf ?? open, all, items);
   let pane: ReactNode = <Placeholder />;
   if (open === NEW_CHAT) pane = <NewChatPane onStarted={showNew} onCancel={() => setOpen(undefined)} />;
   else if (open === REQUESTS) pane = <RequestsPane onAccepted={showNew} />;
@@ -131,6 +130,8 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
   const [open, setOpen] = useState<string>();
   const { current } = useCurrentWorkspace();
   const items = useChatList(current?.id, filter, query).data?.conversations ?? [];
+  // The same list the side menu's badge reads, so usually no extra request.
+  const all = useChatList(current?.id, "all", "").data?.conversations;
   const now = new Date();
   const entry = (item: ChatItem) =>
     entryOf(t, item, { now, locale: i18n.language, current: item.id === open, onSelect: () => setOpen(item.id) });
@@ -156,7 +157,7 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
             requests: { count: requestCount, onOpen: () => setOpen(REQUESTS) },
           })}
         />
-        <RightPane open={open} setOpen={setOpen} items={items} userId={userId} showNew={showNew} />
+        <RightPane open={open} setOpen={setOpen} items={items} all={all} userId={userId} showNew={showNew} />
       </div>
     </WorkspaceShell>
   );

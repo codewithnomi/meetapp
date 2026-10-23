@@ -37,6 +37,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 ### 2.1 Chat screen (F14Chat)
 - **Side menu:** a ☰ button folds it to a 72 px icon rail (AC-36); tooltips name each item; Chat shows the number of chats with unread messages (AC-02). The choice is kept in this computer's storage.
 - **Chat list (left):** "Chat" heading, **New chat**, search, filter chips **All · Unread · Chats · Meeting chats** (AC-03), a **Chat requests** link with its count (AC-10), **Pinned** chats first (AC-05), then the rest by last activity (AC-01). Each row: avatar with status dot (or group initials, or a calendar for meetings), name, last line with "You:", time, unread count in bold (AC-02).
+- **The open chat stays open** when the filter or search no longer lists it (as in Teams): the right side looks it up in the unfiltered list, so its draft is kept; it closes only when the chat is really gone (left, hidden).
 - **Conversation (right):** header with name, status in words, **Video call** and **Audio call** (shown, working in F15), More (pin, mute, hide, group details). Messages as F03 (grouped bubbles, big emoji, Teams reactions), plus @mention highlight (AC-22), "Seen" (AC-24), "is typing…" (AC-23). Composer as F03 with "Message <name>".
 - **Empty states:** "No chats yet" with New chat (AC-06); a chat with no messages: "Say hello to <name>".
 ### 2.2 New chat (F14NewChat)
