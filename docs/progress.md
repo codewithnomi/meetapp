@@ -81,6 +81,7 @@
 - **F14 T17 done:** messages reach the other window in under a second (95% of 20 measured), "Not sent" with Retry never sends twice, and if Redis goes down sending still works and the app checks for news itself until it's back. **Watch:** the status test's "Offline" step was slow once in a combined run.
 - **F14 T18 done:** load test of a 250-person group (`pnpm test:load`): 95% of messages shown in the app within 337 ms (target 1 s), all 249 simulated lines got every message, none dropped.
 - **F14 T19 done (last step):** keyboard-only and screen-reader desktop tests pass; the keyboard test found and fixed six real problems (cursor not placed in New chat, Add people, the message box or after Reply; a new chat not opening while a filter was on; leftover tooltips stopping Escape from closing dialogs; Leave group without its question) and one wrong screen-reader label. Documents updated. Next: `/spec-verify F14`.
+- **F14 first verification: FAIL (2026-10-23)**, see `docs/specs/F14-chats/verification.md`: a privacy bug in the chat list, three medium bugs, missing loading/error states, two weakly tested criteria, coverage 77.9% (<80%), docs gaps. Fix tasks T-fix-1…9 added. 35 desktop failures were the 50-sign-ups-an-hour limit (rerun later). Open question for the owner: show Away for 30 s after the app closes, or Offline at once?
 - **Next step:** F14 T5, people lookup and invitations (`/next`).
 
 ## Open questions (need the owner's answer)
