@@ -9,6 +9,7 @@ import { useChatList, useChatRequests, type ChatFilter, type ChatItem } from "..
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
 import { entryOf } from "./chat-entries.ts";
 import { openChatOf } from "./open-chat.ts";
+import { LoadState, showsLoadState } from "./LoadState.tsx";
 import { ConversationPane } from "./ConversationPane.tsx";
 import { GroupPane } from "./GroupPane.tsx";
 import { NewChatPane } from "./NewChatPane.tsx";
@@ -30,9 +31,9 @@ function Placeholder() {
   return (
     <main className="grid h-full place-items-center p-6 text-center text-ink">
       <div className="flex flex-col gap-1">
-        <h1 tabIndex={-1} className="m-0 text-[17px] font-semibold outline-none">
+        <h2 tabIndex={-1} className="m-0 text-[17px] font-semibold outline-none">
           {t("chats.pick.title")}
-        </h1>
+        </h2>
         <p className="m-0 text-[14px] text-ink-muted">{t("chats.pick.hint")}</p>
       </div>
     </main>
@@ -48,6 +49,8 @@ interface ListInput {
   setQuery: (query: string) => void;
   onNew: () => void;
   requests: { count: number; onOpen: () => void };
+  /** Loading or failed: shown instead of the rows. */
+  state: ReactNode;
 }
 
 /** The chat list's words, filters and rows: pinned first (AC-F14-01, 03, 05, 06). */
@@ -69,6 +72,7 @@ function listProps(t: TFunction, input: ListInput): ChatListProps {
     pinned: input.items.filter((item) => item.pinned).map(input.entry),
     others: input.items.filter((item) => !item.pinned).map(input.entry),
     empty: { title: t("chats.empty.title"), actionLabel: t("chats.empty.action") },
+    state: input.state,
   };
 }
 
@@ -129,7 +133,8 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState<string>();
   const { current } = useCurrentWorkspace();
-  const items = useChatList(current?.id, filter, query).data?.conversations ?? [];
+  const list = useChatList(current?.id, filter, query);
+  const items = list.data?.conversations ?? [];
   // The same list the side menu's badge reads, so usually no extra request.
   const all = useChatList(current?.id, "all", "").data?.conversations;
   const now = new Date();
@@ -155,6 +160,7 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
             setQuery,
             onNew: () => setOpen(NEW_CHAT),
             requests: { count: requestCount, onOpen: () => setOpen(REQUESTS) },
+            state: showsLoadState(list) ? <LoadState query={list} loadingLabel={t("chats.load.chats")} /> : null,
           })}
         />
         <RightPane open={open} setOpen={setOpen} items={items} all={all} userId={userId} showNew={showNew} />

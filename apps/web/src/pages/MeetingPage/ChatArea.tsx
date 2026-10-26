@@ -3,7 +3,7 @@
 // messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
 // Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
-import { Button, ChatPanel, Dialog, Notice, type ChatComposerProps } from "@meetapp/ui";
+import { Button, ChatPanel, Dialog, Notice, Spinner, type ChatComposerProps } from "@meetapp/ui";
 import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { deleteMessage, type Chat, type ChatPlace } from "../../features/meetings/chat/index.ts";
@@ -73,6 +73,18 @@ function LoadFailed({ onRetry }: { onRetry: () => void }) {
       {t("meetings.chat.loadFailed")}
     </Notice>
   );
+}
+
+/** Above the composer: the load failure with Retry, a spinner until the first page, then the page's footer. */
+function noticeOf(
+  chat: { state: { loadFailed: boolean }; reload: () => void },
+  loaded: boolean,
+  footer: ReactNode,
+  loading: string,
+) {
+  if (chat.state.loadFailed) return <LoadFailed onRetry={chat.reload} />;
+  if (!loaded) return <Spinner label={loading} />;
+  return footer;
 }
 
 /** "Delete this message?" before anything is removed (AC-F03-10). */
@@ -238,7 +250,7 @@ export function ChatArea(props: ChatAreaProps) {
         dropArea={
           dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
-        notice={chat.state.loadFailed ? <LoadFailed onRetry={chat.reload} /> : props.footer}
+        notice={noticeOf(chat, loaded, props.footer, t("meetings.chat.loading"))}
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
         composer={<Composer view={view} writing={writing} act={act} />}
       />

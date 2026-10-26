@@ -17,6 +17,8 @@ export interface NavItem {
   onSelect: () => void;
   /** A count beside the label, e.g. unread chats (hidden when 0). Read as part of the item's name. */
   badge?: number | undefined;
+  /** The item's name with its count, translated by the page ("Chat, 3 unread chats"); else "Chat 3". */
+  badgeLabel?: string | undefined;
 }
 
 export interface NavFold {
@@ -41,7 +43,7 @@ export interface NavRailProps {
 const count = (badge: number) => (badge > 99 ? "99+" : String(badge));
 
 function Item({ item, folded }: { item: NavItem; folded: boolean }) {
-  const name = item.badge ? `${item.label} ${count(item.badge)}` : item.label;
+  const name = item.badge ? (item.badgeLabel ?? `${item.label} ${count(item.badge)}`) : item.label;
   const button = (
     <button
       type="button"

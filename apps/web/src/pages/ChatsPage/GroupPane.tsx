@@ -1,6 +1,6 @@
 // Group details (approved canvas F14Group, AC-F14-14–18): rename, the people with status and "(External)",
 // Add people with the history choice, remove anyone, and Leave group (after a question).
-import { Button, Dialog, GroupDetails, HistoryChoice, PeoplePicker, type History } from "@meetapp/ui";
+import { Button, Dialog, GroupDetails, HistoryChoice, Notice, PeoplePicker, type History } from "@meetapp/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { TFunction } from "i18next";
@@ -17,6 +17,7 @@ import {
   type FoundPeople,
 } from "../../features/chats/index.ts";
 import { useCurrentWorkspace } from "../../features/workspaces/index.ts";
+import { LoadState } from "./LoadState.tsx";
 
 type Person = FoundPeople["people"][number];
 
@@ -36,6 +37,7 @@ function useAddPeople(item: ChatItem, onClose: () => void) {
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Person[]>([]);
   const [history, setHistory] = useState<History>({ from: "all" });
+  const [failed, setFailed] = useState(false);
   const { found, search } = useFound(query);
   const badDays = history.from === "days" && !(history.days >= 1 && history.days <= 365);
   const add = () =>
@@ -45,7 +47,8 @@ function useAddPeople(item: ChatItem, onClose: () => void) {
       history,
     )
       .then(() => queries.invalidateQueries({ queryKey: ["chats"] }))
-      .then(onClose);
+      .then(onClose)
+      .catch(() => setFailed(true));
   const typed = (q: string) => {
     setQuery(q);
     search(q);
@@ -56,7 +59,7 @@ function useAddPeople(item: ChatItem, onClose: () => void) {
     setQuery("");
   };
   const remove = (id: string) => setPicked(picked.filter((p) => p.userId !== id));
-  return { query, typed, picked, pick, remove, found, history, setHistory, badDays, add };
+  return { query, typed, picked, pick, remove, found, history, setHistory, badDays, add, failed };
 }
 
 function historyLabels(t: TFunction) {
@@ -124,6 +127,7 @@ function AddDialog({ item, open, onClose }: { item: ChatItem; open: boolean; onC
           onChange={adding.setHistory}
           daysError={adding.badDays ? t("chats.group.history.daysError") : undefined}
         />
+        {adding.failed ? <Notice tone="danger">{t("chats.failed")}</Notice> : null}
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
             {t("chats.group.cancel")}
@@ -177,6 +181,30 @@ function LeaveDialog({ open, onClose, onLeave }: { open: boolean; onClose: () =>
   );
 }
 
+/** Rename, remove and leave, each refreshing the list; a failure is shown above the details. */
+function useGroupActions(item: ChatItem, onLeft: () => void) {
+  const { t } = useTranslation();
+  const queries = useQueryClient();
+  const [failed, setFailed] = useState(false);
+  const [nameError, setNameError] = useState<string>();
+  const run = (work: Promise<unknown>, then?: () => void) =>
+    void work
+      .then(() => queries.invalidateQueries({ queryKey: ["chats"] }))
+      .then(then)
+      .catch(() => setFailed(true));
+  return {
+    failed,
+    nameError,
+    rename: (name: string) => {
+      if (name.length < 1 || name.length > 80) return setNameError(t("chats.group.nameError"));
+      setNameError(undefined);
+      run(renameGroup(item.id, name));
+    },
+    remove: (id: string) => run(removeFromGroup(item.id, id)),
+    leave: () => run(leaveGroup(item.id), onLeft),
+  };
+}
+
 export function GroupPane({
   item,
   userId,
@@ -189,40 +217,33 @@ export function GroupPane({
   onLeft: () => void;
 }) {
   const { t } = useTranslation();
-  const queries = useQueryClient();
-  const members = useMembers(item.id).data?.people ?? [];
+  const asked = useMembers(item.id);
+  const members = asked.data?.people ?? [];
   const [adding, setAdding] = useState(false);
   const [leaving, setLeaving] = useState(false);
-  const [nameError, setNameError] = useState<string>();
-  const refresh = () => queries.invalidateQueries({ queryKey: ["chats"] });
+  const act = useGroupActions(item, onLeft);
   return (
-    <main className="h-full min-h-0 overflow-auto p-6">
+    <main className="flex h-full min-h-0 flex-col gap-3 overflow-auto p-6">
+      {act.failed ? <Notice tone="danger">{t("chats.failed")}</Notice> : null}
+      <LoadState query={asked} loadingLabel={t("chats.load.members")} />
       <GroupDetails
         title={item.title}
         closeLabel={t("chats.group.close")}
         onClose={onClose}
         nameLabel={t("chats.group.name")}
         name={item.title}
-        nameError={nameError}
-        onRename={(name) => {
-          if (name.length < 1 || name.length > 80) return setNameError(t("chats.group.nameError"));
-          setNameError(undefined);
-          void renameGroup(item.id, name).then(refresh);
-        }}
+        nameError={act.nameError}
+        onRename={act.rename}
         peopleHeading={t("chats.group.people", { count: members.length })}
         addLabel={t("chats.group.add")}
         onAdd={() => setAdding(true)}
         people={members.map((member) => personOf(t, member, userId))}
-        onRemove={(id) => void removeFromGroup(item.id, id).then(refresh)}
+        onRemove={act.remove}
         leaveLabel={t("chats.group.leave")}
         onLeave={() => setLeaving(true)}
       />
       <AddDialog item={item} open={adding} onClose={() => setAdding(false)} />
-      <LeaveDialog
-        open={leaving}
-        onClose={() => setLeaving(false)}
-        onLeave={() => void leaveGroup(item.id).then(refresh).then(onLeft)}
-      />
+      <LeaveDialog open={leaving} onClose={() => setLeaving(false)} onLeave={act.leave} />
     </main>
   );
 }

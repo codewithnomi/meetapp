@@ -1,7 +1,8 @@
 // ChatList (organism): the left column of the Chat screen on the approved canvas (F14Chat, AC-F14-01–06,
 // 10): "Chat" with New chat, search, the filter chips (All · Unread · Chats · Meeting chats), the Chat
-// requests link with its count, pinned chats first, then the rest; "No chats yet" when there are none.
-import { useId } from "react";
+// requests link with its count, pinned chats first, then the rest; "No chats yet" when there are none;
+// while loading or after a failure, the page's message (a spinner, or the error with Retry) instead.
+import { useId, type ReactNode } from "react";
 import { Button } from "../../atoms/Button/index.ts";
 import { Icon } from "../../atoms/Icon/index.ts";
 import { IconButton } from "../../atoms/IconButton/index.ts";
@@ -34,6 +35,8 @@ export interface ChatListProps {
   others: ChatListEntry[];
   /** Shown when there is no chat at all. */
   empty: { title: string; actionLabel: string };
+  /** Shown instead of the rows while loading or after a failure (so "No chats yet" never shows then). */
+  state?: ReactNode;
 }
 
 function Rows({ entries, label }: { entries: ChatListEntry[]; label: string }) {
@@ -158,7 +161,13 @@ export function ChatList(props: ChatListProps) {
       className="box-border flex h-full flex-col gap-3 border-r border-line bg-surface px-3 py-5 text-ink"
     >
       <Top props={props} headingId={headingId} searchId={searchId} />
-      {none ? <Empty props={props} /> : <Lists props={props} />}
+      {props.state ? (
+        <div className="px-1.5 py-4">{props.state}</div>
+      ) : none ? (
+        <Empty props={props} />
+      ) : (
+        <Lists props={props} />
+      )}
     </section>
   );
 }

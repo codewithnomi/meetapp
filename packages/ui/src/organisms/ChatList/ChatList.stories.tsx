@@ -53,3 +53,6 @@ type Story = StoryObj<typeof meta>;
 export const Normal: Story = {};
 export const UnreadFilter: Story = { args: { filter: "unread", requests: undefined } };
 export const Empty: Story = { args: { pinned: [], others: [], requests: undefined } };
+export const Loading: Story = {
+  args: { pinned: [], others: [], state: <p className="m-0 text-ink-muted">Loading chats…</p> },
+};

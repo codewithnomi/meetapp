@@ -232,7 +232,9 @@
       "requests": "Requests and invitations",
       "meetings": "Meetings",
       "workspace": "Workspace settings",
-      "chat": "Chat"
+      "chat": "Chat",
+      "chatUnread_one": "Chat, {{count}} unread chat",
+      "chatUnread_other": "Chat, {{count}} unread chats"
     },
     "create": {
       "title": "Create a company workspace",
@@ -960,7 +962,8 @@
         "search": "Find something fun"
       },
       "announce": "New message from {{name}}: {{text}}",
-      "loadFailed": "The messages couldn't be loaded."
+      "loadFailed": "The messages couldn't be loaded.",
+      "loading": "Loading messages…"
     },
     "recent": {
       "title": "Recent meetings",
@@ -1046,7 +1049,9 @@
       "groupName": "Group name",
       "groupNameHint": "Optional",
       "cancel": "Cancel",
-      "start": "Start chat"
+      "start": "Start chat",
+      "inviteFailed": "Couldn't send the invitation to {{email}}. Try again.",
+      "starting": "Starting…"
     },
     "failed": "Something went wrong. Try again.",
     "messageTo": "Message {{name}}",
@@ -1095,6 +1100,13 @@
       "leaveTitle": "Leave this group?",
       "leaveHint": "You'll keep what you've seen, but won't get new messages.",
       "addHint": "Colleagues join at once; people from outside get a chat request first."
+    },
+    "load": {
+      "chats": "Loading chats…",
+      "requests": "Loading chat requests…",
+      "members": "Loading the group…",
+      "failed": "Couldn't load this. Check your connection and try again.",
+      "retry": "Retry"
     }
   }
 }

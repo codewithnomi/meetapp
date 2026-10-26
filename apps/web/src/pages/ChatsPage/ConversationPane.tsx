@@ -5,7 +5,7 @@
 import { ConversationHeader, Notice, SeenMark, TypingIndicator, type MenuAction } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   blockPerson,
@@ -22,6 +22,8 @@ import { conversationPlace, useChat, usePastChat } from "../../features/meetings
 import { ChatArea, useAttachments } from "../MeetingPage/index.ts";
 
 const READ_EVERY_MS = 2000;
+/** A read mark that failed is sent again after this long, while the chat is open. */
+const READ_RETRY_MS = 5000;
 
 type Choice = { pinned?: boolean; muted?: boolean; hidden?: boolean };
 
@@ -105,22 +107,28 @@ function useCatchUpWhilePolling(catchUp: () => Promise<void>) {
   }, [polling, catchUp]);
 }
 
-/** Marks the newest news as read, at most every 2 seconds (design 3.5, AC-F14-02, 24). */
+/** Marks the newest news as read, at most every 2 seconds; a failed mark is retried (design 3.5, AC-F14-02, 24). */
 function useReadMark(conversationId: string, lastSeq: number) {
   const queries = useQueryClient();
   const sent = useRef({ seq: -1, at: 0 });
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     if (lastSeq <= sent.current.seq) return;
     const wait = Math.max(0, sent.current.at + READ_EVERY_MS - Date.now());
     const timer = setTimeout(() => {
+      const before = sent.current.seq;
       sent.current = { seq: lastSeq, at: Date.now() };
       // The list's bold and the side menu's count follow at once (AC-F14-02).
       void markRead(conversationId, lastSeq)
         .then(() => queries.invalidateQueries({ queryKey: ["chats"] }))
-        .catch(() => undefined);
+        .catch(() => {
+          // Not marked: try again in 5 seconds, or sooner with newer news.
+          sent.current = { seq: before, at: Date.now() + READ_RETRY_MS - READ_EVERY_MS };
+          setAttempt((n) => n + 1);
+        });
     }, wait);
     return () => clearTimeout(timer);
-  }, [conversationId, lastSeq, queries]);
+  }, [conversationId, lastSeq, queries, attempt]);
 }
 
 /** @mentions: the chat's people, by name (AC-F14-22). */

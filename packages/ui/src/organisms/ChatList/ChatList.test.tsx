@@ -69,4 +69,10 @@ describe("ChatList", () => {
     await userEvent.click(screen.getByRole("button", { name: "Start a chat" }));
     expect(p.onNewChat).toHaveBeenCalledOnce();
   });
+
+  it('TC-F14-79 [AC-F14-06] while loading or after a failure the page\'s message shows, never "No chats yet"', () => {
+    render(<ChatList {...props({ pinned: [], others: [], state: <p>Couldn't load your chats</p> })} />);
+    expect(screen.getByText("Couldn't load your chats")).toBeInTheDocument();
+    expect(screen.queryByText("No chats yet")).not.toBeInTheDocument();
+  });
 });

@@ -54,7 +54,9 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
     onSelect: () => onNavigate(id),
     ...(id === "requests" && current ? { badge: current.pendingRequests } : {}),
     // Chats with unread messages (AC-F14-02).
-    ...(id === "chat" ? { badge: unreadChats } : {}),
+    ...(id === "chat"
+      ? { badge: unreadChats, badgeLabel: t("workspaces.nav.chatUnread", { count: unreadChats }) }
+      : {}),
   }));
 }
 

@@ -26,12 +26,15 @@ function usePeople(workspaceId: string, query: string) {
 function useInvitation(workspaceId: string, personal: boolean) {
   const team = useInvite(workspaceId);
   const [sent, setSent] = useState<string>();
+  const [failed, setFailed] = useState<string>();
   const invite = (email: string) => {
+    setFailed(undefined);
     const done = () => setSent(email);
-    if (personal) void inviteToMeetApp(email).then(done);
-    else team.mutate({ emails: [email], role: "member" }, { onSuccess: done });
+    const fail = () => setFailed(email);
+    if (personal) void inviteToMeetApp(email).then(done).catch(fail);
+    else team.mutate({ emails: [email], role: "member" }, { onSuccess: done, onError: fail });
   };
-  return { sent, invite };
+  return { sent, failed, invite };
 }
 
 /** What New chat holds: the typed words, the chosen people, the group name; Start opens the chat. */
@@ -42,17 +45,26 @@ function useNewChat(onStarted: (id: string) => void) {
   const [picked, setPicked] = useState<Person[]>([]);
   const [groupName, setGroupName] = useState("");
   const [failed, setFailed] = useState(false);
+  // Start is pressed once: a double click must not make two groups.
+  const [starting, setStarting] = useState(false);
   const found = usePeople(workspaceId, query).data;
   const invitation = useInvitation(workspaceId, current?.kind === "personal");
   const suggestions = (found?.people ?? []).filter((person) => !picked.some((p) => p.userId === person.userId));
-  const start = () =>
+  const start = () => {
+    if (starting) return;
+    setStarting(true);
+    setFailed(false);
     void startChat(
       workspaceId,
       picked.map((p) => p.userId),
       picked.length > 1 ? groupName : undefined,
     )
       .then((made) => onStarted(made.id))
-      .catch(() => setFailed(true));
+      .catch(() => {
+        setFailed(true);
+        setStarting(false);
+      });
+  };
   const pick = (id: string) => {
     const person = suggestions.find((p) => p.userId === id);
     if (person) setPicked([...picked, person]);
@@ -66,6 +78,7 @@ function useNewChat(onStarted: (id: string) => void) {
     groupName,
     setGroupName,
     failed,
+    starting,
     found,
     invitation,
     suggestions,
@@ -121,12 +134,15 @@ export function NewChatPane({ onStarted, onCancel }: { onStarted: (id: string) =
   const chat = useNewChat(onStarted);
   return (
     <main className="flex h-full max-w-160 flex-col gap-3.5 p-6 text-ink">
-      <h1 tabIndex={-1} className="m-0 text-[22px] leading-7 font-bold outline-none">
+      <h2 tabIndex={-1} className="m-0 text-[22px] leading-7 font-bold outline-none">
         {t("chats.new.title")}
-      </h1>
+      </h2>
       <PeoplePicker {...pickerProps(t, chat)} />
       {chat.invitation.sent ? (
         <Notice tone="success">{t("chats.new.invited", { email: chat.invitation.sent })}</Notice>
+      ) : null}
+      {chat.invitation.failed ? (
+        <Notice tone="danger">{t("chats.new.inviteFailed", { email: chat.invitation.failed })}</Notice>
       ) : null}
       {chat.picked.length > 1 ? (
         <Input
@@ -143,8 +159,8 @@ export function NewChatPane({ onStarted, onCancel }: { onStarted: (id: string) =
         <Button variant="ghost" onClick={onCancel}>
           {t("chats.new.cancel")}
         </Button>
-        <Button disabled={chat.picked.length === 0} onClick={chat.start}>
-          {t("chats.new.start")}
+        <Button disabled={chat.picked.length === 0 || chat.starting} onClick={chat.start}>
+          {chat.starting ? t("chats.new.starting") : t("chats.new.start")}
         </Button>
       </div>
     </main>

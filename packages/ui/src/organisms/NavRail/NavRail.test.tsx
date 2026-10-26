@@ -58,4 +58,20 @@ describe("NavRail", () => {
     render(<NavRail label="Settings" switcher={null} items={items} />);
     expect(screen.queryByRole("button", { name: /menu/ })).not.toBeInTheDocument();
   });
+
+  it("TC-F14-81 [AC-F14-36] a translated name with the count is used when given", () => {
+    const named: NavItem[] = [
+      {
+        id: "chat",
+        label: "Chat",
+        icon: "chat",
+        current: true,
+        onSelect: vi.fn(),
+        badge: 3,
+        badgeLabel: "Chat, 3 unread chats",
+      },
+    ];
+    render(<NavRail label="Main" switcher={<span>Aria workspace</span>} items={named} />);
+    expect(screen.getByRole("button", { name: "Chat, 3 unread chats" })).toBeInTheDocument();
+  });
 });
