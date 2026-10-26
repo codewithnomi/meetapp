@@ -86,7 +86,8 @@
 - **F14 T-fix-2 done (2026-10-23):** live line clean-ups: a line closed while opening leaves nothing behind; the app no longer reconnects after being replaced, refused or signed out, ignores old connections and runs one ping timer; bad Redis messages dropped; other sites' pages refused (403). 77 server + 4 app tests pass.
 - **F14 T-fix-3 done (2026-10-23):** the open chat stays open (with its draft) when the filter or search hides it; 3 tests. Page tests follow in T-fix-6.
 - **F14 T-fix-4 done (2026-10-26):** loading spinners and "Couldn't load this" + Retry on the chat list, Chat requests, conversation and Group details; failed actions shown; read marks retried; Start once; invite errors; h2 panes; translated side-menu count. 121 app + 8 UI tests pass.
-- **Next step:** F14 T-fix-5, read marks by news number, Seen and mentions (`/next`).
+- **F14 T-fix-5 done (2026-10-26):** read marks by news number (clamped, exact message time); no "Seen" from pending invitees; editing cleans mentions; also fixed: the daily news clean-up never removed one-to-one/group chat news (it matched by meeting) and now keeps each chat's newest. 181 chat tests pass. Note: TC-F14-21 failed once with 429 instead of 403 (timing), passed on rerun; watch at verification.
+- **Next step:** F14 T-fix-6, tests for AC-29 and AC-35 and page tests (coverage 80%) (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

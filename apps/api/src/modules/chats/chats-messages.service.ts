@@ -110,10 +110,24 @@ async function checkRequestLimit(deps: MessagesDeps, userId: string, place: Awai
   }
 }
 
+/** The chat's accepted members: the only people a message may mention (AC-F14-22). */
+const mentionable = (people: { userId: string; state: string }[]) =>
+  new Set(people.filter((p) => p.state === "accepted").map((p) => p.userId));
+
+/** An edit is cleaned like a new message: mentions of non-members become text (AC-F14-22). */
+async function edit(deps: MessagesDeps, on: OnMessage, body: MessageDocument) {
+  const place = await seatIn(deps, on.userId, on.conversationId, "editOwn");
+  const cleaned = cleanMentions(body, mentionable(place.people));
+  return editAs(deps.meetingChat, place.seat, on.messageId, {
+    body: cleaned.document,
+    mentionedUserIds: cleaned.mentioned,
+  });
+}
+
 async function send(deps: MessagesDeps, userId: string, conversationId: string, input: SendInput) {
   const place = await seatIn(deps, userId, conversationId, "send");
   await checkRequestLimit(deps, userId, place);
-  const members = new Set(place.people.filter((p) => p.state === "accepted").map((p) => p.userId));
+  const members = mentionable(place.people);
   const cleaned = input.body ? cleanMentions(input.body, members) : undefined;
   const view = await sendFrom(deps.meetingChat, place.seat, {
     ...input,
@@ -173,8 +187,7 @@ export function createChatsMessagesService(deps: MessagesDeps) {
       oneFor(chat, await seat(userId, conversationId, "read"), messageId),
     events: async (userId: string, conversationId: string, after: number) =>
       eventsFor(chat, await seat(userId, conversationId, "read"), after),
-    edit: async ({ userId, conversationId, messageId }: OnMessage, body: MessageDocument) =>
-      editAs(chat, await seat(userId, conversationId, "editOwn"), messageId, body),
+    edit: (on: OnMessage, body: MessageDocument) => edit(deps, on, body),
     delete: async ({ userId, conversationId, messageId }: OnMessage) =>
       deleteAs(chat, await seat(userId, conversationId, "deleteOwn"), messageId),
     react: async ({ userId, conversationId, messageId }: OnMessage, emoji: string) =>

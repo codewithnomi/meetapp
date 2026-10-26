@@ -79,12 +79,22 @@ async function pinnedNote(deps: ChatDeps, seat: ChatSeat): Promise<void> {
   if (saved.created) await announce(deps, seat, { seq: saved.seq, type: "message_created", message: saved.message });
 }
 
-export async function editAs(deps: ChatDeps, seat: ChatSeat, messageId: string, body: MessageDocument) {
+/** Edits one's own message; chats pass who is mentioned in the new text (F14 AC-F14-22). */
+export async function editAs(
+  deps: ChatDeps,
+  seat: ChatSeat,
+  messageId: string,
+  { body, mentionedUserIds }: { body: MessageDocument; mentionedUserIds?: string[] },
+) {
   const message = await messageFor(deps, seat, messageId);
   ownNow(seat, message);
   const plainText = documentPlainText(body);
   if (plainText.trim() === "") throw invalid();
-  const change = await deps.actions.edit(seat.conversationId, messageId, { body, plainText });
+  const change = await deps.actions.edit(seat.conversationId, messageId, {
+    body,
+    plainText,
+    ...(mentionedUserIds ? { mentionedUserIds } : {}),
+  });
   if (!change) throw notFound();
   return announce(deps, seat, { seq: change.seq, type: "message_edited", message: change.row });
 }
@@ -138,7 +148,7 @@ const seatFor = (deps: ChatDeps, request: OnMessage, action: ChatAction) =>
 export function createChatActionsService(deps: ChatDeps) {
   return {
     edit: async (request: OnMessage, body: MessageDocument) =>
-      editAs(deps, await seatFor(deps, request, "editOwn"), request.messageId, body),
+      editAs(deps, await seatFor(deps, request, "editOwn"), request.messageId, { body }),
     delete: async (request: OnMessage) => deleteAs(deps, await seatFor(deps, request, "deleteOwn"), request.messageId),
     react: async (request: OnMessage, emoji: string) =>
       reactAs(deps, await seatFor(deps, request, "react"), request.messageId, emoji),

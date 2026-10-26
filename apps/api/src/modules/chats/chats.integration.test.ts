@@ -2,7 +2,7 @@
 // in one-to-one and group chats are written straight to the database here; sending arrives in T8.
 import { randomUUID } from "node:crypto";
 import type { ConversationKind } from "@meetapp/contracts";
-import { chatMessages, conversations } from "@meetapp/db";
+import { chatEvents, chatMessages, conversations } from "@meetapp/db";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
@@ -50,21 +50,36 @@ const started = async (person: Person, workspaceId: string, body: object) =>
 
 // Messages are stamped in the past, a second apart, so a read mark "now" covers them all.
 let clock = 0;
+const newsCount = new Map<string, number>();
 /** A message in a chat, written as T8's sending will (a later time each call). */
 async function say(conversationId: string, workspaceId: string, from: Person, text: string) {
   // Each message strictly after the last and never before the chat existed (the read window, AC-F14-18).
   clock = Math.max(clock + 1, Date.now());
   const at = new Date(clock);
-  await t.database.db.insert(chatMessages).values({
+  const [row] = await t.database.db
+    .insert(chatMessages)
+    .values({
+      workspaceId,
+      conversationId,
+      senderUserId: from.id,
+      senderName: from.email,
+      senderGroup: "member",
+      kind: "text",
+      plainText: text,
+      body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text }] }] },
+      clientId: randomUUID(),
+      createdAt: at,
+    })
+    .returning();
+  // Its news number too, as sending does: read marks go by these (AC-F14-02).
+  const seq = (newsCount.get(conversationId) ?? 0) + 1;
+  newsCount.set(conversationId, seq);
+  await t.database.db.insert(chatEvents).values({
     workspaceId,
     conversationId,
-    senderUserId: from.id,
-    senderName: from.email,
-    senderGroup: "member",
-    kind: "text",
-    plainText: text,
-    body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text }] }] },
-    clientId: randomUUID(),
+    seq,
+    type: "message_created",
+    payload: { id: row?.id },
     createdAt: at,
   });
   await t.database.db.update(conversations).set({ lastMessageAt: at }).where(eq(conversations.id, conversationId));

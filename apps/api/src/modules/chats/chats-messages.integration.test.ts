@@ -2,8 +2,8 @@
 // F03's message rules per conversation, edit and delete any time, mentions, the 10 messages while a
 // request waits, read-only blocked chats, what left people may read, and "who has seen".
 import { randomUUID } from "node:crypto";
-import { chatBlocks, chatMessages, conversationMembers } from "@meetapp/db";
-import { and, eq } from "drizzle-orm";
+import { chatBlocks, chatEvents, chatMessages, conversationMembers, conversationReads } from "@meetapp/db";
+import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import {
@@ -162,6 +162,88 @@ describe("messages in chats", { timeout: 60_000 }, () => {
       conversations: { id: string; mentioned: boolean }[];
     }>();
     expect(m3List.conversations.find((c) => c.id === id)?.mentioned).toBe(false);
+  });
+});
+
+describe("read marks and edited mentions", { timeout: 60_000 }, () => {
+  const unreadOf = async (person: Person, workspaceId: string, id: string) =>
+    (await call(person.token, "GET", `/api/v1/workspaces/${workspaceId}/conversations`))
+      .json<{ conversations: { id: string; unread: number }[] }>()
+      .conversations.find((c) => c.id === id)?.unread;
+  const newest = async (id: string) =>
+    (await t.database.db.select({ seq: chatEvents.seq }).from(chatEvents).where(eq(chatEvents.conversationId, id)))
+      .map((row) => row.seq)
+      .reduce((a, b) => Math.max(a, b), 0);
+  const readTo = (person: Person, id: string, seq: number) =>
+    call(person.token, "PUT", `/api/v1/conversations/${id}/read`, { seq });
+
+  it("TC-F14-03 [AC-F14-02] unread follows the news number: a message after the number seen stays unread", async () => {
+    const { people, workspaceId } = await team("r03", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await start(m1, workspaceId, [m2]);
+    await sent(m2, id, "one");
+    const firstSeq = await newest(id);
+    await sent(m2, id, "two");
+    // M1's app saw only the first message's news when it marked read.
+    expect((await readTo(m1, id, firstSeq)).statusCode).toBe(204);
+    expect(await unreadOf(m1, workspaceId, id)).toBe(1);
+    // A number past the newest is clamped to it; marks never move back.
+    expect((await readTo(m1, id, 1000)).statusCode).toBe(204);
+    expect(await unreadOf(m1, workspaceId, id)).toBe(0);
+    const [mark] = await t.database.db
+      .select({ seq: conversationReads.lastReadSeq })
+      .from(conversationReads)
+      .where(and(eq(conversationReads.conversationId, id), eq(conversationReads.userId, m1.id)));
+    expect(mark?.seq).toBe(await newest(id));
+    await readTo(m1, id, firstSeq);
+    expect(await unreadOf(m1, workspaceId, id)).toBe(0);
+  });
+
+  it("TC-F14-41 [AC-F14-20] the daily clean-up keeps each chat's newest news, so numbers continue", async () => {
+    const { people, workspaceId } = await team("r41", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await start(m1, workspaceId, [m2]);
+    for (const words of ["a", "b", "c"]) await sent(m1, id, words);
+    await t.database.db.execute(
+      sql`update chat_events set created_at = now() - interval '2 days' where conversation_id = ${id}`,
+    );
+    await t.accounts.chatUpkeep.cleanUp();
+    const seqs = async () =>
+      (
+        await t.database.db
+          .select({ seq: chatEvents.seq })
+          .from(chatEvents)
+          .where(eq(chatEvents.conversationId, id))
+          .orderBy(chatEvents.seq)
+      ).map((row) => row.seq);
+    const last = await newest(id);
+    expect(await seqs()).toEqual([last]);
+    await sent(m1, id, "d");
+    expect(await seqs()).toEqual([last, last + 1]);
+  });
+
+  it("TC-F14-45 [AC-F14-22] editing cleans mentions like sending: a non-member becomes text, a new member mention counts", async () => {
+    const { people, workspaceId } = await team("e45", 3);
+    const [m1, m2, m3] = people as [Person, Person, Person];
+    const id = await start(m1, workspaceId, [m2, m3]);
+    const stranger = await namedPerson(t, "e45-x", "Stranger");
+    const first = await sent(m1, id, "hello");
+    const edited = {
+      v: 1,
+      blocks: [
+        {
+          type: "paragraph",
+          content: [
+            { type: "mention", userId: m3.id, text: "@Person 3" },
+            { type: "mention", userId: stranger.id, text: "@Stranger" },
+          ],
+        },
+      ],
+    };
+    const view = (await message(m1, { id, messageId: first.id }, "PATCH", { body: edited })).json<View>();
+    expect(view.body?.blocks[0]?.content?.map((p) => p.type)).toEqual(["mention", "text"]);
+    const [row] = await t.database.db.select().from(chatMessages).where(eq(chatMessages.id, first.id));
+    expect(row?.mentionedUserIds).toEqual([m3.id]);
   });
 });
 

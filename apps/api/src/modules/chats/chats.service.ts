@@ -267,7 +267,8 @@ async function markRead(deps: ChatsDeps, userId: string, conversationId: string,
   const row = await deps.chats.member(conversationId, userId);
   if (row) {
     await deps.chats.markRead({ conversationId, workspaceId: row.conversation.workspaceId, userId, seq });
-    await tellRead(deps, row.conversation, userId, seq);
+    // Someone asked to join (a pending request) may read the preview, but sends no "Seen" (AC-F14-24).
+    if (row.member.state === "accepted") await tellRead(deps, row.conversation, userId, seq);
     return;
   }
   const readable = await deps.readableMeetings(userId);

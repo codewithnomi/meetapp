@@ -129,7 +129,7 @@ export function createChatActionsRepository(db: Database) {
     edit: (
       conversationId: string,
       id: string,
-      change: { body: unknown; plainText: string },
+      change: { body: unknown; plainText: string; mentionedUserIds?: string[] },
     ): Promise<Change<ChatMessage>> =>
       db.transaction(async (tx) => {
         const [row] = await tx

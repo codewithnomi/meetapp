@@ -14,7 +14,7 @@ import {
   type ConversationMember,
 } from "@meetapp/db";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { inWindows, type ReadWindow } from "./chats-read-window.ts";
+import { inWindows, markRead, type ReadWindow } from "./chats-read-window.ts";
 
 export type { Conversation, ConversationMember };
 
@@ -201,22 +201,6 @@ async function pinnedCount(db: Database, userId: string) {
 }
 
 type MyChoices = Partial<Pick<ConversationMember, "pinnedAt" | "muted" | "hidden">>;
-
-/** The person's "read up to here" mark; never moves back (AC-F14-02, 24). */
-function markRead(db: Database, mark: { conversationId: string; workspaceId: string; userId: string; seq: number }) {
-  const now = new Date();
-  return db
-    .insert(conversationReads)
-    .values({ ...mark, lastReadSeq: mark.seq, lastReadAt: now })
-    .onConflictDoUpdate({
-      target: [conversationReads.conversationId, conversationReads.userId],
-      set: {
-        lastReadSeq: sql`greatest(${conversationReads.lastReadSeq}, ${mark.seq})`,
-        lastReadAt: now,
-        updatedAt: now,
-      },
-    });
-}
 
 /** The one account with exactly this email (case ignored), or nothing (D063). */
 async function userByEmail(db: Database, email: string) {

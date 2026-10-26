@@ -8,7 +8,14 @@ import type { LineServerMessage } from "@meetapp/contracts";
 import type { WebSocket } from "@fastify/websocket";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { bearer, startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
-import { caller, namedPerson, seedWorkspace, type Call, type Person } from "../../test-support/workspaces-setup.ts";
+import {
+  caller,
+  namedPerson,
+  seedPersonal,
+  seedWorkspace,
+  type Call,
+  type Person,
+} from "../../test-support/workspaces-setup.ts";
 import { CLOSE, createLineHub } from "./chats-line.ts";
 import { channels, createLivePublisher } from "./chats-live.ts";
 
@@ -278,6 +285,23 @@ describe("what a line receives", { timeout: 60_000 }, () => {
     expect(m2Line.got.some((m) => m.t === "read")).toBe(false);
     m1Line.ws.terminate();
     m2Line.ws.terminate();
+  });
+
+  it("TC-F14-49 [AC-F14-24] someone whose request waits sends no Seen; after accepting they do", async () => {
+    const m1 = await namedPerson(t, "s49p-m1", "Maya Member");
+    const e1 = await namedPerson(t, "s49p-e1", "Eli External");
+    const w1 = await seedWorkspace(t, [[m1, "owner"]]);
+    await seedPersonal(t, e1);
+    const id = await start(m1, w1, [e1]);
+    const opened = await line(m1);
+    await send(m1, id, "hello there");
+    expect((await call(e1.token, "PUT", `/api/v1/conversations/${id}/read`, { seq: 100 })).statusCode).toBe(204);
+    await settle();
+    expect(opened.got.some((m) => m.t === "read")).toBe(false);
+    await call(e1.token, "POST", `/api/v1/conversations/${id}/accept`);
+    await call(e1.token, "PUT", `/api/v1/conversations/${id}/read`, { seq: 100 });
+    expect(await until(() => opened.got.find((m) => m.t === "read"))).toMatchObject({ userId: e1.id });
+    opened.ws.terminate();
   });
 
   it("TC-F14-43 [AC-F14-20] news sent through one server reaches a line on another through Redis", async () => {

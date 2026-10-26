@@ -151,14 +151,13 @@ export function createChatUpkeepRepository(db: Database) {
      * again at 1 during a long call (verification round 1).
      */
     forgetEventsBefore: (before: Date) =>
-      db
-        .delete(chatEvents)
-        .where(
-          and(
-            lt(chatEvents.createdAt, before),
-            sql`${chatEvents.seq} < (select max(e.seq) from ${chatEvents} e where e.meeting_id = ${chatEvents.meetingId})`,
-          ),
+      db.delete(chatEvents).where(
+        and(
+          lt(chatEvents.createdAt, before),
+          // The newest news of each conversation stays, so numbers continue instead of restarting.
+          sql`${chatEvents.seq} < (select max(e.seq) from ${chatEvents} e where e.conversation_id = ${chatEvents.conversationId})`,
         ),
+      ),
     /** Files to remove from storage: deleted ones, and uploads never sent within the hour (AC-F03-34). */
     filesToRemove: (unsentBefore: Date) =>
       db
