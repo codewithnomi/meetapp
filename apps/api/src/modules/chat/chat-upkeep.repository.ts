@@ -137,6 +137,14 @@ function expireRequests(db: Database, before: Date) {
     .where(and(eq(conversationMembers.state, "pending"), lt(conversationMembers.requestedAt, before)));
 }
 
+/** Every file of a workspace's chats, for removing from storage before the workspace row goes. */
+function workspaceFiles(db: Database, workspaceId: string) {
+  return db
+    .select({ storageKey: chatAttachments.storageKey, previewKey: chatAttachments.previewKey })
+    .from(chatAttachments)
+    .where(eq(chatAttachments.workspaceId, workspaceId));
+}
+
 export function createChatUpkeepRepository(db: Database) {
   return {
     fillConversations: () => fillConversations(db),
@@ -178,6 +186,7 @@ export function createChatUpkeepRepository(db: Database) {
     /** Before a meeting record is deleted (F06/F10): its files are marked, so the clean-up removes them. */
     markMeetingFiles: (meetingId: string) =>
       db.update(chatAttachments).set({ status: "deleted" }).where(eq(chatAttachments.meetingId, meetingId)),
+    workspaceFiles: (workspaceId: string) => workspaceFiles(db, workspaceId),
     forgetPerson: (userId: string) => forgetPerson(db, userId),
     exportFor: (userId: string) => exportFor(db, userId),
   };

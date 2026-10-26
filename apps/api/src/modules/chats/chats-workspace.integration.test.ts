@@ -1,10 +1,19 @@
 // Chats and their workspace (F14 design.md 3.10, 3.11; AC-F14-27, 33, 34): the outside-chat switch,
 // leaving or being removed from a workspace, account deletion's chats step and the data export.
 import { randomUUID } from "node:crypto";
-import { chatBlocks, conversationMembers, user } from "@meetapp/db";
+import {
+  chatAttachments,
+  chatBlocks,
+  chatMessages,
+  conversationMembers,
+  conversations,
+  user,
+  workspaces,
+} from "@meetapp/db";
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
+import { bearer, startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
+import { PDF } from "../../test-support/sample-files.ts";
 import {
   caller,
   errorCode,
@@ -170,5 +179,58 @@ describe("account deletion and data", { timeout: 60_000 }, () => {
     const texts = exported.messages.map((m) => m.text);
     expect(texts.sort()).toEqual(["mine in direct", "mine in group"]);
     expect(exported.messages.every((m) => m.conversationId !== null)).toBe(true);
+  });
+});
+
+describe("keeping and deleting chats", { timeout: 60_000 }, () => {
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const upload = (person: Person, id: string) =>
+    t.app.inject({
+      method: "POST",
+      url: `/api/v1/conversations/${id}/attachments`,
+      payload: Buffer.from(PDF),
+      headers: {
+        origin: "app://meetapp",
+        "content-type": "application/octet-stream",
+        "x-file-name": "notes.pdf",
+        ...bearer(person.token),
+      },
+    });
+
+  it("TC-F14-72 [AC-F14-35] chats stay for 400 days; a deleted workspace takes its chats and files, others stay", async () => {
+    const { a1, m1, m2, w1 } = await setUp("k72");
+    const w2 = await seedWorkspace(t, [
+      [m1, "owner"],
+      [m2, "member"],
+    ]);
+    const doomed = await started(m1, w1, [m2]);
+    const kept = await started(m1, w2, [m2]);
+    await send(m2, doomed, "in W1");
+    await send(m2, kept, "in W2");
+    const uploaded = await upload(m1, doomed);
+    expect(uploaded.statusCode).toBe(200);
+    const [file] = await t.database.db
+      .select()
+      .from(chatAttachments)
+      .where(eq(chatAttachments.id, uploaded.json<{ id: string }>().id));
+    await expect(t.storage.get(file?.storageKey ?? "")).resolves.toBeDefined();
+
+    // 400 days on, the daily clean-up keeps chats people haven't deleted.
+    const old = new Date(Date.now() - 400 * DAY_MS);
+    await t.database.db.update(conversations).set({ createdAt: old }).where(eq(conversations.id, doomed));
+    await t.database.db.update(chatMessages).set({ createdAt: old }).where(eq(chatMessages.conversationId, doomed));
+    await t.accounts.chatUpkeep.cleanUp();
+    expect(await t.database.db.select().from(conversations).where(eq(conversations.id, doomed))).toHaveLength(1);
+
+    // W1 is deleted: files leave storage first, then the rows go with the workspace.
+    await t.accounts.chatUpkeep.beforeWorkspaceDeleted(w1);
+    await t.database.db.delete(workspaces).where(eq(workspaces.id, w1));
+    await expect(t.storage.get(file?.storageKey ?? "")).rejects.toThrow();
+    expect(await t.database.db.select().from(conversations).where(eq(conversations.id, doomed))).toEqual([]);
+    expect(await t.database.db.select().from(chatMessages).where(eq(chatMessages.conversationId, doomed))).toEqual([]);
+    expect(await t.database.db.select().from(chatAttachments).where(eq(chatAttachments.workspaceId, w1))).toEqual([]);
+    // The other workspace's chat is untouched.
+    expect(await listItem(m1, w2, kept)).toBeDefined();
+    expect(a1.id).toBeTruthy();
   });
 });

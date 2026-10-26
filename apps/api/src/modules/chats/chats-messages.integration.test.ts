@@ -3,7 +3,7 @@
 // request waits, read-only blocked chats, what left people may read, and "who has seen".
 import { randomUUID } from "node:crypto";
 import { chatBlocks, chatEvents, chatMessages, conversationMembers, conversationReads } from "@meetapp/db";
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
 import {
@@ -244,6 +244,83 @@ describe("read marks and edited mentions", { timeout: 60_000 }, () => {
     expect(view.body?.blocks[0]?.content?.map((p) => p.type)).toEqual(["mention", "text"]);
     const [row] = await t.database.db.select().from(chatMessages).where(eq(chatMessages.id, first.id));
     expect(row?.mentionedUserIds).toEqual([m3.id]);
+  });
+});
+
+describe("opening and paging", { timeout: 120_000 }, () => {
+  type Paged = { messages: (View & { cursor: string })[]; hasMore: boolean };
+  const pageOf = async (person: Person, id: string, before?: string) =>
+    (
+      await call(
+        person.token,
+        "GET",
+        `/api/v1/conversations/${id}/messages?limit=50${before ? `&before=${encodeURIComponent(before)}` : ""}`,
+      )
+    ).json<Paged>();
+  async function allPages(person: Person, id: string) {
+    const ids: string[] = [];
+    let before: string | undefined;
+    for (;;) {
+      const got = await pageOf(person, id, before);
+      ids.push(...got.messages.map((m) => m.id));
+      if (!got.hasMore) return ids;
+      before = got.messages.at(-1)?.cursor;
+    }
+  }
+
+  it("TC-F14-59 [AC-F14-29] the newest first, then 50 at a time with no gaps or repeats; history limits hold", async () => {
+    const { people, workspaceId } = await team("p59", 4);
+    const [m1, m2, m3, m4] = people as [Person, Person, Person, Person];
+    const id = await start(m1, workspaceId, [m2, m4]);
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    // 120 messages, the first 60 written 40 days ago.
+    const rows = Array.from({ length: 120 }, (_, i) => ({
+      workspaceId,
+      conversationId: id,
+      senderUserId: m2.id,
+      senderName: "Person 2",
+      senderGroup: "member" as const,
+      kind: "text" as const,
+      plainText: `n${String(i)}`,
+      body: text(`n${String(i)}`),
+      clientId: randomUUID(),
+      createdAt: new Date(Date.now() - (i < 60 ? 40 * DAY_MS : 0) - (120 - i) * 1000),
+    }));
+    await t.database.db.insert(chatMessages).values(rows);
+    await t.database.db
+      .update(conversationMembers)
+      .set({ historyFrom: new Date(Date.now() - 50 * DAY_MS) })
+      .where(eq(conversationMembers.conversationId, id));
+
+    const began = Date.now();
+    const first = await pageOf(m1, id);
+    expect(Date.now() - began).toBeLessThan(1000);
+    expect(first.messages).toHaveLength(50);
+    const ids = await allPages(m1, id);
+    expect(ids).toHaveLength(120);
+    expect(new Set(ids).size).toBe(120);
+    const all = await t.database.db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(eq(chatMessages.conversationId, id))
+      .orderBy(desc(chatMessages.createdAt));
+    expect(ids).toEqual(all.map((row) => row.id));
+
+    // M3 joins seeing only the last 30 days: older pages never come.
+    const added = await call(m1.token, "POST", `/api/v1/conversations/${id}/members`, {
+      userIds: [m3.id],
+      history: { from: "days", days: 30 },
+    });
+    expect(added.statusCode).toBe(204);
+    const theirs = await allPages(m3, id);
+    // The 60 recent messages and the "added" note; nothing from 40 days ago.
+    const recent = await t.database.db
+      .select({ id: chatMessages.id })
+      .from(chatMessages)
+      .where(and(eq(chatMessages.conversationId, id), sql`${chatMessages.createdAt} > now() - interval '30 days'`))
+      .orderBy(desc(chatMessages.createdAt));
+    expect(recent).toHaveLength(61);
+    expect(theirs).toEqual(recent.map((row) => row.id));
   });
 });
 

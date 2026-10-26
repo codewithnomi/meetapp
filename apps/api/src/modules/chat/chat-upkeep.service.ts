@@ -40,13 +40,19 @@ async function modeChanged(deps: UpkeepDeps, meetingId: string, byName: string):
   await broadcast(deps, call.id, { seq: saved.seq, type: "chat_mode_changed", id: view.id, message: view });
 }
 
-/** Groups whose last member left 30 days ago go, files first (F14 AC-F14-18). */
-async function forgetEmptyGroups(deps: UpkeepDeps, before: Date) {
-  const { ids, files } = await deps.upkeep.groupsToDelete(before);
+type StoredFile = { storageKey: string; previewKey: string | null };
+
+async function removeStored(deps: UpkeepDeps, files: StoredFile[]) {
   for (const file of files) {
     await deps.storage.delete(file.storageKey);
     if (file.previewKey) await deps.storage.delete(file.previewKey);
   }
+}
+
+/** Groups whose last member left 30 days ago go, files first (F14 AC-F14-18). */
+async function forgetEmptyGroups(deps: UpkeepDeps, before: Date) {
+  const { ids, files } = await deps.upkeep.groupsToDelete(before);
+  await removeStored(deps, files);
   await deps.upkeep.forgetConversations(ids);
 }
 
@@ -77,5 +83,11 @@ export function createChatUpkeepService(deps: UpkeepDeps) {
     exportFor: (userId: string) => deps.upkeep.exportFor(userId),
     /** Called before a meeting record is deleted (F06/F10), so its files are removed too (AC-F03-43). */
     beforeMeetingDeleted: (meetingId: string) => deps.upkeep.markMeetingFiles(meetingId),
+    /**
+     * Called before a team workspace is deleted (F10, AC-F14-35): its chat files leave storage now; the
+     * conversations, messages and file rows then go with the workspace row (cascade).
+     */
+    beforeWorkspaceDeleted: async (workspaceId: string) =>
+      removeStored(deps, await deps.upkeep.workspaceFiles(workspaceId)),
   };
 }
