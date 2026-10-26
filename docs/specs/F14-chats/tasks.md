@@ -18,7 +18,7 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
   - **Built in T1:** `@fastify/websocket` 11.3.1 vetted (D064; installed in T9 where it is first used); `packages/contracts/src/chats.ts` (kinds, member states, statuses, limits, list items, start/add/read/decline bodies, people results, live-line messages both ways); `apps/api/src/modules/chats/chats.permissions.ts` with 7 unit tests over every state, kind and setting.
 
 - [x] **T2: Migration `0006_chats`, step 1 (expand).**
-  - `/db-migration`: `conversations`, `conversation_members`, `conversation_reads`, `chat_blocks`, `chat_request_cooldowns`, `workspaces.allow_outside_chat`, `user_settings.read_receipts`; nullable `conversation_id` on F03's tables; a conversation for every meeting (unique `meeting_id`); F02's meeting creation creates it; F03 code writes both columns.
+  - `/db-migration`: `conversations`, `conversation_members`, `conversation_reads`, `chat_blocks`, `chat_request_cooldowns`, `workspaces.allow_outside_chat`, `user.read_receipts`; nullable `conversation_id` on F03's tables; a conversation for every meeting (unique `meeting_id`); F02's meeting creation creates it; F03 code writes both columns.
   - Covers: AC-F14-28 (base), D065.
   - Tests: TC-F14-77 (first part), TC-F14-78.
   - **Built in T2:** schema `conversations.ts` (5 tables, each with `id`, `workspace_id` where owned) and migration `0006_chats` (adds only: meeting columns optional, empty `conversation_id` on F03's 5 tables with indexes, `user.read_receipts` and `workspaces.allow_outside_chat` default on); `meetingConversation` (find or create, safe to repeat) used by every F03 save, so new rows and news carry their conversation; new meetings get theirs at creation. Tests: migration on an F03 database loses nothing; one conversation per meeting; one direct chat per pair; F03's chat and meetings backend suites pass (132).
@@ -140,6 +140,6 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
 - [x] **T-fix-4: Loading and error states** for the chat list, Chat requests, a conversation and Group details (with Retry), read-mark failures retried; h2 in the panes; translated unread names; New chat's Start disabled while sending and Invite errors shown.
 - [x] **T-fix-5: Read marks and mentions.** Unread by news number (clamped to the chat's last); "Seen" only from accepted members; editing cleans mentions.
 - [x] **T-fix-6: Tests for AC-29 and AC-35** (TC-F14-59 paging with no gaps or repeats and the history limit; TC-F14-72 workspace deletion removes chats and files) and page tests for `pages/ChatsPage`, bringing `features/**` branch coverage to 80%.
-- [ ] **T-fix-7: Documentation** listed in verification.md (design folders and endpoints, D067 for the mention libraries, overview, operations, privacy, desktop README, security S5, progress).
+- [x] **T-fix-7: Documentation** listed in verification.md (design folders and endpoints, D067 for the mention libraries, overview, operations, privacy, desktop README, security S5, progress).
 - [ ] **T-fix-8: Status after closing the app** as the owner decides (now "Away" for 30 s, then Offline).
 - [ ] **T-fix-9: Second verification:** rerun the desktop tests (with sign-ups available) and create the new screenshots after the owner looks at them.

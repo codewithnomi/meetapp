@@ -427,3 +427,11 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** F03's chat tables named who sent, reacted, pinned, created a poll, voted, uploaded or deleted by their join of a call. One-to-one and group chats have no call, so migration `0007_chats_people` adds the account next to it (`user_id` on reactions; `deleted_by_user_id`, `uploader_user_id`, `pinned_by_user_id`, `creator_user_id`, `voter_user_id`), lets a reaction have no join, keeps "sent once" per account for chat messages, and adds `mentioned_user_ids` (mentions) and `conversation_members.left_at` (what left people may read). Add-only; meeting chats keep using joins. In code, F03's rules take a "seat" (`chat-seat.ts`): a call's join or a chat's account, with its own rights check, reading window and news delivery.
 - **Why:** the same message, reaction and reply rules for every chat (D065) without copying F03's code.
 - **Cost:** none.
+
+### D067: @mention libraries for the message box (F14)
+- **Date:** 2026-10-26. **Status:** accepted (needed for AC-F14-22 within the approved design; recorded at the F14 verification, which found it missing).
+- **Decision:** the message box's @mentions use `@tiptap/extension-mention` and `@tiptap/suggestion` (same Tiptap version as the editor F03 already uses, D058) and `@floating-ui/dom` to place the name list next to the cursor. Added to `packages/ui` in F14 T16.
+- **Vetted:** all MIT; Tiptap libraries come from the same team and release as the editor already in use; `@floating-ui/dom` is the widely used positioning library (Floating UI team), small and with no dependencies besides its own core; licenses check passes; no audit findings.
+- **Why:** Teams-style @mentions inside the rich text editor; writing our own suggestion popup and positioning would be more code to keep accessible and correct.
+- **Cost:** none.
+- **Alternatives:** a hand-written popup (more code, keyboard and screen-reader work); a different editor (would redo F03's composer).

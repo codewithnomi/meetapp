@@ -22,11 +22,13 @@ Nothing new costs money: the same backend, database and Redis.
 packages/db/src/schema/conversations.ts   conversations, members, reads, blocks; migration 0006_chats
 packages/contracts/src/chats.ts           chats, members, requests, reads, status, live-line messages
 apps/api/src/modules/chats/               routes, services, repositories: conversations, members, requests,
-                                          blocks, reads; permissions table (chats.permissions.ts)
-apps/api/src/modules/realtime/            the live line: connect, who is listening, Redis fan-out, status
+                                          blocks, reads; permissions table (chats.permissions.ts); the live
+                                          line (chats-line*.ts: connect, who is listening, Redis fan-out via
+                                          chats-live.ts) and status (chats-status*.ts, chats-presence.ts)
 apps/api/src/modules/chat/                F03, changed to work on a conversation (not only a meeting call)
-apps/web/src/features/chats/              chat list, requests, reads, typing, status, live-line client
-apps/web/src/features/realtime/           one live line per app, reconnects, hands news to features
+apps/web/src/features/chats/              chat list, requests, reads, typing, status; the live-line client
+                                          (live-line.ts: one line per app, reconnects) and LiveLineProvider.tsx
+                                          (hands news to the screens)
 apps/web/src/pages/ChatsPage/             the Chat screen: list, conversation, new chat, requests, group panel
 packages/ui/src/…                         ChatListItem, StatusDot, ChatRequestCard, PeoplePicker, NavRail (2.3)
 apps/desktop/src/main/                    the live line's address added to the security policy and token rule; powerMonitor
@@ -145,7 +147,9 @@ apps/desktop/src/main/                    the live line's address added to the s
 | `GET /me/chat-requests` | pending requests (Personal list), AC-10 |
 | `POST /workspaces/:id/conversations` (`{ userIds, emails, name? }`) | start a direct chat (existing returned) or group, AC-07, 09, 15 |
 | `GET /workspaces/:id/people?q=` | To: suggestions: members by name; an exact email returns that one account (30 lookups a minute), AC-07, 08, D063 |
-| `GET /conversations/:id/messages`, `POST …/messages`, `PATCH/DELETE …/messages/:mid`, reactions, pins, polls, attachments | F03's routes, now per conversation, AC-19, 21 |
+| `GET /conversations/:id/messages` (`?before=&limit=`), `GET …/messages/:mid`, `POST …/messages`, `PATCH/DELETE …/messages/:mid`, `POST/DELETE …/messages/:mid/reactions`, `GET/POST/DELETE …/pins`, `POST …/polls`, `GET …/polls/:pid`, `PUT …/polls/:pid/vote`, `POST …/polls/:pid/close`, `POST …/attachments`, `GET …/attachments/:aid/link`, `GET …/gif-settings` | F03's routes, now per conversation, AC-19, 21, 29 |
+| `GET /conversations/:id/events?after=` | catching up after a reconnect from the last news number, AC-20 |
+| `GET /conversations/:id/members` | the chat's people with status, "(External)" and pending, AC-14, 26 |
 | `PUT /conversations/:id/read` | the read mark, AC-24 |
 | `POST /conversations/:id/accept`, `POST …/decline` (`{ block }`) | requests, AC-11, 13 |
 | `POST /conversations/:id/members`, `DELETE …/members/:userId`, `POST …/leave`, `PATCH /conversations/:id` (`{ name }`) | groups, AC-16–18 |
@@ -153,7 +157,7 @@ apps/desktop/src/main/                    the live line's address added to the s
 | `POST /me/invitations` (`{ email }`) | the Personal "Join me on MeetApp" email (20 a day per person); in a team workspace the app uses F01's invitation route, AC-08 |
 | `GET /conversations/:id/messages/:mid/seen` | who has seen a group message (groups up to 20), AC-24 |
 | `GET /me/blocked`, `POST /me/blocked` (`{ userId }`, block from an accepted chat), `DELETE /me/blocked/:userId` | Settings → Privacy, AC-13 |
-| `PATCH /me/settings` (`{ readReceipts }`) | AC-24 |
+| `GET /me/settings`, `PATCH /me/settings` (`{ readReceipts }`) | AC-24 |
 | `GET /realtime` (WebSocket) | the live line, 3.4 |
 | `GET /people/status?ids=` | statuses the asker may see (others left out), AC-26; added in T10 |
 - Meeting chat keeps F03's `/calls/:callId/chat/…` routes during a call (they find the meeting's conversation).

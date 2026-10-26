@@ -13,7 +13,7 @@ Every feature's requirements must include a "Security & privacy" section.
 - S2. Workspaces are fully separated. A user never sees another workspace's meetings, chats, transcripts or AI answers.
 - S3. Meeting links are long and random (not guessable). Hosts can lock a meeting or use a waiting room.
 - S4. Call-server (LiveKit) tokens are valid for one meeting only, with minimum rights and a short lifetime.
-- S5. Rate limits on login, sign-up, meeting creation and AI questions.
+- S5. Rate limits on login, sign-up, meeting creation and AI questions. Chats (F14): 10 messages in 10 seconds per person, 10 files a minute, 20 chat requests and 20 "Join me on MeetApp" emails a day, 30 email lookups a minute in New chat, 10 messages while a request waits, 10 typing signals in 10 seconds and at most 5 live lines per person (a 6th closes the oldest), 64 KB per live-line message.
 
 ## Data
 - S6. All traffic is encrypted (HTTPS/WSS; calls use encrypted WebRTC).

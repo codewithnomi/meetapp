@@ -45,11 +45,12 @@ Plain-English version first, technical names in brackets.
 | Call server | LiveKit (open source) | Built for big meetings; we host it ourselves, so it's cheaper |
 | Calling in the app | livekit-client (D055) | LiveKit's own library for joining calls from the desktop and web app |
 | Meeting chat | our backend + the call server's data channel (D060) | The backend checks and saves every message, then the call server delivers it to everyone in the meeting |
-| Chat message box | TipTap (rich text), Frimousse (emoji) | Formatting, code and emoji, saved as a strict document, never as HTML |
+| Chats (one-to-one and groups, F14) | our backend + a live line (WebSocket, `@fastify/websocket`, D064) | One conversation model for every chat (D065); the backend checks and saves every message; the live line brings new messages, typing, "Seen", status and list changes instantly. Several API servers share news through Redis publish/subscribe; if Redis is down the apps check every 10–30 seconds instead |
+| Chat message box | TipTap (rich text, with @mentions: `@tiptap/extension-mention`, `@floating-ui/dom`, D067), Frimousse (emoji) | Formatting, code and emoji, saved as a strict document, never as HTML |
 | GIFs in chat | KLIPY, free (D059) | Searched by each person's app; nothing about GIFs is stored on our server |
 | Backend | Node.js + Fastify | Fast, same language as the apps |
 | Database | PostgreSQL + pgvector | One database for normal data **and** AI search |
-| Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app |
+| Background jobs | Redis + BullMQ | Runs slow jobs (minutes, AI indexing) without blocking the app. Redis also passes chat news between API servers and keeps who is online (F14) |
 | Speech-to-text | Deepgram (cloud) / Whisper (local) | Top quality; local option for privacy |
 | AI brain | Claude (cloud) / Ollama (local) | Best quality answers; local option |
 | File storage | Cloudflare R2 online; **RustFS** on the Mac (same S3 API, D035) | Cheap, no download fees |
