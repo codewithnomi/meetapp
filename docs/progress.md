@@ -35,7 +35,7 @@
 - **F03 T6 done:** files and pictures (content checks, cleaned pictures with previews, 25 MB, 10 a minute, 500 MB per meeting, guests none, signed 5-minute downloads with safe headers).
 - **F03 T7 done:** GIF settings for the app's own KLIPY search, GIF and sticker messages, the workspace "Allow GIFs" switch.
 - **F03 T8 done (backend complete):** chat setting with notes, after-meeting reading, the AI reading rule, account-deletion and export helpers, clean-up jobs.
-- **For later features:** F06/F10 must call `chatUpkeep.beforeMeetingDeleted` before deleting a meeting record, and F10's account deletion must call `chatUpkeep.forgetPerson`.
+- **For later features:** F06/F10 must call `chatUpkeep.beforeMeetingDeleted` before deleting a meeting record (check it removes stored files: attachment rows cascade with the meeting), F10's workspace deletion must call `chatUpkeep.beforeWorkspaceDeleted` (removes chat files from storage first), and F10's account deletion must call `chatUpkeep.forgetPerson`.
 - **F03 T9 done:** chat security sweeps (other meetings' ids, plain-text names, no chat text in logs); `pnpm check` clean. **F03 backend complete (T1–T9).**
 - **F03 T10 done:** spell-check menu, Save as for chat files only, KLIPY in the security policy. Open for F04: Windows spell-check dictionaries ship with the installer.
 - **F03 T11 done:** the reading-side building blocks in Storybook (message renderer, message, panel, reactions, reply quote, file card, pinned bar, notes, drop area); the writing-side ones come with T13–T15.
@@ -87,7 +87,8 @@
 - **F14 T-fix-3 done (2026-10-23):** the open chat stays open (with its draft) when the filter or search hides it; 3 tests. Page tests follow in T-fix-6.
 - **F14 T-fix-4 done (2026-10-26):** loading spinners and "Couldn't load this" + Retry on the chat list, Chat requests, conversation and Group details; failed actions shown; read marks retried; Start once; invite errors; h2 panes; translated side-menu count. 121 app + 8 UI tests pass.
 - **F14 T-fix-5 done (2026-10-26):** read marks by news number (clamped, exact message time); no "Seen" from pending invitees; editing cleans mentions; also fixed: the daily news clean-up never removed one-to-one/group chat news (it matched by meeting) and now keeps each chat's newest. 181 chat tests pass. Note: TC-F14-21 failed once with 429 instead of 403 (timing), passed on rerun; watch at verification.
-- **Next step:** F14 T-fix-6, tests for AC-29 and AC-35 and page tests (coverage 80%) (`/next`).
+- **F14 T-fix-6 done (2026-10-26):** tests for paging (120 messages, 50 at a time, no gaps or repeats, history limit) and workspace deletion (chats kept 400 days; a deleted workspace takes its chats, messages and files; others stay). Found and fixed: a deleted workspace's chat files would stay in storage (new `chatUpkeep.beforeWorkspaceDeleted`). Tests for the live line hooks and the Chat screen; `features/**` branch coverage 82.6% (was 77.9%). 183 server + 374 app tests pass.
+- **Next step:** F14 T-fix-7, documentation fixes (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
