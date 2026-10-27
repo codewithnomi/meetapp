@@ -2,7 +2,7 @@
 // approved canvas): the caller's picture and name, "Video call · Release team", and three round buttons,
 // Video, Audio and Decline, named in full for screen readers ("Accept with video"). During another call
 // a line says that accepting leaves it, and the accept buttons' names say so too. It takes focus and is
-// announced; the page plays the ringtone and handles the answers.
+// announced; Escape declines and focus returns where it was. The page plays the ringtone and answers.
 import { useEffect, useRef, type Ref } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Icon, type IconName } from "../../atoms/Icon/index.ts";
@@ -64,13 +64,31 @@ function AnswerButton({
 
 export function IncomingCall(props: IncomingCallProps) {
   const first = useRef<HTMLButtonElement>(null);
-  // The window takes focus when it appears, so a keyboard user can answer at once (AC-F15-18).
-  useEffect(() => first.current?.focus(), []);
+  const box = useRef<HTMLElement>(null);
+  const onDecline = props.decline.onClick;
+  // Escape declines while focus is in the window, as its own button does.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && box.current?.contains(document.activeElement)) onDecline();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onDecline]);
+  // The window takes focus when it appears, so a keyboard user can answer at once, and gives it back to
+  // where it was when it closes (AC-F15-18).
+  useEffect(() => {
+    const before = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    first.current?.focus();
+    return () => {
+      if (before?.isConnected) before.focus();
+    };
+  }, []);
   return (
     <section
       role="alertdialog"
       aria-label={props.label}
       aria-describedby="incoming-call-who"
+      ref={box}
       className="box-border flex w-90 max-w-[calc(100vw-48px)] flex-col gap-4 rounded-xl bg-stage p-5 text-stage-ink shadow-2"
     >
       <div className="flex items-center gap-3.5">

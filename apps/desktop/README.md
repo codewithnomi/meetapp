@@ -6,7 +6,7 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | File | What |
 |---|---|
 | `src/main/main.ts` | Starts the app: settings, Sentry (only with `SENTRY_DSN`), security, the window |
-| `src/main/security.ts` | Page settings (sandbox, isolation, no Node.js), which addresses count as "inside the app", which links may open in the browser, the Content Security Policy (F03 adds KLIPY: `api.klipy.com` for GIF searches, `static.klipy.com` for GIF images) |
+| `src/main/security.ts` | Page settings (sandbox, isolation, no Node.js), which addresses count as "inside the app", which links may open in the browser, the Content Security Policy (F03 adds KLIPY: `api.klipy.com` for GIF searches, `static.klipy.com` for GIF images; F15 allows only the app's own WebAssembly, `'wasm-unsafe-eval'`, for camera backgrounds) |
 | `src/main/guards.ts` | Applies those rules: other permissions refused, navigation and new windows blocked, CSP on every response; camera, microphone and screen as `media-permissions.ts` allows |
 | `src/main/media-permissions.ts` | Camera and microphone only for MeetApp's own page, plus choosing the speakers and writing to the clipboard for the Copy buttons (reading it stays refused, D040); screen sharing only through our picker, once, within 10 s, video only (F02) |
 | `src/main/chat-desktop.ts`, `chat-bridge.ts` | Meeting chat (F03): the right-click spelling menu (dictionaries from the app, never online), and `window.meetapp.files.save` (Save as, only for our backend's chat file links) |

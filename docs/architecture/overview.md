@@ -46,6 +46,8 @@ Plain-English version first, technical names in brackets.
 | Calling in the app | livekit-client (D055) | LiveKit's own library for joining calls from the desktop and web app |
 | Meeting chat | our backend + the call server's data channel (D060) | The backend checks and saves every message, then the call server delivers it to everyone in the meeting |
 | Chats (one-to-one and groups, F14) | our backend + a live line (WebSocket, `@fastify/websocket`, D064) | One conversation model for every chat (D065); the backend checks and saves every message; the live line brings new messages, typing, "Seen", status and list changes instantly. Several API servers share news through Redis publish/subscribe; if Redis is down the apps check every 10–30 seconds instead |
+| Calls from chats (F15) | the same call server and livekit-client as meetings (D072) + the live line for ringing | A call belongs to a meeting or a chat; one running call per chat, 20 people, everyone equal. Rings go to every open window through "ring targets" (phones later, D075); a 30-second job ends unanswered rings. Ringtones are made by the app (D074) |
+| Camera backgrounds (F15) | `@livekit/track-processors` with MediaPipe (D073) | Blur and 8 pictures, made on the computer; the engine, model and pictures ship with the app |
 | Chat message box | TipTap (rich text, with @mentions: `@tiptap/extension-mention`, `@floating-ui/dom`, D067), Frimousse (emoji) | Formatting, code and emoji, saved as a strict document, never as HTML |
 | GIFs in chat | KLIPY, free (D059) | Searched by each person's app; nothing about GIFs is stored on our server |
 | Backend | Node.js + Fastify | Fast, same language as the apps |

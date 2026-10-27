@@ -42,4 +42,29 @@ describe("IncomingCall", () => {
     expect(screen.getByText("Accepting leaves it.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Leave current call and accept with video" })).toBeInTheDocument();
   });
+
+  it("TC-F15-56 [AC-F15-18] Escape declines, and focus goes back to the earlier element when the window closes", async () => {
+    const a = answers();
+    const opener = document.createElement("button");
+    document.body.append(opener);
+    opener.focus();
+    const view = render(<IncomingCall label="Incoming call" callerName="Sara" subtitle="Audio call" {...a} />);
+    expect(screen.getByRole("button", { name: "Accept with video" })).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    expect(a.decline.onClick).toHaveBeenCalledOnce();
+    view.unmount();
+    expect(opener).toHaveFocus();
+    opener.remove();
+  });
+
+  it("TC-F15-56 [AC-F15-18] Escape does nothing when focus is outside the window", async () => {
+    const a = answers();
+    const outside = document.createElement("button");
+    document.body.append(outside);
+    render(<IncomingCall label="Incoming call" callerName="Sara" subtitle="Audio call" {...a} />);
+    outside.focus();
+    await userEvent.keyboard("{Escape}");
+    expect(a.decline.onClick).not.toHaveBeenCalled();
+    outside.remove();
+  });
 });

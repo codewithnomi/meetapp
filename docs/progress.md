@@ -47,6 +47,7 @@
 - **F15 T16 done** (2026-10-27): a window not in a call shows "You're in a call on another device" (checked every 10 s) with **Join on this device** and **Transfer to this device**; the old window then lands on F02's "left" screen. 5 unit tests pass; desktop test written for verification.
 - **F15 T17 done** (2026-10-27): device choices moved to `features/devices`; Settings → Devices (preview, camera, microphone with level, speaker with Test speakers, noise suppression, notice when a chosen device is unplugged) and Settings → Calls (5 ringtones with play, volume; added here, no step had it). 13 new tests pass.
 - **F15 T18 done** (2026-10-27, milestone): backgrounds None, Blur and 8 pictures (drawn for MeetApp) in Settings → Devices, pre-join and the in-call panel; made on the computer (engine and model inside the app); turns itself off under 15 fps for 5 s. Owner allowed the app's own WebAssembly in the desktop security policy (`'wasm-unsafe-eval'`, D073, security S17). 433 web + 15 desktop security tests pass; desktop and speed tests written for verification.
+- **F15 T19 done** (2026-10-27): incoming call: Escape declines, focus returns where it was; text check covers the new folders; docs updated (overview, security S5, operations, calls runbook, desktop README). Keyboard and axe desktop test written for verification. Left: T20 (load test, runs with verification).
 - **Next step:** F15 T14, being called (milestone: two windows can call each other) (`/next`).
 
 ## Open questions (need the owner's answer)
