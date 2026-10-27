@@ -1,7 +1,7 @@
 ---
 feature: F15
 title: Calls from chat (audio and video)
-status: draft
+status: approved
 updated: 2026-10-27
 ---
 

@@ -28,7 +28,8 @@
 - **F15 design drafted** (2026-10-27, `docs/specs/F15-calls/design.md`), reviewed by spec-reviewer and fixed; D072 (calls belong to a meeting or a chat), D073 (background tool), D074 (generated ringtones) proposed.
 - **F15 design approved** (2026-10-27; D072–D074 accepted). Owner added: ringing on every device and transfer between devices, ready for the mobile app (AC-F15-33, 34; D075; desktop-to-desktop transfer built now).
 - **F15 tests.md (79 test cases, every AC covered) and tasks.md (20 steps, every test case in a step) drafted** (2026-10-27).
-- **Next step:** owner approves F15 tests and tasks, then building starts (`/next`).
+- **F15 tests and tasks approved** (2026-10-27).
+- **Next step:** F15 T1, libraries and shapes (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

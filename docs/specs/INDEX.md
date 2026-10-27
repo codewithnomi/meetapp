@@ -9,7 +9,7 @@
 | F02 | Meetings & calling | 1 | approved | approved | approved | approved | done | PASS 2026-10-20 (verification.md) |
 | F03 | In-meeting chat | 1 | approved | approved | approved | approved | done | PASS 2026-10-21 (round 2, verification.md) |
 | F14 | Chats (one to one and groups) | 1 | approved | approved | approved | approved | in progress | - |
-| F15 | Calls from chat (audio and video) | 1 | approved | approved | draft | draft | not started | - |
+| F15 | Calls from chat (audio and video) | 1 | approved | approved | approved | approved | not started | - |
 | F04 | Desktop app | 1 | not started | not started | not started | not started | not started | - |
 | F13 | Scheduling & calendar | 1 | not started | not started | not started | not started | not started | - |
 | F05 | Live transcription | 2 | not started | not started | not started | not started | not started | - |
