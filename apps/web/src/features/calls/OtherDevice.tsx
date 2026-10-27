@@ -47,7 +47,7 @@ export function OtherDevice({ onEntered }: { onEntered: () => void }) {
     },
     onSuccess: (joined, { call }) => enter(joined, call),
   });
-  const call = active.data?.calls.find((c) => c.seats.length > 0 && c.conversationId !== null);
+  const call = active.data?.calls?.find((c) => c.seats.length > 0 && c.conversationId !== null);
   if (inCall || !call) return null;
   return (
     <section
