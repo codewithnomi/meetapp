@@ -22,7 +22,8 @@
 - **Watch at F14's second verification:** TC-F14-21 once returned 429 instead of 403 (timing) and passed on rerun.
 - **F14 second verification postponed (D069, owner 2026-10-27):** runs later together with F15's, when the owner is free (lid open or on power, `pnpm dev` closed).
 - **F15 requirements drafted** (2026-10-27, branch `feat/F15-calls` from `feat/F14-chats`): 28 ACs, reviewed by spec-reviewer and fixed; D070 (one status "In a call"), D071 (chat calls follow Teams) proposed with it.
-- **Next step:** owner approves the F15 requirements (or says what to change), then F15 screen designs.
+- **F15 requirements approved** (2026-10-27, 32 ACs incl. device settings with preview, backgrounds and ringtones; D070, D071 accepted).
+- **Next step:** F15 screen designs on the canvas (D029), for the owner to approve.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

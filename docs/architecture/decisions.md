@@ -449,13 +449,13 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none. Risk: a problem only the full check finds is found later; both features are checked before either is merged.
 
 ### D070: One status "In a call" for meetings and chat calls (F14, F15)
-- **Date:** 2026-10-27. **Status:** proposed (part of the F15 requirements; accepted with them).
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 requirements, 2026-10-27).
 - **Decision:** the status shown while someone is in any call (a meeting or a call from a chat) is **In a call**, replacing F14's "In a meeting" (F14 AC-26 points here). It changes back within 30 seconds of leaving; D068 still applies when the app closes.
 - **Why:** Teams shows "In a call" for both; one status is simpler to understand.
 - **Cost:** none.
 
 ### D071: Calls from chats follow Teams (F15)
-- **Date:** 2026-10-27. **Status:** proposed (part of the F15 requirements; accepted with them).
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 requirements, 2026-10-27).
 - **Decision:** a call rings for 30 seconds; groups with more than 20 members don't ring (members join from the chat); a chat call holds at most 20 people and lasts at most 30 hours; everyone in a chat call is equal (no organizer controls); a one-to-one call ends when either person leaves; being called during another call can be accepted, leaving the other call (no hold); a declined or unanswered call shows as a missed call.
 - **Why:** the owner's standing instruction: match Microsoft Teams when unsure.
 - **Cost:** none (same call server, D017).
