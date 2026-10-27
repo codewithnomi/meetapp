@@ -100,7 +100,8 @@ async function endCall(tx: Executor, callId: string, reason: EndReason, at: Date
     .returning({ id: calls.id, meetingId: calls.meetingId });
   const [call] = ended;
   if (!call) return false;
-  await closeChatOf(tx, call, at);
+  // A chat call (F15) has no meeting chat to close.
+  if (call.meetingId) await closeChatOf(tx, { id: call.id, meetingId: call.meetingId }, at);
   await tx
     .update(callAttendances)
     .set({ status: "waiting", callId: null, lobbyEnteredAt: at, lastSeenAt: at })

@@ -43,6 +43,15 @@ export interface CallsDeps {
 export const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
 
 /**
+ * The meeting of a meeting's call or join (F02). A chat call (F15, D072) has none, so meeting-only steps
+ * (lobby, rejoin, the meeting's chat) treat it as not found.
+ */
+export function meetingIdOf(row: { meetingId: string | null }): string {
+  if (row.meetingId === null) throw notFound();
+  return row.meetingId;
+}
+
+/**
  * The person as they are now (S2): a member removed from the workspace counts as from outside from then
  * on, and a role given for their old group no longer applies. Guests stay guests.
  */

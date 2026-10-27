@@ -3,6 +3,7 @@
 // and the link and passcode stored only encrypted, with keyed hashes for lookups.
 import { sql } from "drizzle-orm";
 import {
+  check,
   type AnyPgColumn,
   boolean,
   index,
@@ -15,6 +16,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth.ts";
+import { conversations } from "./conversations.ts";
 import { id, moment, timestamps } from "./columns.ts";
 import { workspaces } from "./workspaces.ts";
 
@@ -97,15 +99,22 @@ export const meetingCoOrganizers = pgTable(
   ],
 );
 
-/** One call of a meeting: from the first person in until it ends. Its id is the LiveKit room name. */
+/** F15: what a chat call's caller chose (the ring shows it; the camera starts on for video). */
+export const callMedia = pgEnum("call_media", ["video", "audio"]);
+
+/**
+ * One call: from the first person in until it ends. Its id is the LiveKit room name. It belongs to a
+ * meeting (F02) or, from F15, to a chat (D072): exactly one of `meeting_id` and `conversation_id`.
+ */
 export const calls = pgTable(
   "calls",
   {
     id: id(),
     workspaceId: workspaceRef(),
-    meetingId: uuid("meeting_id")
-      .notNull()
-      .references(() => meetings.id, { onDelete: "cascade" }),
+    meetingId: uuid("meeting_id").references(() => meetings.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
+    /** Chat calls only: video or audio. */
+    media: callMedia("media"),
     startedAt: moment("started_at").notNull().defaultNow(),
     endedAt: moment("ended_at"),
     endReason: callEndReason("end_reason"),
@@ -118,7 +127,12 @@ export const calls = pgTable(
     uniqueIndex("calls_one_running_per_meeting")
       .on(table.meetingId)
       .where(sql`${table.endedAt} is null`),
+    /** One running call per chat: starting again joins it (AC-F15-03, 26). */
+    uniqueIndex("calls_one_running_per_conversation")
+      .on(table.conversationId)
+      .where(sql`${table.endedAt} is null`),
     index("calls_workspace_id_idx").on(table.workspaceId),
+    check("calls_meeting_or_conversation", sql`num_nonnulls(${table.meetingId}, ${table.conversationId}) = 1`),
   ],
 );
 
@@ -128,9 +142,9 @@ export const callAttendances = pgTable(
   {
     id: id(),
     workspaceId: workspaceRef(),
-    meetingId: uuid("meeting_id")
-      .notNull()
-      .references(() => meetings.id, { onDelete: "cascade" }),
+    /** A meeting's join (F02), or a chat call's (F15, `conversation_id`): exactly one. */
+    meetingId: uuid("meeting_id").references(() => meetings.id, { onDelete: "cascade" }),
+    conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "cascade" }),
     /** Empty while waiting before a call exists; set at admission. */
     callId: uuid("call_id").references(() => calls.id, { onDelete: "cascade" }),
     /** Empty for guests; the record keeps the name when an account is deleted. */
@@ -163,6 +177,11 @@ export const callAttendances = pgTable(
     index("call_attendances_call_status_idx").on(table.callId, table.status),
     index("call_attendances_user_id_idx").on(table.userId),
     index("call_attendances_workspace_id_idx").on(table.workspaceId),
+    index("call_attendances_conversation_id_idx").on(table.conversationId),
+    check(
+      "call_attendances_meeting_or_conversation",
+      sql`num_nonnulls(${table.meetingId}, ${table.conversationId}) = 1`,
+    ),
   ],
 );
 

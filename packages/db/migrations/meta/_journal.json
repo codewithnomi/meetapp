@@ -64,6 +64,13 @@
       "when": 1792605159401,
       "tag": "0008_chat_pins_per_conversation",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793097524567,
+      "tag": "0009_chat_calls",
+      "breakpoints": true
     }
   ]
 }

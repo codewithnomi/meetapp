@@ -96,6 +96,7 @@ async function prepare(deps: CallsDeps, request: JoinRequest): Promise<Joiner> {
     actedBy: null,
     lastEventAt: null,
     rejoinedAt: null,
+    conversationId: null,
   };
   return { row, group, base, ticket };
 }

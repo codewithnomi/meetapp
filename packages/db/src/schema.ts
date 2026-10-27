@@ -6,3 +6,4 @@ export * from "./schema/conversations.ts";
 export * from "./schema/flags.ts";
 export * from "./schema/meetings.ts";
 export * from "./schema/workspaces.ts";
+export * from "./schema/call-rings.ts";

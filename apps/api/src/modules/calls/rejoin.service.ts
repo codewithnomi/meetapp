@@ -7,14 +7,14 @@ import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
-import { OUTCOME_MS, asTheyAreNow, notFound, type CallsDeps } from "./admission.ts";
+import { OUTCOME_MS, asTheyAreNow, meetingIdOf, notFound, type CallsDeps } from "./admission.ts";
 import { afterEntry, decide, entryFor } from "./join.service.ts";
 import { moveAttendance } from "./attendances.repository.ts";
 import { startCall } from "./calls.repository.ts";
 
 /** A waiting person who had been let in into a call that closed: in again if the rules allow, else waiting. */
 export async function reenter(deps: CallsDeps, waiting: CallAttendance): Promise<CallAttendance> {
-  const row = await deps.meetings.find(waiting.meetingId);
+  const row = await deps.meetings.find(meetingIdOf(waiting));
   if (!row || !isUsable(row, deps.now())) return waiting;
   // Decided again as they are now (a member may have been removed from the workspace meanwhile).
   const attendance = await asTheyAreNow(deps, row, waiting);
@@ -49,6 +49,7 @@ function freshFrom(deps: CallsDeps, old: CallAttendance, ticket: string) {
   return {
     workspaceId: old.workspaceId,
     meetingId: old.meetingId,
+    conversationId: old.conversationId,
     userId: old.userId,
     displayName: old.displayName,
     guestDeviceHash: old.guestDeviceHash,
@@ -96,7 +97,7 @@ async function rejoin(deps: CallsDeps, attendanceId: string, ticketHash: string,
 }
 
 async function enter(deps: CallsDeps, before: CallAttendance) {
-  const row = await deps.meetings.find(before.meetingId);
+  const row = await deps.meetings.find(meetingIdOf(before));
   if (!row) throw notFound();
   if (!isUsable(row, deps.now())) throw new AppError(410, "MEETING_EXPIRED", "This meeting has expired.");
   // Under today's rules: a member removed from the workspace comes back as from outside, a guest only

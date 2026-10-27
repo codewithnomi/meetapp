@@ -13,6 +13,7 @@ import {
   asTheyAreNow,
   callAccess,
   lobbyChanged,
+  meetingIdOf,
   notFound,
   roleOf,
   type CallsDeps,
@@ -47,7 +48,7 @@ async function own(deps: CallsDeps, attendanceId: string, ticketHash: string): P
 export async function actor(deps: CallsDeps, callId: string, ticketHash: string, action: CallAction) {
   const attendance = await deps.attendances.byTicket(ticketHash);
   if (!attendance || attendance.callId !== callId || !inCall(attendance.status)) throw notFound();
-  const row = await deps.meetings.find(attendance.meetingId);
+  const row = await deps.meetings.find(meetingIdOf(attendance));
   // Checked on every action: an organizer or member removed from the workspace loses their powers at once.
   if (!row || !isUsable(row, deps.now()) || !can(roleOf(await asTheyAreNow(deps, row, attendance), row), action)) {
     throw notFound();
@@ -88,7 +89,7 @@ async function status(deps: CallsDeps, attendanceId: string, ticketHash: string)
   const wait = await deps.limiter.take(RATE_RULES.attendanceStatus, ticketHash);
   if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many requests. Wait a moment.", wait);
   let attendance = await own(deps, attendanceId, ticketHash);
-  const row = await deps.meetings.find(attendance.meetingId);
+  const row = await deps.meetings.find(meetingIdOf(attendance));
   if (!row) throw notFound();
   if (attendance.status === "waiting") attendance = await stillWaiting(deps, attendance, row);
   const answer = {
@@ -117,12 +118,12 @@ async function leave(deps: CallsDeps, attendanceId: string, ticketHash: string):
     leftReason: "leave",
     leftAt: deps.now(),
   });
-  await lobbyChanged(deps, attendance.callId ?? (await deps.calls.runningFor(attendance.meetingId))?.id);
+  await lobbyChanged(deps, attendance.callId ?? (await deps.calls.runningFor(meetingIdOf(attendance)))?.id);
 }
 
 async function lobby(deps: CallsDeps, callId: string, ticketHash: string) {
   const { attendance } = await actor(deps, callId, ticketHash, "admit");
-  const waiting = await waitingInOrder(deps.calls.reader, attendance.meetingId, seenSince(deps));
+  const waiting = await waitingInOrder(deps.calls.reader, meetingIdOf(attendance), seenSince(deps));
   return {
     waiting: waiting.map((person) => ({
       attendanceId: person.id,
@@ -136,11 +137,11 @@ async function lobby(deps: CallsDeps, callId: string, ticketHash: string) {
 /** Admits in arrival order up to the free places; the rest keep waiting (AC-F02-42, TC-F02-39). */
 async function admit(deps: CallsDeps, callId: string, ticketHash: string, decision: LobbyDecision) {
   const { attendance } = await actor(deps, callId, ticketHash, "admit");
-  const result = await deps.calls.locked(attendance.meetingId, async (tx) => {
-    const running = await runningCall(tx, attendance.meetingId);
+  const result = await deps.calls.locked(meetingIdOf(attendance), async (tx) => {
+    const running = await runningCall(tx, meetingIdOf(attendance));
     if (running?.id !== callId) throw notFound();
     const free = Math.max(0, MAX_IN_CALL - (await placesTaken(tx, callId)));
-    const wanted = (await waitingInOrder(tx, attendance.meetingId, seenSince(deps))).filter(
+    const wanted = (await waitingInOrder(tx, meetingIdOf(attendance), seenSince(deps))).filter(
       (person) => decision.all === true || (decision.attendanceIds ?? []).includes(person.id),
     );
     const ids = wanted.slice(0, free).map((person) => person.id);
@@ -155,9 +156,9 @@ async function deny(deps: CallsDeps, callId: string, ticketHash: string, decisio
   const { attendance } = await actor(deps, callId, ticketHash, "admit");
   const ids =
     decision.all === true
-      ? (await waitingInOrder(deps.calls.reader, attendance.meetingId, seenSince(deps))).map((person) => person.id)
+      ? (await waitingInOrder(deps.calls.reader, meetingIdOf(attendance), seenSince(deps))).map((person) => person.id)
       : (decision.attendanceIds ?? []);
-  const decided = await deps.attendances.deny(attendance.meetingId, ids, attendance.id);
+  const decided = await deps.attendances.deny(meetingIdOf(attendance), ids, attendance.id);
   await lobbyChanged(deps, callId);
   return { decided, didNotFit: 0 };
 }

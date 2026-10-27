@@ -1,7 +1,7 @@
 // Sign-in tables used by Better Auth (F01 design.md sections 3 and 7). Their names and fields follow
 // Better Auth's core schema (user, session, account, verification), with database-made UUIDs, times
 // with time zone, and our own user fields. Better Auth reads and writes them; our code reads `user`.
-import { boolean, index, pgTable, text, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, index, pgTable, text, uuid } from "drizzle-orm/pg-core";
 import { id, moment, timestamps } from "./columns.ts";
 
 export const user = pgTable("user", {
@@ -22,6 +22,9 @@ export const user = pgTable("user", {
   avatarKey: text("avatar_key"),
   /** Shares and sees "Seen" in chats (F14 AC-F14-24, as in Teams); a person can turn it off. */
   readReceipts: boolean("read_receipts").notNull().default(true),
+  /** F15: the incoming-call ringtone (1–5) and its volume (0–100), kept with the account (AC-F15-32). */
+  ringtone: integer("ringtone").notNull().default(1),
+  ringVolume: integer("ring_volume").notNull().default(70),
   ...timestamps(),
 });
 

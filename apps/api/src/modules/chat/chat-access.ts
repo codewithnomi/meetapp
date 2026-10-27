@@ -3,7 +3,7 @@
 import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
 import type { ChatMessage } from "@meetapp/db";
 import { AppError } from "../../plugins/errors.ts";
-import { asTheyAreNow, notFound, roleOf, type CallsDeps } from "../calls/admission.ts";
+import { asTheyAreNow, meetingIdOf, notFound, roleOf, type CallsDeps } from "../calls/admission.ts";
 import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
 import type { ChatActionsRepository } from "./chat-actions.repository.ts";
@@ -46,7 +46,7 @@ export async function chatActor(deps: ChatDeps, callId: string, ticketHash: stri
   const attendance = await calls.attendances.byTicket(ticketHash);
   const present = (IN_CALL_STATUSES as readonly string[]).includes(attendance?.status ?? "");
   if (!attendance || attendance.callId !== callId || !present) throw notFound();
-  const row = await calls.meetings.find(attendance.meetingId);
+  const row = await calls.meetings.find(meetingIdOf(attendance));
   if (!row || !isUsable(row, calls.now())) throw notFound();
   const person = await asTheyAreNow(calls, row, attendance);
   const facts = {

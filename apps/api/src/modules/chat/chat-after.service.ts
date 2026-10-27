@@ -71,6 +71,8 @@ async function readable(deps: AfterDeps, userId: string) {
   const joined = await deps.after.meetingsJoinedBy(userId, LIST_LOOKED_AT);
   const meetings: { id: string; workspaceId: string; title: string; live: boolean }[] = [];
   for (const { meetingId } of joined) {
+    // Chat calls (F15) belong to a chat, not a meeting.
+    if (!meetingId) continue;
     const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
     if (allowed) {
       const { meeting } = allowed.row;
@@ -95,6 +97,7 @@ async function recent(deps: AfterDeps, userId: string) {
   const meetings = [];
   for (const { meetingId, lastJoinedAt } of joined) {
     if (meetings.length === RECENT_SHOWN) break;
+    if (!meetingId) continue;
     // A meeting the person may no longer read is simply left out of the list (not an error).
     const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
     if (!allowed || !lastJoinedAt) continue;
