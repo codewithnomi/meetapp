@@ -30,5 +30,29 @@ export const Meeting: Story = {
   args: { kind: "meeting", title: "Weekly design review", status: null, subtitle: "Mon 10:00" },
 };
 export const CallsUnavailable: Story = {
-  args: { calls: { videoLabel: "Video call", audioLabel: "Audio call", onVideo: fn(), onAudio: fn(), disabled: true } },
+  args: {
+    calls: {
+      videoLabel: "Video call",
+      audioLabel: "Audio call",
+      onVideo: fn(),
+      onAudio: fn(),
+      disabled: true,
+      disabledReason: "You can call once they accept your chat request.",
+    },
+  },
+};
+export const CallRunning: Story = {
+  args: {
+    kind: "group",
+    title: "Release team",
+    status: null,
+    subtitle: "6 people",
+    calls: {
+      videoLabel: "Video call",
+      audioLabel: "Audio call",
+      onVideo: fn(),
+      onAudio: fn(),
+      join: { label: "Join", onJoin: fn() },
+    },
+  },
 };

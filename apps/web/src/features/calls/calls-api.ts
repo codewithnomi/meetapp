@@ -1,0 +1,21 @@
+// Calls from chats: the requests (F15 design.md section 5). The answers are F02's join answer, so the call
+// screen connects the same way as for a meeting.
+import type { CallMedia, RunningCall } from "./call-types.ts";
+import type { Joined } from "../meetings/index.ts";
+import { apiRequest } from "../api/index.ts";
+
+export function startCall(conversationId: string, media: CallMedia): Promise<Joined> {
+  return apiRequest(`/api/v1/conversations/${conversationId}/calls`, { method: "POST", body: { media } });
+}
+
+export function joinCall(callId: string): Promise<Joined> {
+  return apiRequest(`/api/v1/calls/${callId}/join`, { method: "POST" });
+}
+
+export function runningCall(conversationId: string): Promise<RunningCall> {
+  return apiRequest(`/api/v1/conversations/${conversationId}/call`);
+}
+
+export function cancelRing(callId: string): Promise<undefined> {
+  return apiRequest(`/api/v1/calls/${callId}/ring`, { method: "DELETE" });
+}

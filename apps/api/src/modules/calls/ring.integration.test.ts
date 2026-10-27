@@ -199,6 +199,17 @@ describe("ringing", { timeout: 120_000 }, () => {
     for (const l of [...m2Lines, m1Line]) l.ws.terminate();
   });
 
+  it("TC-F15-02 [AC-F15-01, AC-F15-06] when someone accepts, the caller's line is told (Calling screen moves into the call)", async () => {
+    const { people, workspaceId } = await team("r02", 2);
+    const [m1, m2] = people as [Person, Person];
+    const callerLine = await line(m1);
+    const callId = await startCall(m1, await chatOf(m1, workspaceId, [m2]));
+    expect((await accept(m2, callId)).statusCode).toBe(200);
+    const told = await until(() => callerLine.got.find((m): m is Stop => m.t === "ring_stop" && m.callId === callId));
+    expect(told.reason).toBe("accepted");
+    callerLine.ws.terminate();
+  });
+
   it("TC-F15-16 [AC-F15-07] in a group, one decline leaves the others ringing and the call running", async () => {
     const { people, workspaceId } = await team("r16", 3);
     const [m1, m2, m3] = people as [Person, Person, Person];

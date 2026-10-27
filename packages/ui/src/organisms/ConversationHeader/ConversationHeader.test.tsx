@@ -29,4 +29,69 @@ describe("ConversationHeader", () => {
     await userEvent.click(await screen.findByRole("menuitem", { name: "Pin" }));
     expect(pin).toHaveBeenCalledOnce();
   });
+
+  it("TC-F15-04 [AC-F15-02] off in a read-only chat, with the reason as the tooltip", () => {
+    render(
+      <ConversationHeader
+        kind="direct"
+        title="Mei Lin"
+        calls={{
+          videoLabel: "Video call",
+          audioLabel: "Audio call",
+          onVideo: vi.fn(),
+          onAudio: vi.fn(),
+          disabled: true,
+          disabledReason: "You can call once they accept your chat request.",
+        }}
+        moreLabel="More"
+        actions={[]}
+      />,
+    );
+    for (const name of ["Video call", "Audio call"]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("title", "You can call once they accept your chat request.");
+    }
+  });
+
+  it("TC-F15-06 [AC-F15-03] while a call runs, Join replaces the call buttons", async () => {
+    const onJoin = vi.fn();
+    render(
+      <ConversationHeader
+        kind="group"
+        title="Release team"
+        calls={{
+          videoLabel: "Video call",
+          audioLabel: "Audio call",
+          onVideo: vi.fn(),
+          onAudio: vi.fn(),
+          join: { label: "Join", onJoin },
+        }}
+        moreLabel="More"
+        actions={[]}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Video call" })).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Join" }));
+    expect(onJoin).toHaveBeenCalledOnce();
+  });
+
+  it("TC-F15-57 [AC-F15-18] while starting, the call buttons can't be pressed again", () => {
+    render(
+      <ConversationHeader
+        kind="direct"
+        title="Bilal"
+        calls={{
+          videoLabel: "Video call",
+          audioLabel: "Audio call",
+          onVideo: vi.fn(),
+          onAudio: vi.fn(),
+          pending: true,
+        }}
+        moreLabel="More"
+        actions={[]}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Video call" })).toBeDisabled();
+  });
 });

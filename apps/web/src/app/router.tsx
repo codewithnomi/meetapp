@@ -1,6 +1,7 @@
 // The screens and when each one shows (F01 design.md section 1): signed out, the sign-in screens; signed
 // in but the terms not yet accepted, only Terms; signed in, the app. The desktop app has no address
 // bar, so the routes live in memory. After a screen change, focus moves to the new screen's title.
+import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { Notice, Spinner } from "@meetapp/ui";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -218,6 +219,16 @@ function SignedInScreens() {
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
       <Route path="/chat" element={<ChatsPage onNavigate={go} />} />
+      <Route
+        path="/call"
+        element={
+          <ChatCallPage
+            onBackToChat={() => void navigate("/chat")}
+            onLeft={() => void navigate("/chat")}
+            onOutcome={(outcome) => void navigate("/meeting/ended", { state: outcome })}
+          />
+        }
+      />
       <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
       {meetingRoutes({ ...MEMBER_PLACES, userName: user?.name })}
       <Route

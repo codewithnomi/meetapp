@@ -11,7 +11,7 @@ export { problemKey, type MediaKind } from "./media-problems.ts";
 export { usePreJoinDevices, type PreJoinDevices } from "./pre-join-devices.ts";
 export { useVisit, type Attendance, type Joined } from "./visit.ts";
 export * from "./call/index.ts";
-export { loadPrefs, type DevicePrefs } from "./device-prefs.ts";
+export { loadPrefs, savePrefs, type DevicePrefs } from "./device-prefs.ts";
 export {
   deviceActions,
   useDeviceChanges,
@@ -20,4 +20,4 @@ export {
   type DeviceGone,
   type DeviceKind,
 } from "./call/call-devices.ts";
-export { useDeviceLists, useMicLevel } from "./local-media.ts";
+export { useDeviceLists, useLocalDevice, useMicLevel } from "./local-media.ts";

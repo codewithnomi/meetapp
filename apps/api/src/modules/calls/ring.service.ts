@@ -56,6 +56,9 @@ async function accept(deps: RingDeps, userId: string, callId: string) {
   const [won] = await deps.chatCalls.stopRing(ring.id, "accepted", deps.calls.now());
   if (!won) throw over();
   await deps.targets.stop(userId, callId, "accepted");
+  // The caller's "Calling…" screen moves into the call (F15 design 2.2).
+  const starter = await deps.chatCalls.starterOf(callId);
+  if (starter?.userId && starter.userId !== userId) await deps.targets.stop(starter.userId, callId, "accepted");
   return deps.join(userId, callId);
 }
 

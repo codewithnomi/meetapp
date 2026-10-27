@@ -1012,10 +1012,6 @@
     },
     "people_one": "{{count}} person",
     "people_other": "{{count}} people",
-    "calls": {
-      "video": "Video call",
-      "audio": "Audio call"
-    },
     "more": "More for this chat",
     "actions": {
       "pin": "Pin",
@@ -1119,6 +1115,43 @@
       "seconds": "{{s}}s",
       "minutes": "{{m}}m {{s}}s",
       "hours": "{{h}}h {{m}}m"
+    },
+    "buttons": {
+      "video": "Video call",
+      "audio": "Audio call",
+      "join": "Join",
+      "callBack": "Call back",
+      "starting": "Starting the call…"
+    },
+    "readOnly": {
+      "blocked": "You can't call in this chat.",
+      "outside_off": "Calls with people outside the workspace are turned off.",
+      "left_workspace": "This person is no longer in the workspace.",
+      "left": "You're no longer in this chat.",
+      "pending": "You can call once they accept your chat request."
+    },
+    "failed": {
+      "start": "Couldn't start the call.",
+      "join": "Couldn't join the call.",
+      "ended": "This call has ended.",
+      "full": "This call is full.",
+      "rate": "You're calling too often. Try again in a minute.",
+      "retry": "Retry"
+    },
+    "calling": {
+      "heading_video": "Video call · {{name}}",
+      "heading_audio": "Audio call · {{name}}",
+      "title": "Calling {{name}}…",
+      "line": "Ringing. They can accept with video or audio.",
+      "declinedTitle": "{{name}} declined",
+      "declinedLine": "They can call you back from the chat.",
+      "noAnswerTitle": "No answer",
+      "noAnswerLine": "{{name}} didn't answer. They'll see a missed call in the chat.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "callAgain": "Call again",
+      "backToChat": "Back to chat",
+      "preview": "Your camera is on. Others see you once they accept."
     }
   }
 }

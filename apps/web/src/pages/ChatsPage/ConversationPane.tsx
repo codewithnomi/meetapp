@@ -2,6 +2,7 @@
 // status and calls, then the messages and composer shared with meeting chat. News arrives on the live
 // line; after a reconnect it catches up from its last news number; what is seen is marked read. A meeting
 // chat opens read-only with F03's after-meeting rules.
+import type { ChatEvent } from "@meetapp/contracts";
 import { ConversationHeader, Notice, SeenMark, TypingIndicator, type MenuAction } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +21,8 @@ import {
 } from "../../features/chats/index.ts";
 import { conversationPlace, useChat, usePastChat } from "../../features/meetings/chat/index.ts";
 import { ChatArea, useAttachments } from "../MeetingPage/index.ts";
+import { useCallButtons } from "./call-buttons.tsx";
+import { CallNoteActionsProvider } from "../../features/calls/index.ts";
 
 const READ_EVERY_MS = 2000;
 /** A read mark that failed is sent again after this long, while the chat is open. */
@@ -59,7 +62,15 @@ function actionsOf(
   return actions;
 }
 
-function Header({ item, onDetails }: { item: ChatItem; onDetails: () => void }) {
+function Header({
+  item,
+  onDetails,
+  calling,
+}: {
+  item: ChatItem;
+  onDetails: () => void;
+  calling: ReturnType<typeof useCallButtons>;
+}) {
   const { t } = useTranslation();
   const queries = useQueryClient();
   const refresh = () => queries.invalidateQueries({ queryKey: ["chats"] });
@@ -75,17 +86,11 @@ function Header({ item, onDetails }: { item: ChatItem; onDetails: () => void }) 
         photoUrl={item.people[0]?.photoUrl ?? null}
         status={item.kind === "direct" ? status : null}
         subtitle={subtitle}
-        // Calls from chat arrive with F15.
-        calls={{
-          videoLabel: t("chats.calls.video"),
-          audioLabel: t("chats.calls.audio"),
-          onVideo: () => undefined,
-          onAudio: () => undefined,
-          disabled: true,
-        }}
+        calls={calling.calls}
         moreLabel={t("chats.more")}
         actions={actionsOf(t, item, { change, onDetails, block })}
       />
+      {calling.notice}
       {item.readOnlyReason ? (
         <div className="px-6 pt-3">
           <Notice tone="neutral">{t(`chats.readOnly.${item.readOnlyReason}`)}</Notice>
@@ -170,21 +175,27 @@ function Footer({ typing, seen, kind }: { typing: string[]; seen: { name: string
   );
 }
 
+/** News of this chat on the live line, and catching up after a reconnect (AC-F14-20). */
+function useConversationNews(id: string, onEvent: (event: ChatEvent) => void, catchUp: () => Promise<void>) {
+  useLiveLine(
+    useCallback(
+      (message) => {
+        if (message.t === "news" && message.conversationId === id) onEvent(message.event);
+        if (message.t === "connected") void catchUp().catch(() => undefined);
+      },
+      [id, onEvent, catchUp],
+    ),
+  );
+}
+
 function LiveConversation({ item, userId, onFailed, onDetails }: PaneProps) {
   const { t } = useTranslation();
+  const calling = useCallButtons(item);
   const place = useMemo(() => conversationPlace(item.id, userId), [item.id, userId]);
   const chat = useChat(place);
   const { onEvent, catchUp, setOpen } = chat;
   useEffect(() => setOpen(true), [setOpen]);
-  useLiveLine(
-    useCallback(
-      (message) => {
-        if (message.t === "news" && message.conversationId === item.id) onEvent(message.event);
-        if (message.t === "connected") void catchUp().catch(() => undefined);
-      },
-      [item.id, onEvent, catchUp],
-    ),
-  );
+  useConversationNews(item.id, onEvent, catchUp);
   useReadMark(item.id, chat.state.lastSeq);
   useCatchUpWhilePolling(catchUp);
   const typing = useTyping(item.id, userId);
@@ -193,39 +204,42 @@ function LiveConversation({ item, userId, onFailed, onDetails }: PaneProps) {
   const attachments = useAttachments(place);
   const writable = !item.readOnly;
   return (
-    <ChatArea
-      chat={chat}
-      header={<Header item={item} onDetails={onDetails} />}
-      footer={<Footer typing={typing.names} seen={seen.people} kind={item.kind} />}
-      viewerUserId={userId}
-      writing={
-        writable
-          ? {
-              place,
-              attachments,
-              off: false,
-              placeholder: t("chats.messageTo", { name: item.title }),
-              mentions,
-              onTyping: typing.onTyping,
-              focusOnOpen: true,
-            }
-          : undefined
-      }
-      dropping={false}
-      rights={{ moderate: false, createPoll: writable, attach: writable }}
-      title={item.title}
-      onClose={() => undefined}
-      onFailed={onFailed}
-    />
+    <CallNoteActionsProvider value={calling.noteActions}>
+      <ChatArea
+        chat={chat}
+        header={<Header item={item} onDetails={onDetails} calling={calling} />}
+        footer={<Footer typing={typing.names} seen={seen.people} kind={item.kind} />}
+        viewerUserId={userId}
+        writing={
+          writable
+            ? {
+                place,
+                attachments,
+                off: false,
+                placeholder: t("chats.messageTo", { name: item.title }),
+                mentions,
+                onTyping: typing.onTyping,
+                focusOnOpen: true,
+              }
+            : undefined
+        }
+        dropping={false}
+        rights={{ moderate: false, createPoll: writable, attach: writable }}
+        title={item.title}
+        onClose={() => undefined}
+        onFailed={onFailed}
+      />
+    </CallNoteActionsProvider>
   );
 }
 
 function MeetingConversation({ item, onFailed }: { item: ChatItem; onFailed: () => void }) {
   const chat = usePastChat(item.meetingId ?? "");
+  const calling = useCallButtons(item);
   return (
     <ChatArea
       chat={chat}
-      header={<Header item={item} onDetails={() => undefined} />}
+      header={<Header item={item} onDetails={() => undefined} calling={calling} />}
       dropping={false}
       rights={{ moderate: false, createPoll: false, attach: false }}
       title={item.title}

@@ -41,7 +41,8 @@
 - **F15 T10 done** (2026-10-27): "my running calls" and Transfer to this device (the old seat leaves only once the new one connects; never connects → nothing changes), no database change; 4 new tests, 121 call tests pass.
 - **F15 T11 done** (2026-10-27): ringtone (1–5, default 1) and volume (0–100, default 70) in `/me/settings` next to read receipts; bad values and unknown fields refused. **F15 server side complete (T1–T11).**
 - **F15 T12 done** (2026-10-27): IncomingCall, CallingScreen, CallNote, BackgroundPicker (radio group), RingtonePicker with stories and tests in the gallery; 5 generated ringtones (D074). Screenshots (TC-F15-55) are made at verification, after the owner looks.
-- **Next step:** F15 T13, calling from a chat (`/next`).
+- **F15 T13 done** (2026-10-27): call buttons in the chat header (off with the reason; Join while a call runs; spinner; "Couldn't start the call" + Retry), the Calling screen with preview and Cancel, declined / No answer with Call again, call notes with Join and Call back; 16 screen tests + 4 two-window tests (run at verification); the caller connects when someone accepts (design 2.2).
+- **Next step:** F15 T14, being called (milestone: two windows can call each other) (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

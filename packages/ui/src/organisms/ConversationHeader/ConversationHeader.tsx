@@ -1,9 +1,11 @@
 // ConversationHeader (organism): the top of an open chat on the approved canvas (F14Chat): the picture
-// with its status dot, the name with its status in words, Video call and Audio call (working in F15),
-// and More (pin, mute, hide, group details). A read-only chat's note sits below it (the page's job).
+// with its status dot, the name with its status in words, Video call and Audio call (F15: off with the
+// reason as their tooltip in a read-only chat; replaced by Join while the chat's call runs; a spinner
+// while starting), and More (pin, mute, hide, group details). A read-only chat's note sits below it (the page's job).
 import { useId } from "react";
 import { ActionMenu, type MenuAction } from "../../atoms/ActionMenu/index.ts";
 import { Avatar } from "../../atoms/Avatar/index.ts";
+import { Button } from "../../atoms/Button/index.ts";
 import { Icon } from "../../atoms/Icon/index.ts";
 import { StatusDot, type ChatStatus } from "../../atoms/StatusDot/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
@@ -15,7 +17,19 @@ export interface ConversationHeaderProps {
   status?: { value: ChatStatus; label: string } | null | undefined;
   /** Under the name: the status word, "6 people", or the meeting's time. */
   subtitle?: string | undefined;
-  calls: { videoLabel: string; audioLabel: string; onVideo: () => void; onAudio: () => void; disabled?: boolean };
+  calls: {
+    videoLabel: string;
+    audioLabel: string;
+    onVideo: () => void;
+    onAudio: () => void;
+    disabled?: boolean;
+    /** Why calls are off (read-only chat): the buttons' tooltip (AC-F15-02). */
+    disabledReason?: string | undefined;
+    /** While starting: the buttons can't be pressed again (AC-F15-18). */
+    pending?: boolean | undefined;
+    /** While the chat's call runs: Join instead of the two buttons (AC-F15-03). */
+    join?: { label: string; onJoin: () => void } | undefined;
+  };
   moreLabel: string;
   actions: MenuAction[];
 }
@@ -25,17 +39,19 @@ function CallButton({
   label,
   onClick,
   disabled,
+  reason,
 }: {
   icon: "camera" | "phone";
   label: string;
   onClick: () => void;
   disabled: boolean;
+  reason?: string | undefined;
 }) {
   return (
     <button
       type="button"
       aria-label={label}
-      title={label}
+      title={reason ?? label}
       onClick={onClick}
       disabled={disabled}
       className={cx(
@@ -45,6 +61,35 @@ function CallButton({
     >
       <Icon name={icon} size={18} />
     </button>
+  );
+}
+
+function CallButtons({ calls }: { calls: ConversationHeaderProps["calls"] }) {
+  if (calls.join) {
+    return (
+      <Button icon="camera" onClick={calls.join.onJoin}>
+        {calls.join.label}
+      </Button>
+    );
+  }
+  const off = (calls.disabled ?? false) || (calls.pending ?? false);
+  return (
+    <>
+      <CallButton
+        icon="camera"
+        label={calls.videoLabel}
+        onClick={calls.onVideo}
+        disabled={off}
+        reason={calls.disabledReason}
+      />
+      <CallButton
+        icon="phone"
+        label={calls.audioLabel}
+        onClick={calls.onAudio}
+        disabled={off}
+        reason={calls.disabledReason}
+      />
+    </>
   );
 }
 
@@ -75,8 +120,7 @@ export function ConversationHeader(props: ConversationHeaderProps) {
         </h2>
         {props.subtitle ? <span className="text-[12px] text-ink-muted">{props.subtitle}</span> : null}
       </span>
-      <CallButton icon="camera" label={calls.videoLabel} onClick={calls.onVideo} disabled={calls.disabled ?? false} />
-      <CallButton icon="phone" label={calls.audioLabel} onClick={calls.onAudio} disabled={calls.disabled ?? false} />
+      <CallButtons calls={calls} />
       {props.actions.length > 0 ? <ActionMenu actions={props.actions} label={props.moreLabel} /> : null}
     </header>
   );
