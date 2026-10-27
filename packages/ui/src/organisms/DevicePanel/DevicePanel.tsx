@@ -1,6 +1,7 @@
 // DevicePanel (organism): the Device settings panel of the approved "Device settings in a meeting"
 // screen: camera, microphone with its level, speakers with Test speakers, the noise suppression switch
 // (on by default, AC-F02-30), and a note such as "Your connection is weak". All words arrive as props.
+import type { ReactNode } from "react";
 import { Button } from "../../atoms/Button/index.ts";
 import { Icon } from "../../atoms/Icon/index.ts";
 import { LevelMeter } from "../../atoms/LevelMeter/index.ts";
@@ -20,6 +21,8 @@ export interface DevicePanelProps {
   noiseSuppression: { label: string; description: string; checked: boolean; onChange: (on: boolean) => void };
   /** "Your connection is weak." and what it means. */
   note?: { title: string; text: string } | undefined;
+  /** The background choices under the camera (F15), given by the page. */
+  background?: ReactNode;
 }
 
 export function DevicePanel(props: DevicePanelProps) {
@@ -29,6 +32,7 @@ export function DevicePanel(props: DevicePanelProps) {
   return (
     <SidePanel title={title} closeLabel={closeLabel} onClose={onClose} className="max-w-90 gap-4.5">
       <DeviceSelect {...camera} />
+      {props.background}
       <DeviceSelect {...microphone}>
         <LevelMeter level={level} label={levelLabel} className="pl-3.5" />
       </DeviceSelect>

@@ -7,6 +7,7 @@ import { Room, RoomEvent, Track, type DisconnectReason, type Participant, type R
 import { useEffect, useMemo, useState } from "react";
 import type { ChatEvent } from "@meetapp/contracts";
 import type { DevicePrefs } from "../../devices/index.ts";
+import { attachBackground } from "./call-background.ts";
 import type { Joined } from "../visit.ts";
 import { inOrder, personOf } from "./people.ts";
 import { REACTION_TOPIC, createGate, decodeReaction, encodeReaction, type Reaction } from "./reactions.ts";
@@ -147,6 +148,7 @@ interface RoomSetters {
 function startRoom(visit: Joined, prefs: DevicePrefs, handlers: RoomHandlers, set: RoomSetters): () => void {
   const current = newRoom(prefs);
   let live = true;
+  attachBackground(current, prefs.background);
   listen(current, set.bump, handlers, set.setConnection);
   set.setRoom(current);
   void connect(current, visit, prefs, () => live)

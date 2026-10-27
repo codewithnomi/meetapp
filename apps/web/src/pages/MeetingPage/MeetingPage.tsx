@@ -3,7 +3,8 @@
 // announcements for screen readers. When the call drops or ends, the app asks the backend what
 // happened (removed, ended, …) and shows that message.
 import { useSession } from "../../features/auth/index.ts";
-import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
+import { MeetingLayout, Notice, SegmentedControl, type LobbyBar } from "@meetapp/ui";
+import { useBackgroundSlow } from "../../features/devices/index.ts";
 import type { TFunction } from "i18next";
 import { useEffect, useMemo, useState } from "react";
 import { callPlace } from "../../features/meetings/chat/index.ts";
@@ -175,21 +176,36 @@ function Controls({ screen }: { screen: Screen }) {
   );
 }
 
+/** "Background turned off to keep your video smooth" (AC-F15-31), until dismissed. */
+function BackgroundSlow() {
+  const { t } = useTranslation();
+  const { turnedOff, clear } = useBackgroundSlow();
+  if (!turnedOff) return null;
+  return (
+    <Notice tone="neutral" action={{ label: t("meetings.call.dismiss"), onClick: clear }}>
+      {t("devices.backgrounds.turnedOff")}
+    </Notice>
+  );
+}
+
 function ScreenNotices({ screen }: { screen: Screen }) {
   const { call, view } = screen;
   const { events, actions, room, care } = call;
   return (
-    <Notices
-      notice={events.notice}
-      failed={view.failed}
-      connecting={room.connection === "connecting"}
-      reconnecting={room.connection === "reconnecting"}
-      gone={care.gone}
-      onUnmute={actions.microphone}
-      onDismiss={events.clearNotice}
-      onDismissFailed={() => view.setFailed(false)}
-      onDismissGone={care.clearGone}
-    />
+    <>
+      <BackgroundSlow />
+      <Notices
+        notice={events.notice}
+        failed={view.failed}
+        connecting={room.connection === "connecting"}
+        reconnecting={room.connection === "reconnecting"}
+        gone={care.gone}
+        onUnmute={actions.microphone}
+        onDismiss={events.clearNotice}
+        onDismissFailed={() => view.setFailed(false)}
+        onDismissGone={care.clearGone}
+      />
+    </>
   );
 }
 

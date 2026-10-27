@@ -5,7 +5,10 @@
 import { DeviceSelect, Button, LevelMeter, Notice, Toggle, VideoTile } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import {
+  BackgroundChoice,
   LocalVideo,
+  useBackgroundPreview,
+  useBackgroundSlow,
   deviceOptions,
   problemKey,
   testSpeakers,
@@ -20,15 +23,24 @@ export interface DevicesSettingsPageProps {
 
 type Devices = ReturnType<typeof useDeviceSettings>;
 
+/** "Background turned off to keep your video smooth" (AC-F15-31). */
+function SlowNotice() {
+  const { t } = useTranslation();
+  const turnedOff = useBackgroundSlow((state) => state.turnedOff);
+  return turnedOff ? <Notice tone="neutral">{t("devices.backgrounds.turnedOff")}</Notice> : null;
+}
+
 function Preview({ devices }: { devices: Devices }) {
   const { t } = useTranslation();
-  const { camera } = devices;
+  const { camera, prefs } = devices;
+  // The preview shows the chosen background, made on this computer (AC-F15-30).
+  const shown = useBackgroundPreview(camera.stream, prefs.background);
   return (
     <figure className="m-0 flex flex-col gap-2">
       <VideoTile
         name={t("settings.devices.you")}
-        cameraOff={!camera.stream}
-        {...(camera.stream ? { video: <LocalVideo stream={camera.stream} /> } : {})}
+        cameraOff={!shown}
+        {...(shown ? { video: <LocalVideo stream={shown} /> } : {})}
       />
       <figcaption className="text-[13px] text-ink-muted">{t("settings.devices.previewNote")}</figcaption>
       {camera.problem ? (
@@ -129,6 +141,11 @@ export function DevicesSettingsPage({ onNavigate, onBack }: DevicesSettingsPageP
         <div className="flex flex-wrap gap-6">
           <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-3">
             <Preview devices={devices} />
+            <BackgroundChoice
+              value={devices.prefs.background}
+              onChange={(background) => devices.change({ background })}
+            />
+            <SlowNotice />
           </div>
           <Choices devices={devices} />
         </div>

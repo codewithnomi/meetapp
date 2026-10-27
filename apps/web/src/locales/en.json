@@ -1224,5 +1224,25 @@
       "join": "Join on this device",
       "transfer": "Transfer to this device"
     }
+  },
+  "devices": {
+    "backgrounds": {
+      "legend": "Background",
+      "none": "None",
+      "blur": "Blur",
+      "hint": "Made on this computer. If it slows your video, MeetApp turns it off and tells you.",
+      "unavailable": "Not available on this computer",
+      "turnedOff": "Background turned off to keep your video smooth",
+      "pictures": {
+        "office": "Office",
+        "living-room": "Living room",
+        "bookshelf": "Bookshelf",
+        "cafe": "Café",
+        "nature": "Nature",
+        "city-view": "City view",
+        "calm-waves": "Calm waves",
+        "soft-shapes": "Soft shapes"
+      }
+    }
   }
 }

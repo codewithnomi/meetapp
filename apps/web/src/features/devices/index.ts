@@ -5,3 +5,15 @@ export { deviceOptions, testSpeakers, useDeviceLists, useLocalDevice, useMicLeve
 export { problemKey, type MediaKind } from "./media-problems.ts";
 export { LocalVideo } from "./LocalVideo.tsx";
 export { missingDevices, useDeviceSettings } from "./device-settings.ts";
+export {
+  PICTURES,
+  backgroundsSupported,
+  createBackgroundEffect,
+  effectOf,
+  frameMonitor,
+  pictureUrl,
+  type BackgroundEffect,
+} from "./backgrounds.ts";
+export { BackgroundChoice } from "./BackgroundChoice.tsx";
+export { useBackgroundPreview } from "./background-preview.ts";
+export { useBackgroundSlow } from "./background-state.ts";

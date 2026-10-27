@@ -4,6 +4,7 @@
 import { Room, RoomEvent, Track, type LocalTrack } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
 import { savePrefs, type DevicePrefs } from "../../devices/index.ts";
+import { setBackground } from "./call-background.ts";
 import type { MediaKind } from "../../devices/index.ts";
 import { createWeakDetector, readingOf } from "./weak-connection.ts";
 
@@ -158,6 +159,10 @@ export function deviceActions(room: Room | undefined, prefs: DevicePrefs, setPre
     choose: (kind: DeviceKind, deviceId: string) => {
       remember({ [PREF[kind]]: deviceId });
       void room?.switchActiveDevice(kind, deviceId).catch(() => false);
+    },
+    background: (choice: string) => {
+      remember({ background: choice });
+      setBackground(room, choice);
     },
     noiseSuppression: (on: boolean) => {
       remember({ noiseSuppression: on });

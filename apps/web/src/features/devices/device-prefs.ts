@@ -1,5 +1,5 @@
 // The pre-join choices, remembered on this computer (AC-F02-09): which camera, microphone and speakers,
-// and whether the camera and microphone start on. Kept in local storage; if it can't be read, the
+// whether the camera and microphone start on, and the background effect (F15). Kept in local storage; if it can't be read, the
 // defaults are used.
 export interface DevicePrefs {
   cameraId: string;
@@ -9,6 +9,8 @@ export interface DevicePrefs {
   microphoneOn: boolean;
   /** On by default (AC-F02-30). */
   noiseSuppression: boolean;
+  /** "none", "blur" or a picture's id (F15 AC-F15-30). */
+  background: string;
 }
 
 const KEY = "meetapp.devices";
@@ -19,6 +21,7 @@ export const DEFAULT_PREFS: DevicePrefs = {
   cameraOn: true,
   microphoneOn: true,
   noiseSuppression: true,
+  background: "none",
 };
 
 export function loadPrefs(storage: Pick<Storage, "getItem"> = localStorage): DevicePrefs {
@@ -33,6 +36,7 @@ export function loadPrefs(storage: Pick<Storage, "getItem"> = localStorage): Dev
       cameraOn: on(saved.cameraOn),
       microphoneOn: on(saved.microphoneOn),
       noiseSuppression: on(saved.noiseSuppression),
+      background: text(saved.background) || "none",
     };
   } catch {
     return DEFAULT_PREFS;

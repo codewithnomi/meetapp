@@ -3,6 +3,7 @@
 // what is wrong with a device (the person can still join without it).
 import { Button, DeviceSelect, IconButton, LevelMeter, Notice, VideoTile } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
+import { BackgroundChoice, useBackgroundPreview } from "../../features/devices/index.ts";
 import {
   LocalVideo,
   deviceOptions,
@@ -80,7 +81,8 @@ function Choices({ devices }: { devices: PreJoinDevices }) {
 
 export function DevicesSection({ devices, name }: { devices: PreJoinDevices; name: string }) {
   const { t } = useTranslation();
-  const { prefs, camera, level } = devices;
+  const { prefs, camera, level, change } = devices;
+  const shown = useBackgroundPreview(camera.stream, prefs.background);
   return (
     <section
       aria-label={t("meetings.devices.label")}
@@ -88,8 +90,8 @@ export function DevicesSection({ devices, name }: { devices: PreJoinDevices; nam
     >
       <VideoTile
         name={name}
-        cameraOff={!prefs.cameraOn || !camera.stream}
-        {...(camera.stream ? { video: <LocalVideo stream={camera.stream} /> } : {})}
+        cameraOff={!prefs.cameraOn || !shown}
+        {...(shown ? { video: <LocalVideo stream={shown} /> } : {})}
         {...(prefs.microphoneOn ? {} : { mutedLabel: t("meetings.devices.muted") })}
       />
       <Switches devices={devices} />
@@ -103,6 +105,7 @@ export function DevicesSection({ devices, name }: { devices: PreJoinDevices; nam
           {t("meetings.devices.testSpeakers")}
         </Button>
       </div>
+      <BackgroundChoice value={prefs.background} onChange={(background) => change({ background })} />
       <Problems devices={devices} />
       <p className="m-0 text-[13px] text-ink-muted">{t("meetings.devices.remembered")}</p>
     </section>
