@@ -1,7 +1,6 @@
 // The screens and when each one shows (F01 design.md section 1): signed out, the sign-in screens; signed
 // in but the terms not yet accepted, only Terms; signed in, the app. The desktop app has no address
 // bar, so the routes live in memory. After a screen change, focus moves to the new screen's title.
-import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { Notice, Spinner } from "@meetapp/ui";
 import { useEffect, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -13,7 +12,9 @@ import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from ".
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
+import { IncomingCalls } from "../features/calls/index.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
+import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
 import {
@@ -257,6 +258,12 @@ function SignedInScreens() {
   );
 }
 
+/** A call rings on every screen (AC-F15-05); accepting opens the call. */
+function Ringing() {
+  const navigate = useNavigate();
+  return <IncomingCalls onAccepted={() => void navigate("/call")} />;
+}
+
 function SignedInRoutes() {
   const { data: user } = useSession();
   useAccountLook(user);
@@ -264,6 +271,7 @@ function SignedInRoutes() {
     <CurrentWorkspaceProvider>
       {/* One live line while signed in (F14, D064). */}
       <LiveLineProvider>
+        <Ringing />
         <SignedInScreens />
       </LiveLineProvider>
     </CurrentWorkspaceProvider>

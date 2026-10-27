@@ -1152,6 +1152,19 @@
       "callAgain": "Call again",
       "backToChat": "Back to chat",
       "preview": "Your camera is on. Others see you once they accept."
+    },
+    "incoming": {
+      "label": "Incoming call",
+      "video": "Video call",
+      "audio": "Audio call",
+      "busy": "You're in {{title}}. Accepting leaves it.",
+      "acceptVideo": "Accept with video",
+      "acceptAudio": "Accept with audio",
+      "leave_acceptVideo": "Leave current call and accept with video",
+      "leave_acceptAudio": "Leave current call and accept with audio",
+      "videoShort": "Video",
+      "audioShort": "Audio",
+      "decline": "Decline"
     }
   }
 }

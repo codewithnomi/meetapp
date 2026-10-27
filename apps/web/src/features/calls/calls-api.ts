@@ -19,3 +19,16 @@ export function runningCall(conversationId: string): Promise<RunningCall> {
 export function cancelRing(callId: string): Promise<undefined> {
   return apiRequest(`/api/v1/calls/${callId}/ring`, { method: "DELETE" });
 }
+
+export function acceptCall(callId: string, media: CallMedia): Promise<Joined> {
+  return apiRequest(`/api/v1/calls/${callId}/accept`, { method: "POST", body: { media } });
+}
+
+export function declineCall(callId: string): Promise<undefined> {
+  return apiRequest(`/api/v1/calls/${callId}/decline`, { method: "POST" });
+}
+
+/** The person's ringtone and its volume (AC-F15-32), kept on the account. */
+export function ringSettings(): Promise<{ ringtone: number; ringVolume: number }> {
+  return apiRequest("/api/v1/me/settings");
+}
