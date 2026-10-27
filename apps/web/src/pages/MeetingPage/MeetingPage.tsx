@@ -28,7 +28,8 @@ import { DevicesPanel } from "./DevicesPanel.tsx";
 import { EndDialog } from "./EndDialog.tsx";
 import { Notices } from "./Notices.tsx";
 import { ShareDialog } from "./ShareDialog.tsx";
-import { useCall, type CallState, type MeetingPageProps } from "./use-call.ts";
+import { AddPeoplePanel } from "./AddPeoplePanel.tsx";
+import { useCall, useCallConversation, type CallState, type MeetingPageProps } from "./use-call.ts";
 
 export type { MeetingPageProps };
 
@@ -141,7 +142,9 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id };
+  // A call from a chat (F15): Add people instead of Participants, no Meeting info.
+  const conversationId = useCallConversation(visit);
+  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id, conversationId };
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -167,6 +170,7 @@ function Controls({ screen }: { screen: Screen }) {
       onShare={share}
       onLeave={actions.leave}
       onEnd={() => view.setDialog({ kind: "end" })}
+      chatCall={screen.conversationId !== undefined}
     />
   );
 }
@@ -218,11 +222,15 @@ function ScreenPanel({ screen }: { screen: Screen }) {
         onClose={close}
       />
     );
+  if (view.panel === "people" && screen.conversationId && call.visit.call)
+    return <AddPeoplePanel conversationId={screen.conversationId} callId={call.visit.call.callId} onClose={close} />;
   if (view.panel === "chat") {
     const role = call.me?.role;
+    // A chat call's panel is the chat itself: no moderating and no polls, as in the chat (AC-F15-12).
+    const meeting = screen.conversationId === undefined;
     const rights = {
-      moderate: role === "organizer" || role === "co_organizer",
-      createPoll: role !== undefined && role !== "attendee",
+      moderate: meeting && (role === "organizer" || role === "co_organizer"),
+      createPoll: meeting && role !== undefined && role !== "attendee",
       attach: call.me !== undefined && call.me.group !== "guest",
     };
     const onFailed = () => view.setFailed(true);

@@ -24,6 +24,15 @@ async function ringOf(executor: Executor, callId: string, userId: string) {
   return row;
 }
 
+async function latestRings(executor: Executor, callId: string) {
+  const rows = await executor
+    .select({ userId: callRings.userId, state: callRings.state })
+    .from(callRings)
+    .where(eq(callRings.callId, callId))
+    .orderBy(asc(callRings.rangAt));
+  return new Map(rows.map((row) => [row.userId, row.state]));
+}
+
 export function createCallRingsRepository(executor: Executor) {
   return {
     /** One ringing row per person rung (F15 design 3.3); delivery is the ring targets' job (T4). */
@@ -61,6 +70,8 @@ export function createCallRingsRepository(executor: Executor) {
         .set({ state: "accepted", answeredAt: at })
         .where(and(eq(callRings.callId, callId), eq(callRings.userId, userId), eq(callRings.state, "ringing")))
         .returning(),
+    /** Each person's latest ring in this call (the Add people panel: ringing, declined, …). */
+    latestRings: (callId: string) => latestRings(executor, callId),
     /** People still being rung in this call. */
     ringingIn: async (callId: string) =>
       (

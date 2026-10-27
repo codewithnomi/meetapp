@@ -295,6 +295,16 @@ describe("start a call from a chat", { timeout: 120_000 }, () => {
     expect(row?.endedAt).toBeNull();
     expect((await attendancesOf(callId)).every((a) => a.status === "admitted")).toBe(true);
 
+    // Equal rights: both can raise a hand (reactions travel through the call server, so they have no route).
+    for (const by of [one, two]) {
+      const raised = await withTicket(t, by.ticket, {
+        method: "POST",
+        url: `/api/v1/calls/${callId}/hand`,
+        payload: { raised: true },
+      });
+      expect(raised.statusCode).toBe(204);
+    }
+
     const left = await withTicket(t, one.ticket, { method: "DELETE", url: `/api/v1/attendances/${one.attendanceId}` });
     expect(left.statusCode).toBe(204);
     const [seat] = await t.database.db.select().from(callAttendances).where(eq(callAttendances.id, one.attendanceId));
@@ -344,5 +354,41 @@ describe("join a chat's running call", { timeout: 60_000 }, () => {
     const ended = await joinCall(m2, callId);
     expect(ended.statusCode).toBe(409);
     expect(errorCode(ended)).toBe("CALL_ENDED");
+  });
+});
+
+describe("who is in the call and who can be added", { timeout: 60_000 }, () => {
+  type Member = { userId: string; name: string; inCall: boolean; ring: string | null };
+  const membersOf = async (person: Person, id: string) =>
+    (await running(person, id)).json<{ call: { members: Member[] } }>().call.members;
+  const ring = (person: Person, callId: string, userIds: string[]) =>
+    call(person.token, "POST", `/api/v1/calls/${callId}/ring`, { userIds });
+
+  it("TC-F15-30 [AC-F15-13] the call lists the chat's other members with in-call and ring state; outsiders are not listed or rung", async () => {
+    const { people, workspaceId } = await team("c30", 4);
+    const [m1, m2, m3, m4] = people as [Person, Person, Person, Person];
+    const id = await chatOf(m1, workspaceId, [m2, m3]);
+    const callId = (await startCall(m1, id)).json<Answer>().call.callId;
+    expect((await joinCall(m2, callId)).statusCode).toBe(200);
+
+    const seenByM1 = await membersOf(m1, id);
+    expect(seenByM1.map((m) => m.userId).sort()).toEqual([m2.id, m3.id].sort());
+    expect(seenByM1.find((m) => m.userId === m2.id)).toMatchObject({ inCall: true });
+    expect(seenByM1.find((m) => m.userId === m3.id)).toMatchObject({
+      inCall: false,
+      ring: "ringing", // starting the call rang the others
+    });
+    expect((await call(m3.token, "POST", `/api/v1/calls/${callId}/decline`)).statusCode).toBe(204);
+    expect((await membersOf(m1, id)).find((m) => m.userId === m3.id)).toMatchObject({
+      inCall: false,
+      ring: "declined",
+    });
+
+    expect((await ring(m1, callId, [m3.id])).statusCode).toBe(204);
+    expect((await membersOf(m1, id)).find((m) => m.userId === m3.id)).toMatchObject({ ring: "ringing" });
+
+    expect((await membersOf(m1, id)).some((m) => m.userId === m4.id)).toBe(false);
+    expect((await ring(m1, callId, [m4.id])).statusCode).toBe(404);
+    expect((await ringsOf(callId)).some((r) => r.userId === m4.id)).toBe(false);
   });
 });

@@ -24,6 +24,8 @@ export interface CallControlsProps {
   onShare: () => void;
   onLeave: () => void;
   onEnd: () => void;
+  /** A call from a chat (F15): the people button is Add people, and there is no Meeting info. */
+  chatCall?: boolean;
 }
 
 function useLabels(me: CallPerson | undefined, may: CallControlsProps["may"]) {
@@ -87,7 +89,7 @@ export function CallControls(props: CallControlsProps) {
           : undefined,
       }}
       people={{
-        label: t("meetings.call.people", { count }),
+        label: props.chatCall ? t("calls.add.button") : t("meetings.call.people", { count }),
         count,
         active: panel === "people",
         onClick: () => toggle("people"),
@@ -98,7 +100,11 @@ export function CallControls(props: CallControlsProps) {
         active: panel === "chat",
         onClick: () => toggle("chat"),
       }}
-      info={{ label: t("meetings.call.info"), active: panel === "info", onClick: () => toggle("info") }}
+      info={
+        props.chatCall
+          ? undefined
+          : { label: t("meetings.call.info"), active: panel === "info", onClick: () => toggle("info") }
+      }
     />
   );
 }

@@ -32,3 +32,8 @@ export function declineCall(callId: string): Promise<undefined> {
 export function ringSettings(): Promise<{ ringtone: number; ringVolume: number }> {
   return apiRequest("/api/v1/me/settings");
 }
+
+/** Add people: rings chat members who aren't in the call (AC-F15-13). */
+export function ringPeople(callId: string, userIds: string[]): Promise<undefined> {
+  return apiRequest(`/api/v1/calls/${callId}/ring`, { method: "POST", body: { userIds } });
+}

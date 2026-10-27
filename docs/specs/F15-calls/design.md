@@ -43,7 +43,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 1. **Chat header** (F14): **Video call** and **Audio call** buttons. Disabled with a tooltip and note when the chat can't call (AC-02). While a call runs, a **Join** button replaces them (AC-03).
 2. **Start:** pressing a button takes the caller's seat at once (backend) and opens the **Calling** screen (dark stage); the app connects to the call server when the first person accepts (the backend sends the caller `ring_stop` "accepted"), so nobody sits alone in a room while it rings: "Calling Bilal Ahmed…", own preview, controls (mute, camera, devices and background, **Cancel**). Ends as **Declined** or **No answer** with **Call again** and **Back to chat** (one-to-one), or simply becomes the call when someone joins.
 3. **Incoming call** (any screen of the app, top right): caller photo and name, "Video call · Release team", three round buttons labelled **Video**, **Audio**, **Decline** whose full names (tooltip and screen reader) are **Accept with video**, **Accept with audio** and **Decline**; when already in a call or meeting, a line "You're in … Accepting leaves it" and the accept buttons are named **Leave current call and accept with video/audio** (AC-05, 10). It takes focus and is announced (AC-18).
-4. **In the call:** F02's call screen with a side panel: **Add people** (chat members not in the call, each ringing / declined / Add) and **Chat** (the chat itself). No organizer controls.
+4. **In the call:** F02's call screen with a side panel: **Add people** (chat members not in the call, each Ringing… / Declined with **Ring again** / **Add**; the control bar's people button opens it) and **Chat** (the chat itself, no polls). No organizer controls and no Meeting info. The canvas's "Stop ringing" for one person is left out: a ring stops on its own after 30 seconds.
 5. **Chat notes:** "Sara Malik started a call · 03:12 · 2 people" with **Join** (while running); "Call ended · 1h 05m · Sara, Omar and you"; "Missed call from Omar · 17:42" with **Call back**.
 6. **Loading and errors (AC-18, 19):** starting, joining or accepting shows a spinner on the button; a failure shows "Couldn't start the call" (or "Couldn't join the call") with **Retry**; if the backend or call server can't be reached, F02's message appears within 10 seconds. All text comes from the translation file.
 7. **Settings → Devices:** preview (with the chosen background), background grid (None, Blur, 8 pictures), camera, microphone with level, speaker with **Test speakers**, noise suppression. **Settings → Calls:** 5 ringtones with play buttons, volume.
@@ -120,7 +120,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 | Endpoint | Purpose |
 |---|---|
 | `POST /conversations/:id/calls` `{ media }` | start (or join the running) chat call; rings the others; returns F02's join answer, AC-01–04 |
-| `GET /conversations/:id/call` | the running call (for **Join**), or none |
+| `GET /conversations/:id/call` | the running call (for **Join**), or none; also the chat's other members, each in the call or with their latest ring here (the **Add people** panel, refreshed every 3 s while open; added in T15) |
 | `POST /calls/:callId/join` | join a running chat call, AC-03, 15 |
 | `POST /calls/:callId/accept` `{ media }`, `POST /calls/:callId/decline` | answer a ring, AC-06, 07 |
 | `DELETE /calls/:callId/ring` | caller cancels, AC-09 |

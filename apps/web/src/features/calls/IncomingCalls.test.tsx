@@ -40,7 +40,7 @@ const RING = {
   groupName: "Release team",
   expiresAt: new Date(Date.now() + 30_000).toISOString(),
 };
-const CALL = { callId: CALL_ID, serverUrl: "ws://127.0.0.1:7880", pass: "p", role: "participant" as const };
+const CALL = { callId: CALL_ID, serverUrl: "ws://127.0.0.1:7880", pass: "p", role: "presenter" as const };
 
 function show(onAccepted = vi.fn()) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

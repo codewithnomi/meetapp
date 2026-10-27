@@ -1165,6 +1165,23 @@
       "videoShort": "Video",
       "audioShort": "Audio",
       "decline": "Decline"
+    },
+    "add": {
+      "button": "Add people",
+      "title": "Add people",
+      "close": "Close Add people",
+      "intro": "People in this chat who aren't in the call. Their app rings when you add them.",
+      "members": "Chat members",
+      "ringing": "Ringing…",
+      "declined": "Declined",
+      "add": "Add",
+      "addNamed": "Add {{name}} to the call",
+      "ringAgain": "Ring again",
+      "ringAgainNamed": "Ring {{name}} again",
+      "loading": "Loading the chat's members…",
+      "everyone": "Everyone in this chat is in the call.",
+      "note": "To call someone who isn't in this chat, add them to the group first. A call holds up to 20 people.",
+      "full": "This call has 20 people, the most it can hold."
     }
   }
 }

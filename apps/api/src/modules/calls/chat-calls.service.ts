@@ -170,18 +170,28 @@ async function join(deps: ChatCallsDeps, userId: string, callId: string, options
 /** The chat's running call for **Join**, or none. */
 async function running(deps: ChatCallsDeps, userId: string, conversationId: string) {
   // Only people who may call here see the running call (others get 404).
-  await deps.place(userId, conversationId);
+  const place = await deps.place(userId, conversationId);
   const call = await deps.chatCalls.running(conversationId);
   if (!call) return { call: null };
   // Whoever took the first seat started the call.
   const starter = await deps.chatCalls.starterOf(call.id);
+  const [inCall, rings] = await Promise.all([deps.chatCalls.peopleIn(call.id), deps.chatCalls.latestRings(call.id)]);
   return {
     call: {
       callId: call.id,
       media: call.media ?? "video",
       startedAt: call.startedAt.toISOString(),
       startedBy: { userId: starter?.userId ?? "", name: starter?.name ?? "" },
-      people: await deps.chatCalls.peopleCount(call.id),
+      people: inCall.length,
+      // The chat's other accepted members and where each stands, for Add people (AC-F15-13).
+      members: place.members
+        .filter((m) => m.state === "accepted" && m.userId !== userId)
+        .map((m) => ({
+          userId: m.userId,
+          name: m.name,
+          inCall: inCall.includes(m.userId),
+          ring: rings.get(m.userId) ?? null,
+        })),
     },
   };
 }

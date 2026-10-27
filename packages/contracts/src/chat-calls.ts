@@ -36,6 +36,15 @@ export const runningCallSchema = z
         startedAt: z.iso.datetime(),
         startedBy: z.object({ userId: z.uuid(), name: z.string() }),
         people: z.number().int().min(0),
+        /** The chat's other members: in the call, or their latest ring here (Add people, AC-F15-13). */
+        members: z.array(
+          z.object({
+            userId: z.uuid(),
+            name: z.string(),
+            inCall: z.boolean(),
+            ring: z.enum(RING_STATES).nullable(),
+          }),
+        ),
       })
       .nullable(),
   })

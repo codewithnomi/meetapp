@@ -44,6 +44,19 @@ async function own(deps: CallsDeps, attendanceId: string, ticketHash: string): P
   return attendance;
 }
 
+/**
+ * The caller's own seat in this call, for actions on themselves (the hand): any call, a meeting's or a
+ * chat's (F15 AC-F15-12: everyone in a chat call may raise a hand). Meetings still check the role.
+ */
+export async function ownSeat(deps: CallsDeps, callId: string, ticketHash: string) {
+  const attendance = await deps.attendances.byTicket(ticketHash);
+  if (!attendance || attendance.callId !== callId || !inCall(attendance.status)) throw notFound();
+  if (attendance.meetingId !== null) return (await actor(deps, callId, ticketHash, "talk")).attendance;
+  const wait = await deps.limiter.take(RATE_RULES.callActions, ticketHash);
+  if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many actions. Wait a moment.", wait);
+  return attendance;
+}
+
 /** Someone in this call whose role allows `action`; counted against the in-call limit (S5). */
 export async function actor(deps: CallsDeps, callId: string, ticketHash: string, action: CallAction) {
   const attendance = await deps.attendances.byTicket(ticketHash);

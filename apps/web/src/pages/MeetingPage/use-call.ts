@@ -4,7 +4,10 @@
 import type { ChatEvent } from "@meetapp/contracts";
 import { chatAnnouncement } from "./chat-texts.ts";
 import { useTranslation } from "react-i18next";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSession } from "../../features/auth/index.ts";
+import { useChatCall } from "../../features/calls/index.ts";
+import { useLiveLine } from "../../features/chats/index.ts";
 import { apiRequest } from "../../features/api/index.ts";
 import {
   can,
@@ -19,7 +22,7 @@ import {
   type Joined,
   type Reaction,
 } from "../../features/meetings/index.ts";
-import { callPlace, useChat, type Chat } from "../../features/meetings/chat/index.ts";
+import { callPlace, conversationPlace, useChat, type Chat } from "../../features/meetings/chat/index.ts";
 import { useCallEvents, usePeopleAnnouncements } from "./call-events.ts";
 import { useConnectionCare } from "./connection.ts";
 import { useLobby } from "./lobby.ts";
@@ -41,22 +44,49 @@ async function outcomeOf(visit: Joined): Promise<Attendance> {
   return answer.status === "admitted" || answer.status === "in_call" ? lost : answer;
 }
 
+/** In a call from a chat, the chat this call belongs to (F15 AC-F15-12); undefined in a meeting. */
+export function useCallConversation(visit: Joined): string | undefined {
+  const call = useChatCall((state) => state.call);
+  return call && call.callId === visit.call?.callId ? call.conversationId : undefined;
+}
+
+/** A chat call's Chat panel is the chat itself: its news comes on the live line (F14), not the room. */
+function useChatPlace(visit: Joined, onNews: (event: ChatEvent) => void) {
+  const conversationId = useCallConversation(visit);
+  const userId = useSession().data?.id ?? "";
+  useLiveLine(
+    useCallback(
+      (message) => {
+        if (conversationId && message.t === "news" && message.conversationId === conversationId) onNews(message.event);
+      },
+      [conversationId, onNews],
+    ),
+  );
+  return useMemo(
+    () => (conversationId ? conversationPlace(conversationId, userId) : callPlace(visit)),
+    [conversationId, userId, visit],
+  );
+}
+
 /**
  * Meeting chat in the call (F03): the room's handlers are read once at connect, so they reach the chat
  * through a ref; news is announced while the panel is closed (AC-F03-45).
  */
 function useCallChat(visit: Joined, announce: (kind: string, text: string) => void) {
   const chatRef = useRef<Chat>(undefined as unknown as Chat);
-  const place = useMemo(() => callPlace(visit), [visit]);
-  const chat = (chatRef.current = useChat(place));
   const { t } = useTranslation();
   const latestT = useRef(t);
   latestT.current = t;
-  const onChat = (event: ChatEvent) => {
-    const heard = chatAnnouncement(latestT.current, event, visit.attendanceId, chatRef.current.state.open);
-    if (heard) announce(`chat-${event.message?.id ?? ""}`, heard);
-    chatRef.current.onEvent(event);
-  };
+  const onChat = useCallback(
+    (event: ChatEvent) => {
+      const heard = chatAnnouncement(latestT.current, event, visit.attendanceId, chatRef.current.state.open);
+      if (heard) announce(`chat-${event.message?.id ?? ""}`, heard);
+      chatRef.current.onEvent(event);
+    },
+    [visit.attendanceId, announce],
+  );
+  const place = useChatPlace(visit, onChat);
+  const chat = (chatRef.current = useChat(place));
   return { chat, chatRef, onChat };
 }
 
