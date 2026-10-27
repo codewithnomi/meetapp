@@ -1,7 +1,7 @@
 ---
 feature: F15
 title: Calls from chat (audio and video)
-status: draft
+status: approved
 updated: 2026-10-27
 ---
 
@@ -92,7 +92,14 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 ### 3.7 Membership changes during a call (AC-25)
 - F14's member removal, leaving, workspace removal and account deletion call `calls.leaveChatCall(conversationId, userId)`: the attendance becomes `removed`, LiveKit `RemoveParticipant`, ringing stops. Within 2 seconds, measured by a test.
 
-### 3.8 Settings (AC-29–32)
+### 3.8 Devices, rings and transfer, ready for mobile (AC-33, 34; D075)
+- **Ring targets:** the ring service doesn't send to "the desktop"; it sends to the person's **ring targets**: a small interface (`RingTarget.ring(ring)`, `RingTarget.stop(callId, reason)`) with one kind now, the live line (all the person's open windows). F11 adds a push target (phone notifications, Apple/Google) behind the same interface. The ring record, the 30-second clock, accept/decline and missed notes stay in the backend and don't change (AC-34).
+- **Answer from anywhere:** accept and decline carry nothing device-specific; whichever device calls first wins (conditional update), the others get `ring_stop`.
+- **Seats per device:** each device in a call has its own attendance (F02 already allows two). `GET /me/calls/active` lists the person's running calls (call, chat, which devices are in), so any device can show "You're in a call on another device" (AC-33).
+- **Transfer:** `POST /calls/:callId/transfer` `{ fromAttendanceId }` returns a normal join answer for the new device and marks the old attendance `transferring`. When LiveKit reports the new participant joined, the backend removes the old one (`RemoveParticipant`, attendance `transferred`). The call server identity is the account plus a seat number, and other apps show one person, so others don't see a leave and a new join. If the new device never connects within 30 seconds, the old seat stays and nothing changes.
+- **Sign-in per device:** desktop uses its token (F01); the phone will use its own session the same way, so nothing in the call rules depends on the kind of device.
+
+### 3.9 Settings (AC-29–32)
 - **Devices (per computer):** F02's device preferences (already used by pre-join and in-call settings) move to `features/devices` and gain a Settings page. Kept in the app's local storage; a missing device falls back to the default with F02's notice (AC-29).
 - **Backgrounds (per computer, AC-30, 31):** `@livekit/track-processors` (`BackgroundProcessor`, D073) set on the local camera track in disabled mode at start, then `switchTo` blur or a picture, so switching has no flicker. Its model and engine files are copied into the app (`assetPaths`), and the 8 pictures ship with the app: nothing leaves the computer. A frame counter (`onFrameProcessed`) checks speed; under 15 frames a second for 5 seconds, the app switches to disabled and shows "Background turned off to keep your video smooth" (AC-31). Used in preview, pre-join, calls and meetings.
 - **Ringtone (per account, AC-32):** `user.ringtone` (1–5, default 1) and `user.ring_volume` (0–100, default 70) via `GET/PATCH /me/settings` (F14's route, two more fields). The 5 tones are short patterns generated with the Web Audio API (D074), played by the incoming-call screen and the play buttons.
@@ -116,6 +123,8 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 | `DELETE /calls/:callId/ring` | caller cancels, AC-09 |
 | `POST /calls/:callId/ring` `{ userIds }` | Add people, AC-13 |
 | F02's `DELETE /attendances/:id`, hand, reactions, share | leave and in-call actions, unchanged |
+| `GET /me/calls/active` | the person's running calls and which devices are in them, AC-33 |
+| `POST /calls/:callId/transfer` `{ fromAttendanceId }` | move the call to this device, AC-33 |
 | `GET/PATCH /me/settings` `{ ringtone, ringVolume }` | ringtone, AC-32 |
 | Live line `ring`, `ring_stop` | ringing, AC-05–09 |
 - Errors: `CHAT_READ_ONLY` (403), `CALL_FULL` (409), `RING_OVER` (409), `CALL_RATE` (429 with wait), not a member → 404.
@@ -165,9 +174,11 @@ None: the same call server, backend, Redis and BullMQ (D017). The background too
 | AC-F15-26 | integration (race) |
 | AC-F15-27 | component + e2e (camera blocked) |
 | AC-F15-28 | integration (cascade, export) |
+| AC-F15-33, 34 | integration (transfer: new connects before old leaves; ring to every target, answer on one) + e2e (two windows) |
 | AC-F15-29, 30, 31, 32 | component + unit (frame-rate fallback) + e2e (settings) |
 
 ## Decisions made here
-- **D072** (proposed): a call belongs to a meeting or a chat; chat calls reuse F02's call machinery.
-- **D073** (proposed): `@livekit/track-processors` for blur and backgrounds, files shipped in the app; 8 free-licence pictures.
-- **D074** (proposed): ringtones generated with the Web Audio API (no sound files).
+- **D072** (accepted): a call belongs to a meeting or a chat; chat calls reuse F02's call machinery.
+- **D073** (accepted): `@livekit/track-processors` for blur and backgrounds, files shipped in the app; 8 free-licence pictures.
+- **D074** (accepted): ringtones generated with the Web Audio API (no sound files).
+- **D075** (accepted): rings go to "ring targets" and calls can move between devices, so the mobile app adds push ringing and phone transfer without changing the core.

@@ -49,6 +49,10 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - **AC-F15-15:** WHEN a call starts, ends, or is missed, THEN the chat shows a note: "<name> started a call" with **Join** while it runs; "Call ended · 12m 30s" when it ends ("1h 05m" for an hour or more); and for each person called who never joined (including one who declined), "Missed call from <name>" (with **Call back**) in their view, as in Teams. The chat list's last line shows these notes and a missed call counts as unread.
 - **AC-F15-16:** WHEN a person is in a call (from a chat or a meeting), THEN their status shows **In a call** to the people who may see their status (F14 AC-26), and changes back to Available or Away (F14 AC-26) within 30 seconds of leaving. If the app closes or the connection drops during a call, D068 applies (Away for 30 seconds, then Offline). This replaces F14's "In a meeting" with one status, **In a call**, for meetings and chat calls (D070).
 
+### Other devices and transfer (owner, 2026-10-27, as in Teams)
+- **AC-F15-33:** WHEN a person is in a call and opens MeetApp on another device (for now another desktop window or computer), THEN that device shows "You're in a call on another device" with **Join on this device** and **Transfer to this device**. Transfer connects the new device first and only then takes the old one out of the call (within 3 seconds, without the others seeing them leave and rejoin as a new person); Join adds the device as a second participant (F02 AC-13).
+- **AC-F15-34:** WHEN a person is called, THEN the ring reaches every device they are signed in on that can ring (for now: open desktop windows), and answering or declining on one stops it on all. Mobile devices join this list in F11 (push ringing) without changing how ringing works.
+
 ### Settings: devices, backgrounds and ringtone (owner request, 2026-10-27)
 - **AC-F15-29:** WHEN a person opens **Settings → Devices**, THEN they can choose their **microphone**, **speaker** and **camera** from the devices on that computer, see a live **camera preview**, a microphone level meter, play a **Test speakers** sound, and turn noise suppression on or off. Their choices are remembered on that computer and used for every call and meeting (pre-join screen, in-call device settings and incoming calls start from them). A chosen device that is unplugged falls back to the computer's default and says so (F02 AC-31).
 - **AC-F15-30:** WHEN a person chooses a **background effect** (in Settings → Devices with the camera preview, on the pre-join screen, or during a call or meeting from the camera menu), THEN they can pick **None**, **Blur**, or one of at least **8 built-in pictures** (for example an office, a living room, a bookshelf, a café, nature, a city view and two calm abstract styles), as in Google Meet and Teams. They see it on their own preview before others do; the choice is remembered on that computer and applies in calls and meetings. The effect is made on their own computer: the video sent already has it, and no picture or video goes to any other service.
@@ -87,7 +91,7 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - Phone numbers, voicemail, call transfer, hold, call history page ("Calls" app): later, if wanted.
 - Recording, live captions and transcripts of calls: **F05/F06**.
 - Calling people who aren't in a chat with you (from a contact card): later; for now start a chat first.
-- Calls on web and mobile: **F10/F11**.
+- Calls on web and mobile: **F10/F11**. F11 adds phone ringing (push) and transfer to and from the phone using AC-F15-33 and AC-F15-34 as they are (D075).
 
 ## Open questions
 None.
