@@ -2,7 +2,7 @@
 // without a meeting (D072): no link, passcode or lobby; everyone is equal and may send their own
 // microphone, camera and screen. Membership and the chat's read-only rules (F14) are checked on every
 // request; starting and joining hold the chat's row, so a chat has one running call and at most 20 people.
-import type { CallAttendance, Call, Executor } from "@meetapp/db";
+import type { CallAttendance, Call, CallRing, Executor } from "@meetapp/db";
 import { CHAT_CALL_LIMITS, type CallMedia } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
@@ -22,7 +22,9 @@ const ROOM_CAP = 25;
 /** The chat as the caller may use it now (F14's rules for sending; 404 or 403 `CHAT_READ_ONLY` otherwise). */
 export interface ChatPlace {
   conversation: { id: string; workspaceId: string; kind: "direct" | "group"; name: string | null };
-  me: { id: string; name: string; external: boolean };
+  me: { id: string; name: string; external: boolean; photoUrl: string | null };
+  /** The call's name for the app: the group's name, or the other people's names. */
+  title: string;
   members: { userId: string; name: string; state: string }[];
 }
 
@@ -30,19 +32,14 @@ export interface ChatCallsDeps {
   calls: CallsDeps;
   chatCalls: ChatCallsRepository;
   place: (userId: string, conversationId: string) => Promise<ChatPlace>;
+  /** Sends a new call's rings to the people rung (the ring service). */
+  rang: (caller: ChatPlace, call: Call, rings: CallRing[]) => Promise<void>;
   /** Saves a note in the chat ("Sara started a call"), delivered like a message. */
   note: (place: ChatPlace, note: { event: "call_started"; callId: string; media: CallMedia }) => Promise<void>;
 }
 
 const full = () => new AppError(409, "CALL_FULL", "This call is full.");
 const ended = () => new AppError(409, "CALL_ENDED", "This call has ended.");
-
-/** The call's name for the app: the group's name, or the other people's names. */
-function titleOf(place: ChatPlace): string {
-  if (place.conversation.name) return place.conversation.name;
-  const others = place.members.filter((m) => m.userId !== place.me.id && m.state === "accepted");
-  return others.map((m) => m.name).join(", ");
-}
 
 /** Who rings when a call starts: the other accepted members, nobody in a group of more than 20 (AC-F15-04). */
 export function whoToRing(place: ChatPlace): string[] {
@@ -114,7 +111,7 @@ async function answer(
     attendanceId: entry.attendance.id,
     ticket: entry.ticket,
     status: entry.attendance.status,
-    title: titleOf(place),
+    title: place.title,
     group: entry.attendance.participantGroup,
     call: await chatCallAccess(deps.calls, entry.attendance, entry.call),
   };
@@ -128,12 +125,13 @@ async function start(deps: ChatCallsDeps, userId: string, conversationId: string
     const call =
       running ?? (await startChatCall(tx, { conversationId, workspaceId: place.conversation.workspaceId, media }));
     const seat = await takeSeat(deps, tx, place, call);
-    if (!running) await deps.chatCalls.ring(tx, call, whoToRing(place));
-    return { ...seat, call, started: !running };
+    const rings = running ? [] : await deps.chatCalls.ring(tx, call, whoToRing(place));
+    return { ...seat, call, rings, started: !running };
   });
   if (entry.started) {
     await deps.calls.scheduler.schedule(entry.call);
     await deps.note(place, { event: "call_started", callId: entry.call.id, media });
+    await deps.rang(place, entry.call, entry.rings);
   }
   return answer(deps, place, entry);
 }

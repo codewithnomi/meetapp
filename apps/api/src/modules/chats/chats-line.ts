@@ -267,6 +267,7 @@ class LineHub {
     await this.refresh(line);
     await this.limitLines(line);
     if (!this.isOpen(line)) return;
+    for (const ring of (await this.deps.ringsFor?.(userId)) ?? []) this.send(line, ring);
     await this.reportPresence(line);
     if (this.polling) this.send(line, { t: "polling", on: true });
     this.timer ??= setInterval(() => void this.check(), CHECK_MS);

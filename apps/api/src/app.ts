@@ -24,6 +24,7 @@ import { chatsLineRoutes, registerWebSockets } from "./modules/chats/chats-line.
 import { chatsExtrasRoutes } from "./modules/chats/chats-extras.routes.ts";
 import { chatsMessagesRoutes } from "./modules/chats/chats-messages.routes.ts";
 import { chatCallsRoutes } from "./modules/calls/chat-calls.routes.ts";
+import { ringRoutes } from "./modules/calls/ring.routes.ts";
 import { chatsGroupsRoutes } from "./modules/chats/chats-groups.routes.ts";
 import { chatsRequestsRoutes } from "./modules/chats/chats-requests.routes.ts";
 import { chatsRoutes } from "./modules/chats/chats.routes.ts";
@@ -183,5 +184,6 @@ async function registerChatsRoutes(app: FastifyInstance, accounts: Accounts): Pr
   await app.register(chatsGroupsRoutes, { groups: chatsGroups });
   await app.register(chatsMessagesRoutes, { messages: chatsMessages });
   await app.register(chatCallsRoutes, { chatCalls: accounts.chatCalls });
+  await app.register(ringRoutes, { rings: accounts.rings });
   await app.register(chatsExtrasRoutes, { extras: chatsExtras });
 }

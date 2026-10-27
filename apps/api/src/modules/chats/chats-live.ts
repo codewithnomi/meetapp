@@ -38,6 +38,8 @@ export function createLivePublisher(redis: Redis) {
       send(channels.conversation(conversationId), { t: "typing", conversationId, userId, name }),
     status: (userId: string, status: Status) => send(channels.status(userId), { t: "status", userId, status }),
     control: (userId: string, control: LineControl) => send(channels.user(userId), control),
+    /** A message for every open window of one person: rings and their stops (F15, D075). */
+    toPerson: (userId: string, message: LineServerMessage) => send(channels.user(userId), message),
   };
 }
 

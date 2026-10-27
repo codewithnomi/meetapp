@@ -32,4 +32,6 @@ export const systemNoteSchema = z.object({
   callId: z.uuid().optional(),
   media: z.enum(CALL_MEDIA).optional(),
   seconds: z.number().int().min(0).optional(),
+  /** call_missed: the only person who sees the note (AC-F15-15). */
+  forUserId: z.uuid().optional(),
 });

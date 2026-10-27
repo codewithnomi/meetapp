@@ -52,11 +52,7 @@ import type { Outbox } from "./emails/outbox.ts";
 import { createLivePublisher } from "./modules/chats/chats-live.ts";
 import { createPresenceStore } from "./modules/chats/chats-presence.ts";
 import { createChatsStatusService } from "./modules/chats/chats-status.service.ts";
-import { createChatCallsRepository } from "./modules/calls/chat-calls.repository.ts";
-import { createChatCallsService, type ChatPlace } from "./modules/calls/chat-calls.service.ts";
-import { AppError } from "./plugins/errors.ts";
-import { seatIn, type MessagesDeps } from "./modules/chats/chats-messages.service.ts";
-import { saveNote } from "./modules/chats/chats-notes.ts";
+import { chatCallsFor } from "./chat-calls.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -124,7 +120,10 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
     calls,
     chatDeps,
   });
+  const callPieces = chatCallsFor({ db: wiring.db, calls, chat: chatDeps.chat, messagesDeps });
   return {
+    /** Calls from chats (F15). */
+    ...callPieces,
     /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
     chats: createChatsService({
       ...requestsDeps,
@@ -143,9 +142,10 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
       status,
       conversationsOf: (userId: string) => chatsRepository.activeConversationIds(userId),
       person: (userId: string) => messagesDeps.messages.person(userId),
+      /** F15: a window that opens while a call rings gets the ring too (TC-F15-44). */
+      ringsFor: (userId: string) => callPieces.rings.ringingFor(userId),
     },
     chatsGroups: createChatsGroupsService(groupsDeps),
-    chatCalls: chatCallsFor({ wiring, calls, chatDeps }, messagesDeps),
     chatsMembership: createChatsMembershipService(groupsDeps),
     chatsPeople: createChatsPeopleService({
       chats: chatsRepository,
@@ -155,39 +155,6 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
       statuses: (viewer, ids) => status.visible(viewer, ids),
     }),
   };
-}
-
-/** Calls from chats (F15): F02's call pieces with F14's membership rules and notes (D072). */
-function chatCallsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter">, messagesDeps: MessagesDeps) {
-  const place = async (userId: string, conversationId: string): Promise<ChatPlace> => {
-    const { conversation, people, seat, other } = await seatIn(messagesDeps, userId, conversationId, "send");
-    // A one-to-one chat whose request isn't accepted yet allows a few messages, never a call (AC-F15-02).
-    if (other && other.state !== "accepted") {
-      throw new AppError(403, "CHAT_READ_ONLY", "You can call once they accept your chat request.");
-    }
-    return {
-      conversation: {
-        id: conversation.id,
-        workspaceId: conversation.workspaceId,
-        kind: conversation.kind === "direct" ? "direct" : "group",
-        name: conversation.name,
-      },
-      me: { id: userId, name: seat.name, external: seat.group === "external" },
-      members: people.map((p) => ({ userId: p.userId, name: p.name, state: p.state })),
-    };
-  };
-  return createChatCallsService({
-    calls,
-    chatCalls: createChatCallsRepository(wiring.db),
-    place,
-    note: (at, note) =>
-      saveNote(
-        { chat: chatDeps.chat, live: messagesDeps.live },
-        at.conversation,
-        { id: at.me.id, name: at.me.name },
-        note,
-      ),
-  });
 }
 
 interface ChatsWiring {

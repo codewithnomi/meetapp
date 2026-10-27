@@ -22,7 +22,8 @@ packages/db/src/schema/meetings.ts       calls and call_attendances may belong t
 packages/db/src/schema/auth.ts           user.ringtone, user.ring_volume (account settings)
 packages/contracts/src/chat-calls.ts     chat-call requests and answers, ring line messages (calls.ts stays F02's)
 packages/contracts/src/chat-notes.ts     chat note shapes, now with the call notes (moved out of chat.ts)
-apps/api/src/modules/calls/              chat calls: start/join, ring, accept, decline, cancel, add people, ending rules,
+apps/api/src/chat-calls.ts               wiring: F02 call pieces + F14 rules + ring targets
+apps/api/src/modules/calls/              chat calls (chat-calls.*, ring.*, ring-targets.ts, ring-state.ts): start/join, ring, accept, decline, cancel, add people, ending rules,
                                          ring timeout job, call notes, status "in a call"
 apps/api/src/modules/meetings/…          F02's join/pass/webhook code takes a "call place" (meeting or chat), like F03's seat
 apps/api/src/modules/chats/…             membership changes take people out of a running chat call; live line: ring messages
@@ -84,7 +85,8 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
   - `call_started` `{ callId, by, media }`: the app shows **Join** while the call is running (it asks the running call from the conversation).
   - `call_ended` `{ callId, seconds, people }`: "Call ended · 12m 30s" (`1h 05m` from an hour).
   - `call_missed` `{ callId, from, forUserId }`: shown only to `forUserId` ("Missed call from … · Call back"). Its news goes only to that person's live-line channel; pages and the list's last line skip it for everyone else. It is the only call note that counts as unread, and only for its `forUserId`; `call_started` and `call_ended` never count (AC-04, 15).
-  - When a call ends, every person with a `call_rings` row and no attendance in that call has exactly one `call_missed` note (declined, missed or cancelled alike).
+  - Decline in a call that ended meanwhile keeps the earlier note; a call that ends ends its admitted-but-not-connected seats too (no lobby for chat calls).
+- When a call ends, every person with a `call_rings` row and no attendance in that call has exactly one `call_missed` note (declined, missed or cancelled alike).
 - **Kept** (AC-28): the call row (who started, chat, start/end), attendances (who joined and left), rings. They go with the conversation (cascade) and the account deletion/export helpers include them (F03/F14's `chatUpkeep`).
 
 ### 3.6 Status "In a call" (AC-16, D070)

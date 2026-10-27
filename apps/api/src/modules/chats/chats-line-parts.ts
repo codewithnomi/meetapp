@@ -15,6 +15,8 @@ export interface LineDeps {
   presence: PresenceStore;
   status: { announce: (userId: string) => Promise<void>; audience: (viewer: string) => Promise<Set<string>> };
   now?: () => number;
+  /** F15: rings still sounding for the person, sent when a line opens (TC-F15-44). */
+  ringsFor?: (userId: string) => Promise<LineServerMessage[]>;
 }
 
 export interface Line {
