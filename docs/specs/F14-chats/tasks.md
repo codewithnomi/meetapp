@@ -141,5 +141,5 @@ Tick `[x]` when done and verified. While building, each step runs only its own t
 - [x] **T-fix-5: Read marks and mentions.** Unread by news number (clamped to the chat's last); "Seen" only from accepted members; editing cleans mentions.
 - [x] **T-fix-6: Tests for AC-29 and AC-35** (TC-F14-59 paging with no gaps or repeats and the history limit; TC-F14-72 workspace deletion removes chats and files) and page tests for `pages/ChatsPage`, bringing `features/**` branch coverage to 80%.
 - [x] **T-fix-7: Documentation** listed in verification.md (design folders and endpoints, D067 for the mention libraries, overview, operations, privacy, desktop README, security S5, progress).
-- [ ] **T-fix-8: Status after closing the app** as the owner decides (now "Away" for 30 s, then Offline).
+- [x] **T-fix-8: Status after closing the app** as the owner decides (now "Away" for 30 s, then Offline).
 - [ ] **T-fix-9: Second verification:** rerun the desktop tests (with sign-ups available) and create the new screenshots after the owner looks at them.

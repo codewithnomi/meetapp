@@ -6,7 +6,7 @@
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
 - **Done and merged:** F00 Foundation (PR #3), F01 Accounts & workspaces (PR #8), F02 Meetings & calling (PR #11), F03 In-meeting chat (PR #15).
-- **Now:** **F14 Chats** on branch `feat/F14-chats`. All 19 build steps done; first verification **FAIL** (2026-10-23, `docs/specs/F14-chats/verification.md`). Fix tasks T-fix-1 to T-fix-7 done (2026-10-23 to 2026-10-26); left: **T-fix-8** (status after closing the app: owner decision) and **T-fix-9** (second verification).
+- **Now:** **F14 Chats** on branch `feat/F14-chats`. All 19 build steps done; first verification **FAIL** (2026-10-23, `docs/specs/F14-chats/verification.md`). Fix tasks T-fix-1 to T-fix-7 done (2026-10-23 to 2026-10-26); T-fix-8 decided (D068: Away, then Offline, as in Teams); left: **T-fix-9** (second verification).
 - **After F14:** F15 Calls from chat, then F04 (product direction D062: a complete Teams-style app).
 - **Design system (D029, approved):** https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Process (owner, 2026-10-13, D052):** while building, run only each task's own tests and checks; the full suite, desktop tests and screenshots run once, at verification. Run long tests with the Mac's lid open or on power (it sleeps on battery).
@@ -20,7 +20,7 @@
   - re-check 100-person smoothness on a busy Mac (D056).
 - **For later features:** F06/F10 must call `chatUpkeep.beforeMeetingDeleted` before deleting a meeting record (check it removes stored files: attachment rows cascade with the meeting); F10's workspace deletion must call `chatUpkeep.beforeWorkspaceDeleted`; F10's account deletion must call `chatUpkeep.forgetPerson`. F04: Windows spell-check dictionaries ship with the installer.
 - **Watch at F14's second verification:** TC-F14-21 once returned 429 instead of 403 (timing) and passed on rerun.
-- **Next step:** F14 T-fix-8, the owner's choice for status after closing the app (`/next`).
+- **Next step:** F14 T-fix-9, the second verification (`/next`; full suite, desktop tests, new screenshots after the owner looks at them).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

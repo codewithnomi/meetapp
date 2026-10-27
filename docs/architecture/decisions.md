@@ -435,3 +435,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** Teams-style @mentions inside the rich text editor; writing our own suggestion popup and positioning would be more code to keep accessible and correct.
 - **Cost:** none.
 - **Alternatives:** a hand-written popup (more code, keyboard and screen-reader work); a different editor (would redo F03's composer).
+
+### D068: Status after closing the app (F14)
+- **Date:** 2026-10-27. **Status:** accepted (owner, 2026-10-27: "show away as Teams does").
+- **Decision:** when someone closes MeetApp (or their connection drops), colleagues see **Away** for a short wait (30 seconds), then **Offline**. The same rule applies to a normal close and a dropped connection, so a quick reconnect never shows Offline.
+- **Why:** the owner wants status to behave like Microsoft Teams, which shows Away before Offline.
+- **Cost:** none (already how F14 works).
