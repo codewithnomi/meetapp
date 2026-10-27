@@ -1,0 +1,65 @@
+// Rings of chat calls: database access only (F15 design 3.3, 3.4). Only a row still ringing changes, so
+// the first answer wins (TC-F15-13); everything else reads or adds rows.
+import { callRings, type Call, type Executor } from "@meetapp/db";
+import { and, asc, eq, lte, type SQL } from "drizzle-orm";
+
+type RingEnd = "accepted" | "declined" | "missed" | "cancelled";
+
+/** Ends ringing rows that match: only rows still ringing change, so the first answer wins (TC-F15-13). */
+function stopRinging(executor: Executor, where: SQL | undefined, state: RingEnd, at: Date) {
+  return executor
+    .update(callRings)
+    .set({ state, answeredAt: at })
+    .where(and(eq(callRings.state, "ringing"), where))
+    .returning();
+}
+
+/** One person's ring in a call: only they may answer it (TC-F15-74). */
+async function ringOf(executor: Executor, callId: string, userId: string) {
+  const [row] = await executor
+    .select()
+    .from(callRings)
+    .where(and(eq(callRings.callId, callId), eq(callRings.userId, userId)))
+    .orderBy(asc(callRings.rangAt));
+  return row;
+}
+
+export function createCallRingsRepository(executor: Executor) {
+  return {
+    /** One ringing row per person rung (F15 design 3.3); delivery is the ring targets' job (T4). */
+    ring: async (tx: Executor, call: Call, userIds: string[]) => {
+      if (userIds.length === 0) return [];
+      return tx
+        .insert(callRings)
+        .values(userIds.map((userId) => ({ workspaceId: call.workspaceId, callId: call.id, userId })))
+        .returning();
+    },
+    ringOf: (callId: string, userId: string) => ringOf(executor, callId, userId),
+    /** One ring's answer, if it is still ringing. */
+    stopRing: (ringId: string, state: RingEnd, at: Date) => stopRinging(executor, eq(callRings.id, ringId), state, at),
+    /** Every ring of a call still ringing (cancel, end, timeout). */
+    stopCallRings: (callId: string, state: RingEnd, at: Date) =>
+      stopRinging(executor, eq(callRings.callId, callId), state, at),
+    /** Ringing rows of a call (or any call) rung at or before `before`: they stop as missed (AC-F15-08, 19). */
+    stopRingsBefore: (before: Date, at: Date, callId?: string) =>
+      stopRinging(
+        executor,
+        and(lte(callRings.rangAt, before), callId ? eq(callRings.callId, callId) : undefined),
+        "missed",
+        at,
+      ),
+    /** The rings still sounding for a person (a window opened while ringing gets them, TC-F15-44). */
+    ringingFor: (userId: string) =>
+      executor
+        .select()
+        .from(callRings)
+        .where(and(eq(callRings.userId, userId), eq(callRings.state, "ringing"))),
+    /** A person rung who starts or joins the call themselves has answered (AC-F15-26). */
+    answeredByJoining: (tx: Executor, callId: string, userId: string, at: Date) =>
+      tx
+        .update(callRings)
+        .set({ state: "accepted", answeredAt: at })
+        .where(and(eq(callRings.callId, callId), eq(callRings.userId, userId), eq(callRings.state, "ringing")))
+        .returning(),
+  };
+}

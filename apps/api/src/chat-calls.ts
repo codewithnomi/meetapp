@@ -2,10 +2,11 @@
 // and ringing through the ring targets (today the live line).
 import type { Database } from "@meetapp/db";
 import type { CallsDeps } from "./modules/calls/admission.ts";
-import { createChatCallsRepository } from "./modules/calls/chat-calls.repository.ts";
+import { createChatCallsRepository, type ChatCallsRepository } from "./modules/calls/chat-calls.repository.ts";
 import { createChatCallsService, type ChatPlace } from "./modules/calls/chat-calls.service.ts";
+import { createCallEndService } from "./modules/calls/call-end.service.ts";
 import { createRingService } from "./modules/calls/ring.service.ts";
-import { allTargets, liveLineTarget } from "./modules/calls/ring-targets.ts";
+import { allTargets, liveLineTarget, type RingTarget } from "./modules/calls/ring-targets.ts";
 import type { ChatRepository } from "./modules/chat/chat.repository.ts";
 import { seatIn, type MessagesDeps } from "./modules/chats/chats-messages.service.ts";
 import { saveNote } from "./modules/chats/chats-notes.ts";
@@ -36,6 +37,53 @@ async function placeOf(messagesDeps: MessagesDeps, userId: string, conversationI
   };
 }
 
+/** Ending chat calls and their notes ("Missed call", "Call ended"). */
+function endingFor(wiring: {
+  calls: CallsDeps;
+  chatCalls: ChatCallsRepository;
+  targets: RingTarget;
+  notes: { chat: ChatRepository; live: MessagesDeps["live"] };
+  messagesDeps: MessagesDeps;
+}) {
+  const { calls, chatCalls, targets, notes, messagesDeps } = wiring;
+  const nameOf = async (userId: string) => (await messagesDeps.messages.person(userId))?.name ?? "";
+  const chatOf = (call: { conversationId: string | null; workspaceId: string }) => ({
+    id: call.conversationId ?? "",
+    workspaceId: call.workspaceId,
+  });
+  return createCallEndService({
+    calls,
+    chatCalls,
+    targets,
+    missed: async (call, callerId, forUserId) =>
+      saveNote(
+        notes,
+        chatOf(call),
+        { id: callerId, name: await nameOf(callerId) },
+        {
+          event: "call_missed",
+          callId: call.id,
+          forUserId,
+        },
+      ),
+    endedNote: async (call, seconds, people) => {
+      const starter = await chatCalls.starterOf(call.id);
+      const names = await Promise.all(people.map(nameOf));
+      await saveNote(
+        notes,
+        chatOf(call),
+        { id: starter?.userId ?? people[0] ?? "", name: starter?.name ?? "" },
+        {
+          event: "call_ended",
+          callId: call.id,
+          seconds,
+          names,
+        },
+      );
+    },
+  });
+}
+
 export function chatCallsFor(wiring: {
   db: Database;
   calls: CallsDeps;
@@ -46,11 +94,12 @@ export function chatCallsFor(wiring: {
   const chatCalls = createChatCallsRepository(db);
   const place = (userId: string, conversationId: string) => placeOf(messagesDeps, userId, conversationId);
   const notes = { chat, live: messagesDeps.live };
+  const targets = allTargets([liveLineTarget(messagesDeps.live)]);
   const rings = createRingService({
     calls,
     chatCalls,
     place,
-    targets: allTargets([liveLineTarget(messagesDeps.live)]),
+    targets,
     missed: (conversation, caller, callId, forUserId) =>
       saveNote(notes, conversation, caller, { event: "call_missed", callId, forUserId }),
     join: (userId, callId) => service.join(userId, callId),
@@ -62,5 +111,8 @@ export function chatCallsFor(wiring: {
     rang: (caller, call, made) => rings.sendRings(caller, call, made),
     note: (at, note) => saveNote(notes, at.conversation, { id: at.me.id, name: at.me.name }, note),
   });
-  return { chatCalls: service, rings };
+  const ending = endingFor({ calls, chatCalls, targets, notes, messagesDeps });
+  // The F02 webhook, jobs and clean-up tell chat calls what happened (meeting calls ignore it).
+  calls.chatCallHooks = ending;
+  return { chatCalls: service, rings, callEnd: ending };
 }

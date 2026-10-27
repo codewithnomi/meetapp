@@ -63,8 +63,13 @@ async function apply(deps: CallsDeps, event: WebhookEvent): Promise<void> {
   const identity = event.participant?.identity ?? "";
   const at = eventTime(event, deps.now());
   if (event.event === "participant_joined") await joinedRoom(deps, room, identity, at);
-  if (event.event === "participant_left") await leftRoom(deps, identity, at);
-  if (event.event === "room_finished" && UUID.test(room)) await deps.events.endCall(room, "last_left", at);
+  if (event.event === "participant_left") {
+    await leftRoom(deps, identity, at);
+    if (UUID.test(room)) await deps.chatCallHooks?.left(room);
+  }
+  if (event.event === "room_finished" && UUID.test(room) && (await deps.events.endCall(room, "last_left", at))) {
+    await deps.chatCallHooks?.ended(room);
+  }
   if (event.event === "track_published" && event.track?.source === TrackSource.SCREEN_SHARE) {
     await screenShared(deps, room, identity);
   }

@@ -33,7 +33,8 @@
 - **F15 T2 done** (2026-10-27): migration 0009_chat_calls (a call belongs to a meeting or a chat, one running call per chat, call_rings, ringtone settings; checks added NOT VALID then validated); meeting-only code refuses chat calls (`meetingIdOf`); 275 server + 60 database tests pass.
 - **F15 T3 done** (2026-10-27): start or join a chat call, one running call per chat, 20 people at most, equal rights, ring records and the "started a call" note; one-to-one chats with an unaccepted request can't call; 8 new tests, 100 meeting-call tests pass.
 - **F15 T4 done** (2026-10-27): ringing through ring targets (live line to every window, a window opened mid-ring gets it), accept (first wins), decline (one-to-one ends), cancel (starter only), missed notes; 10 new tests, 103 call and live-line tests pass.
-- **Next step:** F15 T5, timeouts and ending (`/next`).
+- **F15 T5 done** (2026-10-27): rings stop at 30 s (a job per call) or 35 s (every-minute sweep), a call nobody answered ends with "No answer", caller leaving first cancels the rings, one-to-one ends when either leaves, group when the last leaves, 30-hour end; "Call ended" note; 9 new tests.
+- **Next step:** F15 T6, Add people and the rate limit (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

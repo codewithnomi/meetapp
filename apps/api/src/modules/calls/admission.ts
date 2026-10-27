@@ -35,6 +35,16 @@ export interface CallsDeps {
   events: CallEventsRepository;
   /** Gives a new call its 30-hour jobs; set once the jobs run (server.ts), a no-op until then. */
   scheduler: { schedule: (call: Call) => Promise<void> };
+  /**
+   * F15: what chat calls do when someone leaves, a call ends, its 30 seconds of ringing pass, or the
+   * every-minute clean-up runs (set by the chat wiring; meeting calls ignore it).
+   */
+  chatCallHooks?: {
+    left: (callId: string) => Promise<void>;
+    ended: (callId: string) => Promise<void>;
+    ringTimeout: (callId: string) => Promise<void>;
+    sweep: () => Promise<void>;
+  };
   /** Where the app connects to the call server (config: callServerUrl). */
   serverUrl: string;
   now: () => Date;
