@@ -441,3 +441,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** when someone closes MeetApp (or their connection drops), colleagues see **Away** for a short wait (30 seconds), then **Offline**. The same rule applies to a normal close and a dropped connection, so a quick reconnect never shows Offline.
 - **Why:** the owner wants status to behave like Microsoft Teams, which shows Away before Offline.
 - **Cost:** none (already how F14 works).
+
+### D069: F14's second verification waits; F15 starts on top of F14 (process)
+- **Date:** 2026-10-27. **Status:** accepted (owner, 2026-10-27: busy with calls and screen sharing; "keep its testing for later").
+- **Decision:** F14's second verification (T-fix-9: full suite, desktop tests, screenshots) runs later, at a time the owner chooses, together with F15's. F15 is built on branch `feat/F15-calls`, started from `feat/F14-chats` (F15 needs F14's chats). F14 stays "in progress" until its verification passes; F14's Pull Request is opened first, F15's after it.
+- **Why:** the full check opens app windows and keeps the Mac busy for a long time, which would disturb the owner's work; documents and per-task tests don't.
+- **Cost:** none. Risk: a problem only the full check finds is found later; both features are checked before either is merged.

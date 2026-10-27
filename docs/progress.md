@@ -20,7 +20,8 @@
   - re-check 100-person smoothness on a busy Mac (D056).
 - **For later features:** F06/F10 must call `chatUpkeep.beforeMeetingDeleted` before deleting a meeting record (check it removes stored files: attachment rows cascade with the meeting); F10's workspace deletion must call `chatUpkeep.beforeWorkspaceDeleted`; F10's account deletion must call `chatUpkeep.forgetPerson`. F04: Windows spell-check dictionaries ship with the installer.
 - **Watch at F14's second verification:** TC-F14-21 once returned 429 instead of 403 (timing) and passed on rerun.
-- **Next step:** F14 T-fix-9, the second verification (`/next`; full suite, desktop tests, new screenshots after the owner looks at them).
+- **F14 second verification postponed (D069, owner 2026-10-27):** runs later together with F15's, when the owner is free (lid open or on power, `pnpm dev` closed).
+- **Next step:** F15 Calls from chat, requirements, on branch `feat/F15-calls` started from `feat/F14-chats` (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
