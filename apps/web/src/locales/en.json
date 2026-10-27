@@ -1182,6 +1182,12 @@
       "everyone": "Everyone in this chat is in the call.",
       "note": "To call someone who isn't in this chat, add them to the group first. A call holds up to 20 people.",
       "full": "This call has 20 people, the most it can hold."
+    },
+    "otherDevice": {
+      "label": "Call on another device",
+      "title": "You're in a call on another device",
+      "join": "Join on this device",
+      "transfer": "Transfer to this device"
     }
   }
 }

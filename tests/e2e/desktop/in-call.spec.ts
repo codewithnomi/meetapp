@@ -98,3 +98,30 @@ test("TC-F15-30 [AC-F15-13] Add people opens the panel: only chat members, nobod
   await panel.getByRole("button", { name: "Close Add people" }).click();
   await expect(panel).toHaveCount(0);
 });
+
+test("TC-F15-43 [AC-F15-33] a second window of the same person can Transfer or Join the running call", async () => {
+  const { olivia, mo } = await inCall();
+  const { member } = await team();
+  const mo2 = await windowFor(member);
+  windows.push(mo2);
+  const banner = mo2.page.getByRole("region", { name: "Call on another device" });
+  await expect(banner).toContainText("You're in a call on another device", { timeout: 25_000 });
+  await expect(banner.getByRole("button", { name: "Join on this device" })).toBeVisible();
+  await expect(banner.getByRole("button", { name: "Transfer to this device" })).toBeVisible();
+
+  // Transfer: the second window takes over, the first one is taken out of the call.
+  await banner.getByRole("button", { name: "Transfer to this device" }).click();
+  await expect(controls(mo2.page)).toBeVisible({ timeout: 25_000 });
+  await expect(mo2.page).toHaveURL(/\/call/);
+  await expect(controls(mo.page)).toHaveCount(0, { timeout: 25_000 });
+  await expect(controls(olivia.page)).toBeVisible();
+
+  // Join: a third window joins while the second stays; both are in the call.
+  const mo3 = await windowFor(member);
+  windows.push(mo3);
+  const again = mo3.page.getByRole("region", { name: "Call on another device" });
+  await expect(again).toBeVisible({ timeout: 25_000 });
+  await again.getByRole("button", { name: "Join on this device" }).click();
+  await expect(controls(mo3.page)).toBeVisible({ timeout: 25_000 });
+  await expect(controls(mo2.page)).toBeVisible();
+});

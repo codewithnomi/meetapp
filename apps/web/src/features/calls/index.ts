@@ -7,3 +7,4 @@ export { useChatCall, type CallPhase, type ChatCall } from "./chat-call.ts";
 export { useJoinCall, useStartCall, type CallTarget } from "./use-start-call.ts";
 export { CallNoteActionsProvider, useCallNoteActions, type CallNoteActions } from "./call-note-actions.tsx";
 export { IncomingCalls } from "./IncomingCalls.tsx";
+export { OtherDevice } from "./OtherDevice.tsx";

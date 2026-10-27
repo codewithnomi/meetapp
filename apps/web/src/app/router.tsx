@@ -12,7 +12,7 @@ import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from ".
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
-import { IncomingCalls } from "../features/calls/index.ts";
+import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
@@ -258,10 +258,16 @@ function SignedInScreens() {
   );
 }
 
-/** A call rings on every screen (AC-F15-05); accepting opens the call. */
+/** A call rings on every screen (AC-F15-05), and a call on another device shows (AC-F15-33). */
 function Ringing() {
   const navigate = useNavigate();
-  return <IncomingCalls onAccepted={() => void navigate("/call")} />;
+  const toCall = () => void navigate("/call");
+  return (
+    <>
+      <IncomingCalls onAccepted={toCall} />
+      <OtherDevice onEntered={toCall} />
+    </>
+  );
 }
 
 function SignedInRoutes() {
