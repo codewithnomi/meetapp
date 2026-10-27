@@ -61,5 +61,13 @@ export function createCallRingsRepository(executor: Executor) {
         .set({ state: "accepted", answeredAt: at })
         .where(and(eq(callRings.callId, callId), eq(callRings.userId, userId), eq(callRings.state, "ringing")))
         .returning(),
+    /** People still being rung in this call. */
+    ringingIn: async (callId: string) =>
+      (
+        await executor
+          .select({ userId: callRings.userId })
+          .from(callRings)
+          .where(and(eq(callRings.callId, callId), eq(callRings.state, "ringing")))
+      ).map((row) => row.userId),
   };
 }

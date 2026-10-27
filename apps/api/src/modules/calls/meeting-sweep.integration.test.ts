@@ -36,6 +36,9 @@ const PAYLOAD = {
   optionIds: ["00000000-0000-4000-8000-000000000003"],
   body: { v: 1, blocks: [{ type: "paragraph", content: [{ type: "text", text: "Hijacked" }] }] },
   locked: true,
+  // F15: chat calls' Add people and start.
+  userIds: ["00000000-0000-4000-8000-000000000004"],
+  media: "video",
 };
 
 let t: AuthTestApp;

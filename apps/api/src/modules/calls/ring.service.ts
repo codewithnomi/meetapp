@@ -8,6 +8,7 @@ import { notFound, type CallsDeps } from "./admission.ts";
 import type { ChatCallsRepository } from "./chat-calls.repository.ts";
 import type { ChatCallsService, ChatPlace } from "./chat-calls.service.ts";
 import type { RingTarget } from "./ring-targets.ts";
+import { addPeople } from "./add-people.service.ts";
 
 export interface RingDeps {
   calls: CallsDeps;
@@ -113,13 +114,17 @@ async function ringingFor(deps: RingDeps, userId: string): Promise<RingMessage[]
 }
 
 export function createRingService(deps: RingDeps) {
-  return {
+  const service = {
     accept: (userId: string, callId: string) => accept(deps, userId, callId),
     decline: (userId: string, callId: string) => decline(deps, userId, callId),
     cancel: (userId: string, callId: string) => cancel(deps, userId, callId),
     sendRings: (caller: ChatPlace, call: Call, rings: CallRing[]) => sendRings(deps, caller, call, rings),
     ringingFor: (userId: string) => ringingFor(deps, userId),
+    /** Add people (add-people.service.ts). */
+    addPeople: (userId: string, callId: string, userIds: string[]) =>
+      addPeople(deps, service, { userId, callId, userIds }),
   };
+  return service;
 }
 
 export type RingService = ReturnType<typeof createRingService>;

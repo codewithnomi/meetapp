@@ -7,6 +7,7 @@ import { CHAT_CALL_LIMITS, type CallMedia } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
 import { CALL_LIMIT_MS, notFound, type CallsDeps } from "./admission.ts";
+import { takeCallUnits } from "./call-rate.ts";
 import { insertAttendance } from "./attendances.repository.ts";
 import {
   peopleCount,
@@ -120,6 +121,7 @@ async function answer(
 /** Starts the chat's call, or joins the running one without ringing anyone again (AC-F15-01, 03, 26). */
 async function start(deps: ChatCallsDeps, userId: string, conversationId: string, media: CallMedia) {
   const place = await deps.place(userId, conversationId);
+  await takeCallUnits(deps.calls.limiter, userId, 1);
   const entry = await deps.chatCalls.locked(conversationId, async (tx) => {
     const running = await runningChatCall(tx, conversationId);
     const call =

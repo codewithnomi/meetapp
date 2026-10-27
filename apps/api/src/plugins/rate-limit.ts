@@ -46,6 +46,8 @@ export const RATE_RULES = {
   callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
   // F03: 10 chat messages in 10 seconds per person (AC-F03-06); reactions and votes have their own limit.
   chatMessages: { name: "chat-messages", limit: 10, windowSeconds: 10 },
+  // F15: calls started plus people rung by Add people, 10 a minute per person (AC-F15-22).
+  chatCalls: { name: "chat-calls", limit: 10, windowSeconds: 60 },
   chatReactions: { name: "chat-reactions", limit: 30, windowSeconds: 60 },
   // 10 file uploads a minute per person, sent or not (AC-F03-34).
   chatUploads: { name: "chat-uploads", limit: 10, windowSeconds: 60 },
