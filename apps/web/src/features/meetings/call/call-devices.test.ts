@@ -1,7 +1,7 @@
 // Devices during the call (AC-F02-09, 28, 30, 31).
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PREFS, loadPrefs } from "../device-prefs.ts";
+import { DEFAULT_PREFS, loadPrefs } from "../../devices/index.ts";
 import { deviceActions, useDeviceChanges, useOwnLineWeak, useSentMicrophone, type DeviceGone } from "./call-devices.ts";
 import { FakeRoom } from "./test-support/fake-room.ts";
 

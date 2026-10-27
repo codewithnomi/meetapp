@@ -35,12 +35,10 @@ import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
 import { WorkspaceSettingsPage } from "../pages/WorkspaceSettingsPage/index.ts";
 import { PreJoinPage } from "../pages/PreJoinPage/index.ts";
-import { PrivacyPage } from "../pages/PrivacyPage/index.ts";
-import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
-import { SettingsPage } from "../pages/SettingsPage/index.ts";
 import { SignInPage } from "../pages/SignInPage/index.ts";
 import { TermsPage } from "../pages/TermsPage/index.ts";
+import { settingsRoutes } from "./settings-routes.tsx";
 
 /** After a screen change, keyboard and screen-reader users land on the new screen's title. */
 function useFocusOnScreenChange(): void {
@@ -250,9 +248,7 @@ function SignedInScreens() {
       />
       <Route path="/workspace-settings" element={<WorkspaceSettingsPage onNavigate={go} />} />
       <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
-      <Route path="/settings" element={<ProfilePage onNavigate={settings} onBack={home} />} />
-      <Route path="/settings/appearance" element={<SettingsPage onNavigate={settings} onBack={home} />} />
-      <Route path="/settings/privacy" element={<PrivacyPage onNavigate={settings} onBack={home} />} />
+      {settingsRoutes(settings, home)}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

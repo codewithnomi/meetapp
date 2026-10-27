@@ -47,3 +47,7 @@ export function activeCalls(): Promise<ActiveCalls> {
 export function transferCall(callId: string, fromAttendanceId: string): Promise<Joined> {
   return apiRequest(`/api/v1/calls/${callId}/transfer`, { method: "POST", body: { fromAttendanceId } });
 }
+
+export function saveRingSettings(change: { ringtone?: number; ringVolume?: number }): Promise<undefined> {
+  return apiRequest("/api/v1/me/settings", { method: "PATCH", body: change });
+}

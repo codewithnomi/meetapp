@@ -6,7 +6,7 @@
 import { Room, RoomEvent, Track, type DisconnectReason, type Participant, type RemoteTrack } from "livekit-client";
 import { useEffect, useMemo, useState } from "react";
 import type { ChatEvent } from "@meetapp/contracts";
-import type { DevicePrefs } from "../device-prefs.ts";
+import type { DevicePrefs } from "../../devices/index.ts";
 import type { Joined } from "../visit.ts";
 import { inOrder, personOf } from "./people.ts";
 import { REACTION_TOPIC, createGate, decodeReaction, encodeReaction, type Reaction } from "./reactions.ts";

@@ -1,8 +1,8 @@
 // The pre-join's devices (AC-F02-09, 10): the remembered choices, the camera and microphone opened from
 // them, the microphone level, and the device lists. Every change is remembered at once.
 import { useState } from "react";
-import { loadPrefs, savePrefs, type DevicePrefs } from "./device-prefs.ts";
-import { useDeviceLists, useLocalDevice, useMicLevel } from "./local-media.ts";
+import { loadPrefs, savePrefs, type DevicePrefs } from "../devices/index.ts";
+import { useDeviceLists, useLocalDevice, useMicLevel } from "../devices/index.ts";
 
 export function usePreJoinDevices() {
   const [prefs, setPrefs] = useState<DevicePrefs>(() => loadPrefs());

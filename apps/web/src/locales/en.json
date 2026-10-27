@@ -46,6 +46,8 @@
       "label": "Settings",
       "profile": "Profile and account",
       "appearance": "Appearance",
+      "devices": "Devices",
+      "calls": "Calls",
       "privacy": "Privacy"
     },
     "privacy": {
@@ -55,6 +57,39 @@
       "blockedTitle": "Blocked people",
       "blockedNone": "You haven't blocked anyone.",
       "unblock": "Unblock {{name}}"
+    },
+    "devices": {
+      "title": "Devices",
+      "intro": "Used for every call and meeting on this computer.",
+      "you": "You",
+      "previewNote": "Preview · only you see this",
+      "missing": {
+        "camera": "Your chosen camera isn't connected. The computer's default camera is used.",
+        "microphone": "Your chosen microphone isn't connected. The computer's default microphone is used.",
+        "speakers": "Your chosen speaker isn't connected. The computer's default speaker is used."
+      }
+    },
+    "calls": {
+      "title": "Calls",
+      "intro": "Your ringtone follows you to every computer.",
+      "ringtone": "Ringtone",
+      "volume": "Ringtone volume",
+      "play": "Play {{name}}",
+      "loading": "Loading your ringtone…",
+      "tones": {
+        "bright": "Bright",
+        "chime": "Chime",
+        "pulse": "Pulse",
+        "classic": "Classic",
+        "gentle": "Gentle"
+      },
+      "hints": {
+        "bright": "Clear and short, the default",
+        "chime": "Soft bells",
+        "pulse": "Low and steady",
+        "classic": "A familiar phone ring",
+        "gentle": "Quiet, for shared rooms"
+      }
     }
   },
   "auth": {
