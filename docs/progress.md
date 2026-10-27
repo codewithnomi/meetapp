@@ -40,7 +40,8 @@
 - **F15 T9 done** (2026-10-27): leaving or removal from a chat, its workspace or the account takes the person out of its call within 2 seconds and stops their rings (the caller's too); outsider sweep, pass rules, logs, blocks, data cascade and export, and the call server's reports reaching the ending rules all tested (12 tests); 343 call, chat and workspace tests pass. The limit tests now start in a fresh minute (they could fail across a minute boundary).
 - **F15 T10 done** (2026-10-27): "my running calls" and Transfer to this device (the old seat leaves only once the new one connects; never connects → nothing changes), no database change; 4 new tests, 121 call tests pass.
 - **F15 T11 done** (2026-10-27): ringtone (1–5, default 1) and volume (0–100, default 70) in `/me/settings` next to read receipts; bad values and unknown fields refused. **F15 server side complete (T1–T11).**
-- **Next step:** F15 T12, the UI pieces (incoming call, calling screen, call notes, background and ringtone pickers) (`/next`).
+- **F15 T12 done** (2026-10-27): IncomingCall, CallingScreen, CallNote, BackgroundPicker (radio group), RingtonePicker with stories and tests in the gallery; 5 generated ringtones (D074). Screenshots (TC-F15-55) are made at verification, after the owner looks.
+- **Next step:** F15 T13, calling from a chat (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

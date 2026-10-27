@@ -62,6 +62,7 @@ import {
   Underline,
   Upload,
   type LucideIcon,
+  PhoneMissed,
 } from "lucide-react";
 
 export const ICONS = {
@@ -129,6 +130,8 @@ export const ICONS = {
   phone: Phone,
   mail: Mail,
   muted: BellOff,
+  // F15 calls from chats: a missed call note.
+  "phone-missed": PhoneMissed,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

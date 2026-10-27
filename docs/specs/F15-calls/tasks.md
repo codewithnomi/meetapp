@@ -25,7 +25,7 @@ Per step: only that step's tests plus typecheck and lint (D052); everything else
 - [x] **T11: Ringtone settings.** `GET/PATCH /me/settings` gains `ringtone` (1–5) and `ringVolume` (0–100). Covers: AC-F15-32. Tests: TC-F15-52.
 
 ### Screens
-- [ ] **T12: UI pieces.** `IncomingCall` (organism), `CallingScreen` (template), `CallNote`, `BackgroundPicker`, `RingtonePicker` (molecules) with stories and tests, matching the approved canvas; tone patterns (Web Audio, D074). Covers: AC-F15-15, 17, 32. Tests: TC-F15-36, 53, 55.
+- [x] **T12: UI pieces.** `IncomingCall` (organism), `CallingScreen` (template), `CallNote`, `BackgroundPicker`, `RingtonePicker` (molecules) with stories and tests, matching the approved canvas; tone patterns (Web Audio, D074). Covers: AC-F15-15, 17, 32. Tests: TC-F15-36, 53, 55.
 - [ ] **T13: Calling from a chat.** Call buttons (disabled with a reason), the Calling screen and its outcomes, Join in the header and the note, loading and error states, missing camera or microphone, backend unreachable. Covers: AC-F15-01–03, 18, 19, 27. Tests: TC-F15-02, 04, 06, 23, 57, 60, 61.
 - [ ] **T14: Being called (milestone: two windows can call each other).** The app-wide incoming call on every window, the chosen ringtone and volume, accept with video or audio, a second window, called during a call or meeting (quiet tone, "Leave current call and accept"), no window open → missed later. Covers: AC-F15-05, 06, 10, 11, 32. Tests: TC-F15-09, 11, 12, 14, 24, 25, 26, 54.
 - [ ] **T15: In the call.** F02's call screen for chat calls with equal rights, the **Add people** panel (20 limit) and the **Chat** panel showing the chat. Covers: AC-F15-12, 13. Tests: TC-F15-28, 30; and TC-F15-27's raised hand.

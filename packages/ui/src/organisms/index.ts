@@ -17,3 +17,4 @@ export * from "./PollCreator/index.ts";
 export * from "./SharePicker/index.ts";
 export * from "./VideoTile/index.ts";
 export * from "./WorkspaceSwitcher/index.ts";
+export * from "./IncomingCall/index.ts";
