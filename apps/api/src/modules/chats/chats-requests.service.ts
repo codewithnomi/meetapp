@@ -25,6 +25,14 @@ export interface RequestsDeps {
   requests: ChatsRequestsRepository;
   limiter: RateLimiter;
   now: () => Date;
+  /**
+   * F15: people who leave a chat (or are removed, or delete their account) leave its running call and
+   * stop ringing (AC-F15-25). Filled in by the wiring once calls exist; does nothing until then.
+   */
+  calls: {
+    leftChat: (conversationId: string, userId: string) => Promise<void>;
+    forgetPerson: (userId: string) => Promise<void>;
+  };
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -184,7 +192,10 @@ export function createChatsRequestsService(deps: RequestsDeps) {
       await deps.requests.unblock(userId, targetId);
     },
     /** Account deletion's chats step (AC-F14-33); F03's `chatUpkeep.forgetPerson` removes the messages. */
-    forgetPerson: (userId: string) => deps.requests.forgetPerson(userId),
+    forgetPerson: async (userId: string) => {
+      await deps.calls.forgetPerson(userId);
+      await deps.requests.forgetPerson(userId);
+    },
     blocked: async (userId: string) => ({
       people: (await deps.requests.blockedBy(userId)).map((p) => ({
         userId: p.userId,

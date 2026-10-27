@@ -5,6 +5,7 @@ import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createChatCallsRepository, type ChatCallsRepository } from "./modules/calls/chat-calls.repository.ts";
 import { createChatCallsService, type ChatPlace } from "./modules/calls/chat-calls.service.ts";
 import { createCallEndService } from "./modules/calls/call-end.service.ts";
+import { createCallRemovalService } from "./modules/calls/call-removal.service.ts";
 import { createRingService } from "./modules/calls/ring.service.ts";
 import { allTargets, liveLineTarget, type RingTarget } from "./modules/calls/ring-targets.ts";
 import type { ChatRepository } from "./modules/chat/chat.repository.ts";
@@ -114,5 +115,6 @@ export function chatCallsFor(wiring: {
   const ending = endingFor({ calls, chatCalls, targets, notes, messagesDeps });
   // The F02 webhook, jobs and clean-up tell chat calls what happened (meeting calls ignore it).
   calls.chatCallHooks = ending;
-  return { chatCalls: service, rings, callEnd: ending };
+  const removal = createCallRemovalService({ calls, chatCalls, targets, left: (callId) => ending.left(callId) });
+  return { chatCalls: service, rings, callEnd: ending, removal };
 }

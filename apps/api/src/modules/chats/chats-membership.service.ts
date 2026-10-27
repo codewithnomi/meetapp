@@ -15,6 +15,7 @@ async function forgetMembership(deps: GroupsDeps, workspaceId: string, userId: s
     const others = people.filter((p) => p.userId !== userId && p.state === "accepted").map((p) => p.userId);
     await deps.live.list(others, conversation.id, "changed");
     await deps.live.list([userId], conversation.id, "removed");
+    await deps.calls.leftChat(conversation.id, userId);
     if (conversation.kind === "group" && others.length === 0) await deps.groups.markDeleted(conversation.id);
   }
   // Their line, and their former colleagues' lines, re-read whose status they may see (AC-F14-26).

@@ -1,6 +1,7 @@
 // Puts the meeting pieces together (F02): making and finding meetings, joining, the lobby, controls in a
 // call, the call server's reports, the record and the call jobs. Used through accounts.ts, so server.ts
 // and the integration tests run the same wiring.
+import type { RequestsDeps } from "./modules/chats/chats-requests.service.ts";
 import { hkdfSync } from "node:crypto";
 import type { Database } from "@meetapp/db";
 import { callServerUrl, type Config } from "./config/config.ts";
@@ -98,6 +99,8 @@ function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter"
     limiter: calls.limiter,
     now: calls.now,
     live: createLivePublisher(redis),
+    // F15: replaced below once calls from chats are wired (AC-F15-25).
+    calls: { leftChat: () => Promise.resolve(), forgetPerson: () => Promise.resolve() } as RequestsDeps["calls"],
   };
   const presence = createPresenceStore(redis);
   const status = createChatsStatusService({ ...requestsDeps, presence });
@@ -121,6 +124,8 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
     chatDeps,
   });
   const callPieces = chatCallsFor({ db: wiring.db, calls, chat: chatDeps.chat, messagesDeps });
+  requestsDeps.calls.leftChat = callPieces.removal.leftChat;
+  requestsDeps.calls.forgetPerson = callPieces.removal.forgetPerson;
   return {
     /** Calls from chats (F15). */
     ...callPieces,

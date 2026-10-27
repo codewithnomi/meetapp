@@ -1,8 +1,8 @@
 // Calls from chats: database access only (F15 design.md 3.1–3.3, D072). Starting and joining run inside
 // `locked`, which holds the chat's row, so two starts at the same moment make one call (AC-F15-26) and
 // the 20-person limit holds under any timing (AC-F15-14).
-import { callAttendances, calls, conversations, type Call, type Executor } from "@meetapp/db";
-import { and, asc, countDistinct, eq, inArray, isNotNull, isNull } from "drizzle-orm";
+import { callAttendances, callRings, calls, conversations, type Call, type Executor } from "@meetapp/db";
+import { and, asc, countDistinct, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
 import type { CallMedia } from "@meetapp/contracts";
 import { createCallRingsRepository } from "./call-rings.repository.ts";
@@ -68,6 +68,27 @@ function locked<T>(executor: Executor, conversationId: string, work: (tx: Execut
   });
 }
 
+async function runningCallsOf(executor: Executor, userId: string): Promise<Call[]> {
+  const seated = executor
+    .select({ id: callAttendances.callId })
+    .from(callAttendances)
+    .where(and(eq(callAttendances.userId, userId), inArray(callAttendances.status, [...IN_CALL_STATUSES])));
+  const rung = executor
+    .select({ id: callRings.callId })
+    .from(callRings)
+    .where(and(eq(callRings.userId, userId), eq(callRings.state, "ringing")));
+  return executor
+    .select()
+    .from(calls)
+    .where(
+      and(
+        isNotNull(calls.conversationId),
+        isNull(calls.endedAt),
+        or(inArray(calls.id, seated), inArray(calls.id, rung)),
+      ),
+    );
+}
+
 export function createChatCallsRepository(executor: Executor) {
   return {
     reader: executor,
@@ -89,6 +110,8 @@ export function createChatCallsRepository(executor: Executor) {
           .where(and(eq(callAttendances.callId, callId), isNotNull(callAttendances.joinedAt)))
       ).flatMap((row) => (row.userId ? [row.userId] : [])),
     peopleIn: (callId: string) => peopleIn(executor, callId),
+    /** Running chat calls the person has a seat in or is being rung for (account deletion). */
+    runningCallsOf: (userId: string) => runningCallsOf(executor, userId),
     conversationKind: async (conversationId: string) => {
       const [row] = await executor
         .select({ kind: conversations.kind })

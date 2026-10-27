@@ -96,6 +96,7 @@ async function remove(deps: GroupsDeps, userId: string, conversationId: string, 
   await saveNote(deps, conversation, me, { event: "removed", names: [target.name] });
   await deps.groups.stop(conversationId, targetId, "removed", await deps.chat.lastSeq(conversationId));
   await deps.live.list([targetId], conversationId, "removed");
+  await deps.calls.leftChat(conversationId, targetId);
 }
 
 async function leave(deps: GroupsDeps, userId: string, conversationId: string) {
@@ -104,6 +105,7 @@ async function leave(deps: GroupsDeps, userId: string, conversationId: string) {
   // They read up to and including their own "left" note.
   await deps.groups.stop(conversationId, userId, "left", await deps.chat.lastSeq(conversationId));
   await deps.live.list([userId], conversationId, "removed");
+  await deps.calls.leftChat(conversationId, userId);
   if ((await deps.groups.accepted(conversationId)) === 0) await deps.groups.markDeleted(conversationId);
 }
 

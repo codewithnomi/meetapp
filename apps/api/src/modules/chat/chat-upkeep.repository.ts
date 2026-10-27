@@ -2,6 +2,7 @@
 // account's chat (AC-F03-44), and a person's chat for a data request. Database access only.
 import {
   callAttendances,
+  callRings,
   chatAttachments,
   chatEvents,
   conversationMembers,
@@ -12,7 +13,7 @@ import {
   type Database,
   type Executor,
 } from "@meetapp/db";
-import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 
 const DELETED_USER = "Deleted user";
 /** Rows filled per step, so one fill never holds a long lock (design 4, "order of the change"). */
@@ -79,7 +80,25 @@ async function exportFor(db: Database, userId: string) {
     })
     .from(chatAttachments)
     .where(and(uploadedBy(userId, joins), eq(chatAttachments.status, "ready")));
-  return { messages, files };
+  return { messages, files, calls: await callsOf(db, userId) };
+}
+
+/** F15: the person's calls from chats (when they joined and left) and the rings they got (AC-F15-28). */
+async function callsOf(db: Database, userId: string) {
+  const seats = await db
+    .select({
+      callId: callAttendances.callId,
+      conversationId: callAttendances.conversationId,
+      joinedAt: callAttendances.joinedAt,
+      leftAt: callAttendances.leftAt,
+    })
+    .from(callAttendances)
+    .where(and(eq(callAttendances.userId, userId), isNotNull(callAttendances.conversationId)));
+  const rings = await db
+    .select({ callId: callRings.callId, state: callRings.state, rangAt: callRings.rangAt })
+    .from(callRings)
+    .where(eq(callRings.userId, userId));
+  return { seats, rings };
 }
 
 /** A deleted account's chat: text and files go, the name becomes "Deleted user" (AC-F03-44). */

@@ -95,6 +95,15 @@ const ringsOf = (callId: string, userId: string) =>
     .where(eq(callRings.callId, callId))
     .then((rows) => rows.filter((r) => r.userId === userId));
 
+/**
+ * The limit counts in fixed one-minute blocks: start the counted part with at least 15 seconds of the
+ * block left, so the tries can't fall into two blocks (which would rightly allow more).
+ */
+async function freshMinute() {
+  const left = 60_000 - (Date.now() % 60_000);
+  if (left < 15_000) await new Promise((resolve) => setTimeout(resolve, left + 50));
+}
+
 describe("add people to a chat call", { timeout: 120_000 }, () => {
   it("TC-F15-29 [AC-F15-13] a person in the call rings members who aren't in it; others are refused", async () => {
     const { people, workspaceId } = await team("a29", 4);
@@ -135,8 +144,10 @@ describe("calls rate limit", { timeout: 180_000 }, () => {
   it("TC-F15-66 [AC-F15-22] 10 a minute per person; an over-limit request is refused whole", async () => {
     const { people, workspaceId } = await team("a66", 13);
     const [m1, ...rest] = people as [Person, ...Person[]];
-    for (const partner of rest.slice(0, 10)) await startCall(m1, await chatOf(m1, workspaceId, [partner]));
-    const eleventhChat = await chatOf(m1, workspaceId, [rest[10] as Person]);
+    const chats = await Promise.all(rest.slice(0, 11).map((partner) => chatOf(m1, workspaceId, [partner])));
+    await freshMinute();
+    for (const chat of chats.slice(0, 10)) await startCall(m1, chat);
+    const eleventhChat = chats[10] as string;
     const eleventh = await start(m1, eleventhChat);
     expect(eleventh.statusCode).toBe(429);
     expect(errorCode(eleventh)).toBe("CALL_RATE");
@@ -159,6 +170,7 @@ describe("calls rate limit", { timeout: 180_000 }, () => {
     const { people, workspaceId } = await team("a66b", 15);
     const [m1, m2, m3] = people as [Person, Person, Person];
     const id = await chatOf(m1, workspaceId, [m2, m3]);
+    await freshMinute();
     const callId = await startCall(m1, id); // 1 unit
     const later = people.slice(3);
     await t.database.db
