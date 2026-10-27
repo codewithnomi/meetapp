@@ -80,7 +80,7 @@ describe("canOpenExternally", () => {
 
 describe("contentSecurityPolicy", () => {
   const PRODUCTION =
-    "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000; " +
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000; " +
     "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
   it("TC-F00-61 [AC-F00-24] production string equals the design exactly", () => {
@@ -91,7 +91,7 @@ describe("contentSecurityPolicy", () => {
     const parts = contentSecurityPolicy({ apiUrl: API, devServerUrl: DEV }).split("; ");
     expect(parts).toContain("connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 ws://127.0.0.1:5173");
     expect(parts).toContain("style-src 'self' 'unsafe-inline'");
-    expect(parts).toContain(`script-src 'self' 'nonce-${DEV_CSP_NONCE}'`);
+    expect(parts).toContain(`script-src 'self' 'wasm-unsafe-eval' 'nonce-${DEV_CSP_NONCE}'`);
   });
 
   it("TC-F02-113 [AC-F02-54] the call server is allowed in connect-src, and nothing else is added", () => {
@@ -106,15 +106,16 @@ describe("contentSecurityPolicy", () => {
     expect(contentSecurityPolicy({ apiUrl: API, callServerUrl: "not a url" })).toBe(PRODUCTION);
   });
 
-  it("TC-F00-61 [AC-F00-24] never allows unsafe-inline or eval for scripts", () => {
+  it("TC-F00-61 [AC-F00-24] never allows unsafe-inline or eval for scripts (only WebAssembly, D073)", () => {
     for (const dev of [undefined, DEV]) {
       const csp = contentSecurityPolicy({ apiUrl: API, devServerUrl: dev });
       const script = csp.split("; ").find((p) => p.startsWith("script-src"));
       expect(script).not.toContain("unsafe-inline");
-      expect(csp).not.toContain("unsafe-eval");
+      // 'wasm-unsafe-eval' lets the app's own WebAssembly run; JavaScript eval stays blocked.
+      expect(csp.replaceAll("'wasm-unsafe-eval'", "")).not.toContain("unsafe-eval");
     }
     const production = contentSecurityPolicy({ apiUrl: API }).split("; ");
-    expect(production).toContain("script-src 'self'");
+    expect(production).toContain("script-src 'self' 'wasm-unsafe-eval'");
   });
 
   it("the development nonce is the same one the screens' dev server uses", () => {

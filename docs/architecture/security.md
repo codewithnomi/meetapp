@@ -33,7 +33,7 @@ Every feature's requirements must include a "Security & privacy" section.
 - S16. Only the minimum necessary data is sent to AI services.
 
 ## Desktop app (Electron)
-- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only).
+- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only). Scripts load only from the app; JavaScript `eval` is never allowed. Only the app's own WebAssembly may run (`'wasm-unsafe-eval'`, F15 D073, owner 2026-10-27: the background tool's engine, shipped with the app).
 - S18. Auto-updates are signed and verified.
 
 ## Code & dependencies
