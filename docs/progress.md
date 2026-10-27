@@ -25,7 +25,8 @@
 - **F15 requirements approved** (2026-10-27, 32 ACs incl. device settings with preview, backgrounds and ringtones; D070, D071 accepted).
 - **F15 screen designs drawn** (2026-10-27): 4 screens on the canvas, row "Calls from chat (F15)": incoming call and chat notes, calling (ringing, declined, no answer), group call with Add people and the chat, Settings (devices with preview and backgrounds, ringtones).
 - **F15 screen designs approved** (2026-10-27; the incoming call's answer buttons made round in one row, as in Teams).
-- **Next step:** F15 design (`/spec-design F15`).
+- **F15 design drafted** (2026-10-27, `docs/specs/F15-calls/design.md`), reviewed by spec-reviewer and fixed; D072 (calls belong to a meeting or a chat), D073 (background tool), D074 (generated ringtones) proposed.
+- **Next step:** owner approves the F15 design, then tests and tasks (`/spec-tasks F15`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

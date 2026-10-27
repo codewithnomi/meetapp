@@ -39,7 +39,7 @@ meetapp/
 │   │   └── src/
 │   │       ├── app/               Routing, providers (theme, query, i18n), error boundary
 │   │       ├── pages/             One folder per screen: MeetingPage/, HomePage/ …
-│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02), meetings/chat/ (F03: chat data and state; its screen parts are in pages/MeetingPage/Chat*.tsx and chat-*.ts); chats/ (F14: the live line, chat list, conversation, typing and the folding menu; its screen is pages/ChatsPage); later ask-ai/. Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
+│   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02), meetings/chat/ (F03: chat data and state; its screen parts are in pages/MeetingPage/Chat*.tsx and chat-*.ts); chats/ (F14: the live line, chat list, conversation, typing and the folding menu; its screen is pages/ChatsPage); calls/ (F15: calls from chats, ringing, ringtones, call notes); devices/ (device choices and backgrounds for calls and meetings, F02/F15); later ask-ai/. `apps/web/public/backgrounds/` holds the background pictures and the background tool's model files (F15). Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
 │   │       │   └── meetings/      API hooks (useCreateMeeting, useJoinMeeting…), the visit store (visit.ts), devices, pre-join; call/ holds the call itself (useMeetingRoom with livekit-client, people, reactions, sharing, shortcuts)
 │   │       └── locales/           Translation files: en.json …
 │   │
