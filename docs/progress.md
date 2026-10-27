@@ -6,8 +6,8 @@
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
 - **Done and merged:** F00 Foundation (PR #3), F01 Accounts & workspaces (PR #8), F02 Meetings & calling (PR #11), F03 In-meeting chat (PR #15).
-- **Now:** **F14 Chats** on branch `feat/F14-chats`. All 19 build steps done; first verification **FAIL** (2026-10-23, `docs/specs/F14-chats/verification.md`). Fix tasks T-fix-1 to T-fix-7 done (2026-10-23 to 2026-10-26); T-fix-8 decided (D068: Away, then Offline, as in Teams); left: **T-fix-9** (second verification).
-- **After F14:** F15 Calls from chat, then F04 (product direction D062: a complete Teams-style app).
+- **Now:** **F14 Chats + F15 Calls from chat** on branch `feat/F15-calls` (F14 included, D069). F15: all 20 steps built; first verification **FAIL** (2026-10-28, `docs/specs/F15-calls/verification.md`): fix tasks T-fix-1 to T-fix-9 in F15 tasks.md. F14 still has T-fix-9 (its second verification), run together with F15's.
+- **After F14 and F15:** F04 (product direction D062: a complete Teams-style app).
 - **Design system (D029, approved):** https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Process (owner, 2026-10-13, D052):** while building, run only each task's own tests and checks; the full suite, desktop tests and screenshots run once, at verification. Run long tests with the Mac's lid open or on power (it sleeps on battery).
 - **Before going online (D051 and the verifications):**
@@ -22,7 +22,7 @@
 - **Watch at F14's second verification:** TC-F14-21 once returned 429 instead of 403 (timing) and passed on rerun.
 - **F14 second verification postponed (D069, owner 2026-10-27):** runs later together with F15's, when the owner is free (lid open or on power, `pnpm dev` closed).
 - **F15 requirements drafted** (2026-10-27, branch `feat/F15-calls` from `feat/F14-chats`): 28 ACs, reviewed by spec-reviewer and fixed; D070 (one status "In a call"), D071 (chat calls follow Teams) proposed with it.
-- **F15 requirements approved** (2026-10-27, 32 ACs incl. device settings with preview, backgrounds and ringtones; D070, D071 accepted).
+- **F15 requirements approved** (2026-10-27, 34 ACs incl. device settings with preview, backgrounds and ringtones; D070, D071 accepted).
 - **F15 screen designs drawn** (2026-10-27): 4 screens on the canvas, row "Calls from chat (F15)": incoming call and chat notes, calling (ringing, declined, no answer), group call with Add people and the chat, Settings (devices with preview and backgrounds, ringtones).
 - **F15 screen designs approved** (2026-10-27; the incoming call's answer buttons made round in one row, as in Teams).
 - **F15 design drafted** (2026-10-27, `docs/specs/F15-calls/design.md`), reviewed by spec-reviewer and fixed; D072 (calls belong to a meeting or a chat), D073 (background tool), D074 (generated ringtones) proposed.
@@ -49,7 +49,8 @@
 - **F15 T18 done** (2026-10-27, milestone): backgrounds None, Blur and 8 pictures (drawn for MeetApp) in Settings → Devices, pre-join and the in-call panel; made on the computer (engine and model inside the app); turns itself off under 15 fps for 5 s. Owner allowed the app's own WebAssembly in the desktop security policy (`'wasm-unsafe-eval'`, D073, security S17). 433 web + 15 desktop security tests pass; desktop and speed tests written for verification.
 - **F15 T19 done** (2026-10-27): incoming call: Escape declines, focus returns where it was; text check covers the new folders; docs updated (overview, security S5, operations, calls runbook, desktop README). Keyboard and axe desktop test written for verification. Left: T20 (load test, runs with verification).
 - **F15 T20 done** (2026-10-27): load tests written (20-person chat call with the 21st refused; 250 people, 20 groups calling at once: rings under 2 s, accepts under 3 s); they run with verification. **All 20 F15 steps done. Next: verification of F14 and F15 together (D069), when the owner is free: Mac on power with the lid open, `pnpm dev` closed, about 1 hour.**
-- **Next step:** F15 T14, being called (milestone: two windows can call each other) (`/next`).
+- **F15 first verification FAIL** (2026-10-28): unit + integration 2213 pass (coverage ≥ 80%); call speed met (rings 574 ms, accept 101 ms); code-structure check red (7); 3 bugs (stuck on Calling when a call runs; failed Accept; background fallback too eager); accessibility of the incoming call; 59 desktop failures from the sign-up limit, 14 real; 120 new screenshots to look at; docs behind. T-fix-1 to T-fix-9.
+- **Next step:** F15 T-fix-1 (code-structure check), then the other fixes, then the joint second verification.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
@@ -163,7 +164,7 @@
 - **F14 T-fix-4 done (2026-10-26):** loading spinners and "Couldn't load this" + Retry on the chat list, Chat requests, conversation and Group details; failed actions shown; read marks retried; Start once; invite errors; h2 panes; translated side-menu count. 121 app + 8 UI tests pass.
 - **F14 T-fix-5 done (2026-10-26):** read marks by news number (clamped, exact message time); no "Seen" from pending invitees; editing cleans mentions; also fixed: the daily news clean-up never removed one-to-one/group chat news (it matched by meeting) and now keeps each chat's newest. 181 chat tests pass. Note: TC-F14-21 failed once with 429 instead of 403 (timing), passed on rerun; watch at verification.
 - **F14 T-fix-6 done (2026-10-26):** tests for paging (120 messages, 50 at a time, no gaps or repeats, history limit) and workspace deletion (chats kept 400 days; a deleted workspace takes its chats, messages and files; others stay). Found and fixed: a deleted workspace's chat files would stay in storage (new `chatUpkeep.beforeWorkspaceDeleted`). Tests for the live line hooks and the Chat screen; `features/**` branch coverage 82.6% (was 77.9%). 183 server + 374 app tests pass.
-- **Next step:** F14 T-fix-7, documentation fixes (`/next`).
+- **Next step:** F15 T-fix-1 (code-structure check), then the other fixes, then the joint second verification.
 
 ## Session log
 
