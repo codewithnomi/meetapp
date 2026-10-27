@@ -57,12 +57,16 @@ export function removeMembers(members: Member[]): void {
 export const userIdOf = (email: string): string => sql(`SELECT id FROM "user" WHERE email = ${quote(email)};`);
 export const workspaceIdOf = (name: string): string => sql(`SELECT id FROM workspaces WHERE name = ${quote(name)};`);
 
-async function post<T>(path: string, body: object, token: string): Promise<T> {
-  const answer = await fetch(`${API}${path}`, {
+async function postRaw(path: string, body: object, token: string): Promise<Response> {
+  return fetch(`${API}${path}`, {
     method: "POST",
     headers: { ...HEADERS, authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   });
+}
+
+async function post<T>(path: string, body: object, token: string): Promise<T> {
+  const answer = await postRaw(path, body, token);
   if (!answer.ok) throw new Error(`${path} answered ${String(answer.status)}: ${await answer.text()}`);
   return (await answer.json()) as T;
 }
@@ -144,6 +148,93 @@ export async function openLines(members: Member[], conversationId: string): Prom
   }, PING_MS);
   return {
     received: () => [...counts],
+    dropped: () => dropped,
+    stop: () => {
+      stopping = true;
+      clearInterval(pinger);
+      for (const socket of sockets) socket.close();
+    },
+  };
+}
+
+// Chat calls (F15 TC-F15-76, 77): starting, accepting and ringing through the normal API.
+export interface CallAnswer {
+  status: number;
+  /** The API's error code (e.g. CALL_FULL) when refused. */
+  code?: string | undefined;
+  callId?: string | undefined;
+  /** How long the request took, ms. */
+  ms: number;
+  /** When the request left (ms since 1970). */
+  sentAt: number;
+}
+
+async function callRequest(path: string, media: "video" | "audio", token: string): Promise<CallAnswer> {
+  const sentAt = Date.now();
+  const answer = await postRaw(path, { media }, token);
+  const ms = Date.now() - sentAt;
+  const body = (await answer.json().catch(() => ({}))) as { call?: { callId: string }; code?: string };
+  return { status: answer.status, code: body.code, callId: body.call?.callId, ms, sentAt };
+}
+
+export const startCall = (member: Member, conversationId: string, media: "video" | "audio" = "video") =>
+  callRequest(`/api/v1/conversations/${conversationId}/calls`, media, member.token);
+
+/** **Join** a running chat call (for people who weren't rung, e.g. groups of more than 20). */
+export const joinCall = (member: Member, callId: string) =>
+  callRequest(`/api/v1/calls/${callId}/join`, "video", member.token);
+
+export const acceptCall = (member: Member, callId: string, media: "video" | "audio" = "video") =>
+  callRequest(`/api/v1/calls/${callId}/accept`, media, member.token);
+
+/** The first `ring` each line received, by call: when it arrived (ms since 1970). */
+export interface RingLines {
+  /** Arrival time of the `ring` for `callId` on each line that got one, with the line's index. */
+  rings: (callId: string) => { line: number; at: number }[];
+  dropped: () => number;
+  stop: () => void;
+}
+
+/** Opens a live line for every member that notes the `ring` messages it gets. */
+export async function openRingLines(members: Member[]): Promise<RingLines> {
+  const seen = members.map(() => new Map<string, number>());
+  let dropped = 0;
+  let stopping = false;
+  const url = `${API.replace(/^http/, "ws")}/api/v1/realtime`;
+  const Socket = WebSocket as unknown as new (url: string, init: object) => WebSocket;
+  const sockets = await Promise.all(
+    members.map(
+      (member, i) =>
+        new Promise<WebSocket>((opened, failed) => {
+          const socket = new Socket(url, {
+            headers: { origin: HEADERS.origin, authorization: `Bearer ${member.token}` },
+          });
+          socket.addEventListener("open", () => {
+            opened(socket);
+          });
+          socket.addEventListener("error", () => {
+            failed(new Error(`the line of ${member.id} did not open`));
+          });
+          socket.addEventListener("close", () => {
+            if (!stopping) dropped += 1;
+          });
+          socket.addEventListener("message", (event) => {
+            const message = JSON.parse(String(event.data)) as { t: string; callId?: string };
+            if (message.t === "ring" && message.callId && !seen[i]?.has(message.callId))
+              seen[i]?.set(message.callId, Date.now());
+          });
+        }),
+    ),
+  );
+  const pinger = setInterval(() => {
+    for (const socket of sockets) if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ t: "ping" }));
+  }, PING_MS);
+  return {
+    rings: (callId) =>
+      seen.flatMap((calls, line) => {
+        const at = calls.get(callId);
+        return at === undefined ? [] : [{ line, at }];
+      }),
     dropped: () => dropped,
     stop: () => {
       stopping = true;

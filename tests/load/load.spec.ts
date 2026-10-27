@@ -1,7 +1,7 @@
 // Load tests (F02 T18; `pnpm test:load`, which starts the test call server and the backend first): the
 // desktop app in a meeting with 99 simulated people (TC-F02-41 gallery and sound, TC-F02-25 join time)
 // and with 24 (TC-F02-92 memory); chat delivery in the 100-person meeting (F03 TC-F03-02); a 250-person
-// group chat delivering to the app (F14 TC-F14-42). The numbers are written to test-results/load-results.json; a target
+// group chat delivering to the app (F14 TC-F14-42); chat calls of 20 and ringing under load (F15 TC-F15-76, 77). The numbers are written to test-results/load-results.json; a target
 // that is missed fails the test, after every number was measured. The simulated people run on this same
 // Mac, so run it on an idle Mac (other work on it lowers every number; seen 2026-10-15).
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -9,10 +9,14 @@ import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import { FAKE_MEDIA, launchNewAccount } from "../e2e/desktop/desktop.ts";
 import {
+  acceptCall,
+  joinCall,
   addMembers,
   openLines,
+  openRingLines,
   removeMembers,
   send,
+  startCall,
   startGroup,
   userIdOf,
   workspaceIdOf,
@@ -245,6 +249,119 @@ test("TC-F14-42 [AC-F14-20] a 250-person group: messages reach the app within 1 
       record("group250", { delays, p95, dropped: lines.dropped(), fewestReceived: Math.min(...lines.received()) });
       expect.soft(lines.dropped(), "no live line dropped").toBe(0);
       expect.soft(p95, "messages shown in the app within 1 s for 95% (AC-F14-20)").toBeLessThan(1_000);
+    } finally {
+      lines.stop();
+    }
+  } finally {
+    removeMembers(members);
+  }
+});
+
+const CALL_LIMIT = 20;
+const JOIN_MS_LIMIT = 3_000;
+
+test("TC-F15-76 [AC-F15-14] [AC-F15-12] a 21-person group: 20 join the call quickly, the 21st is refused", async () => {
+  test.setTimeout(10 * 60_000);
+  const { page, email } = await launchNewAccount(undefined, undefined, [], "Load Owner");
+  const workspace = `Load ${String(Date.now())}`;
+  await createWorkspace(page, "Personal", workspace);
+  let members: Member[] = [];
+  try {
+    members = addMembers(workspace, CALL_LIMIT + 1);
+    const [starter, ...others] = members;
+    if (!starter) throw new Error("no simulated members");
+    // 21 people in the group (a group over 20 rings nobody; they join with Join, as in the chat).
+    const group = await startGroup(
+      starter,
+      workspaceIdOf(workspace),
+      [userIdOf(email), ...others.map((m) => m.id)],
+      "Call group",
+    );
+    const started = await startCall(starter, group);
+    expect(started.status, "the call starts").toBe(201);
+    const callId = started.callId ?? "";
+    // Media for the call: simulated people publish video and one speaks (the 25-person approach).
+    const crowd = simulate(callId, CALL_LIMIT - 1, join(RESULTS, "lk-chat-call.log"));
+    try {
+      const joins: number[] = [started.ms];
+      for (const member of others.slice(0, CALL_LIMIT - 1)) {
+        // A group of more than 20 rings nobody (AC-F15-04), so the others use Join.
+        const answer = await joinCall(member, callId);
+        expect(answer.status, "a seat is free").toBe(200);
+        joins.push(answer.ms);
+      }
+      const refused = await joinCall(others[CALL_LIMIT - 1] ?? starter, callId);
+      await page.waitForTimeout(20_000); // everyone publishes for a while
+      const p95 = percentile(joins, 95);
+      record("chatCall20", { joins, p95, refusedStatus: refused.status, refusedCode: refused.code });
+      expect.soft(refused.status, "the 21st person is refused").toBe(409);
+      expect.soft(refused.code, "with CALL_FULL").toBe("CALL_FULL");
+      expect.soft(p95, "join answer under 3 s for 95% (F02 target)").toBeLessThan(JOIN_MS_LIMIT);
+    } finally {
+      crowd.stop();
+    }
+  } finally {
+    removeMembers(members);
+  }
+});
+
+const RING_GROUPS = 20;
+const RING_GROUP_SIZE = 20;
+/** Group g takes people g*12 .. g*12+19 of the 250 (so each person is in one or two groups). */
+const RING_STRIDE = 12;
+
+test("TC-F15-77 [AC-F15-05] [AC-F15-06] [AC-F15-34] 250 connected people, 20 groups call at once: rings under 2 s, accepts under 3 s", async () => {
+  test.setTimeout(15 * 60_000);
+  const { page } = await launchNewAccount(undefined, undefined, [], "Load Owner");
+  const workspace = `Load ${String(Date.now())}`;
+  await createWorkspace(page, "Personal", workspace);
+  let members: Member[] = [];
+  try {
+    members = addMembers(workspace, GROUP_SIZE);
+    const workspaceId = workspaceIdOf(workspace);
+    const slice = (g: number) =>
+      Array.from({ length: RING_GROUP_SIZE }, (_, k) => (g * RING_STRIDE + k) % members.length);
+    const groups = await Promise.all(
+      Array.from({ length: RING_GROUPS }, async (_, g) => {
+        const people = slice(g);
+        const starter = members[people[0] ?? 0];
+        if (!starter) throw new Error("no starter");
+        const id = await startGroup(
+          starter,
+          workspaceId,
+          people.slice(1).map((i) => members[i]?.id ?? ""),
+          `Ring group ${String(g)}`,
+        );
+        return { id, starter, people };
+      }),
+    );
+    const lines = await openRingLines(members);
+    try {
+      const starts = await Promise.all(groups.map((g) => startCall(g.starter, g.id, "audio")));
+      for (const s of starts) expect(s.status, "every call starts").toBe(201);
+      await expect
+        .poll(() => starts.reduce((n, s) => n + lines.rings(s.callId ?? "").length, 0), { timeout: 30_000 })
+        .toBe(RING_GROUPS * (RING_GROUP_SIZE - 1));
+      const delays = starts.flatMap((s) => lines.rings(s.callId ?? "").map((r) => r.at - s.sentAt));
+      // One person of every group answers at once.
+      const accepts = await Promise.all(
+        groups.map((g, i) => {
+          const person = members[g.people[1] ?? 0];
+          const callId = starts[i]?.callId ?? "";
+          if (!person) throw new Error("no one to answer");
+          return acceptCall(person, callId, "audio");
+        }),
+      );
+      const ringP95 = percentile(delays, 95);
+      const acceptP95 = percentile(
+        accepts.map((a) => a.ms),
+        95,
+      );
+      record("ringSpeed", { delays, ringP95, accepts: accepts.map((a) => a.ms), acceptP95, dropped: lines.dropped() });
+      for (const a of accepts) expect.soft(a.status, "an accept answers 200").toBe(200);
+      expect.soft(lines.dropped(), "no live line dropped").toBe(0);
+      expect.soft(ringP95, "rings delivered within 2 s for 95% (AC-F15-05)").toBeLessThan(2_000);
+      expect.soft(acceptP95, "accepts answered within 3 s").toBeLessThan(JOIN_MS_LIMIT);
     } finally {
       lines.stop();
     }

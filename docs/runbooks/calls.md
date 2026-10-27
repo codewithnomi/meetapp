@@ -42,6 +42,9 @@ Fills a meeting with simulated people and measures the app (TC-F02-25, 41, 92; t
 | Memory of the app in a 25-person meeting, 5 minutes | under 700 MB |
 | Chat: a message shown in the app (100 people, 50 messages, 95th percentile; F03) | under 1 s |
 | Group chat of 250: a message shown in the app (300 messages, 95th percentile; F14), no live line dropped | under 1 s |
+| Chat call of 20 (F15 TC-F15-76, `chatCall20`): join answer, 95th percentile; the 21st person gets 409 CALL_FULL | under 3 s |
+| Ring speed (F15 TC-F15-77, `ringSpeed`): 250 connected people, 20 groups of 20 call at once; start request to `ring` on each line, 95th percentile | under 2 s |
+| Same test: accept answer, 95th percentile (one person per group) | under 3 s |
 
 For chat, a sender joins the 100-person meeting through the backend as a guest (the app's organizer lets it in) and sends 50 messages 1.5 s apart (under the 10-in-10-seconds limit); the app notes when each one shows (`chat` in the results).
 
