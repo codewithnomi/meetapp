@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "5.9.1",
+    "@livekit/track-processors": "0.8.2",
     "@meetapp/contracts": "workspace:*",
     "@meetapp/design-tokens": "workspace:*",
     "@meetapp/ui": "workspace:*",

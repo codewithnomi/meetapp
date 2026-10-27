@@ -2,6 +2,7 @@
 // status, and the messages on the live line (D064). Shared by the backend, the apps and the API docs.
 import { z } from "zod";
 import { chatEventSchema } from "./chat-news.ts";
+import { ringMessageSchema, ringStopMessageSchema } from "./chat-calls.ts";
 
 export const CONVERSATION_KINDS = ["direct", "group", "meeting"] as const;
 export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
@@ -203,6 +204,9 @@ export const lineServerMessageSchema = z.discriminatedUnion("t", [
   /** The server lost Redis (`on`), so news from other servers can't arrive: the app checks for itself
    * (open chat every 10 s, list every 30 s) until `on: false` (TC-F14-44). */
   z.object({ t: z.literal("polling"), on: z.boolean() }),
+  /** F15: ringing (AC-F15-05–09, 34). */
+  ringMessageSchema,
+  ringStopMessageSchema,
 ]);
 export type LineServerMessage = z.infer<typeof lineServerMessageSchema>;
 

@@ -2,9 +2,9 @@
 // body may have (design 5.2): a short list of blocks with a few allowed marks, never HTML. Anything
 // else is refused, so nothing a person types or pastes can become page code.
 import { z } from "zod";
+import { systemNoteSchema } from "./chat-notes.ts";
 
-export const CHAT_MODES = ["on", "in_meeting", "off"] as const;
-export type ChatMode = (typeof CHAT_MODES)[number];
+export { CHAT_MODES, type ChatMode } from "./chat-notes.ts";
 
 /** MeetApp's own sticker set (AC-F03-26): names only; the pictures are built into the app. */
 export const STICKERS = [
@@ -254,18 +254,7 @@ export const chatMessageSchema = z
     /** For a poll message: the poll to fetch (results depend on who asks, AC-F03-22). */
     pollId: z.uuid().nullable(),
     /** A note such as "Aisha Khan pinned a message" (kind "system"). */
-    system: z
-      .object({
-        /** F14 groups: named, added, removed, left, didnt_join (AC-F14-14, 16, 17, 18). */
-        event: z.enum(["pinned", "chat_mode", "named", "added", "removed", "left", "didnt_join"]),
-        name: z.string(),
-        mode: z.enum(CHAT_MODES).optional(),
-        /** The people added or removed. */
-        names: z.array(z.string()).optional(),
-        /** The group's new name. */
-        groupName: z.string().optional(),
-      })
-      .nullable(),
+    system: systemNoteSchema.nullable(),
   })
   .meta({ id: "ChatMessage" });
 export type ChatMessageView = z.infer<typeof chatMessageSchema>;

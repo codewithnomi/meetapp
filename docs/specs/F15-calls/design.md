@@ -20,7 +20,8 @@ updated: 2026-10-27
 ```
 packages/db/src/schema/meetings.ts       calls and call_attendances may belong to a chat; call_rings; migration 0009_chat_calls
 packages/db/src/schema/auth.ts           user.ringtone, user.ring_volume (account settings)
-packages/contracts/src/calls.ts          chat-call requests and answers, ring line messages, call note shapes
+packages/contracts/src/chat-calls.ts     chat-call requests and answers, ring line messages (calls.ts stays F02's)
+packages/contracts/src/chat-notes.ts     chat note shapes, now with the call notes (moved out of chat.ts)
 apps/api/src/modules/calls/              chat calls: start/join, ring, accept, decline, cancel, add people, ending rules,
                                          ring timeout job, call notes, status "in a call"
 apps/api/src/modules/meetings/…          F02's join/pass/webhook code takes a "call place" (meeting or chat), like F03's seat
