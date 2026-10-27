@@ -80,3 +80,14 @@ export async function markRead(
       },
     });
 }
+
+/** F15: a "Missed call" note for this person: the only call note that counts as unread (AC-F15-15). */
+export const missedCallFor = (userId: string) =>
+  sql`(${chatMessages.kind} = 'system' and ${chatMessages.system} ->> 'event' = 'call_missed' and ${chatMessages.system} ->> 'forUserId' = ${userId})`;
+
+/** F15: call notes the list may show as a chat's last line for this person (AC-F15-04, 15). */
+export const callNoteFor = (userId: string) =>
+  or(
+    sql`(${chatMessages.kind} = 'system' and ${chatMessages.system} ->> 'event' in ('call_started', 'call_ended'))`,
+    missedCallFor(userId),
+  );

@@ -35,7 +35,8 @@
 - **F15 T4 done** (2026-10-27): ringing through ring targets (live line to every window, a window opened mid-ring gets it), accept (first wins), decline (one-to-one ends), cancel (starter only), missed notes; 10 new tests, 103 call and live-line tests pass.
 - **F15 T5 done** (2026-10-27): rings stop at 30 s (a job per call) or 35 s (every-minute sweep), a call nobody answered ends with "No answer", caller leaving first cancels the rings, one-to-one ends when either leaves, group when the last leaves, 30-hour end; "Call ended" note; 9 new tests.
 - **F15 T6 done** (2026-10-27): Add people (chat members only, skips people in the call or ringing, 20 at most), 10 starts or rings a minute per person (refused whole, refunded); the F02 outsider sweep now covers the new routes; 4 new tests, 100 call tests pass.
-- **Next step:** F15 T7, call notes (`/next`).
+- **F15 T7 done** (2026-10-27): "Missed call" notes only for their person (pages, lookups, catch-up, live news, list); only they count as unread; call notes can be the list's last line (worded by the app: "Call ended · 12m 30s"); 6 new tests, 287 chat and call tests pass.
+- **Next step:** F15 T8, status "In a call" (`/next`).
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

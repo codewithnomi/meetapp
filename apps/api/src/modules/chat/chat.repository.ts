@@ -4,7 +4,7 @@ import { type Database, type Executor, chatEvents, chatMessages, conversations, 
 import { meetingConversation, meetingOf, type ChatPlace } from "./meeting-conversation.repository.ts";
 
 export type { ChatPlace };
-import { and, asc, desc, eq, gt, gte, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { claimAttachments } from "./chat-files.repository.ts";
 import type { Who } from "./chat-who.ts";
 
@@ -14,7 +14,16 @@ export type NewChatMessage = typeof chatMessages.$inferInsert;
 interface Window {
   from: Date | null;
   until: Date | null;
+  /** F15 chats: the reader's account, so other people's "Missed call" notes stay out. */
+  viewer?: string | undefined;
 }
+
+/**
+ * Leaves out "Missed call" notes meant for someone else (F15 AC-F15-15): each is seen only by the person
+ * who missed the call. Every other message passes.
+ */
+export const notOthersMissedCall = (viewer: string) =>
+  sql`not (${chatMessages.kind} = 'system' and ${chatMessages.system} ->> 'event' = 'call_missed' and coalesce(${chatMessages.system} ->> 'forUserId', '') <> ${viewer})`;
 
 /** Where a page of history starts: the oldest message already shown (time, then id). */
 export interface Cursor {
@@ -119,6 +128,22 @@ async function eventsAfter(db: Database, conversationId: string, after: number) 
   return { rows, oldestKept: oldest?.seq ?? null };
 }
 
+/** Of these messages, the "Missed call" notes meant for someone other than `viewer` (F15). */
+async function hiddenFrom(db: Database, conversationId: string, ids: string[], viewer: string): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const rows = await db
+    .select({ id: chatMessages.id })
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.conversationId, conversationId),
+        inArray(chatMessages.id, ids),
+        sql`not (${notOthersMissedCall(viewer)})`,
+      ),
+    );
+  return new Set(rows.map((row) => row.id));
+}
+
 export function createChatRepository(db: Database) {
   return {
     /** The newest news number of a meeting (0 before any), sent with the first page (verification round 1). */
@@ -142,6 +167,7 @@ export function createChatRepository(db: Database) {
             before ? olderThan(before) : undefined,
             window?.from ? gte(chatMessages.createdAt, window.from) : undefined,
             window?.until ? lte(chatMessages.createdAt, window.until) : undefined,
+            window?.viewer ? notOthersMissedCall(window.viewer) : undefined,
           ),
         )
         .orderBy(desc(chatMessages.createdAt), desc(chatMessages.id))
@@ -154,6 +180,7 @@ export function createChatRepository(db: Database) {
       return row;
     },
     eventsAfter: (conversationId: string, after: number) => eventsAfter(db, conversationId, after),
+    hiddenFrom: (conversationId: string, ids: string[], viewer: string) => hiddenFrom(db, conversationId, ids, viewer),
     /** The meeting's conversation (made on first need), for meeting chat requests (D065). */
     conversationOf: (workspaceId: string, meetingId: string) => meetingConversation(db, workspaceId, meetingId),
   };

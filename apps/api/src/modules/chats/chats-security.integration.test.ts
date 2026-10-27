@@ -97,6 +97,8 @@ function bodyFor(method: string, url: string, s: Setup): object | undefined {
   if (url.endsWith("/decline")) return { block: false };
   if (url.endsWith("/members")) return { userIds: [randomUUID()] };
   if (url.endsWith("/me")) return { muted: true };
+  // F15: starting a chat's call.
+  if (url.endsWith("/calls")) return { media: "video" };
   if (url === "/api/v1/conversations/:conversationId") return { name: "New name" };
   return {};
 }

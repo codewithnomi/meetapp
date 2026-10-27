@@ -1108,5 +1108,17 @@
       "failed": "Couldn't load this. Check your connection and try again.",
       "retry": "Retry"
     }
+  },
+  "calls": {
+    "notes": {
+      "started": "{{name}} started a call",
+      "ended": "Call ended · {{duration}}",
+      "missed": "Missed call from {{name}}"
+    },
+    "duration": {
+      "seconds": "{{s}}s",
+      "minutes": "{{m}}m {{s}}s",
+      "hours": "{{h}}h {{m}}m"
+    }
   }
 }

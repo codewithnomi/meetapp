@@ -27,7 +27,10 @@ export async function saveNote(
     },
     "message_created",
   );
-  // The note goes out like a message; apps fetch it by id (F03's short news).
-  if (saved.created)
-    await live.news(conversation.id, { seq: saved.seq, type: "message_created", id: saved.message.id });
+  if (!saved.created) return;
+  // The note goes out like a message; apps fetch it by id (F03's short news). A "Missed call" note goes
+  // only to the person who missed the call (F15 AC-F15-15).
+  const event = { seq: saved.seq, type: "message_created", id: saved.message.id };
+  if (note.forUserId) await live.toPerson(note.forUserId, { t: "news", conversationId: conversation.id, event });
+  else await live.news(conversation.id, event);
 }

@@ -14,7 +14,7 @@ import {
   type ConversationMember,
 } from "@meetapp/db";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
-import { inWindows, markRead, type ReadWindow } from "./chats-read-window.ts";
+import { callNoteFor, inWindows, markRead, missedCallFor, type ReadWindow } from "./chats-read-window.ts";
 
 export type { Conversation, ConversationMember };
 
@@ -109,8 +109,8 @@ async function listRows(db: Database, userId: string, workspaceId: string, withE
     );
 }
 
-/** Each conversation's newest message the person may read (not system notes). */
-async function lastMessages(db: Database, windows: ReadWindow[]) {
+/** Each conversation's newest message the person may read (no system notes except call notes, F15). */
+async function lastMessages(db: Database, userId: string, windows: ReadWindow[]) {
   if (windows.length === 0) return [];
   return db
     .selectDistinctOn([chatMessages.conversationId], {
@@ -119,11 +119,12 @@ async function lastMessages(db: Database, windows: ReadWindow[]) {
       senderName: chatMessages.senderName,
       plainText: chatMessages.plainText,
       kind: chatMessages.kind,
+      system: chatMessages.system,
       deletedAt: chatMessages.deletedAt,
       createdAt: chatMessages.createdAt,
     })
     .from(chatMessages)
-    .where(and(inWindows(windows), ne(chatMessages.kind, "system")))
+    .where(and(inWindows(windows), or(ne(chatMessages.kind, "system"), callNoteFor(userId))))
     .orderBy(chatMessages.conversationId, desc(chatMessages.createdAt));
 }
 
@@ -145,7 +146,8 @@ async function unreadCounts(db: Database, userId: string, windows: ReadWindow[])
     .where(
       and(
         inWindows(windows),
-        ne(chatMessages.kind, "system"),
+        // F15: a "Missed call" note for this person counts; other notes never do.
+        or(ne(chatMessages.kind, "system"), missedCallFor(userId)),
         isNull(chatMessages.deletedAt),
         or(isNull(chatMessages.senderUserId), ne(chatMessages.senderUserId, userId)),
         or(isNull(conversationReads.lastReadAt), sql`${chatMessages.createdAt} > ${conversationReads.lastReadAt}`),
@@ -231,7 +233,7 @@ export function createChatsRepository(db: Database) {
       meetingIds.length === 0
         ? Promise.resolve([])
         : db.select().from(conversations).where(inArray(conversations.meetingId, meetingIds)),
-    lastMessages: (windows: ReadWindow[]) => lastMessages(db, windows),
+    lastMessages: (userId: string, windows: ReadWindow[]) => lastMessages(db, userId, windows),
     unreadCounts: (userId: string, windows: ReadWindow[]) => unreadCounts(db, userId, windows),
     workspaceMemberIds: (workspaceId: string, userIds: string[]) => workspaceMemberIds(db, workspaceId, userIds),
     member: (conversationId: string, userId: string) => member(db, conversationId, userId),

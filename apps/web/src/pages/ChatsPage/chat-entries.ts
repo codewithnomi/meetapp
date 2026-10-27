@@ -2,6 +2,7 @@
 // or the request's state), and the whole row's name for screen readers.
 import type { ChatListEntry } from "@meetapp/ui";
 import type { TFunction } from "i18next";
+import { callNoteText } from "../../features/calls/index.ts";
 import { timeLabel, type ChatItem } from "../../features/chats/index.ts";
 
 function lastLineOf(t: TFunction, item: ChatItem): string | undefined {
@@ -10,6 +11,9 @@ function lastLineOf(t: TFunction, item: ChatItem): string | undefined {
   if (item.request === "not_accepted") return t("chats.notAccepted", { name: other });
   const last = item.lastMessage;
   if (!last) return undefined;
+  // F15: call notes ("Missed call from Sara", "Call ended · 12m 30s") are worded here.
+  const note = last.note ? callNoteText(t, last.note) : undefined;
+  if (note) return note;
   if (last.own) return t("chats.you", { text: last.firstLine });
   return item.kind === "direct" ? last.firstLine : t("chats.from", { name: last.senderName, text: last.firstLine });
 }

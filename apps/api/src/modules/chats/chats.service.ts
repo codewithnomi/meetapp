@@ -1,6 +1,7 @@
 // The chat list and starting chats (F14 design.md 3.1, 3.5; AC-F14-01–05, 07, 09, 15, 28, 35): one list
 // for one-to-one, group and meeting chats, newest activity first with pinned chats on top, unread counts,
 // filters and name search. A chat with someone outside the workspace is a request (chats-requests.service.ts).
+import type { ChatMessageView } from "@meetapp/contracts";
 import { CHATS_LIMITS, type ConversationListItem, type ReadOnlyReason, type Status } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
@@ -64,6 +65,8 @@ function lastLine(last: Last | undefined, userId: string): ConversationListItem[
     own: last.senderUserId === userId,
     firstLine: text.slice(0, 200),
     at: last.createdAt.toISOString(),
+    // F15: call notes are worded by the app (in the person's language).
+    note: last.kind === "system" ? (last.system as ChatMessageView["system"]) : null,
   };
 }
 
@@ -128,7 +131,7 @@ async function build(deps: ChatsDeps, userId: string, entries: Entry[]): Promise
   const windows = entries.map(readWindow);
   const [people, lasts, unread] = await Promise.all([
     deps.chats.peopleOf(ids),
-    deps.chats.lastMessages(windows),
+    deps.chats.lastMessages(userId, windows),
     deps.chats.unreadCounts(userId, windows),
   ]);
   const facts = await directFacts(deps, userId, entries, people);

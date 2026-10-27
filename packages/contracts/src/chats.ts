@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { chatEventSchema } from "./chat-news.ts";
 import { ringMessageSchema, ringStopMessageSchema } from "./chat-calls.ts";
+import { systemNoteSchema } from "./chat-notes.ts";
 
 export const CONVERSATION_KINDS = ["direct", "group", "meeting"] as const;
 export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
@@ -55,7 +56,14 @@ export const conversationListItemSchema = z
     /** The other person's status in a direct chat (when allowed to see it), else null. */
     status: z.enum(STATUSES).nullable(),
     lastMessage: z
-      .object({ senderName: z.string(), own: z.boolean(), firstLine: z.string(), at: z.iso.datetime() })
+      .object({
+        senderName: z.string(),
+        own: z.boolean(),
+        firstLine: z.string(),
+        at: z.iso.datetime(),
+        /** F15: a call note ("Missed call", "Call ended") the app words itself; null for messages. */
+        note: systemNoteSchema.nullable().optional(),
+      })
       .nullable(),
     unread: z.number().int().min(0),
     mentioned: z.boolean(),

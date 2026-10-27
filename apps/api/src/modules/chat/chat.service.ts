@@ -80,6 +80,9 @@ export async function sendFrom(deps: ChatDeps, seat: ChatSeat, input: SendInput)
   return view;
 }
 
+/** A chat's reader (F14/F15); meeting seats (a join) have none, and meetings have no missed-call notes. */
+const chatReader = (seat: ChatSeat) => (seat.who.attendanceId ? undefined : (seat.who.userId ?? undefined));
+
 /** A message this seat may read (inside its reading window), or nothing. */
 export async function readable(deps: ChatDeps, seat: ChatSeat, messageId: string) {
   const message = await deps.chat.one(seat.conversationId, messageId);
@@ -87,6 +90,9 @@ export async function readable(deps: ChatDeps, seat: ChatSeat, messageId: string
   const { window } = seat;
   if (window.from && message.createdAt < window.from) return undefined;
   if (window.until && message.createdAt > window.until) return undefined;
+  // F15: a "Missed call" note is only for the person who missed the call.
+  const note = message.system as { event?: string; forUserId?: string } | null;
+  if (note?.event === "call_missed" && note.forUserId !== chatReader(seat)) return undefined;
   return message;
 }
 
@@ -97,7 +103,7 @@ export async function pageFor(deps: ChatDeps, seat: ChatSeat, query: { before?: 
   const newest = query.before ? undefined : await deps.chat.lastSeq(conversationId);
   const lastSeq =
     newest === undefined || seat.window.untilSeq === null ? newest : Math.min(newest, seat.window.untilSeq);
-  const { window } = seat;
+  const window = { ...seat.window, viewer: chatReader(seat) };
   const rows = await deps.chat.page(conversationId, query.limit + 1, parseCursor(query.before), window);
   const messages = await viewsOf(deps, conversationId, rows.slice(0, query.limit), viewerOf(seat));
   if (query.before) return { messages, hasMore: rows.length > query.limit };
@@ -110,8 +116,16 @@ export async function eventsFor(deps: ChatDeps, seat: ChatSeat, after: number) {
   const { rows, oldestKept } = await deps.chat.eventsAfter(seat.conversationId, after);
   const gap = oldestKept !== null && oldestKept > after + 1;
   const untilSeq = seat.window.untilSeq;
+  const reader = chatReader(seat);
+  const ids = rows.flatMap((event) => {
+    const id = (event.payload as { id?: string }).id;
+    return event.type === "message_created" && id ? [id] : [];
+  });
+  // F15: news of someone else's "Missed call" note is left out too.
+  const hidden = reader ? await deps.chat.hiddenFrom(seat.conversationId, ids, reader) : new Set<string>();
   const events = rows
     .filter((event) => untilSeq === null || event.seq <= untilSeq)
+    .filter((event) => !hidden.has((event.payload as { id?: string }).id ?? ""))
     .map((event) => ({
       seq: event.seq,
       type: event.type,
