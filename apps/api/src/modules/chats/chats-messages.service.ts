@@ -195,14 +195,22 @@ export function createChatsMessagesService(deps: MessagesDeps) {
     unreact: async ({ userId, conversationId, messageId }: OnMessage, emoji: string) =>
       unreactAs(chat, await seat(userId, conversationId, "react"), messageId, emoji),
     seen: ({ userId, conversationId, messageId }: OnMessage) => seen(deps, userId, conversationId, messageId),
-    setReadReceipts: async (userId: string, on: boolean) => {
-      await deps.messages.setReadReceipts(userId, on);
+    setPrefs: async (userId: string, body: Partial<Record<"readReceipts" | "ringtone" | "ringVolume", unknown>>) => {
+      const prefs = Object.fromEntries(Object.entries(body).filter(([, value]) => value !== undefined)) as {
+        readReceipts?: boolean;
+        ringtone?: number;
+        ringVolume?: number;
+      };
+      if (Object.keys(prefs).length === 0) return;
+      await deps.messages.setPrefs(userId, prefs);
       // The person's own line now drops or passes "Seen" marks (AC-F14-24).
-      await deps.live.control(userId, { control: "refresh" });
+      if (prefs.readReceipts !== undefined) await deps.live.control(userId, { control: "refresh" });
     },
-    readReceipts: async (userId: string) => ({
-      readReceipts: (await deps.messages.person(userId))?.readReceipts ?? true,
-    }),
+    /** Read receipts (F14) and the ringtone with its volume, kept with the account (F15 AC-F15-32). */
+    prefs: async (userId: string) => {
+      const me = await deps.messages.person(userId);
+      return { readReceipts: me?.readReceipts ?? true, ringtone: me?.ringtone ?? 1, ringVolume: me?.ringVolume ?? 70 };
+    },
     members: (userId: string, conversationId: string) => members(deps, userId, conversationId),
   };
 }

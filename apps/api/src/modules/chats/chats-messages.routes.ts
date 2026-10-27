@@ -124,8 +124,8 @@ function writingRoutes(app: App, messages: ChatsMessagesService) {
 function settingsRoutes(app: App, messages: ChatsMessagesService) {
   app.get(
     "/api/v1/me/settings",
-    { schema: { summary: "My chat settings", tags, response: { 200: myChatPrefsSchema } } },
-    (request) => messages.readReceipts(signedInUser(request).id),
+    { schema: { summary: "My chat and call settings", tags, response: { 200: myChatPrefsSchema } } },
+    (request) => messages.prefs(signedInUser(request).id),
   );
   app.get(
     `${BASE}/members`,
@@ -137,9 +137,15 @@ function settingsRoutes(app: App, messages: ChatsMessagesService) {
   );
   app.patch(
     "/api/v1/me/settings",
-    { schema: { summary: "My chat settings: read receipts", tags, body: myChatPrefsBodySchema } },
+    {
+      schema: {
+        summary: "My chat and call settings: read receipts, ringtone (1–5) and its volume (0–100)",
+        tags,
+        body: myChatPrefsBodySchema,
+      },
+    },
     async (request, reply) => {
-      await messages.setReadReceipts(signedInUser(request).id, request.body.readReceipts);
+      await messages.setPrefs(signedInUser(request).id, request.body);
       return reply.status(204).send();
     },
   );

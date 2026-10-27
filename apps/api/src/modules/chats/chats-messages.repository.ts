@@ -6,7 +6,7 @@ import { and, eq, gte, isNull, sql } from "drizzle-orm";
 
 async function person(db: Database, userId: string) {
   const [row] = await db
-    .select({ name: user.name, readReceipts: user.readReceipts })
+    .select({ name: user.name, readReceipts: user.readReceipts, ringtone: user.ringtone, ringVolume: user.ringVolume })
     .from(user)
     .where(eq(user.id, userId));
   return row;
@@ -67,8 +67,8 @@ export function createChatsMessagesRepository(db: Database) {
         .update(conversationMembers)
         .set({ hidden: false })
         .where(and(eq(conversationMembers.conversationId, conversationId), eq(conversationMembers.hidden, true))),
-    setReadReceipts: (userId: string, on: boolean) =>
-      db.update(user).set({ readReceipts: on }).where(eq(user.id, userId)),
+    setPrefs: (userId: string, prefs: { readReceipts?: boolean; ringtone?: number; ringVolume?: number }) =>
+      db.update(user).set(prefs).where(eq(user.id, userId)),
   };
 }
 

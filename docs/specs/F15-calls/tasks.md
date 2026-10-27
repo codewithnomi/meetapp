@@ -22,7 +22,7 @@ Per step: only that step's tests plus typecheck and lint (D052); everything else
 - [x] **T8: Status "In a call".** Chat-call attendances count; `in_meeting` renamed `in_call` everywhere (contracts, app, F14 tests). Covers: AC-F15-16, D070. Tests: TC-F15-38, 39.
 - [x] **T9: Security, removal and data.** Outsider sweep over every new route, pass rules, logs, blocks (one-to-one and groups), removal from the chat during a call and while ringing (2 seconds), data kept/cascade/export. Covers: AC-F15-20–25, 28. Tests: TC-F15-63, 65, 67, 68, 69, 70, 71, 72; plus a signed LiveKit `participant_left` / `room_finished` report reaching the chat-call ending rules (left untested in T5).
 - [x] **T10: Other devices and transfer.** `GET /me/calls/active`, `POST /calls/:callId/transfer`: the new seat connects before the old one is removed; never connects → the old seat stays. Covers: AC-F15-33, D075. Tests: TC-F15-40, 41, 42.
-- [ ] **T11: Ringtone settings.** `GET/PATCH /me/settings` gains `ringtone` (1–5) and `ringVolume` (0–100). Covers: AC-F15-32. Tests: TC-F15-52.
+- [x] **T11: Ringtone settings.** `GET/PATCH /me/settings` gains `ringtone` (1–5) and `ringVolume` (0–100). Covers: AC-F15-32. Tests: TC-F15-52.
 
 ### Screens
 - [ ] **T12: UI pieces.** `IncomingCall` (organism), `CallingScreen` (template), `CallNote`, `BackgroundPicker`, `RingtonePicker` (molecules) with stories and tests, matching the approved canvas; tone patterns (Web Audio, D074). Covers: AC-F15-15, 17, 32. Tests: TC-F15-36, 53, 55.

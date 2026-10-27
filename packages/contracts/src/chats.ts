@@ -2,7 +2,7 @@
 // status, and the messages on the live line (D064). Shared by the backend, the apps and the API docs.
 import { z } from "zod";
 import { chatEventSchema } from "./chat-news.ts";
-import { ringMessageSchema, ringStopMessageSchema } from "./chat-calls.ts";
+import { ringMessageSchema, ringStopMessageSchema, ringtoneSettingsSchema } from "./chat-calls.ts";
 import { systemNoteSchema } from "./chat-notes.ts";
 
 export const CONVERSATION_KINDS = ["direct", "group", "meeting"] as const;
@@ -158,8 +158,13 @@ export const chatMembersSchema = z
     people: z.array(person.extend({ pending: z.boolean(), status: z.enum(STATUSES).nullable() })),
   })
   .meta({ id: "ChatMembers" });
-export const myChatPrefsSchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefsView" });
-export const myChatPrefsBodySchema = z.object({ readReceipts: z.boolean() }).meta({ id: "MyChatPrefs" });
+/** The person's chat and call settings: read receipts (F14) and the ringtone with its volume (F15 AC-F15-32). */
+export const myChatPrefsSchema = z
+  .object({ readReceipts: z.boolean() })
+  .extend(ringtoneSettingsSchema.shape)
+  .meta({ id: "MyChatPrefsView" });
+/** Any of them; unknown keys are refused. */
+export const myChatPrefsBodySchema = myChatPrefsSchema.partial().strict().meta({ id: "MyChatPrefs" });
 
 /** Statuses of up to 100 people (AC-F14-26); people the asker may not see are left out. */
 export const statusQuerySchema = z.object({

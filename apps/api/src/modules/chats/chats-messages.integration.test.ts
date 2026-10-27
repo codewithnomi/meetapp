@@ -441,8 +441,16 @@ describe("group details and my settings", { timeout: 60_000 }, () => {
     expect(listed.every((p) => !p.pending && !p.external)).toBe(true);
     const outsider = await namedPerson(t, "g14-x", "Outsider");
     expect((await call(outsider.token, "GET", `/api/v1/conversations/${id}/members`)).statusCode).toBe(404);
-    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({ readReceipts: true });
+    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({
+      readReceipts: true,
+      ringtone: 1,
+      ringVolume: 70,
+    });
     await call(m1.token, "PATCH", "/api/v1/me/settings", { readReceipts: false });
-    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({ readReceipts: false });
+    expect((await call(m1.token, "GET", "/api/v1/me/settings")).json()).toEqual({
+      readReceipts: false,
+      ringtone: 1,
+      ringVolume: 70,
+    });
   });
 });
