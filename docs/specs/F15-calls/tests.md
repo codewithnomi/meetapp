@@ -450,7 +450,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F15-18 [AC-F15-08] One-to-on
 - **Level:** integration
 - **Given** DM(M1,M2), no call
 - **When** both send `POST /conversations/:id/calls` simultaneously (repeated 50 times, with random small delays)
-- **Then** exactly one running call each time (partial unique index); both are joined to it; no `call_rings` rows are created for either; no `ring` message is sent; one `call_started` note
+- **Then** exactly one running call each time (the chat's row is held while starting, plus the partial unique index); both are joined to it; a ring made for the second person by the first start is closed as answered at once (they joined), so nobody sees a ring; one `call_started` note
 
 ### TC-F15-60: Missing, busy or blocked camera or microphone
 - **Covers:** AC-F15-27

@@ -51,6 +51,11 @@ export const ERROR_CODES = [
   "CHAT_READ_ONLY",
   "CHAT_OUTSIDE_OFF",
   "CHAT_REQUEST_LIMIT",
+  // F15: calls from chats.
+  "CALL_FULL",
+  "CALL_ENDED",
+  "RING_OVER",
+  "CALL_RATE",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

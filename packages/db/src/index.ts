@@ -5,6 +5,7 @@ export { MIGRATIONS_FOLDER, migrationCount, runMigrations } from "./migrate.ts";
 export {
   account,
   callAttendances,
+  callRings,
   chatAttachments,
   chatEvents,
   chatMessages,
@@ -35,6 +36,7 @@ export {
   workspaces,
   type Call,
   type CallAttendance,
+  type CallRing,
   type ChatAttachment,
   type ChatMessage,
   type ChatPoll,

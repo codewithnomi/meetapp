@@ -1,0 +1,183 @@
+// Calls from chats (F15 design.md 3.1–3.3; AC-F15-01–04, 12, 14, 20, 26). A chat call is an F02 call
+// without a meeting (D072): no link, passcode or lobby; everyone is equal and may send their own
+// microphone, camera and screen. Membership and the chat's read-only rules (F14) are checked on every
+// request; starting and joining hold the chat's row, so a chat has one running call and at most 20 people.
+import type { CallAttendance, Call, Executor } from "@meetapp/db";
+import { CHAT_CALL_LIMITS, type CallMedia } from "@meetapp/contracts";
+import { AppError } from "../../plugins/errors.ts";
+import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
+import { CALL_LIMIT_MS, notFound, type CallsDeps } from "./admission.ts";
+import { insertAttendance } from "./attendances.repository.ts";
+import {
+  peopleCount,
+  peopleIn,
+  runningChatCall,
+  startChatCall,
+  type ChatCallsRepository,
+} from "./chat-calls.repository.ts";
+
+/** LiveKit's own cap: the 20-person rule counts people, so a few second windows still fit (design 3.1). */
+const ROOM_CAP = 25;
+
+/** The chat as the caller may use it now (F14's rules for sending; 404 or 403 `CHAT_READ_ONLY` otherwise). */
+export interface ChatPlace {
+  conversation: { id: string; workspaceId: string; kind: "direct" | "group"; name: string | null };
+  me: { id: string; name: string; external: boolean };
+  members: { userId: string; name: string; state: string }[];
+}
+
+export interface ChatCallsDeps {
+  calls: CallsDeps;
+  chatCalls: ChatCallsRepository;
+  place: (userId: string, conversationId: string) => Promise<ChatPlace>;
+  /** Saves a note in the chat ("Sara started a call"), delivered like a message. */
+  note: (place: ChatPlace, note: { event: "call_started"; callId: string; media: CallMedia }) => Promise<void>;
+}
+
+const full = () => new AppError(409, "CALL_FULL", "This call is full.");
+const ended = () => new AppError(409, "CALL_ENDED", "This call has ended.");
+
+/** The call's name for the app: the group's name, or the other people's names. */
+function titleOf(place: ChatPlace): string {
+  if (place.conversation.name) return place.conversation.name;
+  const others = place.members.filter((m) => m.userId !== place.me.id && m.state === "accepted");
+  return others.map((m) => m.name).join(", ");
+}
+
+/** Who rings when a call starts: the other accepted members, nobody in a group of more than 20 (AC-F15-04). */
+export function whoToRing(place: ChatPlace): string[] {
+  const accepted = place.members.filter((m) => m.state === "accepted");
+  if (accepted.length > CHAT_CALL_LIMITS.people) return [];
+  return accepted.filter((m) => m.userId !== place.me.id).map((m) => m.userId);
+}
+
+/** The room (made if needed, capped) and a pass for the person's own microphone, camera and screen. */
+async function chatCallAccess(deps: CallsDeps, attendance: CallAttendance, call: Call) {
+  const endsAt = new Date(call.startedAt.getTime() + CALL_LIMIT_MS).toISOString();
+  await deps.livekit.ensureRoom(call.id, JSON.stringify({ chatCall: true, locked: false, endsAt }), ROOM_CAP);
+  const pass = await deps.livekit.pass({
+    room: call.id,
+    identity: attendance.id,
+    name: attendance.displayName,
+    sources: ["camera", "microphone", "screen_share"],
+    attributes: {
+      role: "presenter",
+      group: attendance.participantGroup,
+      ...(attendance.userId ? { userId: attendance.userId } : {}),
+    },
+  });
+  return { callId: call.id, serverUrl: deps.serverUrl, pass, role: "presenter" as const };
+}
+
+function seatFor(deps: CallsDeps, place: ChatPlace, call: Call, ticket: string) {
+  const now = deps.now();
+  return {
+    workspaceId: place.conversation.workspaceId,
+    meetingId: null,
+    conversationId: place.conversation.id,
+    callId: call.id,
+    userId: place.me.id,
+    displayName: place.me.name,
+    guestDeviceHash: null,
+    participantGroup: place.me.external ? ("external" as const) : ("member" as const),
+    roleOverride: null,
+    status: "admitted" as const,
+    ticketHash: ticketFingerprint(ticket),
+    lobbyEnteredAt: null,
+    lastSeenAt: now,
+    admittedAt: now,
+    joinedAt: null,
+    leftAt: null,
+    leftReason: null,
+    actedBy: null,
+    lastEventAt: null,
+    rejoinedAt: null,
+  };
+}
+
+/** Takes a seat in the call, unless 20 other people are already in it (AC-F15-14). */
+async function takeSeat(deps: ChatCallsDeps, tx: Executor, place: ChatPlace, call: Call) {
+  const already = (await peopleIn(tx, call.id)).includes(place.me.id);
+  if (!already && (await peopleCount(tx, call.id)) >= CHAT_CALL_LIMITS.people) throw full();
+  const ticket = newTicket();
+  const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, ticket));
+  await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());
+  return { attendance, ticket };
+}
+
+async function answer(
+  deps: ChatCallsDeps,
+  place: ChatPlace,
+  entry: { attendance: CallAttendance; call: Call; ticket: string },
+) {
+  return {
+    attendanceId: entry.attendance.id,
+    ticket: entry.ticket,
+    status: entry.attendance.status,
+    title: titleOf(place),
+    group: entry.attendance.participantGroup,
+    call: await chatCallAccess(deps.calls, entry.attendance, entry.call),
+  };
+}
+
+/** Starts the chat's call, or joins the running one without ringing anyone again (AC-F15-01, 03, 26). */
+async function start(deps: ChatCallsDeps, userId: string, conversationId: string, media: CallMedia) {
+  const place = await deps.place(userId, conversationId);
+  const entry = await deps.chatCalls.locked(conversationId, async (tx) => {
+    const running = await runningChatCall(tx, conversationId);
+    const call =
+      running ?? (await startChatCall(tx, { conversationId, workspaceId: place.conversation.workspaceId, media }));
+    const seat = await takeSeat(deps, tx, place, call);
+    if (!running) await deps.chatCalls.ring(tx, call, whoToRing(place));
+    return { ...seat, call, started: !running };
+  });
+  if (entry.started) {
+    await deps.calls.scheduler.schedule(entry.call);
+    await deps.note(place, { event: "call_started", callId: entry.call.id, media });
+  }
+  return answer(deps, place, entry);
+}
+
+/** Joins a chat's running call (**Join** in the chat, AC-F15-03, 15); membership checked now (AC-F15-20). */
+async function join(deps: ChatCallsDeps, userId: string, callId: string) {
+  const call = await deps.chatCalls.byId(callId);
+  if (!call?.conversationId) throw notFound();
+  // Membership first, so someone outside the chat learns nothing about its calls.
+  const place = await deps.place(userId, call.conversationId);
+  if (call.endedAt) throw ended();
+  const entry = await deps.chatCalls.locked(call.conversationId, async (tx) => {
+    const running = await runningChatCall(tx, call.conversationId ?? "");
+    if (running?.id !== callId) throw ended();
+    return { ...(await takeSeat(deps, tx, place, running)), call: running };
+  });
+  return answer(deps, place, entry);
+}
+
+/** The chat's running call for **Join**, or none. */
+async function running(deps: ChatCallsDeps, userId: string, conversationId: string) {
+  // Only people who may call here see the running call (others get 404).
+  await deps.place(userId, conversationId);
+  const call = await deps.chatCalls.running(conversationId);
+  if (!call) return { call: null };
+  // Whoever took the first seat started the call.
+  const starter = await deps.chatCalls.starterOf(call.id);
+  return {
+    call: {
+      callId: call.id,
+      media: call.media ?? "video",
+      startedAt: call.startedAt.toISOString(),
+      startedBy: { userId: starter?.userId ?? "", name: starter?.name ?? "" },
+      people: await deps.chatCalls.peopleCount(call.id),
+    },
+  };
+}
+
+export function createChatCallsService(deps: ChatCallsDeps) {
+  return {
+    start: (userId: string, conversationId: string, media: CallMedia) => start(deps, userId, conversationId, media),
+    join: (userId: string, callId: string) => join(deps, userId, callId),
+    running: (userId: string, conversationId: string) => running(deps, userId, conversationId),
+  };
+}
+
+export type ChatCallsService = ReturnType<typeof createChatCallsService>;
