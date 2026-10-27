@@ -70,7 +70,7 @@ People talk to each other every day in MeetApp, not only in meetings: one-to-one
 - **AC-F14-25:** WHEN a message can't be sent (no connection), THEN it shows "Not sent" with **Retry**, as in F03; it is never sent twice.
 
 ### Status (presence)
-- **AC-F14-26:** WHEN people are listed (chat list, chat header, To: suggestions), THEN each shows a status dot set automatically: **Available** (a key or mouse action in MeetApp within the last 5 minutes), **Away** (no action for 5 minutes, or the computer locked), **In a meeting** (in a call), **Offline** (app closed or signed out). Status is seen only by colleagues in the same workspace and by accepted external contacts; blocked people and pending requests see none.
+- **AC-F14-26:** WHEN people are listed (chat list, chat header, To: suggestions), THEN each shows a status dot set automatically: **Available** (a key or mouse action in MeetApp within the last 5 minutes), **Away** (no action for 5 minutes, or the computer locked), **In a call** (in a meeting or a call from a chat; called "In a meeting" until F15, D070), **Offline** (app closed or signed out). Status is seen only by colleagues in the same workspace and by accepted external contacts; blocked people and pending requests see none.
 
 ### Workspace setting
 - **AC-F14-27:** WHEN the owner or an admin turns off **Chat with people outside the workspace** (Workspace settings; on by default, as in Teams), THEN members can't start new chats with external people, external people can't start chats with members in this workspace, and existing external chats (and group chats with external people) become read-only with a note; turning it back on makes them writable again.
