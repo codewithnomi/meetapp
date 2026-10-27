@@ -40,6 +40,8 @@ export interface CallsDeps {
    * every-minute clean-up runs (set by the chat wiring; meeting calls ignore it).
    */
   chatCallHooks?: {
+    /** A seat connected: a transfer's old seat leaves now (AC-F15-33). */
+    joined: (attendanceId: string) => Promise<void>;
     left: (callId: string) => Promise<void>;
     ended: (callId: string) => Promise<void>;
     ringTimeout: (callId: string) => Promise<void>;

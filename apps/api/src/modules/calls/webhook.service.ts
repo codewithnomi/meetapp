@@ -35,6 +35,7 @@ async function joinedRoom(deps: CallsDeps, room: string, identity: string, at: D
   const call = attendance?.callId ? await deps.calls.byId(attendance.callId) : undefined;
   if (call && !call.endedAt && allowedIn(attendance, room, deps.now()) && attendance) {
     await deps.events.inCall(attendance.id, at);
+    if (call.conversationId) await deps.chatCallHooks?.joined(attendance.id);
     return;
   }
   await deps.livekit.remove(room, identity).catch(() => undefined);

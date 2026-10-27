@@ -67,7 +67,15 @@ async function chatCallAccess(deps: CallsDeps, attendance: CallAttendance, call:
   return { callId: call.id, serverUrl: deps.serverUrl, pass, role: "presenter" as const };
 }
 
-function seatFor(deps: CallsDeps, place: ChatPlace, call: Call, ticket: string) {
+/** `replaces`: transfer to this device, the seat this one takes over (AC-F15-33). */
+type SeatOptions = { replaces?: string | undefined };
+
+function seatFor(
+  deps: CallsDeps,
+  place: ChatPlace,
+  call: Call,
+  { ticket, replaces }: SeatOptions & { ticket: string },
+) {
   const now = deps.now();
   return {
     workspaceId: place.conversation.workspaceId,
@@ -87,18 +95,24 @@ function seatFor(deps: CallsDeps, place: ChatPlace, call: Call, ticket: string) 
     joinedAt: null,
     leftAt: null,
     leftReason: null,
-    actedBy: null,
+    // A transfer's new seat names the seat it replaces (transfer.service.ts).
+    actedBy: replaces ?? null,
     lastEventAt: null,
     rejoinedAt: null,
   };
 }
 
 /** Takes a seat in the call, unless 20 other people are already in it (AC-F15-14). */
-async function takeSeat(deps: ChatCallsDeps, tx: Executor, place: ChatPlace, call: Call) {
+async function takeSeat(
+  deps: ChatCallsDeps,
+  tx: Executor,
+  place: ChatPlace,
+  { call, replaces }: SeatOptions & { call: Call },
+) {
   const already = (await peopleIn(tx, call.id)).includes(place.me.id);
   if (!already && (await peopleCount(tx, call.id)) >= CHAT_CALL_LIMITS.people) throw full();
   const ticket = newTicket();
-  const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, ticket));
+  const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, { ticket, replaces }));
   await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());
   return { attendance, ticket };
 }
@@ -126,7 +140,7 @@ async function start(deps: ChatCallsDeps, userId: string, conversationId: string
     const running = await runningChatCall(tx, conversationId);
     const call =
       running ?? (await startChatCall(tx, { conversationId, workspaceId: place.conversation.workspaceId, media }));
-    const seat = await takeSeat(deps, tx, place, call);
+    const seat = await takeSeat(deps, tx, place, { call });
     const rings = running ? [] : await deps.chatCalls.ring(tx, call, whoToRing(place));
     return { ...seat, call, rings, started: !running };
   });
@@ -139,7 +153,7 @@ async function start(deps: ChatCallsDeps, userId: string, conversationId: string
 }
 
 /** Joins a chat's running call (**Join** in the chat, AC-F15-03, 15); membership checked now (AC-F15-20). */
-async function join(deps: ChatCallsDeps, userId: string, callId: string) {
+async function join(deps: ChatCallsDeps, userId: string, callId: string, options: SeatOptions = {}) {
   const call = await deps.chatCalls.byId(callId);
   if (!call?.conversationId) throw notFound();
   // Membership first, so someone outside the chat learns nothing about its calls.
@@ -148,7 +162,7 @@ async function join(deps: ChatCallsDeps, userId: string, callId: string) {
   const entry = await deps.chatCalls.locked(call.conversationId, async (tx) => {
     const running = await runningChatCall(tx, call.conversationId ?? "");
     if (running?.id !== callId) throw ended();
-    return { ...(await takeSeat(deps, tx, place, running)), call: running };
+    return { ...(await takeSeat(deps, tx, place, { call: running, replaces: options.replaces })), call: running };
   });
   return answer(deps, place, entry);
 }
@@ -176,6 +190,8 @@ export function createChatCallsService(deps: ChatCallsDeps) {
   return {
     start: (userId: string, conversationId: string, media: CallMedia) => start(deps, userId, conversationId, media),
     join: (userId: string, callId: string) => join(deps, userId, callId),
+    /** A seat with options: transfer to this device (transfer.service.ts). */
+    seat: (userId: string, callId: string, options: SeatOptions) => join(deps, userId, callId, options),
     running: (userId: string, conversationId: string) => running(deps, userId, conversationId),
   };
 }
