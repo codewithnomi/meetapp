@@ -11,7 +11,7 @@ export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
 export const MEMBER_STATES = ["accepted", "pending", "declined", "left", "removed"] as const;
 export type MemberState = (typeof MEMBER_STATES)[number];
 
-export const STATUSES = ["available", "away", "in_meeting", "offline"] as const;
+export const STATUSES = ["available", "away", "in_call", "offline"] as const;
 export type Status = (typeof STATUSES)[number];
 
 /** Limits from the requirements (AC-F14-05, 12, 15, 16, 17) and design 3.4. */

@@ -1007,7 +1007,7 @@
     "status": {
       "available": "Available",
       "away": "Away",
-      "in_meeting": "In a meeting",
+      "in_call": "In a call",
       "offline": "Offline"
     },
     "people_one": "{{count}} person",

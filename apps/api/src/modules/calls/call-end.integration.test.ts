@@ -305,3 +305,25 @@ describe("timeouts and ending", { timeout: 120_000 }, () => {
     expect(await stateOf(callId, m2.id)).toBe("missed");
   });
 });
+
+describe("status during a chat call", { timeout: 60_000 }, () => {
+  const statusOf = async (viewer: Person, target: Person) =>
+    (await call(viewer.token, "GET", `/api/v1/people/status?ids=${target.id}`)).json<{
+      statuses: { userId: string; status: string }[];
+    }>().statuses[0]?.status;
+
+  it("TC-F15-38 [AC-F15-16] in a chat call colleagues see In a call; after leaving it goes back; others see nothing", async () => {
+    const { people, workspaceId } = await team("st38", 2);
+    const [m1, m2] = people as [Person, Person];
+    const stranger = await namedPerson(t, "st38-x", "Stranger");
+    const m2Line = await line(m2);
+    expect(await statusOf(m1, m2)).toBe("available");
+    const callId = await startCall(m2, await chatOf(m2, workspaceId, [m1]));
+    await connect(callId, m2.id);
+    expect(await statusOf(m1, m2)).toBe("in_call");
+    expect(await statusOf(stranger, m2)).toBeUndefined();
+    await leave(callId, m2.id);
+    expect(await statusOf(m1, m2)).toBe("available");
+    m2Line.ws.terminate();
+  });
+});

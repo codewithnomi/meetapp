@@ -1,5 +1,5 @@
 // Status (F14 AC-F14-26, design 3.8), worked out from a person's open live lines and calls, as in
-// Teams: In a meeting while in a call; Available after a key or mouse action in the last 5 minutes;
+// Teams: In a call while in a call; Available after a key or mouse action in the last 5 minutes;
 // Away when idle for 5 minutes or the computer is locked; Offline 30 seconds after the last line
 // closed (a short grace for reconnects).
 import type { Status } from "@meetapp/contracts";
@@ -24,7 +24,7 @@ export interface Presence {
 }
 
 export function statusOf(presence: Presence, now: number): Status {
-  if (presence.inCall) return "in_meeting";
+  if (presence.inCall) return "in_call";
   const open = presence.lines.filter((line) => now - line.seenAt < LINE_LOST_MS);
   if (open.some((line) => !line.locked && now - line.activeAt < ACTIVE_FOR_MS)) return "available";
   if (open.length > 0) return "away";

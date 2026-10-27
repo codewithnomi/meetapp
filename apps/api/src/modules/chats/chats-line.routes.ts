@@ -25,7 +25,7 @@ export const chatsLineRoutes: FastifyPluginAsyncZod<{
     "/api/v1/people/status",
     {
       schema: {
-        summary: "Statuses of people (Available, Away, In a meeting, Offline)",
+        summary: "Statuses of people (Available, Away, In a call, Offline)",
         description:
           "Only colleagues in shared team workspaces and accepted contacts; anyone else (blocked, pending, strangers) is left out of the answer. Up to 100 ids, comma-separated.",
         tags: ["chats"],

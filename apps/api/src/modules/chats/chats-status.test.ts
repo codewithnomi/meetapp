@@ -11,7 +11,7 @@ describe("status", () => {
     expect(statusOf({ ...none, lines: [line(2 * 60_000)] }, NOW)).toBe("available");
     expect(statusOf({ ...none, lines: [line(6 * 60_000)] }, NOW)).toBe("away");
     expect(statusOf({ ...none, lines: [line(1000, true)] }, NOW)).toBe("away");
-    expect(statusOf({ ...none, lines: [line(1000)], inCall: true }, NOW)).toBe("in_meeting");
+    expect(statusOf({ ...none, lines: [line(1000)], inCall: true }, NOW)).toBe("in_call");
     expect(statusOf({ ...none, closedAt: NOW - 20_000 }, NOW)).toBe("away");
     expect(statusOf({ ...none, closedAt: NOW - 40_000 }, NOW)).toBe("offline");
     expect(statusOf(none, NOW)).toBe("offline");

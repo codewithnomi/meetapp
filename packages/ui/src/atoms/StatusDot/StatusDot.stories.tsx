@@ -12,5 +12,5 @@ type Story = StoryObj<typeof meta>;
 
 export const Available: Story = {};
 export const Away: Story = { args: { status: "away", label: "Away" } };
-export const InAMeeting: Story = { args: { status: "in_meeting", label: "In a meeting" } };
+export const InACall: Story = { args: { status: "in_call", label: "In a call" } };
 export const Offline: Story = { args: { status: "offline", label: "Offline" } };

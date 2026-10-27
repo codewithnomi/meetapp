@@ -20,7 +20,7 @@ const meta = {
       {
         id: "b",
         name: "Bilal Ahmed",
-        status: { value: "in_meeting", label: "In a meeting" },
+        status: { value: "in_call", label: "In a call" },
         removeLabel: "Remove Bilal Ahmed from the group",
       },
       {

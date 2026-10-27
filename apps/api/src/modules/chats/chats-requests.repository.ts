@@ -191,7 +191,7 @@ async function statusAudience(db: Database, viewer: string) {
   return people;
 }
 
-/** Which of these people are in a call now ("In a meeting", AC-F14-26). */
+/** Which of these people are in a call now ("In a call", AC-F14-26, D070). */
 async function inCall(db: Database, userIds: string[]) {
   if (userIds.length === 0) return new Set<string>();
   const rows = await db

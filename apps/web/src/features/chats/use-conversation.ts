@@ -15,7 +15,7 @@ export interface ChatMember {
   photoUrl: string | null;
   external: boolean;
   pending: boolean;
-  status: "available" | "away" | "in_meeting" | "offline" | null;
+  status: "available" | "away" | "in_call" | "offline" | null;
 }
 
 export function useMembers(conversationId: string, enabled = true) {

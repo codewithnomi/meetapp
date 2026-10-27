@@ -7,7 +7,7 @@ describe("StatusDot", () => {
   it.each<[ChatStatus, string]>([
     ["available", "Available"],
     ["away", "Away"],
-    ["in_meeting", "In a meeting"],
+    ["in_call", "In a call"],
     ["offline", "Offline"],
   ])("TC-F14-79 [AC-F14-26] %s is named %s", (status, label) => {
     render(<StatusDot status={status} label={label} />);

@@ -30,7 +30,7 @@ export interface FoundPeople {
     name: string;
     photoUrl: string | null;
     external: boolean;
-    status: "available" | "away" | "in_meeting" | "offline" | null;
+    status: "available" | "away" | "in_call" | "offline" | null;
   }[];
   noAccount: boolean;
 }

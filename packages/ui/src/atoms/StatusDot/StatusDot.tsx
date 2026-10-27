@@ -1,13 +1,13 @@
 // StatusDot (atom): a person's status as a small dot on the corner of their picture (approved canvas
-// "Chats (F14)", AC-F14-26): Available green, Away amber, In a meeting red, Offline an empty ring. The
+// "Chats (F14)", AC-F14-26): Available green, Away amber, In a call red, Offline an empty ring. The
 // colour is never the only sign: the dot carries the status word for screen readers.
 import { cx } from "../../lib/cx.ts";
 
-export type ChatStatus = "available" | "away" | "in_meeting" | "offline";
+export type ChatStatus = "available" | "away" | "in_call" | "offline";
 
 export interface StatusDotProps {
   status: ChatStatus;
-  /** Already translated: "Available", "Away", "In a meeting", "Offline". */
+  /** Already translated: "Available", "Away", "In a call", "Offline". */
   label: string;
   /** Sits on the corner of an avatar (the avatar's wrapper is `relative`). */
   placed?: boolean;
@@ -17,7 +17,7 @@ export interface StatusDotProps {
 const COLORS: Record<ChatStatus, string> = {
   available: "bg-success",
   away: "bg-warning",
-  in_meeting: "bg-danger",
+  in_call: "bg-danger",
   offline: "bg-surface shadow-[inset_0_0_0_2px_var(--ink-subtle)]",
 };
 
