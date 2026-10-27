@@ -49,8 +49,14 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - **AC-F15-15:** WHEN a call starts, ends, or is missed, THEN the chat shows a note: "<name> started a call" with **Join** while it runs; "Call ended · 12m 30s" when it ends ("1h 05m" for an hour or more); and for each person called who never joined (including one who declined), "Missed call from <name>" (with **Call back**) in their view, as in Teams. The chat list's last line shows these notes and a missed call counts as unread.
 - **AC-F15-16:** WHEN a person is in a call (from a chat or a meeting), THEN their status shows **In a call** to the people who may see their status (F14 AC-26), and changes back to Available or Away (F14 AC-26) within 30 seconds of leaving. If the app closes or the connection drops during a call, D068 applies (Away for 30 seconds, then Offline). This replaces F14's "In a meeting" with one status, **In a call**, for meetings and chat calls (D070).
 
+### Settings: devices, backgrounds and ringtone (owner request, 2026-10-27)
+- **AC-F15-29:** WHEN a person opens **Settings → Devices**, THEN they can choose their **microphone**, **speaker** and **camera** from the devices on that computer, see a live **camera preview**, a microphone level meter, play a **Test speakers** sound, and turn noise suppression on or off. Their choices are remembered on that computer and used for every call and meeting (pre-join screen, in-call device settings and incoming calls start from them). A chosen device that is unplugged falls back to the computer's default and says so (F02 AC-31).
+- **AC-F15-30:** WHEN a person chooses a **background effect** (in Settings → Devices with the camera preview, on the pre-join screen, or during a call or meeting from the camera menu), THEN they can pick **None**, **Blur**, or one of at least **8 built-in pictures** (for example an office, a living room, a bookshelf, a café, nature, a city view and two calm abstract styles), as in Google Meet and Teams. They see it on their own preview before others do; the choice is remembered on that computer and applies in calls and meetings. The effect is made on their own computer: the video sent already has it, and no picture or video goes to any other service.
+- **AC-F15-31:** WHEN a background effect is on and the computer can't keep the video smooth (under 15 frames a second for 5 seconds), THEN the app turns the effect off by itself and says why, so the call keeps working.
+- **AC-F15-32:** WHEN a person opens **Settings → Calls**, THEN they can choose the **ringtone** for incoming calls from **5 ringtones** (each with a play button to hear it) and its volume; the choice is kept with their account (the same on every computer) and used by AC-F15-05. The default is the first ringtone.
+
 ### Screens and quality
-- **AC-F15-17:** WHEN the screens of this feature are built (call buttons, calling screen, incoming call, Add people, chat notes), THEN they match screen designs approved by the owner before the design stage (D029), follow Teams, and use the design system.
+- **AC-F15-17:** WHEN the screens of this feature are built (call buttons, calling screen, incoming call, Add people, chat notes, Settings → Devices with the preview and backgrounds, Settings → Calls with ringtones), THEN they match screen designs approved by the owner before the design stage (D029), follow Teams, and use the design system.
 - **AC-F15-18:** WHEN those screens are used with the keyboard alone or a screen reader, THEN everything works: the incoming call takes focus and is announced, **Accept** and **Decline** are reachable without a mouse, and focus returns where it was when it closes. All text comes from the translation file; loading and error states are shown ("Couldn't start the call", with Retry).
 - **AC-F15-26:** WHEN both people in a one-to-one chat start a call at the same moment, THEN only one call is created and both are joined to it, without ringing each other.
 - **AC-F15-27:** WHEN the camera or microphone is missing, in use by another app or not allowed when starting or accepting a call, THEN the call still starts or is accepted with that device off, and the person sees F02's device message saying which one and how to fix it (AC-F02-10).
@@ -71,10 +77,12 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - Everyone in a chat call is equal (no organizer controls); one-to-one calls end when either person leaves.
 - Being called during another call: you can accept, which leaves the other call (no hold).
 - Status during any call: **In a call** (F14 showed "In a meeting"; one status for both from now on, D070).
+- Backgrounds and blur run on the person's own computer with a free library (chosen in the design), so they cost nothing and send no video elsewhere; they apply to meetings too (F02 had left them out).
 - Cost: none (the same call server and backend, D017). Load: the existing 25-person meeting load test covers a 20-person call.
 
 ## Out of scope
 - Desktop/system notifications for incoming calls when the app is hidden or minimised, and ringing on a closed app: **F04 Desktop app**.
+- Uploading one's own background picture: later (the built-in pictures and blur come now).
 - Decline with a quick message ("I'm busy, will call back"): later.
 - Phone numbers, voicemail, call transfer, hold, call history page ("Calls" app): later, if wanted.
 - Recording, live captions and transcripts of calls: **F05/F06**.
