@@ -74,7 +74,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 
 ### 3.4 Answering (AC-06, 07, 10)
 - The ring row is looked up by `(callId, userId = the signed-in person)`; no row → 404; a row that isn't `ringing` → 409 `RING_OVER`.
-- `POST /calls/:callId/accept` `{ media }`: the ring must be `ringing`, membership is checked again, the ring becomes `accepted`, and F02's join answer comes back (within 3 seconds to being in the call, AC-06). If the person is in another call, the app first leaves it (F02 leave), then accepts.
+- `POST /calls/:callId/accept` `{ media }`: the ring must be `ringing`, membership is checked again, the ring becomes `accepted`, and F02's join answer comes back (within 3 seconds to being in the call, AC-06). If the person is in another call, the app accepts first and then leaves the other call (F02 leave): a failed accept keeps them where they were. If joining fails after the ring was taken, the ring sounds again so they can retry (T-fix-3).
 - `POST /calls/:callId/decline`: ring `declined`, `ring_stop` to their windows, and a `call_missed` note for them (AC-15); one-to-one: the call ends.
 - `DELETE /calls/:callId/ring` (caller's **Cancel**, only the person who started the call; others 404): all `ringing` rows → `cancelled`, `ring_stop` to everyone, notes as missed (AC-09).
 - `POST /calls/:callId/ring` `{ userIds }` (**Add people**): each must be an accepted chat member not in the call; at most 20 in the call; counts toward the rate limit (AC-13, 22).

@@ -193,14 +193,14 @@ Test names must include the TC and AC IDs, e.g. `TC-F15-18 [AC-F15-08] One-to-on
 - **Level:** integration
 - **Given** M2 is in a meeting (F02) and M3 is in another chat call
 - **When** M1 calls each of them
-- **Then** both get `ring` (the message tells nothing that stops it); accepting makes the app leave the current call first (F02 leave) and then `accept`; M2's meeting attendance ends before the chat attendance starts
+- **Then** both get `ring` (the message tells nothing that stops it); accepting makes the app `accept` first and then leave the current call (F02 leave), so a failed accept keeps the meeting and the ring (changed in T-fix-3); M2's meeting attendance ends right after the chat attendance starts
 
 ### TC-F15-25: Incoming call during a call: quiet tone and button names
 - **Covers:** AC-F15-10
 - **Level:** e2e
 - **Given** M2 in a meeting
 - **When** M1 calls M2
-- **Then** the incoming window shows "You're in … Accepting leaves it", the buttons are named **Leave current call and accept with video/audio**, the tone plays at the lower volume; pressing it leaves the meeting and joins the call; there is no hold option
+- **Then** the incoming window shows "You're in … Accepting leaves it", the buttons are named **Leave current call and accept with video/audio**, the tone plays at the lower volume; pressing it joins the call and then leaves the meeting; if joining fails, the meeting and the ring stay (T-fix-3); there is no hold option
 
 ### TC-F15-26: No window open: nothing rings, missed note later
 - **Covers:** AC-F15-11

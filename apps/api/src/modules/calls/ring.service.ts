@@ -37,13 +37,22 @@ async function ownRing(deps: RingDeps, userId: string, callId: string) {
 
 async function accept(deps: RingDeps, userId: string, callId: string) {
   const { ring } = await ownRing(deps, userId, callId);
+  // The first answer wins (only a ringing row changes); if joining then fails (full, ended, rate limit),
+  // the ring sounds again and nothing has stopped yet, so the person can try again (T-fix-3).
   const [won] = await deps.chatCalls.stopRing(ring.id, "accepted", deps.calls.now());
   if (!won) throw over();
+  let joined: Awaited<ReturnType<RingDeps["join"]>>;
+  try {
+    joined = await deps.join(userId, callId);
+  } catch (error) {
+    await deps.chatCalls.reopenRing(ring.id);
+    throw error;
+  }
   await deps.targets.stop(userId, callId, "accepted");
   // The caller's "Calling…" screen moves into the call (F15 design 2.2).
   const starter = await deps.chatCalls.starterOf(callId);
   if (starter?.userId && starter.userId !== userId) await deps.targets.stop(starter.userId, callId, "accepted");
-  return deps.join(userId, callId);
+  return joined;
 }
 
 /** Ends a one-to-one call nobody else is in (decline or no answer, AC-F15-07, 08). */

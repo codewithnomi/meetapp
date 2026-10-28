@@ -34,6 +34,20 @@ async function latestRings(executor: Executor, callId: string) {
   return new Map(rows.map((row) => [row.userId, row.state]));
 }
 
+function ringingFor(executor: Executor, userId: string) {
+  return executor
+    .select()
+    .from(callRings)
+    .where(and(eq(callRings.userId, userId), eq(callRings.state, "ringing")));
+}
+
+function reopenRing(executor: Executor, ringId: string) {
+  return executor
+    .update(callRings)
+    .set({ state: "ringing", answeredAt: null })
+    .where(and(eq(callRings.id, ringId), eq(callRings.state, "accepted")));
+}
+
 export function createCallRingsRepository(executor: Executor) {
   return {
     /** One ringing row per person rung (F15 design 3.3); delivery is the ring targets' job (T4). */
@@ -47,6 +61,8 @@ export function createCallRingsRepository(executor: Executor) {
     ringOf: (callId: string, userId: string) => ringOf(executor, callId, userId),
     /** One ring's answer, if it is still ringing. */
     stopRing: (ringId: string, state: RingEnd, at: Date) => stopRinging(executor, eq(callRings.id, ringId), state, at),
+    /** An accept whose join failed: the ring sounds again, so the person can try again (T-fix-3). */
+    reopenRing: (ringId: string) => reopenRing(executor, ringId),
     /** Every ring of a call still ringing (cancel, end, timeout). */
     stopCallRings: (callId: string, state: RingEnd, at: Date) =>
       stopRinging(executor, eq(callRings.callId, callId), state, at),
@@ -59,11 +75,7 @@ export function createCallRingsRepository(executor: Executor) {
         at,
       ),
     /** The rings still sounding for a person (a window opened while ringing gets them, TC-F15-44). */
-    ringingFor: (userId: string) =>
-      executor
-        .select()
-        .from(callRings)
-        .where(and(eq(callRings.userId, userId), eq(callRings.state, "ringing"))),
+    ringingFor: (userId: string) => ringingFor(executor, userId),
     /** A person rung who starts or joins the call themselves has answered (AC-F15-26). */
     answeredByJoining: (tx: Executor, callId: string, userId: string, at: Date) =>
       tx

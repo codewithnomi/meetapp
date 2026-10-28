@@ -95,7 +95,7 @@ describe("the incoming call", () => {
     await waitFor(() => expect(api.some((c) => c.path.endsWith("/decline"))).toBe(true));
   });
 
-  it("TC-F15-25 [AC-F15-10] during a meeting, accepting leaves it first, then joins the call", async () => {
+  it("TC-F15-25 [AC-F15-10] during a meeting, accepting joins the call, then leaves the meeting", async () => {
     const { calls: api } = fakeApi({
       [`DELETE /api/v1/attendances/${VISIT.attendanceId}`]: noContent,
       [`POST /api/v1/calls/${CALL_ID}/accept`]: () =>
@@ -108,9 +108,25 @@ describe("the incoming call", () => {
     await userEvent.click(screen.getByRole("button", { name: "Leave current call and accept with audio" }));
     await waitFor(() => expect(accepted).toHaveBeenCalledTimes(1));
     const paths = api.map((c) => `${c.method} ${c.path}`);
-    expect(paths.indexOf(`DELETE /api/v1/attendances/${VISIT.attendanceId}`)).toBeLessThan(
-      paths.indexOf(`POST /api/v1/calls/${CALL_ID}/accept`),
+    // Accepted first, then the meeting is left: a failed accept never drops the person (T-fix-3).
+    expect(paths.indexOf(`POST /api/v1/calls/${CALL_ID}/accept`)).toBeLessThan(
+      paths.indexOf(`DELETE /api/v1/attendances/${VISIT.attendanceId}`),
     );
+    expect(paths).toContain(`DELETE /api/v1/attendances/${VISIT.attendanceId}`);
     expect(useChatCall.getState().call).toMatchObject({ callId: CALL_ID, media: "audio", phase: "in_call" });
+  });
+
+  it("T-fix-3 [AC-F15-10] a failed accept keeps the meeting and the ring, to try again", async () => {
+    const { calls: api } = fakeApi({
+      [`POST /api/v1/calls/${CALL_ID}/accept`]: () => json({ error: { code: "CALL_FULL" } }, 409),
+    });
+    useVisit.getState().start({ ...VISIT, status: "in_call", title: "Design review" });
+    show();
+    await hear(RING);
+    await userEvent.click(await screen.findByRole("button", { name: "Leave current call and accept with video" }));
+    expect(await screen.findByText("Couldn't join the call.")).toBeInTheDocument();
+    expect(screen.getByRole("alertdialog", { name: "Incoming call" })).toBeInTheDocument();
+    expect(api.some((c) => c.method === "DELETE")).toBe(false);
+    expect(useVisit.getState().visit?.title).toBe("Design review");
   });
 });

@@ -8,7 +8,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLiveLine } from "../chats/index.ts";
-import { leaveMeeting, loadPrefs, savePrefs, useVisit } from "../meetings/index.ts";
+import type { ApiError } from "../api/index.ts";
+import { leaveMeeting, loadPrefs, savePrefs, useVisit, type Joined } from "../meetings/index.ts";
 import { acceptCall, declineCall, ringSettings } from "./calls-api.ts";
 import { useChatCall } from "./chat-call.ts";
 import type { CallMedia } from "./call-types.ts";
@@ -64,14 +65,17 @@ function useAnswer(onAccepted: () => void) {
   const endVisit = useVisit((state) => state.end);
   const begin = useChatCall((state) => state.begin);
   const endCall = useChatCall((state) => state.end);
-  const accept = useMutation({
+  const accept = useMutation<Joined, ApiError, { ring: RingMessage; media: CallMedia }>({
+    // Accept first; only once the new call has taken the person is the current call or meeting left, so a
+    // failed accept never drops them from it (T-fix-3).
     mutationFn: async ({ ring, media }: { ring: RingMessage; media: CallMedia }) => {
+      const joined = await acceptCall(ring.callId, media);
       if (visit) {
         await leaveMeeting(visit);
         endCall();
         endVisit();
       }
-      return acceptCall(ring.callId, media);
+      return joined;
     },
     onSuccess: (joined, { ring, media }) => {
       remove(ring.callId);
@@ -87,7 +91,10 @@ function useAnswer(onAccepted: () => void) {
       });
       onAccepted();
     },
-    onError: (_error, { ring }) => remove(ring.callId),
+    // A ring that is over (answered elsewhere, ended) goes; otherwise it stays, to try again.
+    onError: (error, { ring }) => {
+      if (error.code === "RING_OVER" || error.code === "NOT_FOUND") remove(ring.callId);
+    },
   });
   const decline = (ring: RingMessage) => {
     remove(ring.callId);
