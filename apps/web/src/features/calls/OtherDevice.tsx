@@ -10,6 +10,7 @@ import { useVisit, type Joined } from "../meetings/index.ts";
 import { CALL_KEYS } from "./call-keys.ts";
 import { activeCalls, joinCall, transferCall } from "./calls-api.ts";
 import type { ActiveCalls } from "./call-types.ts";
+import { useChatCall } from "./chat-call.ts";
 import { useEnterCall } from "./enter-call.ts";
 
 type Active = ActiveCalls["calls"][number];
@@ -24,6 +25,7 @@ function move({ call, transfer }: Move): Promise<Joined> {
 export function OtherDevice({ onEntered }: { onEntered: () => void }) {
   const { t } = useTranslation();
   const inCall = useVisit((state) => state.visit !== undefined);
+  const left = useChatCall((state) => state.left);
   const active = useQuery({
     queryKey: CALL_KEYS.active,
     queryFn: activeCalls,
@@ -45,7 +47,7 @@ export function OtherDevice({ onEntered }: { onEntered: () => void }) {
   });
   // An answer that isn't the expected list (an older backend, a test double) simply shows no bar.
   const calls = Array.isArray(active.data?.calls) ? active.data.calls : [];
-  const call = calls.find((c) => c.seats.length > 0 && c.conversationId !== null);
+  const call = calls.find((c) => c.seats.length > 0 && c.conversationId !== null && c.callId !== left);
   if (inCall || !call) return null;
   const last = moving.variables;
   return (

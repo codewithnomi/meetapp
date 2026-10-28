@@ -93,11 +93,16 @@ async function expire(deps: CallEndDeps, olderThanMs: number, callId?: string) {
   }
 }
 
+/** How early the 30-second job may stop a ring. */
+const RING_JOB_SLACK_MS = 500;
+
 export function createCallEndService(deps: CallEndDeps) {
   return {
     left: (callId: string) => left(deps, callId),
     ended: (callId: string) => ended(deps, callId),
-    ringTimeout: (callId: string) => expire(deps, CHAT_CALL_LIMITS.ringSeconds * 1000, callId),
+    // The job is due 30 s after the call started; its rings were written a moment later, and the job may
+    // run a moment early, so it takes rings up to half a second younger too (T-fix-9).
+    ringTimeout: (callId: string) => expire(deps, CHAT_CALL_LIMITS.ringSeconds * 1000 - RING_JOB_SLACK_MS, callId),
     sweep: () => expire(deps, SWEEP_AFTER_MS),
   };
 }

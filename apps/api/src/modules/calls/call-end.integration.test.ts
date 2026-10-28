@@ -198,6 +198,39 @@ describe("timeouts and ending", { timeout: 120_000 }, () => {
     for (const l of lines) l.ws.terminate();
   });
 
+  it("T-fix-9 [AC-F15-03] joining while rung answers the ring: the caller's Calling moves into the call", async () => {
+    const { people, workspaceId } = await team("fx9j", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await chatOf(m1, workspaceId, [m2]);
+    const [caller1, rung] = [await line(m1), await line(m2)];
+    const callId = await startCall(m1, id);
+    expect((await call(m2.token, "POST", `/api/v1/calls/${callId}/join`)).statusCode).toBe(200);
+    expect(await until(() => stopFor(callId, "accepted")(caller1))).toBeTruthy();
+    expect(await until(() => stopFor(callId, "accepted")(rung))).toBeTruthy();
+    expect(await stateOf(callId, m2.id)).toBe("accepted");
+    caller1.ws.terminate();
+    rung.ws.terminate();
+  });
+
+  it("T-fix-9 [AC-F15-09] Cancel, then the app's own Leave, ends a call the caller never connected to", async () => {
+    const { people, workspaceId } = await team("fx9", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await chatOf(m1, workspaceId, [m2]);
+    const started = await call(m1.token, "POST", `/api/v1/conversations/${id}/calls`, { media: "audio" });
+    const seat = started.json<{ attendanceId: string; ticket: string; call: { callId: string } }>();
+    expect((await call(m1.token, "DELETE", `/api/v1/calls/${seat.call.callId}/ring`)).statusCode).toBe(204);
+    // No call-server report will come: the caller was still on "Calling…".
+    const left = await t.app.inject({
+      method: "DELETE",
+      url: `/api/v1/attendances/${seat.attendanceId}`,
+      headers: { origin: "app://meetapp", authorization: `Bearer ${m1.token}`, "x-meeting-ticket": seat.ticket },
+    });
+    expect(left.statusCode).toBe(204);
+    expect((await callRow(seat.call.callId))?.endedAt).not.toBeNull();
+    const running = await call(m1.token, "GET", `/api/v1/conversations/${id}/call`);
+    expect(running.json<{ call: unknown }>().call).toBeNull();
+  });
+
   it("TC-F15-22 [AC-F15-09] the caller leaves alone: all rings cancelled and the call ends; with another inside it goes on", async () => {
     const { people, workspaceId } = await team("e22", 3);
     const [m1, m2, m3] = people as [Person, Person, Person];

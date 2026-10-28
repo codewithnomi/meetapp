@@ -111,6 +111,11 @@ export function chatCallsFor(wiring: {
     chatCalls,
     place,
     rang: (caller, call, made) => rings.sendRings(caller, call, made),
+    answered: async (userId, callId) => {
+      await targets.stop(userId, callId, "accepted");
+      const starter = await chatCalls.starterOf(callId);
+      if (starter?.userId && starter.userId !== userId) await targets.stop(starter.userId, callId, "accepted");
+    },
     note: (at, note) => saveNote(notes, at.conversation, { id: at.me.id, name: at.me.name }, note),
   });
   const ending = endingFor({ calls, chatCalls, targets, notes, messagesDeps });

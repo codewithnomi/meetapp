@@ -19,8 +19,9 @@ import {
 } from "../../features/meetings/index.ts";
 import { MeetingPage, type MeetingPageProps } from "../MeetingPage/index.ts";
 
-export interface ChatCallPageProps extends MeetingPageProps {
-  onBackToChat: () => void;
+export interface ChatCallPageProps extends Omit<MeetingPageProps, "onLeft"> {
+  /** Back to the chat the call belongs to. */
+  onBackToChat: (conversationId: string) => void;
 }
 
 /** The live line moves the Calling screen on: accepted, declined, not answered, or cancelled elsewhere. */
@@ -74,16 +75,17 @@ function AfterRinging({ audio, onAgain, onBack }: { audio: boolean; onAgain: () 
   );
 }
 
-function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBack: () => void }) {
+function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBack: (conversationId: string) => void }) {
   const { t } = useTranslation();
   const end = useChatCall((state) => state.end);
   const endVisit = useVisit((state) => state.end);
   const leave = useCallback(() => {
     void leaveMeeting(visit);
+    // The call is forgotten first (the Chat screen then opens its chat), then back to the chat.
     end();
     endVisit();
-    onBack();
-  }, [visit, end, endVisit, onBack]);
+    onBack(call.conversationId);
+  }, [visit, end, endVisit, onBack, call.conversationId]);
   useRingOutcome(call, leave);
   const again = useStartCall(
     { conversationId: call.conversationId, title: call.title, oneToOne: call.oneToOne },
@@ -120,10 +122,13 @@ function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBac
   );
 }
 
-export function ChatCallPage({ onBackToChat, onLeft, onOutcome }: ChatCallPageProps) {
+export function ChatCallPage({ onBackToChat, onOutcome }: ChatCallPageProps) {
   const call = useChatCall((state) => state.call);
+  const end = useChatCall((state) => state.end);
   const visit = useVisit((state) => state.visit);
   if (!call || !visit?.call) return <Navigate to="/chat" replace />;
-  if (call.phase === "in_call") return <MeetingPage onLeft={onLeft} onOutcome={onOutcome} />;
+  // Leaving from inside the call goes back to its chat, and this window forgets the call.
+  const left = () => (end(), onBackToChat(call.conversationId));
+  if (call.phase === "in_call") return <MeetingPage onLeft={left} onOutcome={onOutcome} />;
   return <Calling call={call} visit={visit} onBack={onBackToChat} />;
 }

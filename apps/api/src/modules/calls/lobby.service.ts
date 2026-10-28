@@ -131,6 +131,12 @@ async function leave(deps: CallsDeps, attendanceId: string, ticketHash: string):
     leftReason: "leave",
     leftAt: deps.now(),
   });
+  // A chat call's ending rules run now too: a caller who leaves while it rings was never on the call
+  // server, so no report from it would end the call (T-fix-9).
+  if (attendance.meetingId === null) {
+    if (attendance.callId) await deps.chatCallHooks?.left(attendance.callId);
+    return;
+  }
   await lobbyChanged(deps, attendance.callId ?? (await deps.calls.runningFor(meetingIdOf(attendance)))?.id);
 }
 

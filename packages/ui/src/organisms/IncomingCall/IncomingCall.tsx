@@ -3,7 +3,7 @@
 // Video, Audio and Decline, named in full for screen readers ("Accept with video"). During another call
 // a line says that accepting leaves it, and the accept buttons' names say so too. It takes focus and is
 // announced; Escape declines and focus returns where it was. The page plays the ringtone and answers.
-import { useEffect, useId, useRef, type Ref } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, type Ref } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Icon, type IconName } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
@@ -69,6 +69,15 @@ function AnswerButton({
   );
 }
 
+/** Where focus goes back: the same element, or, if the screen drew it anew, the one with its name. */
+function backTo(before: HTMLElement | undefined): HTMLElement | undefined {
+  if (!before || before.isConnected) return before;
+  const name = before.getAttribute("aria-label");
+  if (!name) return undefined;
+  const again = document.querySelector(`${before.tagName.toLowerCase()}[aria-label="${CSS.escape(name)}"]`);
+  return again instanceof HTMLElement ? again : undefined;
+}
+
 /** Focus on arrival (top ring only, never while typing), back on close, and Escape declines. */
 function useWindowKeys(onDecline: () => void, takeFocus: boolean) {
   const first = useRef<HTMLButtonElement>(null);
@@ -83,13 +92,12 @@ function useWindowKeys(onDecline: () => void, takeFocus: boolean) {
   }, [onDecline]);
   // The top window takes focus when it appears, so a keyboard user can answer at once, unless they are
   // typing; it gives focus back to where it was when it closes (AC-F15-18).
-  useEffect(() => {
+  // A layout effect, so focus goes back while the window is being removed, before the browser moves it.
+  useLayoutEffect(() => {
     if (!takeFocus || typing(document.activeElement)) return;
     const before = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     first.current?.focus();
-    return () => {
-      if (before?.isConnected) before.focus();
-    };
+    return () => backTo(before)?.focus();
   }, [takeFocus]);
   return { first, box };
 }

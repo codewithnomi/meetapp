@@ -94,7 +94,6 @@ test("TC-F15-12 [AC-F15-06] Accept with video and Accept with audio put Mo in th
   await olivia.page.getByRole("button", { name: "Video call" }).click();
   await incoming(mo1.page).getByRole("button", { name: "Accept with video" }).click();
   await expect(controls(mo1.page)).toBeVisible({ timeout: 20_000 });
-  await expect(mo1.page).toHaveURL(/\/call/);
   await expect(mo1.page.getByRole("button", { name: /^Turn camera off/ })).toBeVisible();
   await expect(incoming(other)).toHaveCount(0, { timeout: 5_000 });
   await expect(controls(olivia.page)).toBeVisible({ timeout: 20_000 });
@@ -138,9 +137,10 @@ test("TC-F15-25 [AC-F15-10] called in a meeting: quiet tone, 'Leave current call
   expect(Number(tone["ringVolume"])).toBeLessThanOrEqual(Math.ceil(70 / 3) + 1);
 
   await window.getByRole("button", { name: "Leave current call and accept with video" }).click();
-  await expect(moInMeeting.page).toHaveURL(/\/call/, { timeout: 20_000 });
+  // The app keeps its screens in memory (no address to check): the call's title shows the new call.
+  await expect(incoming(moInMeeting.page)).toHaveCount(0, { timeout: 20_000 });
   await expect(controls(moInMeeting.page)).toBeVisible({ timeout: 20_000 });
-  await expect(incoming(moInMeeting.page)).toHaveCount(0);
+  await expect(moInMeeting.page.getByText("Olivia Owner").first()).toBeVisible({ timeout: 20_000 });
 });
 
 test("TC-F15-54 [AC-F15-32, AC-F15-05] the chosen ringtone and volume are used in every window", async () => {

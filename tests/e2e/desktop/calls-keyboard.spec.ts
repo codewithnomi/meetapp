@@ -77,8 +77,8 @@ test("TC-F15-56 [AC-F15-18] the incoming call takes focus, is answered and decli
   await expect(window).toHaveCount(0, { timeout: 10_000 });
   await expect(settings).toBeFocused();
 
-  // Called again: Enter on the first button accepts.
-  await olivia.page.getByRole("button", { name: "Video call" }).click();
+  // Called again (Olivia's screen says Mo declined, with Call again): Enter on the first button accepts.
+  await olivia.page.getByRole("button", { name: "Call again" }).click();
   await expect(window).toBeVisible({ timeout: 10_000 });
   await page.keyboard.press("Enter");
   await expect(controls(page)).toBeVisible({ timeout: 20_000 });

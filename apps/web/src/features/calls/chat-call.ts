@@ -17,14 +17,28 @@ export interface ChatCall {
 
 interface ChatCallState {
   call: ChatCall | undefined;
+  /** The call this window just left: the "another device" bar doesn't offer it back to this window. */
+  left: string | undefined;
+  /** The chat of the call just left: the Chat screen opens it once (back to the chat). */
+  backTo: string | undefined;
+  /** Reads `backTo` once and forgets it. */
+  takeBackTo: () => string | undefined;
   begin: (call: ChatCall) => void;
   move: (phase: CallPhase) => void;
   end: () => void;
 }
 
-export const useChatCall = create<ChatCallState>((set) => ({
+export const useChatCall = create<ChatCallState>((set, get) => ({
   call: undefined,
-  begin: (call) => set({ call }),
+  left: undefined,
+  backTo: undefined,
+  takeBackTo: () => {
+    const id = get().backTo;
+    set({ backTo: undefined });
+    return id;
+  },
+  begin: (call) => set({ call, left: undefined }),
   move: (phase) => set(({ call }) => (call ? { call: { ...call, phase } } : {})),
-  end: () => set({ call: undefined }),
+  // Ending twice (Cancel, then the "cancelled" news) changes nothing the second time.
+  end: () => set(({ call }) => (call ? { call: undefined, left: call.callId, backTo: call.conversationId } : {})),
 }));

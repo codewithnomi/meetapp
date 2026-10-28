@@ -223,7 +223,6 @@ function SignedInScreens() {
         element={
           <ChatCallPage
             onBackToChat={() => void navigate("/chat")}
-            onLeft={() => void navigate("/chat")}
             onOutcome={(outcome) => void navigate("/meeting/ended", { state: outcome })}
           />
         }
@@ -284,8 +283,11 @@ export function AppRoutes() {
   const session = useSession();
   useFocusOnScreenChange();
   if (session.isPending) return <Waiting />;
-  if (session.isError) return <Unreachable code={session.error.code} onRetry={() => void session.refetch()} />;
-  if (session.data === null) return <SignedOutRoutes />;
+  // Only when it was never known who is signed in: a failed check in the background (a window getting
+  // focus on a busy computer) keeps the app as it is instead of rebuilding every screen.
+  if (session.isError && session.data === undefined)
+    return <Unreachable code={session.error.code} onRetry={() => void session.refetch()} />;
+  if (!session.data) return <SignedOutRoutes />;
   if (!session.data.termsAccepted) return <TermsPage />;
   return <SignedInRoutes />;
 }

@@ -47,7 +47,7 @@ function show(onBackToChat = vi.fn()) {
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <LiveLineProvider>
-          <ChatCallPage onBackToChat={onBackToChat} onLeft={vi.fn()} onOutcome={vi.fn()} />
+          <ChatCallPage onBackToChat={onBackToChat} onOutcome={vi.fn()} />
         </LiveLineProvider>
       </MemoryRouter>
     </QueryClientProvider>,

@@ -112,7 +112,6 @@ test("TC-F15-43 [AC-F15-33] a second window of the same person can Transfer or J
   // Transfer: the second window takes over, the first one is taken out of the call.
   await banner.getByRole("button", { name: "Transfer to this device" }).click();
   await expect(controls(mo2.page)).toBeVisible({ timeout: 25_000 });
-  await expect(mo2.page).toHaveURL(/\/call/);
   await expect(controls(mo.page)).toHaveCount(0, { timeout: 25_000 });
   await expect(controls(olivia.page)).toBeVisible();
 

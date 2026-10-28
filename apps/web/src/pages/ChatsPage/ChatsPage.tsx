@@ -2,9 +2,10 @@
 // chat (or New chat) on the right, as in Teams. The list follows the live line's news.
 import { ChatList, Notice, type ChatListEntry, type ChatListProps } from "@meetapp/ui";
 import type { TFunction } from "i18next";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "../../features/auth/index.ts";
+import { useChatCall } from "../../features/calls/index.ts";
 import { useChatList, useChatRequests, type ChatFilter, type ChatItem } from "../../features/chats/index.ts";
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
 import { entryOf } from "./chat-entries.ts";
@@ -126,12 +127,29 @@ function RightPane({ open, setOpen, items, all, userId, showNew }: RightPaneProp
   );
 }
 
+/**
+ * The open chat. Coming back from a call opens that call's chat, whether this screen appeared before or
+ * after the call was left.
+ */
+function useOpenAfterCall() {
+  const [open, setOpen] = useState<string | undefined>(() => useChatCall.getState().takeBackTo());
+  useEffect(
+    () =>
+      useChatCall.subscribe((state) => {
+        const id = state.backTo && state.takeBackTo();
+        if (id) setOpen(id);
+      }),
+    [],
+  );
+  return [open, setOpen] as const;
+}
+
 export function ChatsPage({ onNavigate }: ChatsPageProps) {
   const { t, i18n } = useTranslation();
   const userId = useSession().data?.id ?? "";
   const [filter, setFilter] = useState<ChatFilter>("all");
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState<string>();
+  const [open, setOpen] = useOpenAfterCall();
   const { current } = useCurrentWorkspace();
   const list = useChatList(current?.id, filter, query);
   const items = list.data?.conversations ?? [];

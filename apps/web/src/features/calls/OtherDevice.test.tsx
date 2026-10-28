@@ -45,7 +45,7 @@ const routes = () => ({
 
 beforeEach(() => installFakeAuth(PAT));
 afterEach(() => {
-  useChatCall.getState().end();
+  useChatCall.setState({ call: undefined, left: undefined });
   useVisit.getState().end();
 });
 

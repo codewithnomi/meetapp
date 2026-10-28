@@ -38,6 +38,8 @@ export interface ChatCallsDeps {
   place: (userId: string, conversationId: string) => Promise<ChatPlace>;
   /** Sends a new call's rings to the people rung (the ring service). */
   rang: (caller: ChatPlace, call: Call, rings: CallRing[]) => Promise<void>;
+  /** Someone rung joined or started instead of pressing Accept: their rings and the caller's Calling stop. */
+  answered: (userId: string, callId: string) => Promise<void>;
   /** Saves a note in the chat ("Sara started a call"), delivered like a message. */
   note: (place: ChatPlace, note: { event: "call_started"; callId: string; media: CallMedia }) => Promise<void>;
 }
@@ -124,8 +126,8 @@ async function takeSeat(
   if (already && (await seatsOf(tx, call.id, place.me.id)) >= CHAT_CALL_LIMITS.seatsPerPerson) throw tooManySeats();
   const ticket = newTicket();
   const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, { ticket, replaces }));
-  await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());
-  return { attendance, ticket };
+  const answered = await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());
+  return { attendance, ticket, answered: answered.length > 0 };
 }
 
 async function answer(
@@ -160,6 +162,7 @@ async function start(deps: ChatCallsDeps, userId: string, conversationId: string
     await deps.note(place, { event: "call_started", callId: entry.call.id, media });
     await deps.rang(place, entry.call, entry.rings);
   }
+  if (entry.answered) await deps.answered(place.me.id, entry.call.id);
   // The caller waits on "Calling…" only while someone is rung (a running call is simply joined).
   return { ...(await answer(deps, place, entry)), ringing: entry.started && entry.rings.length > 0 };
 }
@@ -178,6 +181,8 @@ async function join(deps: ChatCallsDeps, userId: string, callId: string, options
     if (running?.id !== callId) throw ended();
     return { ...(await takeSeat(deps, tx, place, { call: running, replaces: options.replaces })), call: running };
   });
+  // Joining while rung answers the ring, as Accept would (T-fix-9).
+  if (entry.answered) await deps.answered(place.me.id, entry.call.id);
   return answer(deps, place, entry);
 }
 

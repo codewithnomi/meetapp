@@ -4,9 +4,10 @@ import { expect, test } from "@playwright/test";
 import { BRIDGE, bridgeKeys, closeApp, launch, type RunningApp } from "./desktop.ts";
 
 // F03 adds KLIPY only: its image server for GIFs and its API for the app's own GIF search (D059).
+// F14 adds the live line to the backend (ws), F15 the app's own WebAssembly for backgrounds (D073).
 const DESIGN_CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000 https://static.klipy.com; " +
-  "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880 https://api.klipy.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+  "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; font-src 'self'; img-src 'self' data: http://127.0.0.1:3000 https://static.klipy.com; " +
+  "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 ws://127.0.0.1:7880 http://127.0.0.1:7880 https://api.klipy.com; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
 
 let running: RunningApp;
 // False until this test's app has started, so a failed start is reported as itself, not as a crash

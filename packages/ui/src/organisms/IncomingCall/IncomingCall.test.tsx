@@ -67,4 +67,20 @@ describe("IncomingCall", () => {
     expect(a.decline.onClick).not.toHaveBeenCalled();
     outside.remove();
   });
+
+  it("T-fix-9 [AC-F15-18] if the screen drew the earlier button anew, focus goes to the new one with its name", () => {
+    const a = answers();
+    const opener = document.createElement("button");
+    opener.setAttribute("aria-label", "Settings");
+    document.body.append(opener);
+    opener.focus();
+    const view = render(<IncomingCall label="Incoming call" callerName="Sara" subtitle="Audio call" {...a} />);
+    opener.remove();
+    const again = document.createElement("button");
+    again.setAttribute("aria-label", "Settings");
+    document.body.append(again);
+    view.unmount();
+    expect(again).toHaveFocus();
+    again.remove();
+  });
 });
