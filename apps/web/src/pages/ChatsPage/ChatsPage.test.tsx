@@ -1,12 +1,13 @@
 // The Chat screen with a stand-in backend (F14 T-fix-6; AC-F14-01, 03, 06, 07): the list's loading and
 // error states with Retry, the open chat staying open when a filter hides it, and New chat's Start
 // working once.
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeAuth, PAT, renderWithApp } from "../../features/auth/fake-auth.tsx";
 import { fakeApi, json, IDS } from "../../features/workspaces/fake-api.ts";
 import { CurrentWorkspaceProvider } from "../../features/workspaces/index.ts";
+import { useChatCall } from "../../features/calls/index.ts";
 import { ChatsPage } from "./ChatsPage.tsx";
 
 const CHAT = "00000000-0000-4000-8000-0000000000c1";
@@ -55,6 +56,28 @@ describe("the Chat screen", () => {
     fail = false;
     await userEvent.click(within(chatList()).getByRole("button", { name: "Retry" }));
     expect(await within(chatList()).findByText("Bilal Ahmed")).toBeInTheDocument();
+  });
+
+  it("T-fix-9 [AC-F15-07] back from a call, its chat opens (left before or after the screen appears)", async () => {
+    fakeApi({
+      [LIST]: () => list([item]),
+      "/api/v1/me/chat-requests": () => json({ requests: [] }),
+    });
+    const call = { callId: "00000000-0000-4000-8000-0000000000d1", conversationId: CHAT, media: "audio" as const };
+    useChatCall.getState().begin({ ...call, title: "Bilal Ahmed", oneToOne: true, phase: "ringing" });
+    useChatCall.getState().end();
+    const view = show();
+    expect(await screen.findByRole("heading", { level: 2, name: "Bilal Ahmed" })).toBeInTheDocument();
+    view.unmount();
+
+    show();
+    await within(chatList()).findByRole("button", { name: /Bilal Ahmed/ });
+    expect(screen.queryByRole("heading", { level: 2, name: "Bilal Ahmed" })).toBeNull();
+    act(() => {
+      useChatCall.getState().begin({ ...call, title: "Bilal Ahmed", oneToOne: true, phase: "ringing" });
+      useChatCall.getState().end();
+    });
+    expect(await screen.findByRole("heading", { level: 2, name: "Bilal Ahmed" })).toBeInTheDocument();
   });
 
   it("TC-F14-05 [AC-F14-03] the open chat stays open when the Unread filter no longer lists it", async () => {

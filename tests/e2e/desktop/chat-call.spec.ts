@@ -11,6 +11,15 @@ test.describe.configure({ timeout: 180_000 });
 
 let windows: RunningApp[] = [];
 test.afterEach(async () => {
+  // The team is shared by the tests: end any call first, so the next test starts without one.
+  for (const { page } of windows) {
+    for (const name of ["Cancel", "Leave", "Back to chat"]) {
+      const button = page.getByRole("button", { name, exact: true });
+      if (await button.isVisible().catch(() => false)) await button.click().catch(() => undefined);
+    }
+  }
+  // Leaving tells the backend in the background; give it a moment before the windows close.
+  if (windows.length > 0) await windows[0]?.page.waitForTimeout(2_000).catch(() => undefined);
   await Promise.all(windows.map((running) => closeApp(running.app)));
   windows = [];
 });

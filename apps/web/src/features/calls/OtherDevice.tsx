@@ -1,7 +1,7 @@
 // "You're in a call on another device" (F15 AC-F15-33, design 3.8): a window that isn't in the call sees
 // the person's running chat call, with Join on this device (a second participant) and Transfer to this
 // device (this one connects first, then the other seat is taken out). Checked every 10 seconds while
-// this window isn't in a call.
+// this window isn't in a call. It sits above the screen and pushes it down, so it never covers a button.
 import { OtherDeviceBar } from "@meetapp/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -51,7 +51,7 @@ export function OtherDevice({ onEntered }: { onEntered: () => void }) {
   if (inCall || !call) return null;
   const last = moving.variables;
   return (
-    <div className="fixed top-4 left-1/2 z-40 -translate-x-1/2">
+    <div className="flex justify-center px-4 pt-3">
       <OtherDeviceBar
         label={t("calls.otherDevice.label")}
         title={t("calls.otherDevice.title")}
