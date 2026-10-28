@@ -132,15 +132,15 @@ function RightPane({ open, setOpen, items, all, userId, showNew }: RightPaneProp
  * after the call was left.
  */
 function useOpenAfterCall() {
-  const [open, setOpen] = useState<string | undefined>(() => useChatCall.getState().takeBackTo());
-  useEffect(
-    () =>
-      useChatCall.subscribe((state) => {
-        const id = state.backTo && state.takeBackTo();
-        if (id) setOpen(id);
-      }),
-    [],
-  );
+  // Read while drawing, cleared only once shown: React may draw a screen more than once before showing it.
+  const [open, setOpen] = useState<string | undefined>(() => useChatCall.getState().backTo);
+  useEffect(() => {
+    useChatCall.getState().takeBackTo();
+    return useChatCall.subscribe((state) => {
+      const id = state.backTo && state.takeBackTo();
+      if (id) setOpen(id);
+    });
+  }, []);
   return [open, setOpen] as const;
 }
 

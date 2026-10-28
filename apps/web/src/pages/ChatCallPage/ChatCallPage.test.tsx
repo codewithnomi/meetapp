@@ -99,6 +99,23 @@ describe("the Calling screen", () => {
     expect(back).toHaveBeenCalledTimes(1);
   });
 
+  it("T-fix-9 [AC-F15-19] if the No answer message is lost, the 5-second check still shows No answer", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      stubNoDevices();
+      fakeApi({ [`/api/v1/conversations/${CHAT}/call`]: () => json({ call: null }) });
+      ringing("audio");
+      show();
+      await screen.findByText("Calling Bilal Ahmed…");
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5_000);
+      });
+      expect(await screen.findByText("No answer")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('TC-F15-23 [AC-F15-09] an unanswered call says "No answer"', async () => {
     stubNoDevices();
     fakeApi();

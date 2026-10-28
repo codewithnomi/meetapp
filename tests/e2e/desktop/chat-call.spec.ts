@@ -4,7 +4,7 @@
 // screens (T14); here the other person sees the call in their chat.
 import { expect, test, type Page } from "@playwright/test";
 import { closeApp, type RunningApp } from "./desktop.ts";
-import { team, windowFor } from "./meeting-team.ts";
+import { freshTeam, windowFor } from "./meeting-team.ts";
 import { openScreen, switcher, switchTo } from "./workspace-steps.ts";
 
 test.describe.configure({ timeout: 180_000 });
@@ -41,7 +41,8 @@ async function chatWith(page: Page, query: string, name: RegExp) {
 
 /** Olivia and Mo, each in their window with the chat with the other one open. */
 async function pair() {
-  const { workspace, owner, member } = await team();
+  // Each test has its own people and chat, so no call from an earlier test is still running.
+  const { workspace, owner, member } = await freshTeam();
   const [olivia, mo] = await Promise.all([windowFor(owner), windowFor(member)]);
   windows.push(olivia, mo);
   await Promise.all([inWorkspace(olivia.page, workspace), inWorkspace(mo.page, workspace)]);

@@ -3,10 +3,10 @@
 // line says so and the screen becomes F02's call screen; if the call is declined or not answered, the
 // outcome shows with Call again and Back to chat. Someone who joined goes straight into the call.
 import { Avatar, Button, CallingScreen, Notice } from "@meetapp/ui";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
-import { cancelRing, useChatCall, useStartCall, type ChatCall } from "../../features/calls/index.ts";
+import { cancelRing, runningCall, useChatCall, useStartCall, type ChatCall } from "../../features/calls/index.ts";
 import { useLiveLine } from "../../features/chats/index.ts";
 import {
   LocalVideo,
@@ -25,18 +25,36 @@ export interface ChatCallPageProps extends Omit<MeetingPageProps, "onLeft"> {
 }
 
 /** The live line moves the Calling screen on: accepted, declined, not answered, or cancelled elsewhere. */
+const RECHECK_MS = 5_000;
+
 function useRingOutcome(call: ChatCall, onCancelled: () => void) {
   const move = useChatCall((state) => state.move);
+  // A message can be lost while the line reconnects, so the call itself is also checked: every 5 seconds
+  // while it rings and right after a reconnect (AC-F15-19: ringing never gets stuck).
+  const check = useCallback(() => {
+    if (useChatCall.getState().call?.phase !== "ringing") return;
+    void runningCall(call.conversationId)
+      .then(({ call: running }) => {
+        if (!running || running.callId !== call.callId) move("no_answer");
+        else if (running.people >= 2) move("in_call");
+      })
+      .catch(() => undefined);
+  }, [call.conversationId, call.callId, move]);
+  useEffect(() => {
+    const timer = setInterval(check, RECHECK_MS);
+    return () => clearInterval(timer);
+  }, [check]);
   useLiveLine(
     useCallback(
       (message) => {
+        if (message.t === "connected") return check();
         if (message.t !== "ring_stop" || message.callId !== call.callId) return;
         if (message.reason === "accepted") move("in_call");
         else if (message.reason === "declined") move("declined");
         else if (message.reason === "missed") move("no_answer");
         else onCancelled();
       },
-      [call.callId, move, onCancelled],
+      [call.callId, move, onCancelled, check],
     ),
   );
 }

@@ -30,6 +30,10 @@ describe("the ring job", () => {
       [m2, "member"],
     ]);
     const chat = await call(m1.token, "POST", `/api/v1/workspaces/${workspaceId}/conversations`, { userIds: [m2.id] });
+    // The person rung is online too, as in the app.
+    const rung = await t.app.injectWS("/api/v1/realtime", {
+      headers: { origin: "app://meetapp", ...bearer(m2.token) },
+    });
     const ws = await t.app.injectWS("/api/v1/realtime", { headers: { origin: "app://meetapp", ...bearer(m1.token) } });
     const got: LineServerMessage[] = [];
     ws.on("message", (data: Buffer) => got.push(JSON.parse(data.toString()) as LineServerMessage));
@@ -48,5 +52,6 @@ describe("the ring job", () => {
     const [row] = await t.database.db.select().from(calls).where(eq(calls.id, callId));
     expect(row?.endedAt).not.toBeNull();
     ws.terminate();
+    rung.terminate();
   }, 60_000);
 });
