@@ -1223,7 +1223,8 @@
       "label": "Call on another device",
       "title": "You're in a call on another device",
       "join": "Join on this device",
-      "transfer": "Transfer to this device"
+      "transfer": "Transfer to this device",
+      "moving": "Moving the call…"
     }
   },
   "devices": {

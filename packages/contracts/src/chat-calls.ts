@@ -61,6 +61,8 @@ export const activeCallsSchema = z
         conversationId: z.uuid().nullable(),
         meetingId: z.uuid().nullable(),
         title: z.string(),
+        /** A one-to-one chat's call (its Calling screen and ending rules differ from a group's). */
+        oneToOne: z.boolean(),
         media: z.enum(CALL_MEDIA),
         /** This person's seats (one per device), oldest first. */
         seats: z.array(z.object({ attendanceId: z.uuid(), joinedAt: z.iso.datetime() })),

@@ -15,6 +15,7 @@ import {
   useStartCall,
   type CallMedia,
   type CallNoteActions,
+  CALL_KEYS,
 } from "../../features/calls/index.ts";
 import type { ChatItem } from "../../features/chats/index.ts";
 
@@ -36,7 +37,7 @@ function failureText(t: TFunction, error: ApiError): string {
 /** The chat's running call; refreshed with every chat change on the live line (the provider reloads "chats"). */
 function useRunningCall(conversationId: string, enabled: boolean) {
   return useQuery({
-    queryKey: ["chats", "call", conversationId],
+    queryKey: CALL_KEYS.running(conversationId),
     queryFn: () => runningCall(conversationId),
     enabled,
   }).data?.call;

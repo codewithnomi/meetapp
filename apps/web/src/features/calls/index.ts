@@ -6,5 +6,6 @@ export type { CallMedia } from "./call-types.ts";
 export { useChatCall, type ChatCall } from "./chat-call.ts";
 export { useJoinCall, useStartCall } from "./use-start-call.ts";
 export { CallNoteActionsProvider, useCallNoteActions, type CallNoteActions } from "./call-note-actions.tsx";
+export { CALL_KEYS } from "./call-keys.ts";
 export { IncomingCalls } from "./IncomingCalls.tsx";
 export { OtherDevice } from "./OtherDevice.tsx";

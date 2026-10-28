@@ -33,5 +33,6 @@ export * from "./StickerPicker/index.ts";
 export * from "./SystemNote/index.ts";
 export * from "./TypingIndicator/index.ts";
 export * from "./CallNote/index.ts";
+export * from "./OtherDeviceBar/index.ts";
 export * from "./BackgroundPicker/index.ts";
 export * from "./RingtonePicker/index.ts";

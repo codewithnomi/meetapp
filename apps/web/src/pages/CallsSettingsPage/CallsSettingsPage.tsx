@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ApiError } from "../../features/api/index.ts";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
-import { RINGTONES, playRingtone, ringSettings, saveRingSettings } from "../../features/calls/index.ts";
+import { CALL_KEYS, RINGTONES, playRingtone, ringSettings, saveRingSettings } from "../../features/calls/index.ts";
 import { SettingsShell, type SettingsScreen } from "../../features/profile/index.ts";
 
 export interface CallsSettingsPageProps {
@@ -15,7 +15,6 @@ export interface CallsSettingsPageProps {
   onBack: () => void;
 }
 
-const RING_SETTINGS = ["ring-settings"];
 const NAMES = ["bright", "chime", "pulse", "classic", "gentle"] as const;
 
 const playOnce = (ringtone: number, volume: number) => {
@@ -31,7 +30,7 @@ function Picker({ saved }: { saved: { ringtone: number; ringVolume: number } }) 
   const [volume, setVolume] = useState(saved.ringVolume);
   const save = useMutation<undefined, ApiError, { ringtone?: number; ringVolume?: number }>({
     mutationFn: saveRingSettings,
-    onSettled: () => void queries.invalidateQueries({ queryKey: RING_SETTINGS }),
+    onSettled: () => void queries.invalidateQueries({ queryKey: CALL_KEYS.ringSettings }),
   });
   const { mutate } = save;
   useEffect(() => {
@@ -64,7 +63,7 @@ function Picker({ saved }: { saved: { ringtone: number; ringVolume: number } }) 
 export function CallsSettingsPage({ onNavigate, onBack }: CallsSettingsPageProps) {
   const { t } = useTranslation();
   const settings = useQuery<{ ringtone: number; ringVolume: number }, ApiError>({
-    queryKey: RING_SETTINGS,
+    queryKey: CALL_KEYS.ringSettings,
     queryFn: ringSettings,
   });
   return (

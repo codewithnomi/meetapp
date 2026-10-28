@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { ApiError } from "../../features/api/index.ts";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
-import { ringPeople, runningCall } from "../../features/calls/index.ts";
+import { CALL_KEYS, ringPeople, runningCall } from "../../features/calls/index.ts";
 
 export interface AddPeoplePanelProps {
   conversationId: string;
@@ -48,7 +48,7 @@ function MemberLine({ member, full, onAdd }: { member: Member; full: boolean; on
 export function AddPeoplePanel({ conversationId, callId, onClose }: AddPeoplePanelProps) {
   const { t } = useTranslation();
   const running = useQuery<Awaited<ReturnType<typeof runningCall>>, ApiError>({
-    queryKey: ["chat-call", conversationId],
+    queryKey: CALL_KEYS.running(conversationId),
     queryFn: () => runningCall(conversationId),
     refetchInterval: 3000,
   });

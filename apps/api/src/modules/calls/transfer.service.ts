@@ -33,6 +33,7 @@ async function active(deps: TransferDeps, userId: string) {
       conversationId: call.conversationId,
       meetingId: null,
       title: place.title,
+      oneToOne: place.conversation.kind === "direct",
       media: call.media ?? "video",
       seats: seats.map((seat) => ({
         attendanceId: seat.id,

@@ -3,9 +3,9 @@
 // F02's. A starter waits on the Calling screen; someone joining goes straight into the call.
 import { useMutation } from "@tanstack/react-query";
 import type { ApiError } from "../api/index.ts";
-import { loadPrefs, savePrefs, useVisit, type Joined } from "../meetings/index.ts";
+import type { Joined } from "../meetings/index.ts";
 import { joinCall, startCall } from "./calls-api.ts";
-import { useChatCall } from "./chat-call.ts";
+import { useEnterCall } from "./enter-call.ts";
 import type { CallMedia } from "./call-types.ts";
 
 export interface CallTarget {
@@ -15,14 +15,9 @@ export interface CallTarget {
 }
 
 function useEnter(onEntered: () => void) {
-  const startVisit = useVisit((state) => state.start);
-  const begin = useChatCall((state) => state.begin);
-  return (joined: Joined, target: CallTarget, media: CallMedia, ringing: boolean) => {
-    savePrefs({ ...loadPrefs(), cameraOn: media === "video", microphoneOn: true });
-    startVisit(joined);
-    begin({ ...target, callId: joined.call?.callId ?? "", media, phase: ringing ? "ringing" : "in_call" });
-    onEntered();
-  };
+  const enter = useEnterCall(onEntered);
+  return (joined: Joined, target: CallTarget, media: CallMedia, ringing: boolean) =>
+    enter(joined, { ...target, callId: joined.call?.callId ?? "", media, phase: ringing ? "ringing" : "in_call" });
 }
 
 /** Video call / Audio call in a chat: start, or join the call already running there (no ring). */
