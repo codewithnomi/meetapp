@@ -36,7 +36,7 @@ Per step: only that step's tests plus typecheck and lint (D052); everything else
 - [x] **T20: Load.** A 20-person chat call and ring speed under load in `pnpm test:load` (run with `/spec-verify`). Covers: AC-F15-06, 14. Tests: TC-F15-76, 77.
 
 ## Fixes from the first verification (2026-10-28, verification.md)
-- [ ] **T-fix-1: Code-structure check green.** The 7 dependency-cruiser errors: row types for services from the repository layer (or the type-only exemption made to work), `ring.service` ↔ `add-people.service` loop (shared types file), `conversations` ↔ `meetings` schema loop.
+- [x] **T-fix-1: Code-structure check green.** The 7 dependency-cruiser errors: row types for services from the repository layer (or the type-only exemption made to work), `ring.service` ↔ `add-people.service` loop (shared types file), `conversations` ↔ `meetings` schema loop.
 - [ ] **T-fix-2: Starting when a call already runs.** The start answer says whether the call is new; the app joins straight into a running call (no "Calling…"); "Call again" too. Test.
 - [ ] **T-fix-3: Accept safely.** Backend: a failed join leaves the ring ringing (one transaction or put back). App: accept first, then leave the current call; keep the ring on errors other than `RING_OVER`. Tests.
 - [ ] **T-fix-4: Background fallback only when really slow.** Not while the window is hidden (reset on return); compare with the camera's own frame rate; catch a stalled tool. Tests.

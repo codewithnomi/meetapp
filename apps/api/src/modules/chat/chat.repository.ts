@@ -22,7 +22,7 @@ interface Window {
  * Leaves out "Missed call" notes meant for someone else (F15 AC-F15-15): each is seen only by the person
  * who missed the call. Every other message passes.
  */
-export const notOthersMissedCall = (viewer: string) =>
+const notOthersMissedCall = (viewer: string) =>
   sql`not (${chatMessages.kind} = 'system' and ${chatMessages.system} ->> 'event' = 'call_missed' and coalesce(${chatMessages.system} ->> 'forUserId', '') <> ${viewer})`;
 
 /** Where a page of history starts: the oldest message already shown (time, then id). */

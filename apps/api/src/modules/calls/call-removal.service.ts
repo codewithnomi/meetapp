@@ -2,7 +2,7 @@
 // removed from a chat or its workspace, or deletes their account, their seats leave the running call at
 // once (the call server is told) and their ring stops; if they started the call, everyone's ring stops.
 // The ending rules then run as for anyone who left.
-import type { Call } from "@meetapp/db";
+import type { Call } from "./calls.repository.ts";
 import type { CallsDeps } from "./admission.ts";
 import type { ChatCallsRepository } from "./chat-calls.repository.ts";
 import type { RingTarget } from "./ring-targets.ts";

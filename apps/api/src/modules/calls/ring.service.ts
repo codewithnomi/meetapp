@@ -1,35 +1,19 @@
 // Ringing for calls from chats (F15 design 3.3, 3.4; AC-F15-05–09, 34, D075). The backend owns each ring:
 // it is sent to every ring target of the person, the first answer wins (only a ringing row changes), and
 // every window stops together. A person may answer only their own ring, and only while still in the chat.
-import type { Call, CallRing } from "@meetapp/db";
+import type { Call } from "./calls.repository.ts";
+import type { CallRing } from "./call-rings.repository.ts";
 import { CHAT_CALL_LIMITS, type RingMessage } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
-import { notFound, type CallsDeps } from "./admission.ts";
-import type { ChatCallsRepository } from "./chat-calls.repository.ts";
-import type { ChatCallsService, ChatPlace } from "./chat-calls.service.ts";
-import type { RingTarget } from "./ring-targets.ts";
+import { notFound } from "./admission.ts";
+import type { ChatPlace } from "./chat-calls.service.ts";
 import { addPeople } from "./add-people.service.ts";
-
-export interface RingDeps {
-  calls: CallsDeps;
-  chatCalls: ChatCallsRepository;
-  place: (userId: string, conversationId: string) => Promise<ChatPlace>;
-  targets: RingTarget;
-  /** "Missed call from <caller>", for the person who missed it (AC-F15-15). */
-  missed: (
-    conversation: { id: string; workspaceId: string },
-    caller: { id: string; name: string },
-    callId: string,
-    forUserId: string,
-  ) => Promise<void>;
-  /** Joins the chat's running call (the chat-calls service). */
-  join: ChatCallsService["join"];
-}
+import type { RingDeps } from "./ring.types.ts";
 
 const over = () => new AppError(409, "RING_OVER", "This call has ended.");
 
 /** What every window of a called person shows (TC-F15-10). */
-export function ringMessage(caller: ChatPlace, call: Call, ring: CallRing): RingMessage {
+function ringMessage(caller: ChatPlace, call: Call, ring: CallRing): RingMessage {
   const group = caller.conversation.kind === "group";
   return {
     t: "ring",
@@ -125,7 +109,7 @@ export function createRingService(deps: RingDeps) {
     ringingFor: (userId: string) => ringingFor(deps, userId),
     /** Add people (add-people.service.ts). */
     addPeople: (userId: string, callId: string, userIds: string[]) =>
-      addPeople(deps, service, { userId, callId, userIds }),
+      addPeople(deps, service.sendRings, { userId, callId, userIds }),
   };
   return service;
 }

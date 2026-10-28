@@ -3,7 +3,7 @@
 import { index, pgEnum, pgTable, uuid } from "drizzle-orm/pg-core";
 import { user } from "./auth.ts";
 import { id, moment, timestamps } from "./columns.ts";
-import { calls } from "./meetings.ts";
+import { calls } from "./calls.ts";
 import { workspaces } from "./workspaces.ts";
 
 export const ringState = pgEnum("ring_state", ["ringing", "accepted", "declined", "missed", "cancelled"]);

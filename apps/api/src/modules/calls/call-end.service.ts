@@ -3,7 +3,7 @@
 // rings stop (30 seconds, or the caller leaves first). Rings stop at 30 seconds through a job, and the
 // every-minute clean-up stops any ring older than 35 seconds, so nothing rings for ever. Every person rung
 // who never answered gets one "Missed call"; a call people talked in gets "Call ended".
-import type { Call } from "@meetapp/db";
+import type { Call } from "./calls.repository.ts";
 import { CHAT_CALL_LIMITS } from "@meetapp/contracts";
 import type { CallsDeps } from "./admission.ts";
 import type { ChatCallsRepository } from "./chat-calls.repository.ts";
@@ -101,5 +101,3 @@ export function createCallEndService(deps: CallEndDeps) {
     sweep: () => expire(deps, SWEEP_AFTER_MS),
   };
 }
-
-export type CallEndService = ReturnType<typeof createCallEndService>;

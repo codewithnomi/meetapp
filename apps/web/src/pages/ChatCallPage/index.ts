@@ -1,1 +1,1 @@
-export { ChatCallPage, type ChatCallPageProps } from "./ChatCallPage.tsx";
+export { ChatCallPage } from "./ChatCallPage.tsx";

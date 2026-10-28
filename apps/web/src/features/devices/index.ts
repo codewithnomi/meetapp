@@ -4,16 +4,8 @@ export { DEFAULT_PREFS, loadPrefs, savePrefs, type DevicePrefs } from "./device-
 export { deviceOptions, testSpeakers, useDeviceLists, useLocalDevice, useMicLevel } from "./local-media.ts";
 export { problemKey, type MediaKind } from "./media-problems.ts";
 export { LocalVideo } from "./LocalVideo.tsx";
-export { missingDevices, useDeviceSettings } from "./device-settings.ts";
-export {
-  PICTURES,
-  backgroundsSupported,
-  createBackgroundEffect,
-  effectOf,
-  frameMonitor,
-  pictureUrl,
-  type BackgroundEffect,
-} from "./backgrounds.ts";
+export { useDeviceSettings } from "./device-settings.ts";
+export { backgroundsSupported, createBackgroundEffect, type BackgroundEffect } from "./backgrounds.ts";
 export { BackgroundChoice } from "./BackgroundChoice.tsx";
 export { useBackgroundPreview } from "./background-preview.ts";
 export { useBackgroundSlow } from "./background-state.ts";

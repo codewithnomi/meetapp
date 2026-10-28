@@ -6,11 +6,14 @@ import { CHAT_CALL_LIMITS } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { notFound } from "./admission.ts";
 import { takeCallUnits } from "./call-rate.ts";
-import type { RingDeps, RingService } from "./ring.service.ts";
+import type { Call } from "./calls.repository.ts";
+import type { CallRing } from "./call-rings.repository.ts";
+import type { ChatPlace } from "./chat-calls.service.ts";
+import type { RingDeps } from "./ring.types.ts";
 
 export async function addPeople(
   deps: RingDeps,
-  rings: RingService,
+  sendRings: (caller: ChatPlace, call: Call, rings: CallRing[]) => Promise<void>,
   { userId, callId, userIds }: { userId: string; callId: string; userIds: string[] },
 ) {
   const call = await deps.chatCalls.byId(callId);
@@ -30,5 +33,5 @@ export async function addPeople(
   }
   await takeCallUnits(deps.calls.limiter, userId, toRing.length);
   const made = await deps.chatCalls.ring(deps.chatCalls.reader, call, toRing);
-  await rings.sendRings(place, call, made);
+  await sendRings(place, call, made);
 }

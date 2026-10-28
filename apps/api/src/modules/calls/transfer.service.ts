@@ -2,7 +2,7 @@
 // "Transfer to this device" gives the new device a seat that names the seat it replaces; when the call
 // server reports the new seat connected, the old one leaves. If the new device never connects, nothing
 // changes: the old seat stays. Built desktop-to-desktop now; the phone app (F11) uses the same steps.
-import type { CallAttendance } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
 import { notFound, type CallsDeps } from "./admission.ts";
 import type { ChatCallsRepository } from "./chat-calls.repository.ts";
 import type { ChatCallsService, ChatPlace } from "./chat-calls.service.ts";

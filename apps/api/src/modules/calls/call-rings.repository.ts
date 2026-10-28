@@ -1,6 +1,7 @@
 // Rings of chat calls: database access only (F15 design 3.3, 3.4). Only a row still ringing changes, so
 // the first answer wins (TC-F15-13); everything else reads or adds rows.
 import { callRings, type Call, type Executor } from "@meetapp/db";
+export type { CallRing } from "@meetapp/db";
 import { and, asc, eq, lte, type SQL } from "drizzle-orm";
 
 type RingEnd = "accepted" | "declined" | "missed" | "cancelled";

@@ -16,7 +16,8 @@ import {
 import { sql } from "drizzle-orm";
 import { user } from "./auth.ts";
 import { id, moment, timestamps } from "./columns.ts";
-import { callAttendances, calls, meetings, participantGroup } from "./meetings.ts";
+import { callAttendances, calls } from "./calls.ts";
+import { meetings, participantGroup } from "./meetings.ts";
 import { conversations } from "./conversations.ts";
 import { workspaces } from "./workspaces.ts";
 

@@ -2,7 +2,9 @@
 // without a meeting (D072): no link, passcode or lobby; everyone is equal and may send their own
 // microphone, camera and screen. Membership and the chat's read-only rules (F14) are checked on every
 // request; starting and joining hold the chat's row, so a chat has one running call and at most 20 people.
-import type { CallAttendance, Call, CallRing, Executor } from "@meetapp/db";
+import type { CallAttendance } from "./attendances.repository.ts";
+import type { Call, Executor } from "./calls.repository.ts";
+import type { CallRing } from "./call-rings.repository.ts";
 import { CHAT_CALL_LIMITS, type CallMedia } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { newTicket, ticketFingerprint } from "../../plugins/meeting-ticket.ts";
@@ -43,7 +45,7 @@ const full = () => new AppError(409, "CALL_FULL", "This call is full.");
 const ended = () => new AppError(409, "CALL_ENDED", "This call has ended.");
 
 /** Who rings when a call starts: the other accepted members, nobody in a group of more than 20 (AC-F15-04). */
-export function whoToRing(place: ChatPlace): string[] {
+function whoToRing(place: ChatPlace): string[] {
   const accepted = place.members.filter((m) => m.state === "accepted");
   if (accepted.length > CHAT_CALL_LIMITS.people) return [];
   return accepted.filter((m) => m.userId !== place.me.id).map((m) => m.userId);

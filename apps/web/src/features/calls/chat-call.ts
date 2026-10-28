@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import type { CallMedia } from "./call-types.ts";
 
-export type CallPhase = "ringing" | "in_call" | "declined" | "no_answer";
+type CallPhase = "ringing" | "in_call" | "declined" | "no_answer";
 
 export interface ChatCall {
   callId: string;
