@@ -50,19 +50,32 @@ export function effectOf(id: string): SwitchBackgroundProcessorOptions {
  * Watches the frames the tool makes (TC-F15-50): the rate over the last second; once it has stayed under
  * 15 a second for 5 seconds, `onSlow` is called, once. A call to `reset` starts watching again.
  */
-export function frameMonitor(onSlow: () => void, now: () => number = () => performance.now()) {
+export function frameMonitor(
+  onSlow: () => void,
+  now: () => number = () => performance.now(),
+  hidden: () => boolean = () => typeof document !== "undefined" && document.hidden,
+) {
   let frames: number[] = [];
+  /** Under this many frames a second is slow: 15, or half of what the camera itself gives (T-fix-4). */
+  let slowBelow = SLOW_FPS;
   let startedAt: number | undefined;
   let slowSince: number | undefined;
   let told = false;
   return {
     frame() {
+      // A hidden or minimised window gets fewer frames on purpose: that isn't slowness (T-fix-4).
+      if (hidden()) {
+        frames = [];
+        startedAt = undefined;
+        slowSince = undefined;
+        return;
+      }
       const at = now();
       startedAt ??= at;
       frames = frames.filter((time) => at - time < 1000);
       frames.push(at);
       // Only judged once a whole second has been seen.
-      if (at - startedAt < 1000 || frames.length >= SLOW_FPS) {
+      if (at - startedAt < 1000 || frames.length >= slowBelow) {
         slowSince = undefined;
         return;
       }
@@ -71,6 +84,10 @@ export function frameMonitor(onSlow: () => void, now: () => number = () => perfo
         told = true;
         onSlow();
       }
+    },
+    /** The camera's own frame rate: a camera giving 12 a second isn't slow at 12 (T-fix-4). */
+    cameraRate(fps: number | undefined) {
+      slowBelow = fps && fps > 0 ? Math.min(SLOW_FPS, fps / 2) : SLOW_FPS;
     },
     reset() {
       frames = [];
@@ -83,6 +100,8 @@ export function frameMonitor(onSlow: () => void, now: () => number = () => perfo
 
 export interface BackgroundEffect {
   processor: BackgroundProcessorWrapper;
+  /** The camera's frame rate, from its settings, so a slow camera isn't mistaken for a slow computer. */
+  cameraRate: (fps: number | undefined) => void;
   /** Shows a choice ("none", "blur", a picture id). */
   apply: (id: string) => Promise<void>;
 }
@@ -105,6 +124,7 @@ export function createBackgroundEffect(onSlow: () => void): BackgroundEffect {
   });
   return {
     processor,
+    cameraRate: (fps) => monitor.cameraRate(fps),
     apply: async (id) => {
       const effect = effectOf(id);
       active = effect.mode !== "disabled";

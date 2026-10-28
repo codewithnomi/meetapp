@@ -18,6 +18,7 @@ export function useBackgroundPreview(stream: MediaStream | undefined, background
     if (!camera || !backgroundsSupported()) return;
     const track = new LocalVideoTrack(camera, undefined, true);
     const made = createBackgroundEffect(tell);
+    made.cameraRate(camera.getSettings().frameRate);
     effect.current = made;
     let live = true;
     void track

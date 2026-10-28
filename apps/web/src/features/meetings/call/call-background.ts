@@ -12,6 +12,7 @@ import {
 const effects = new WeakMap<Room, { effect: BackgroundEffect; choice: string }>();
 
 async function attachTo(track: LocalVideoTrack, entry: { effect: BackgroundEffect; choice: string }) {
+  entry.effect.cameraRate(track.mediaStreamTrack.getSettings().frameRate);
   await track.setProcessor(entry.effect.processor, true);
   await entry.effect.apply(entry.choice);
 }

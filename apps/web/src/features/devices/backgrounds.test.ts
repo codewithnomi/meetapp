@@ -65,6 +65,33 @@ describe("TC-F15-50 frame-rate fallback", () => {
   });
 });
 
+describe("T-fix-4 only real slowness turns the effect off", () => {
+  it("T-fix-4 [AC-F15-31] a camera that gives 12 a second is not slow at 12, but is at 5", () => {
+    const { clock, onSlow, monitor } = setup();
+    monitor.cameraRate(12);
+    run(monitor, clock, 12, 10);
+    expect(onSlow).not.toHaveBeenCalled();
+    run(monitor, clock, 5, 6);
+    expect(onSlow).toHaveBeenCalledTimes(1);
+  });
+
+  it("T-fix-4 [AC-F15-31] a hidden window's fewer frames never count, and watching starts fresh on return", () => {
+    const clock = { t: 0 };
+    const onSlow = vi.fn();
+    let hidden = true;
+    const monitor = frameMonitor(
+      onSlow,
+      () => clock.t,
+      () => hidden,
+    );
+    run(monitor, clock, 2, 20);
+    expect(onSlow).not.toHaveBeenCalled();
+    hidden = false;
+    run(monitor, clock, 30, 3);
+    expect(onSlow).not.toHaveBeenCalled();
+  });
+});
+
 describe("TC-F15-48 effects of the choices", () => {
   it("TC-F15-48 [AC-F15-30] there are at least 8 pictures, each with its own file", () => {
     expect(PICTURES.length).toBeGreaterThanOrEqual(8);
