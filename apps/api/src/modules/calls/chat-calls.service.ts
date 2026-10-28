@@ -14,6 +14,7 @@ import { insertAttendance } from "./attendances.repository.ts";
 import {
   peopleCount,
   peopleIn,
+  seatsOf,
   runningChatCall,
   startChatCall,
   type ChatCallsRepository,
@@ -42,6 +43,12 @@ export interface ChatCallsDeps {
 }
 
 const full = () => new AppError(409, "CALL_FULL", "This call is full.");
+const tooManySeats = () =>
+  new AppError(
+    409,
+    "CALL_DEVICES",
+    `You're already in this call on ${String(CHAT_CALL_LIMITS.seatsPerPerson)} devices.`,
+  );
 const ended = () => new AppError(409, "CALL_ENDED", "This call has ended.");
 
 /** Who rings when a call starts: the other accepted members, nobody in a group of more than 20 (AC-F15-04). */
@@ -113,6 +120,8 @@ async function takeSeat(
 ) {
   const already = (await peopleIn(tx, call.id)).includes(place.me.id);
   if (!already && (await peopleCount(tx, call.id)) >= CHAT_CALL_LIMITS.people) throw full();
+  // A person's own extra seats don't count toward the 20, so they are capped here (T-fix-5).
+  if (already && (await seatsOf(tx, call.id, place.me.id)) >= CHAT_CALL_LIMITS.seatsPerPerson) throw tooManySeats();
   const ticket = newTicket();
   const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, { ticket, replaces }));
   await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());
@@ -162,6 +171,8 @@ async function join(deps: ChatCallsDeps, userId: string, callId: string, options
   // Membership first, so someone outside the chat learns nothing about its calls.
   const place = await deps.place(userId, call.conversationId);
   if (call.endedAt) throw ended();
+  // Join, Accept and Transfer count toward the person's call limit, like starting (T-fix-5).
+  await takeCallUnits(deps.calls.limiter, userId, 1);
   const entry = await deps.chatCalls.locked(call.conversationId, async (tx) => {
     const running = await runningChatCall(tx, call.conversationId ?? "");
     if (running?.id !== callId) throw ended();

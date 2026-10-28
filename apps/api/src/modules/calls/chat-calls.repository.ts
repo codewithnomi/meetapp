@@ -2,7 +2,7 @@
 // `locked`, which holds the chat's row, so two starts at the same moment make one call (AC-F15-26) and
 // the 20-person limit holds under any timing (AC-F15-14).
 import { callAttendances, callRings, calls, conversations, type Call, type Executor } from "@meetapp/db";
-import { and, asc, countDistinct, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, countDistinct, eq, inArray, isNotNull, isNull, or, count } from "drizzle-orm";
 
 import type { CallMedia } from "@meetapp/contracts";
 import { createCallRingsRepository } from "./call-rings.repository.ts";
@@ -35,6 +35,21 @@ export async function peopleIn(tx: Executor, callId: string): Promise<string[]> 
     .from(callAttendances)
     .where(and(eq(callAttendances.callId, callId), inArray(callAttendances.status, [...IN_CALL_STATUSES])));
   return rows.flatMap((row) => (row.userId ? [row.userId] : []));
+}
+
+/** This person's seats in the call (each device is one, T-fix-5). */
+export async function seatsOf(tx: Executor, callId: string, userId: string): Promise<number> {
+  const [row] = await tx
+    .select({ n: count() })
+    .from(callAttendances)
+    .where(
+      and(
+        eq(callAttendances.callId, callId),
+        eq(callAttendances.userId, userId),
+        inArray(callAttendances.status, [...IN_CALL_STATUSES]),
+      ),
+    );
+  return row?.n ?? 0;
 }
 
 export async function peopleCount(tx: Executor, callId: string): Promise<number> {

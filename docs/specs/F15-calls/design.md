@@ -130,7 +130,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 | `POST /calls/:callId/transfer` `{ fromAttendanceId }` | move the call to this device, AC-33 |
 | `GET/PATCH /me/settings` `{ ringtone, ringVolume }` | ringtone, AC-32 |
 | Live line `ring`, `ring_stop` | ringing, AC-05–09 |
-- Errors: `CHAT_READ_ONLY` (403), `CALL_FULL` (409), `RING_OVER` (409), `CALL_RATE` (429 with wait), not a member → 404.
+- Errors: `CHAT_READ_ONLY` (403), `CALL_FULL` (409), `CALL_ENDED` (409), `CALL_DEVICES` (409: one person has at most 3 seats in a call, T-fix-5), `RING_OVER` (409), `CALL_RATE` (429 with wait; starts, joins, accepts, transfers and people rung count, 10 a minute), not a member → 404.
 
 ## Edge cases & errors
 - **Two windows of the called person:** both ring; the first to accept wins (the ring row update is conditional); the other gets `ring_stop`. Joining again from the other window adds a second participant, as F02 does.

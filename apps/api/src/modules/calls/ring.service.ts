@@ -79,9 +79,11 @@ async function decline(deps: RingDeps, userId: string, callId: string) {
 /** The caller's **Cancel**: every ring stops and counts as missed (AC-F15-09). Only the starter may. */
 async function cancel(deps: RingDeps, userId: string, callId: string) {
   const call = await deps.chatCalls.byId(callId);
-  const starter = await deps.chatCalls.starterOf(callId);
-  if (!call?.conversationId || starter?.userId !== userId) throw notFound();
+  if (!call?.conversationId) throw notFound();
+  // Membership first, as for join and Add people; then only the starter may cancel.
   const place = await deps.place(userId, call.conversationId);
+  const starter = await deps.chatCalls.starterOf(callId);
+  if (starter?.userId !== userId) throw notFound();
   const stopped = await deps.chatCalls.stopCallRings(callId, "cancelled", deps.calls.now());
   for (const row of stopped) {
     await deps.targets.stop(row.userId, callId, "cancelled");
@@ -103,7 +105,9 @@ async function ringingFor(deps: RingDeps, userId: string): Promise<RingMessage[]
     const call = await deps.chatCalls.byId(ring.callId);
     const starter = await deps.chatCalls.starterOf(ring.callId);
     if (!call?.conversationId || !starter?.userId) continue;
-    const caller = await deps.place(starter.userId, call.conversationId).catch(() => undefined);
+    // Both must still be in the chat: the caller (whose name is shown) and the person rung.
+    const rung = await deps.place(userId, call.conversationId).catch(() => undefined);
+    const caller = rung && (await deps.place(starter.userId, call.conversationId).catch(() => undefined));
     if (caller) messages.push(ringMessage(caller, call, ring));
   }
   return messages;

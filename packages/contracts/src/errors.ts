@@ -56,6 +56,7 @@ export const ERROR_CODES = [
   "CALL_ENDED",
   "RING_OVER",
   "CALL_RATE",
+  "CALL_DEVICES",
 ] as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[number];

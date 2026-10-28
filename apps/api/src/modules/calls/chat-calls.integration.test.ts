@@ -393,4 +393,19 @@ describe("who is in the call and who can be added", { timeout: 60_000 }, () => {
     expect((await ring(m1, callId, [m4.id])).statusCode).toBe(404);
     expect((await ringsOf(callId)).some((r) => r.userId === m4.id)).toBe(false);
   });
+
+  it("T-fix-5 [AC-F15-20] one person has at most 3 seats in a call; a 4th device is refused", async () => {
+    const { people, workspaceId } = await team("fx5", 2);
+    const [m1, m2] = people as [Person, Person];
+    const id = await chatOf(m1, workspaceId, [m2]);
+    const { call: started } = (await startCall(m1, id)).json<Answer>();
+    expect((await joinCall(m1, started.callId)).statusCode).toBe(200);
+    expect((await joinCall(m1, started.callId)).statusCode).toBe(200);
+    const fourth = await joinCall(m1, started.callId);
+    expect(fourth.statusCode).toBe(409);
+    expect(fourth.json<{ error: { code: string } }>().error.code).toBe("CALL_DEVICES");
+    expect((await attendancesOf(started.callId)).filter((a) => a.userId === m1.id)).toHaveLength(3);
+    // The other person still gets in: one person's devices never take the call's places.
+    expect((await joinCall(m2, started.callId)).statusCode).toBe(200);
+  });
 });

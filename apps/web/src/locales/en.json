@@ -1171,6 +1171,7 @@
       "ended": "This call has ended.",
       "full": "This call is full.",
       "rate": "You're calling too often. Try again in a minute.",
+      "devices": "You're already in this call on 3 devices. Leave it on one of them first.",
       "retry": "Retry"
     },
     "calling": {

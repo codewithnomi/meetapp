@@ -29,6 +29,7 @@ function failureText(t: TFunction, error: ApiError): string {
   if (error.code === "CALL_FULL") return t("calls.failed.full");
   if (error.code === "CALL_ENDED") return t("calls.failed.ended");
   if (error.code === "CALL_RATE") return t("calls.failed.rate");
+  if (error.code === "CALL_DEVICES") return t("calls.failed.devices");
   return t("calls.failed.start");
 }
 
