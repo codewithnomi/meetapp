@@ -98,6 +98,7 @@ export {
   handBodySchema,
   joinMeetingBodySchema,
   joinedSchema,
+  startedCallSchema,
   lobbyDecisionBodySchema,
   lobbyDecisionResponseSchema,
   lobbyResponseSchema,

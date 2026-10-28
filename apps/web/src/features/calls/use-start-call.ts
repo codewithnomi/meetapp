@@ -28,10 +28,10 @@ function useEnter(onEntered: () => void) {
 /** Video call / Audio call in a chat: start, or join the call already running there (no ring). */
 export function useStartCall(target: CallTarget, onEntered: () => void) {
   const enter = useEnter(onEntered);
-  return useMutation<Joined, ApiError, CallMedia>({
+  return useMutation<Joined & { ringing: boolean }, ApiError, CallMedia>({
     mutationFn: (media) => startCall(target.conversationId, media),
-    // A new call rings; a call already running is simply joined (AC-F15-03).
-    onSuccess: (joined, media) => enter(joined, target, media, true),
+    // A new call rings; a call already running (or a group too big to ring) is simply joined (AC-F15-03).
+    onSuccess: (joined, media) => enter(joined, target, media, joined.ringing),
   });
 }
 

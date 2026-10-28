@@ -4,7 +4,7 @@ import type { ActiveCalls, CallMedia, RunningCall } from "./call-types.ts";
 import type { Joined } from "../meetings/index.ts";
 import { apiRequest } from "../api/index.ts";
 
-export function startCall(conversationId: string, media: CallMedia): Promise<Joined> {
+export function startCall(conversationId: string, media: CallMedia): Promise<Joined & { ringing: boolean }> {
   return apiRequest(`/api/v1/conversations/${conversationId}/calls`, { method: "POST", body: { media } });
 }
 

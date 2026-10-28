@@ -113,7 +113,7 @@ describe("start a call from a chat", { timeout: 120_000 }, () => {
     const response = await startCall(m1, id);
     expect(response.statusCode).toBe(201);
     const answer = response.json<Answer>();
-    expect(answer).toMatchObject({ status: "admitted", group: "member", title: "Person 2" });
+    expect(answer).toMatchObject({ status: "admitted", group: "member", title: "Person 2", ringing: true });
     expect(answer.call).toMatchObject({ role: "presenter" });
     expect(answer.call.pass).not.toBe("");
     expect(answer.call.serverUrl).not.toBe("");
@@ -204,6 +204,8 @@ describe("start a call from a chat", { timeout: 120_000 }, () => {
     expect(again.statusCode).toBe(201);
     expect(again.json<Answer>().call.callId).toBe(first.call.callId);
     expect(again.json<Answer>().attendanceId).not.toBe(first.attendanceId);
+    // Nobody is rung for a running call, so the app joins it straight away (T-fix-2).
+    expect(again.json<{ ringing: boolean }>().ringing).toBe(false);
     const second = await startCall(m2, id);
     expect(second.json<Answer>().call.callId).toBe(first.call.callId);
 

@@ -119,7 +119,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 ## 5. Backend endpoints and live-line messages (all signed in)
 | Endpoint | Purpose |
 |---|---|
-| `POST /conversations/:id/calls` `{ media }` | start (or join the running) chat call; rings the others; returns F02's join answer, AC-01–04 |
+| `POST /conversations/:id/calls` `{ media }` | start (or join the running) chat call; rings the others; returns F02's join answer plus `ringing` (false when a running call was joined or nobody is rung: the app goes straight into the call, T-fix-2), AC-01–04 |
 | `GET /conversations/:id/call` | the running call (for **Join**), or none; also the chat's other members, each in the call or with their latest ring here (the **Add people** panel, refreshed every 3 s while open; added in T15) |
 | `POST /calls/:callId/join` | join a running chat call, AC-03, 15 |
 | `POST /calls/:callId/accept` `{ media }`, `POST /calls/:callId/decline` | answer a ring, AC-06, 07 |

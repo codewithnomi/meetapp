@@ -6,6 +6,7 @@ import {
   joinedSchema,
   runningCallSchema,
   startCallBodySchema,
+  startedCallSchema,
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { signedInUser } from "../../plugins/session.ts";
@@ -22,7 +23,7 @@ const START = {
     tags,
     params: conversationParamsSchema,
     body: startCallBodySchema,
-    response: { 201: joinedSchema },
+    response: { 201: startedCallSchema },
   },
 };
 

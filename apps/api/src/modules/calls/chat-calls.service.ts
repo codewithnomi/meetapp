@@ -151,7 +151,8 @@ async function start(deps: ChatCallsDeps, userId: string, conversationId: string
     await deps.note(place, { event: "call_started", callId: entry.call.id, media });
     await deps.rang(place, entry.call, entry.rings);
   }
-  return answer(deps, place, entry);
+  // The caller waits on "Calling…" only while someone is rung (a running call is simply joined).
+  return { ...(await answer(deps, place, entry)), ringing: entry.started && entry.rings.length > 0 };
 }
 
 /** Joins a chat's running call (**Join** in the chat, AC-F15-03, 15); membership checked now (AC-F15-20). */

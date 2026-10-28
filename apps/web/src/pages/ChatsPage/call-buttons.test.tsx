@@ -119,7 +119,9 @@ describe("call buttons in a chat header", () => {
 
   it("TC-F15-57 [AC-F15-18] a failed start says so with Retry; Retry asks again and then opens the call", async () => {
     let fail = true;
-    const api = await open(item, { [START]: () => (fail ? json({ error: { code: "INTERNAL" } }, 500) : json(JOINED)) });
+    const api = await open(item, {
+      [START]: () => (fail ? json({ error: { code: "INTERNAL" } }, 500) : json({ ...JOINED, ringing: true })),
+    });
     await userEvent.click(audio());
     const failure = (await screen.findByText("Couldn't start the call.")).parentElement as HTMLElement;
     expect(screen.getByTestId("where")).not.toHaveTextContent("/call");
@@ -130,6 +132,13 @@ describe("call buttons in a chat header", () => {
     expect(sent).toHaveLength(2);
     expect(sent[1]?.body).toEqual({ media: "audio" });
     expect(useChatCall.getState().call).toMatchObject({ phase: "ringing", media: "audio", callId: CALL_ID });
+  });
+
+  it("TC-F15-05 [AC-F15-03] pressing Video call while a call runs joins it: no Calling screen", async () => {
+    await open(item, { [START]: () => json({ ...JOINED, ringing: false }) });
+    await userEvent.click(video());
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/call"));
+    expect(useChatCall.getState().call).toMatchObject({ phase: "in_call", media: "video", callId: CALL_ID });
   });
 
   it('TC-F15-57 [AC-F15-18] a full call says "This call is full."', async () => {
