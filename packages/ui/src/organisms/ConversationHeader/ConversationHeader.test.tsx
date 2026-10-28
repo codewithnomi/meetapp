@@ -49,7 +49,9 @@ describe("ConversationHeader", () => {
     );
     for (const name of ["Video call", "Audio call"]) {
       const button = screen.getByRole("button", { name });
-      expect(button).toBeDisabled();
+      // Off but still reachable, so the reason is heard (aria-disabled, T-fix-6).
+      expect(button).toHaveAttribute("aria-disabled", "true");
+      expect(button).toHaveAccessibleDescription("You can call once they accept your chat request.");
       expect(button).toHaveAttribute("title", "You can call once they accept your chat request.");
     }
   });
@@ -92,6 +94,6 @@ describe("ConversationHeader", () => {
         actions={[]}
       />,
     );
-    expect(screen.getByRole("button", { name: "Video call" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Video call" })).toHaveAttribute("aria-disabled", "true");
   });
 });

@@ -2,7 +2,7 @@
 // volume (F15 AC-F15-32, approved canvas Settings → Calls). The page makes the sound and saves the choice.
 import { useId } from "react";
 import { IconButton } from "../../atoms/IconButton/index.ts";
-import { cx } from "../../lib/cx.ts";
+import { FOCUS_RING, cx } from "../../lib/cx.ts";
 
 export interface RingtoneOption {
   id: number;
@@ -39,7 +39,7 @@ function Choice({ option, group, picker }: { option: RingtoneOption; group: stri
         name={group}
         checked={chosen}
         onChange={() => picker.onChange(option.id)}
-        className="size-4.5 accent-[var(--accent)]"
+        className={cx("size-4.5 accent-[var(--accent)]", FOCUS_RING)}
       />
       <label htmlFor={id} className="flex flex-1 flex-col">
         <span className="font-semibold">{option.name}</span>
@@ -78,7 +78,8 @@ export function RingtonePicker(props: RingtonePickerProps) {
           max={100}
           value={props.volume}
           onChange={(event) => props.onVolume(Number(event.target.value))}
-          className="accent-[var(--accent)]"
+          aria-valuetext={`${String(props.volume)}%`}
+          className={cx("accent-[var(--accent)]", FOCUS_RING)}
         />
       </div>
     </div>

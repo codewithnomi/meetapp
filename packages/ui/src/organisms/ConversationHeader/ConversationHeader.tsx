@@ -47,20 +47,30 @@ function CallButton({
   disabled: boolean;
   reason?: string | undefined;
 }) {
+  const reasonId = useId();
+  // Off buttons stay focusable (aria-disabled) so keyboard and screen-reader users still hear why.
   return (
-    <button
-      type="button"
-      aria-label={label}
-      title={reason ?? label}
-      onClick={onClick}
-      disabled={disabled}
-      className={cx(
-        "grid size-10 place-items-center rounded-full border border-line-strong bg-surface text-ink disabled:opacity-50",
-        FOCUS_RING,
-      )}
-    >
-      <Icon name={icon} size={18} />
-    </button>
+    <>
+      <button
+        type="button"
+        aria-label={label}
+        aria-disabled={disabled || undefined}
+        aria-describedby={disabled && reason ? reasonId : undefined}
+        title={reason ?? label}
+        onClick={disabled ? undefined : onClick}
+        className={cx(
+          "grid size-10 place-items-center rounded-full border border-line-strong bg-surface text-ink aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+          FOCUS_RING,
+        )}
+      >
+        <Icon name={icon} size={18} />
+      </button>
+      {disabled && reason ? (
+        <span id={reasonId} className="sr-only">
+          {reason}
+        </span>
+      ) : null}
+    </>
   );
 }
 

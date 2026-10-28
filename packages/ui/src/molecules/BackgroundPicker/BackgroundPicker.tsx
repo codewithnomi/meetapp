@@ -1,6 +1,7 @@
 // BackgroundPicker (molecule): None, Blur and the built-in pictures as a grid of pressable tiles (F15
 // AC-F15-30, approved canvas Settings → Devices), as one radio group (Tab once, arrows choose). The page applies it to the
 // camera. When the computer can't run effects, the tiles are off and a note says why (AC-F15-31).
+import { useId } from "react";
 import { Icon } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 import { useRadioGroup } from "../../lib/useRadioGroup.ts";
@@ -36,6 +37,7 @@ function Thumb({ option }: { option: BackgroundOption }) {
 }
 
 export function BackgroundPicker({ legend, options, value, onChange, hint, unavailable }: BackgroundPickerProps) {
+  const noteId = useId();
   const itemProps = useRadioGroup(
     options.map((option) => option.id),
     value,
@@ -44,7 +46,12 @@ export function BackgroundPicker({ legend, options, value, onChange, hint, unava
   return (
     <fieldset className="m-0 flex flex-col gap-2 border-0 p-0" disabled={unavailable !== undefined}>
       <legend className="mb-2 p-0 text-[15px] font-semibold text-ink">{legend}</legend>
-      <div role="radiogroup" aria-label={legend} className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2">
+      <div
+        role="radiogroup"
+        aria-label={legend}
+        aria-describedby={unavailable || hint ? noteId : undefined}
+        className="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
+      >
         {options.map((option, index) => (
           <button
             key={option.id}
@@ -64,9 +71,13 @@ export function BackgroundPicker({ legend, options, value, onChange, hint, unava
         ))}
       </div>
       {unavailable ? (
-        <p className="m-0 text-[12px] text-ink-muted">{unavailable}</p>
+        <p id={noteId} className="m-0 text-[12px] text-ink-muted">
+          {unavailable}
+        </p>
       ) : hint ? (
-        <p className="m-0 text-[12px] text-ink-muted">{hint}</p>
+        <p id={noteId} className="m-0 text-[12px] text-ink-muted">
+          {hint}
+        </p>
       ) : null}
     </fieldset>
   );

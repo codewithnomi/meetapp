@@ -3,7 +3,7 @@
 // Video, Audio and Decline, named in full for screen readers ("Accept with video"). During another call
 // a line says that accepting leaves it, and the accept buttons' names say so too. It takes focus and is
 // announced; Escape declines and focus returns where it was. The page plays the ringtone and answers.
-import { useEffect, useRef, type Ref } from "react";
+import { useEffect, useId, useRef, type Ref } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Icon, type IconName } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
@@ -28,7 +28,14 @@ export interface IncomingCallProps {
   decline: Answer;
   /** The window's name for screen readers: "Incoming call". */
   label: string;
+  /** Only the top ring takes focus when several ring at once (default true). */
+  takeFocus?: boolean | undefined;
 }
+
+/** Typing somewhere: a new ring must not take the keys away from it. */
+const typing = (element: Element | null) =>
+  element instanceof HTMLElement &&
+  (element.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(element.tagName));
 
 function AnswerButton({
   answer,
@@ -62,10 +69,10 @@ function AnswerButton({
   );
 }
 
-export function IncomingCall(props: IncomingCallProps) {
+/** Focus on arrival (top ring only, never while typing), back on close, and Escape declines. */
+function useWindowKeys(onDecline: () => void, takeFocus: boolean) {
   const first = useRef<HTMLButtonElement>(null);
   const box = useRef<HTMLElement>(null);
-  const onDecline = props.decline.onClick;
   // Escape declines while focus is in the window, as its own button does.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -74,20 +81,27 @@ export function IncomingCall(props: IncomingCallProps) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onDecline]);
-  // The window takes focus when it appears, so a keyboard user can answer at once, and gives it back to
-  // where it was when it closes (AC-F15-18).
+  // The top window takes focus when it appears, so a keyboard user can answer at once, unless they are
+  // typing; it gives focus back to where it was when it closes (AC-F15-18).
   useEffect(() => {
+    if (!takeFocus || typing(document.activeElement)) return;
     const before = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
     first.current?.focus();
     return () => {
       if (before?.isConnected) before.focus();
     };
-  }, []);
+  }, [takeFocus]);
+  return { first, box };
+}
+
+export function IncomingCall(props: IncomingCallProps) {
+  const { first, box } = useWindowKeys(props.decline.onClick, props.takeFocus ?? true);
+  const who = useId();
   return (
     <section
       role="alertdialog"
       aria-label={props.label}
-      aria-describedby="incoming-call-who"
+      aria-describedby={who}
       ref={box}
       className="box-border flex w-90 max-w-[calc(100vw-48px)] flex-col gap-4 rounded-xl bg-stage p-5 text-stage-ink shadow-2"
     >
@@ -95,7 +109,7 @@ export function IncomingCall(props: IncomingCallProps) {
         <span className="rounded-full p-1 ring-2 ring-success">
           <Avatar name={props.callerName} {...(props.photoUrl ? { src: props.photoUrl } : {})} size="lg" />
         </span>
-        <span id="incoming-call-who" className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span id={who} className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="truncate text-[17px] leading-5.5 font-semibold">{props.callerName}</span>
           <span className="text-[13px] opacity-85">{props.subtitle}</span>
         </span>

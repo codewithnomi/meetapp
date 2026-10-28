@@ -18,7 +18,7 @@ export interface CallNoteProps {
 export function CallNote({ kind, text, detail, action }: CallNoteProps) {
   return (
     <div
-      role={kind === "running" ? "status" : undefined}
+      role={kind === "running" || kind === "missed" ? "status" : undefined}
       className={cx(
         "flex max-w-130 flex-wrap items-center justify-center gap-2.5 self-center rounded-md border px-3.5 py-2.5 text-[13px] leading-4.5",
         kind === "running" ? "border-accent bg-accent-soft" : "border-line bg-surface",

@@ -3,7 +3,7 @@
 // line says so and the screen becomes F02's call screen; if the call is declined or not answered, the
 // outcome shows with Call again and Back to chat. Someone who joined goes straight into the call.
 import { Avatar, Button, CallingScreen, Notice } from "@meetapp/ui";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 import { cancelRing, useChatCall, useStartCall, type ChatCall } from "../../features/calls/index.ts";
@@ -42,10 +42,15 @@ function useRingOutcome(call: ChatCall, onCancelled: () => void) {
 
 function Preview({ call }: { call: ChatCall }) {
   const { t } = useTranslation();
-  const prefs = loadPrefs();
+  const [prefs] = useState(loadPrefs);
   const camera = useLocalDevice("camera", prefs.cameraId, call.media === "video" && call.phase === "ringing");
   if (camera.problem) return <Notice tone="neutral">{t(problemKey("camera", camera.problem))}</Notice>;
-  if (!camera.stream) return null;
+  // While the camera starts, a frame of the same size keeps the screen from jumping.
+  if (!camera.stream) {
+    return call.media === "video" ? (
+      <div aria-hidden="true" className="aspect-video w-full rounded-lg bg-stage-scrim" />
+    ) : null;
+  }
   return (
     <figure className="m-0 flex flex-col gap-2">
       <LocalVideo stream={camera.stream} />
@@ -55,11 +60,11 @@ function Preview({ call }: { call: ChatCall }) {
 }
 
 /** After "declined" or "No answer": Call again, or back to the chat. */
-function AfterRinging({ onAgain, onBack }: { onAgain: () => void; onBack: () => void }) {
+function AfterRinging({ audio, onAgain, onBack }: { audio: boolean; onAgain: () => void; onBack: () => void }) {
   const { t } = useTranslation();
   return (
     <>
-      <Button icon="camera" onClick={onAgain}>
+      <Button icon={audio ? "phone" : "camera"} onClick={onAgain}>
         {t("calls.calling.callAgain")}
       </Button>
       <Button variant="secondary" icon="chat" onClick={onBack}>
@@ -99,7 +104,11 @@ function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBac
       title={ringing ? t("calls.calling.title", { name }) : t(`calls.calling.${outcome}Title`, { name })}
       line={ringing ? t("calls.calling.line") : t(`calls.calling.${outcome}Line`, { name })}
       preview={ringing ? <Preview call={call} /> : undefined}
-      actions={ringing ? undefined : <AfterRinging onAgain={() => again.mutate(call.media)} onBack={leave} />}
+      actions={
+        ringing ? undefined : (
+          <AfterRinging audio={call.media === "audio"} onAgain={() => again.mutate(call.media)} onBack={leave} />
+        )
+      }
       controls={
         <div className="flex justify-center">
           <Button variant="danger" icon="leave" onClick={ringing ? cancel : leave}>

@@ -81,7 +81,7 @@ describe("call buttons in a chat header", () => {
   it("TC-F15-04 [AC-F15-02] a blocked chat's call buttons are off and say why", async () => {
     await open({ ...item, readOnly: true, readOnlyReason: "blocked" });
     for (const button of [video(), audio()]) {
-      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("aria-disabled", "true");
       expect(button).toHaveAttribute("title", "You can't call in this chat.");
     }
   });
@@ -89,7 +89,7 @@ describe("call buttons in a chat header", () => {
   it("TC-F15-04 [AC-F15-02] a chat still waiting for acceptance has its call buttons off with the reason", async () => {
     await open({ ...item, request: "waiting" });
     for (const button of [video(), audio()]) {
-      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("aria-disabled", "true");
       expect(button).toHaveAttribute("title", "You can call once they accept your chat request.");
     }
   });
@@ -109,8 +109,8 @@ describe("call buttons in a chat header", () => {
         }),
     });
     await userEvent.click(video());
-    await waitFor(() => expect(video()).toBeDisabled());
-    expect(audio()).toBeDisabled();
+    await waitFor(() => expect(video()).toHaveAttribute("aria-disabled", "true"));
+    expect(audio()).toHaveAttribute("aria-disabled", "true");
     expect(api.callsTo("POST", `/api/v1/conversations/${CHAT}/calls`)).toHaveLength(1);
     expect(api.callsTo("POST", `/api/v1/conversations/${CHAT}/calls`)[0]?.body).toEqual({ media: "video" });
     finish(json(JOINED));

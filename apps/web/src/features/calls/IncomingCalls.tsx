@@ -111,11 +111,12 @@ export function IncomingCalls({ onAccepted }: { onAccepted: () => void }) {
   if (rings.length === 0 && !accept.isError) return null;
   const leave = busyIn === undefined ? "" : "leave_";
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3" aria-live="assertive">
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-3">
       {accept.isError ? <Notice tone="danger">{t("calls.failed.join")}</Notice> : null}
-      {rings.map((ring) => (
+      {rings.map((ring, index) => (
         <IncomingCall
           key={ring.callId}
+          takeFocus={index === 0}
           label={t("calls.incoming.label")}
           callerName={ring.from.name}
           photoUrl={ring.from.photoUrl}
