@@ -18,7 +18,8 @@ updated: 2026-10-27
 
 ## 1. What gets created
 ```
-packages/db/src/schema/meetings.ts       calls and call_attendances may belong to a chat; call_rings; migration 0009_chat_calls
+packages/db/src/schema/calls.ts          calls and call_attendances (moved from meetings.ts in T-fix-1), which may belong to a chat;
+                                         call-rings.ts: call_rings; migration 0009_chat_calls
 packages/db/src/schema/auth.ts           user.ringtone, user.ring_volume (account settings)
 packages/contracts/src/chat-calls.ts     chat-call requests and answers, ring line messages (calls.ts stays F02's)
 packages/contracts/src/chat-notes.ts     chat note shapes, now with the call notes (moved out of chat.ts)
@@ -31,10 +32,10 @@ apps/web/src/features/calls/             start/join from a chat, incoming-call s
 apps/web/src/features/devices/           Settings → Devices: device choices, preview, background effects (shared with F02)
 apps/web/src/pages/ChatsPage/            call buttons, Join, call notes; IncomingCall overlay (app-wide)
 apps/web/src/pages/MeetingPage/          reused as the call screen; Add people panel; equal rights for chat calls
-apps/web/src/pages/SettingsPage/         Devices and Calls sections
+apps/web/src/pages/DevicesSettingsPage/, CallsSettingsPage/   Settings → Devices and Settings → Calls
 packages/ui/src/…                        IncomingCall (organism), CallNote (molecule), BackgroundPicker (molecule),
                                          RingtonePicker (molecule), CallingScreen (template)
-apps/web/public/backgrounds/             8 background pictures (free licence, D073) and the background tool's model files
+apps/web/public/backgrounds/             8 background pictures (drawn for MeetApp, no outside licence, D073) and the background tool's model files
                                          (new folder; the build tool copies public/ into the app as it is)
 ```
 - `docs/engineering/project-structure.md` is updated: `features/` gains `calls/` (F15) and `devices/` (device choices and backgrounds for F02 and F15, moved from `meetings/`); `public/backgrounds/` holds the pictures and model files.
@@ -51,7 +52,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 ## 3. How it works
 
 ### 3.1 The call record (AC-01, 03, 14, 26; D072)
-- `calls.meeting_id` becomes optional and `calls.conversation_id` is added; a check makes every call belong to exactly one of them. `call_attendances` likewise (`meeting_id` optional, `conversation_id` added). Add-only migration; F02 rows keep their meeting.
+- `calls.meeting_id` becomes optional and `calls.conversation_id` is added; a check makes every call belong to exactly one of them. `call_attendances` likewise (`meeting_id` optional, `conversation_id` added). Add-only migration, plus dropping NOT NULL on the two `meeting_id` columns (no table rewrite); F02 rows keep their meeting.
 - **One running call per chat:** a partial unique index on `calls(conversation_id) WHERE ended_at IS NULL`. Starting when one runs (from another window, or both people at the same moment: AC-26) hits the index and joins the running call instead; nobody is rung twice.
 - **Kind and size:** `calls.media` (`video` | `audio`, what the caller chose, shown in the ring) and a 20-**person** limit (distinct accounts with a running attendance) checked when joining, ringing and adding; a person's second window doesn't take a place. LiveKit's `maxParticipants` is 25 as a safety cap (AC-14). Joining a call that ended meanwhile: 409 `CALL_ENDED`, "This call has ended". The 30-hour end (`endsAt`) and its 10-minute notice are F02's.
 - **Rights in a chat call:** everyone is a "participant" with F02's presenter rights for their own tracks (mic, camera, screen) and nothing else: no mute/remove/roles/lock/lobby buttons, and the backend refuses those routes for chat calls (AC-12).
@@ -93,10 +94,10 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 - F14's status rule already reads "has a running attendance" for "In a meeting"; it now counts chat-call attendances too and the value is renamed `in_call` everywhere (contracts, app labels, F14's status tests), so nothing shows "In a meeting" any more. No database change (status lives in Redis). D068 still applies when the app closes.
 
 ### 3.7 Membership changes during a call (AC-25)
-- F14's member removal, leaving, workspace removal and account deletion call `calls.leaveChatCall(conversationId, userId)`: the attendance becomes `removed`, LiveKit `RemoveParticipant`, ringing stops. Within 2 seconds, measured by a test.
+- F14's member removal, leaving, workspace removal and account deletion call `callRemoval.leftChat(conversationId, userId)` (`call-removal.service.ts`, which also has `forgetPerson`): the attendance becomes `removed`, LiveKit `RemoveParticipant`, ringing stops. Within 2 seconds, measured by a test.
 
 ### 3.8 Devices, rings and transfer, ready for mobile (AC-33, 34; D075)
-- **Ring targets:** the ring service doesn't send to "the desktop"; it sends to the person's **ring targets**: a small interface (`RingTarget.ring(ring)`, `RingTarget.stop(callId, reason)`) with one kind now, the live line (all the person's open windows). F11 adds a push target (phone notifications, Apple/Google) behind the same interface. The ring record, the 30-second clock, accept/decline and missed notes stay in the backend and don't change (AC-34).
+- **Ring targets:** the ring service doesn't send to "the desktop"; it sends to the person's **ring targets**: a small interface (`RingTarget.ring(userId, ring)`, `RingTarget.stop(userId, callId, reason)`) with one kind now, the live line (all the person's open windows). F11 adds a push target (phone notifications, Apple/Google) behind the same interface. The ring record, the 30-second clock, accept/decline and missed notes stay in the backend and don't change (AC-34).
 - **Answer from anywhere:** accept and decline carry nothing device-specific; whichever device calls first wins (conditional update), the others get `ring_stop`.
 - **Seats per device:** each device in a call has its own attendance (F02 already allows two). `GET /me/calls/active` lists the person's running calls (call, chat, which devices are in), so any device can show "You're in a call on another device" (AC-33).
 - **Transfer:** `POST /calls/:callId/transfer` `{ fromAttendanceId }` returns a normal join answer for the new device; the new seat records the seat it replaces (no new status or column was needed). When LiveKit reports the new participant joined, the backend removes the old one (`RemoveParticipant`, attendance `transferred`). The call server identity is the account plus a seat number, and other apps show one person, so others don't see a leave and a new join. If the new device never connects within 30 seconds, the old seat stays and nothing changes. `GET /me/calls/active` lists chat calls only (meetings keep F02's own join).
@@ -112,7 +113,7 @@ apps/web/public/backgrounds/             8 background pictures (free licence, D0
 |---|---|
 | `calls.conversation_id` (new), `calls.meeting_id` (now optional), `calls.media` | which chat (or meeting) the call belongs to; video or audio |
 | `call_attendances.conversation_id` (new), `meeting_id` (now optional) | who was in a chat call |
-| `call_rings (id, workspace_id, call_id, user_id, state, rang_at, answered_at)` | who was rung and what happened; indexes on `(call_id)`, `(user_id, state)` |
+| `call_rings (id, workspace_id, call_id, user_id, state, rang_at, answered_at)` | who was rung and what happened; indexes on `(call_id)`, `(user_id, state)`, `(workspace_id)`; with `created_at`, `updated_at` (`packages/db/src/schema/call-rings.ts`) |
 | `user.ringtone`, `user.ring_volume` | the person's ringtone and volume |
 - Migration `0009_chat_calls` (0008 is F14's last): add-only (columns, table, partial unique index, check constraint added `NOT VALID` then validated). No lock-heavy rewrite.
 

@@ -40,7 +40,7 @@ meetapp/
 │   │       ├── app/               Routing, providers (theme, query, i18n), error boundary
 │   │       ├── pages/             One folder per screen: MeetingPage/, HomePage/ …
 │   │       ├── features/          Page-level logic per feature: api/ (backend calls, 10 s limit), auth/, workspaces/, profile/, appearance/, flags/ (F01); meetings/ (F02), meetings/chat/ (F03: chat data and state; its screen parts are in pages/MeetingPage/Chat*.tsx and chat-*.ts); chats/ (F14: the live line, chat list, conversation, typing and the folding menu; its screen is pages/ChatsPage); calls/ (F15: calls from chats, ringing, ringtones, call notes); devices/ (device choices and backgrounds for calls and meetings, F02/F15); later ask-ai/. `apps/web/public/backgrounds/` holds the background pictures and the background tool's model files (F15). Test helpers sit next to the feature (auth/fake-auth.tsx, workspaces/fake-api.ts)
-│   │       │   └── meetings/      API hooks (useCreateMeeting, useJoinMeeting…), the visit store (visit.ts), devices, pre-join; call/ holds the call itself (useMeetingRoom with livekit-client, people, reactions, sharing, shortcuts)
+│   │       │   └── meetings/      API hooks (useCreateMeeting, useJoinMeeting…), the visit store (visit.ts), pre-join (device choices moved to features/devices in F15); call/ holds the call itself (useMeetingRoom with livekit-client, people, reactions, sharing, shortcuts)
 │   │       └── locales/           Translation files: en.json …
 │   │
 │   ├── api/                       Backend (Fastify)
@@ -48,6 +48,7 @@ meetapp/
 │   │   └── src/
 │   │       ├── server.ts          Starts the server
 │   │       ├── meetings.ts        Wires the meeting and call modules together (F02)
+│   │       ├── chat-calls.ts      Wires chat calls, ringing and ring targets (F15)
 │   │       ├── config/            Settings from .env, validated at start
 │   │       ├── plugins/           Error handler, logging, metrics, API docs; sign-in (auth.ts setup, auth-routes.ts allow-list, auth-providers.ts Google/Microsoft, auth-bridges.ts what services need, auth-adapter.ts stores session tokens as SHA-256 fingerprints (D048), session.ts), rate-limit.ts, workspace-access.ts, idempotency.ts, html-page.ts (the shared frame of the hand-off and invitation pages) (F01); meeting-ticket.ts (the X-Meeting-Ticket header, F02)
 │   │       ├── modules/           One folder per business area:
@@ -60,6 +61,7 @@ meetapp/
 │   │       │   ├── chat/      In-meeting chat: messages, reactions, pins, polls, files, GIFs (F03)
 │   │       │   ├── chats/     Chats (F14): conversations, requests, groups, blocks, the live line (`/api/v1/realtime`), status and mentions
 │   │       │   └── calls/     Joining, the lobby, in-call controls, ending (F02): calls.permissions.ts (the role table),
+│   │       │                  F15: chat-calls.* (start, join, the running call), ring.* and ring.types.ts (ringing, accept, decline, cancel), add-people.service.ts, ring-targets.ts, ring-state.ts, call-rings.repository.ts, call-rate.ts, call-end.service.ts, call-removal.service.ts, transfer.*
 │   │       │                  livekit-webhook.routes.ts (joins and leaves from the call server), calls.jobs.ts (timeouts, the 30-hour limit)
 │   │       ├── test-support/      Test-only helpers: the test backend (auth-app.ts), fake Google/Microsoft, Mailpit, photos, workspace/invitation/join/sweep set-ups. modules/test-support/ holds test-only routes, registered only when NODE_ENV is "test"
 │   │       ├── emails/            Email templates (HTML + text, words in emails/locales/) and the email outbox queue (F01)

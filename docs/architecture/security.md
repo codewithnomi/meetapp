@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-28
 ---
 
 # Security Rules (Baseline)

@@ -57,7 +57,8 @@
 - **F15 T-fix-5 done** (2026-10-28): at most 3 seats per person in a call (`CALL_DEVICES`), joins/accepts/transfers count toward the 10-a-minute call limit, re-sent rings check the person rung, cancel checks membership first. 130 call tests pass.
 - **F15 T-fix-6 done** (2026-10-28): accessibility: off call buttons reachable with the reason, incoming calls don't fight for focus or take it from typing, unique ids, one announcement, picker and note fixes, contrast checked.
 - **F15 T-fix-7 done** (2026-10-28): code quality: one enter-a-call helper, shared query keys, IncomingCalls split, explicit translation keys, `OtherDeviceBar` molecule with Retry. `pnpm check` green; 438 web tests pass.
-- **Next step:** F15 T-fix-8 (documentation), then the joint second verification (T-fix-9; Mac on power).
+- **F15 T-fix-8 done** (2026-10-28): docs: READMEs (api, web, ui, contracts, db), project structure, privacy (backgrounds stay on the computer, ring data, no new third party), D073 pictures wording, design.md details, desktop rules (the WebAssembly exception), header dates. Open question for the owner: the new F15 pieces (IncomingCall, CallingScreen, OtherDeviceBar…) are on the approved screen canvas but not yet in the design system artifact (D029).
+- **Next step:** the joint second verification of F14 and F15 (F15 T-fix-9, F14 T-fix-9): Mac on power, lid open, `pnpm dev` closed; fix the new desktop specs on their first real run; owner looks at the new screenshots.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
@@ -171,7 +172,7 @@
 - **F14 T-fix-4 done (2026-10-26):** loading spinners and "Couldn't load this" + Retry on the chat list, Chat requests, conversation and Group details; failed actions shown; read marks retried; Start once; invite errors; h2 panes; translated side-menu count. 121 app + 8 UI tests pass.
 - **F14 T-fix-5 done (2026-10-26):** read marks by news number (clamped, exact message time); no "Seen" from pending invitees; editing cleans mentions; also fixed: the daily news clean-up never removed one-to-one/group chat news (it matched by meeting) and now keeps each chat's newest. 181 chat tests pass. Note: TC-F14-21 failed once with 429 instead of 403 (timing), passed on rerun; watch at verification.
 - **F14 T-fix-6 done (2026-10-26):** tests for paging (120 messages, 50 at a time, no gaps or repeats, history limit) and workspace deletion (chats kept 400 days; a deleted workspace takes its chats, messages and files; others stay). Found and fixed: a deleted workspace's chat files would stay in storage (new `chatUpkeep.beforeWorkspaceDeleted`). Tests for the live line hooks and the Chat screen; `features/**` branch coverage 82.6% (was 77.9%). 183 server + 374 app tests pass.
-- **Next step:** F15 T-fix-8 (documentation), then the joint second verification (T-fix-9; Mac on power).
+- **Next step:** the joint second verification of F14 and F15 (F15 T-fix-9, F14 T-fix-9): Mac on power, lid open, `pnpm dev` closed; fix the new desktop specs on their first real run; owner looks at the new screenshots.
 
 ## Session log
 

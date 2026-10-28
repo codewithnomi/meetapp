@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-20
+updated: 2026-10-28
 ---
 
 # Privacy & Legal Requirements
@@ -46,7 +46,7 @@ updated: 2026-10-20
 | Meeting chat (F03): messages and shared files | text in the database, files in private storage, pictures without location or camera details; seen only by people allowed in that meeting | deleted with the meeting; a deleted account's text and files removed within 30 days |
 | Chats (F14): one-to-one and group messages, files, who is in each chat, what each person has read | text in the database, files in private storage; seen only by the chat's members (removed or departed people keep only what they could read) | until the chat is deleted (a group when its last member leaves, within 30 days; a deleted team workspace's chats and files within 30 days); a deleted account's text and files removed within 30 days, its requests withdrawn and blocks removed |
 | Chat requests, blocks and the 30-day "asked before" wait (F14) | who asked whom, who blocked whom, and when | a request until accepted or deleted (30 days unanswered); a block until undone; the wait 30 days |
-| Calls from chats (F15): who started a call, in which chat, who was rung and what they did (answered, declined, missed), who joined and left and when, the call's length; the person's ringtone and its volume | in the database; seen only by the chat's members (missed calls only by the person who missed them); never audio, video or recordings | with the chat's messages (deleted with the chat, the workspace or the account); ringtone with the account |
+| Calls from chats (F15): who started a call, in which chat, who was rung and what they did (answered, declined, missed), who joined and left and when, the call's length; the person's ringtone and its volume | in the database; seen only by the chat's members (missed calls only by the person who missed them); never audio, video or recordings | with the chat's messages (deleted with the chat, the workspace or the account); ringtone with the account The caller's name and photo go in the ring only to the people being rung. |
 | Per-person chat settings (F14): read receipts on/off, pinned, muted and hidden chats | on the person's account and their membership of each chat; read receipts off means others don't see when they read (and they don't see others'); pin, mute and hide change only their own list | until changed; with the account (deleted with it) or the chat |
 | Mentions (F14): who an @mention names | the names in the message text and a list of mentioned members, used only for the "mentioned" mark | as the message |
 | Status (F14): Available, Away, Offline | in the cache (Redis) only, never in the database; shown only to colleagues in shared team workspaces and accepted contacts | while the app is open, plus 35 seconds |
@@ -56,7 +56,7 @@ updated: 2026-10-20
 | Call-server reports already handled | report ID and time | 1 day |
 | Audio, video and screen shares | **never stored**: passed between people by the call server only | — |
 
-The computer's camera, microphone and screen are used only while a person chooses to (pre-join preview, call, sharing). The app remembers the chosen devices on that computer only. Logs and traces never contain meeting links, passcodes, tickets, call passes or guest names (tested: TC-F02-108, 109).
+The computer's camera, microphone and screen are used only while a person chooses to (pre-join preview, call, sharing). The app remembers the chosen devices and background (none, blur or a picture) on that computer only; blur and backgrounds are made on the computer and no picture or video is sent anywhere for them (F15). Logs and traces never contain meeting links, passcodes, tickets, call passes or guest names (tested: TC-F02-108, 109).
 
 Until export and deletion are built into the app, people ask through `SUPPORT_EMAIL` (shown in Settings → Profile and account → "Your data"), and we reply within 30 days. Logs never contain passwords, codes, tokens, invitation or join links, or request bodies (tested: TC-F01-81, 82).
 
@@ -65,6 +65,7 @@ A public list of every service that touches user data, and why:
 LiveKit Cloud (development only; self-hosted in production), Google and Microsoft (optional sign-in only: they receive the sign-in request and send us the name, verified email and, once, the profile photo), the GIF service for meeting chat (F03, KLIPY, contacted by each person's app: the GIF search words, a random per-meeting id, and the internet address of people searching for or seeing GIFs; admins can turn GIFs off), Deepgram (speech-to-text), Anthropic (AI), embedding provider, Sentry (errors), cloud hosting, email provider, payment provider.
 - Use only providers that **don't train on our customers' data** and offer a data processing agreement.
 - **Local monitoring (F00, on the developer's Mac only):** the backend's logs and traces and the MeetApp containers' logs are kept for 7 days in Loki and Tempo on that Mac, never sent to a third party. Secrets and personal data are removed before logging (security rule S10); database error details and secrets in web addresses are removed too (F00 T-fix-2). The cleaning works on patterns, so an unusual secret format could still get through. (Confirmed by the owner on 2026-10-11.)
+- Calls from chats (F15): no new third party; background effects run on the computer and their files ship inside the app.
 
 ## 4. Documents needed before launch
 Privacy Policy · Terms of Service · Data Processing Agreement (for companies) · Cookie policy (web) · Acceptable Use Policy · Sub-processor list.
