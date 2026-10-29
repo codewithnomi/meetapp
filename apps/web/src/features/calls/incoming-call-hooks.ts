@@ -86,7 +86,7 @@ export function useAnswer(onAccepted: () => void) {
     },
     // A ring that is over (answered elsewhere, ended) goes; otherwise it stays, to try again.
     onError: (error, { ring }) => {
-      if (error.code === "RING_OVER" || error.code === "NOT_FOUND") remove(ring.callId);
+      if (["RING_OVER", "NOT_FOUND", "CALL_ENDED"].includes(error.code)) remove(ring.callId);
     },
   });
   const decline = (ring: RingMessage) => {

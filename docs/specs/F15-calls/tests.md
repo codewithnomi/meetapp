@@ -2,7 +2,7 @@
 feature: F15
 title: Calls from chat (audio and video)
 status: approved
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # F15 Calls from chat: Test Cases
@@ -320,21 +320,21 @@ Test names must include the TC and AC IDs, e.g. `TC-F15-18 [AC-F15-08] One-to-on
 - **Level:** integration
 - **Given** M2 in a call on seat 1 with M1 present
 - **When** device B calls `POST /calls/:id/transfer {fromAttendanceId}`, then connects to LiveKit
-- **Then** the old attendance is `transferring` until the webhook reports the new participant; only then the old one is removed (`transferred`); the order of events is new joined, old removed; within 3 seconds; M1's app shows M2 once the whole time (no leave and join); the other attendance fields of M2 are unchanged
+- **Then** the old attendance stays in the call until the webhook reports the new participant; only then the old one is removed (it becomes `left`, reason `leave`); the order of events is new joined, old removed; within 3 seconds; M1's app shows M2 once the whole time (no leave and join); the other attendance fields of M2 are unchanged
 
 ### TC-F15-42: Transfer never connects
 - **Covers:** AC-F15-33
 - **Level:** integration
 - **Given** a transfer started and the new device never connects, fake clock
 - **When** 30 s pass
-- **Then** the old seat is still in the call; its attendance returns to `active`; the call is unaffected; the unused pass no longer works; transferring someone else's attendance is refused (404)
+- **Then** the old seat is still in the call, unchanged; the call is unaffected; the unused pass no longer works; transferring someone else's attendance is refused (404)
 
 ### TC-F15-43: Join on this device or Transfer to this device
 - **Covers:** AC-F15-33
 - **Level:** e2e
 - **Given** M2 in a call in window 1; M2 opens window 2
 - **When** window 2 shows the banner and M2 presses **Transfer to this device**; later repeats with **Join on this device**
-- **Then** the banner says "You're in a call on another device" with both buttons; Transfer moves the call and window 1 leaves; Join keeps both windows in the call as two participants
+- **Then** the banner says "You're in a call on another device" with both buttons; Transfer moves the call and window 1 leaves; Join keeps both windows in the call as two participants; while it works the bar says "Moving the call…", and a failure offers Retry; a person already on 3 devices gets `CALL_DEVICES` for a 4th Join, while a Transfer is allowed
 
 ### TC-F15-44: Ring reaches every device, answer on one stops all
 - **Covers:** AC-F15-34
@@ -496,12 +496,19 @@ Test names must include the TC and AC IDs, e.g. `TC-F15-18 [AC-F15-08] One-to-on
 - **When** it is decoded; used for another call; used after M2 leaves, after M2 is removed from the chat, and after the call ends; and the clock passes its lifetime
 - **Then** it names exactly one call and room, M2's identity and seat, and no admin rights; it is short-lived; each of the later uses is refused by the call server; a pass from a meeting does not open a chat call and vice versa
 
+### TC-F15-80: Joining while rung answers the ring
+- **Covers:** AC-F15-03, AC-F15-06
+- **Level:** integration
+- **Given** M1 calls M2 (one-to-one); both have the app open
+- **When** M2 presses **Join** (in the header or the note) instead of Accept
+- **Then** M2's ring becomes `accepted`; M2's windows and M1's get `ring_stop` "accepted"; M1's Calling screen becomes the call
+
 ### TC-F15-66: Rate limit on calls and Add people (S5)
 - **Covers:** AC-F15-22
 - **Level:** security
 - **Given** M1 with a fake clock and a group of 15 members
 - **When** M1 starts 10 calls within a minute (ending each), then an 11th; or rings 8 people then 3 more with Add people
-- **Then** the 11th unit (a start counts 1, each rung person counts 1) is refused 429 `CALL_RATE` with the seconds to wait; after the wait it works; another person's limit is separate; the counter key is an HMAC, not a plain id
+- **Then** the 11th unit (a start, join, accept or transfer counts 1, each rung person counts 1) is refused 429 `CALL_RATE` with the seconds to wait; after the wait it works; another person's limit is separate; the counter key is an HMAC, not a plain id
 
 ### TC-F15-67: Logs and error reports (S10)
 - **Covers:** AC-F15-23

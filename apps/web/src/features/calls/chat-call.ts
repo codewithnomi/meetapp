@@ -37,7 +37,7 @@ export const useChatCall = create<ChatCallState>((set, get) => ({
     set({ backTo: undefined });
     return id;
   },
-  begin: (call) => set({ call, left: undefined }),
+  begin: (call) => set({ call, left: undefined, backTo: undefined }),
   move: (phase) => set(({ call }) => (call ? { call: { ...call, phase } } : {})),
   // Ending twice (Cancel, then the "cancelled" news) changes nothing the second time.
   end: () => set(({ call }) => (call ? { call: undefined, left: call.callId, backTo: call.conversationId } : {})),

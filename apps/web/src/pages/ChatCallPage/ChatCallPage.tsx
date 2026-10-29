@@ -3,6 +3,7 @@
 // line says so and the screen becomes F02's call screen; if the call is declined or not answered, the
 // outcome shows with Call again and Back to chat. Someone who joined goes straight into the call.
 import { Avatar, Button, CallingScreen, Notice } from "@meetapp/ui";
+import type { TFunction } from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
@@ -38,6 +39,7 @@ function useRingOutcome(call: ChatCall, onCancelled: () => void) {
         if (!running || running.callId !== call.callId) move("no_answer");
         else if (running.people >= 2) move("in_call");
       })
+      // A failed check is simply tried again at the next one.
       .catch(() => undefined);
   }, [call.conversationId, call.callId, move]);
   useEffect(() => {
@@ -93,6 +95,26 @@ function AfterRinging({ audio, onAgain, onBack }: { audio: boolean; onAgain: () 
   );
 }
 
+/** The Calling screen's words: who is called, then declined or No answer. */
+function callingTexts(t: TFunction, call: ChatCall) {
+  const name = call.title;
+  const heading =
+    call.media === "video" ? t("calls.calling.heading_video", { name }) : t("calls.calling.heading_audio", { name });
+  if (call.phase === "ringing")
+    return { heading, title: t("calls.calling.title", { name }), line: t("calls.calling.line") };
+  if (call.phase === "declined")
+    return {
+      heading,
+      title: t("calls.calling.declinedTitle", { name }),
+      line: t("calls.calling.declinedLine", { name }),
+    };
+  return {
+    heading,
+    title: t("calls.calling.noAnswerTitle", { name }),
+    line: t("calls.calling.noAnswerLine", { name }),
+  };
+}
+
 function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBack: (conversationId: string) => void }) {
   const { t } = useTranslation();
   const end = useChatCall((state) => state.end);
@@ -112,17 +134,18 @@ function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBac
   const ringing = call.phase === "ringing";
   const name = call.title;
   const cancel = () => {
+    // If the cancel doesn't reach the backend, the 30-second ring job still ends the rings.
     void cancelRing(call.callId).catch(() => undefined);
     leave();
   };
-  const outcome = call.phase === "declined" ? "declined" : "noAnswer";
+  const texts = callingTexts(t, call);
   return (
     <CallingScreen
-      heading={t(call.media === "video" ? "calls.calling.heading_video" : "calls.calling.heading_audio", { name })}
+      heading={texts.heading}
       picture={<Avatar name={name} size="xl" />}
       ringing={ringing}
-      title={ringing ? t("calls.calling.title", { name }) : t(`calls.calling.${outcome}Title`, { name })}
-      line={ringing ? t("calls.calling.line") : t(`calls.calling.${outcome}Line`, { name })}
+      title={texts.title}
+      line={texts.line}
       preview={ringing ? <Preview call={call} /> : undefined}
       actions={
         ringing ? undefined : (

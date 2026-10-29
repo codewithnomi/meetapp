@@ -4,6 +4,7 @@
 // this window isn't in a call. It sits above the screen and pushes it down, so it never covers a button.
 import { OtherDeviceBar } from "@meetapp/ui";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import type { ApiError } from "../api/index.ts";
 import { useVisit, type Joined } from "../meetings/index.ts";
@@ -20,6 +21,15 @@ type Move = { call: Active; transfer: boolean };
 function move({ call, transfer }: Move): Promise<Joined> {
   const from = call.seats[0]?.attendanceId;
   return transfer && from ? transferCall(call.callId, from) : joinCall(call.callId);
+}
+
+/** The call this window left is offered again once it is no longer listed, then listed again. */
+function useForgetLeft(calls: Active[], fetched: boolean) {
+  const left = useChatCall((state) => state.left);
+  const listed = left !== undefined && calls.some((c) => c.callId === left);
+  useEffect(() => {
+    if (fetched && left !== undefined && !listed) useChatCall.setState({ left: undefined });
+  }, [fetched, left, listed]);
 }
 
 export function OtherDevice({ onEntered }: { onEntered: () => void }) {
@@ -48,6 +58,7 @@ export function OtherDevice({ onEntered }: { onEntered: () => void }) {
   // An answer that isn't the expected list (an older backend, a test double) simply shows no bar.
   const calls = Array.isArray(active.data?.calls) ? active.data.calls : [];
   const call = calls.find((c) => c.seats.length > 0 && c.conversationId !== null && c.callId !== left);
+  useForgetLeft(calls, active.isFetched);
   if (inCall || !call) return null;
   const last = moving.variables;
   return (

@@ -45,7 +45,9 @@ async function accept(deps: RingDeps, userId: string, callId: string) {
   try {
     joined = await deps.join(userId, callId);
   } catch (error) {
-    await deps.chatCalls.reopenRing(ring.id);
+    // An ended call's ring stays stopped (and every window is told); otherwise it sounds again.
+    if (error instanceof AppError && error.code === "CALL_ENDED") await deps.targets.stop(userId, callId, "ended");
+    else await deps.chatCalls.reopenRing(ring.id);
     throw error;
   }
   await deps.targets.stop(userId, callId, "accepted");
@@ -104,7 +106,7 @@ async function ringingFor(deps: RingDeps, userId: string): Promise<RingMessage[]
     if (now - ring.rangAt.getTime() >= CHAT_CALL_LIMITS.ringSeconds * 1000) continue;
     const call = await deps.chatCalls.byId(ring.callId);
     const starter = await deps.chatCalls.starterOf(ring.callId);
-    if (!call?.conversationId || !starter?.userId) continue;
+    if (!call?.conversationId || call.endedAt || !starter?.userId) continue;
     // Both must still be in the chat: the caller (whose name is shown) and the person rung.
     const rung = await deps.place(userId, call.conversationId).catch(() => undefined);
     const caller = rung && (await deps.place(starter.userId, call.conversationId).catch(() => undefined));

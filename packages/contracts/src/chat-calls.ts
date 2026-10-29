@@ -11,7 +11,7 @@ export const CHAT_CALL_LIMITS = {
   /** People in one chat call; also the largest group that rings (AC-F15-04, 14). */
   people: 20,
   ringSeconds: 30,
-  /** Starts plus people rung by Add people, per person per minute (AC-F15-22). */
+  /** Starts, joins, accepts and transfers, plus people rung by Add people, per person per minute (AC-F15-22). */
   callsPerMinute: 10,
   /** Seats of one person in one call: two devices, plus one while moving the call (T-fix-5). */
   seatsPerPerson: 3,

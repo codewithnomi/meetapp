@@ -83,3 +83,9 @@ The 30-second job stops rings; the every-minute clean-up stops any ring older th
 - Settings → Devices shows "Not available on this computer" when the computer can't run them; calls still work with the plain camera.
 - "Background turned off to keep your video smooth": the computer made fewer than 15 frames a second for 5 seconds. Choose it again, or close other busy apps.
 - The engine and model load from the app itself (`/backgrounds/…`); the desktop security policy allows only the app's own WebAssembly.
+
+### Messages people may see
+- "You're calling too often" (429 `CALL_RATE`): starts, joins, answers, moves and Add people count, 10 a minute per person; wait the seconds shown.
+- "You're already in this call on 3 devices" (`CALL_DEVICES`): leave it on one device first, or use **Transfer to this device**.
+- "Moving the call…" stays: the new device didn't connect within 30 seconds, so the old one stays in the call; try again.
+

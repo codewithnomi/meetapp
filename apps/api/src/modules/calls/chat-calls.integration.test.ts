@@ -405,6 +405,12 @@ describe("who is in the call and who can be added", { timeout: 60_000 }, () => {
     expect(fourth.statusCode).toBe(409);
     expect(fourth.json<{ error: { code: string } }>().error.code).toBe("CALL_DEVICES");
     expect((await attendancesOf(started.callId)).filter((a) => a.userId === m1.id)).toHaveLength(3);
+    // Moving the call to a 4th window is a transfer: it replaces a seat, so it is allowed.
+    const seats = (await attendancesOf(started.callId)).filter((a) => a.userId === m1.id);
+    const moved = await call(m1.token, "POST", `/api/v1/calls/${started.callId}/transfer`, {
+      fromAttendanceId: seats[0]?.id,
+    });
+    expect(moved.statusCode).toBe(200);
     // The other person still gets in: one person's devices never take the call's places.
     expect((await joinCall(m2, started.callId)).statusCode).toBe(200);
   });

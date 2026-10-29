@@ -489,3 +489,10 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** the backend owns ringing (record, 30-second clock, accept/decline, missed notes) and sends rings through "ring targets": today the live line to open desktop windows; F11 adds phone push notifications behind the same interface. Each device in a call is its own seat; **Transfer to this device** connects the new seat first, then removes the old one, and is built and tested desktop-to-desktop in F15.
 - **Why:** Teams rings every device and moves calls between them; building the core this way now means the mobile app only adds a delivery route and a button.
 - **Cost:** none now; phone push uses Apple's and Google's free notification services (checked in F11).
+
+### D076: Seats per person and what counts toward the call limit (F15)
+- **Date:** 2026-10-29. **Status:** accepted (found in F15's first verification; security review).
+- **Decision:** one person may have at most 3 seats in one chat call (two devices, plus one while moving the call; a 4th gets 409 `CALL_DEVICES`; a transfer replaces a seat and is always allowed). Starts, joins, accepts and transfers each count 1 toward the 10-a-minute call limit, as each person rung by Add people does.
+- **Why:** a person's own extra seats don't count toward the 20 people, so without a cap one member could fill the call server's places with copies of themselves.
+- **Alternatives:** 2 seats (blocks moving the call from a second device); no cap (the flooding above).
+

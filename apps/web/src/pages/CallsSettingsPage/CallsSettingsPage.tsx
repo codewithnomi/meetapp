@@ -3,7 +3,7 @@
 // to every computer. The volume is saved a moment after the slider stops.
 import { RingtonePicker, Spinner } from "@meetapp/ui";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ApiError } from "../../features/api/index.ts";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
@@ -17,19 +17,31 @@ export interface CallsSettingsPageProps {
 
 const NAMES = ["bright", "chime", "pulse", "classic", "gentle"] as const;
 
-const playOnce = (ringtone: number, volume: number) => {
-  if (typeof AudioContext === "undefined") return;
-  const stop = playRingtone(() => new AudioContext(), { ringtone, volume, repeat: false });
-  setTimeout(stop, 4000);
-};
+/** One sound at a time: a new play stops the last one, and leaving the page stops it (UI review). */
+function usePlayer() {
+  const playing = useRef<() => void>(undefined);
+  useEffect(() => () => playing.current?.(), []);
+  return (ringtone: number, volume: number) => {
+    playing.current?.();
+    if (typeof AudioContext === "undefined") return;
+    const stop = playRingtone(() => new AudioContext(), { ringtone, volume, repeat: false });
+    const timer = setTimeout(stop, 4000);
+    playing.current = () => (clearTimeout(timer), stop());
+  };
+}
 
 function Picker({ saved }: { saved: { ringtone: number; ringVolume: number } }) {
   const { t } = useTranslation();
   const queries = useQueryClient();
   const [ringtone, setRingtone] = useState(saved.ringtone);
   const [volume, setVolume] = useState(saved.ringVolume);
+  const play = usePlayer();
   const save = useMutation<undefined, ApiError, { ringtone?: number; ringVolume?: number }>({
     mutationFn: saveRingSettings,
+    // A tone that couldn't be saved isn't shown as chosen.
+    onError: (_error, change) => {
+      if (change.ringtone !== undefined) setRingtone(saved.ringtone);
+    },
     onSettled: () => void queries.invalidateQueries({ queryKey: CALL_KEYS.ringSettings }),
   });
   const { mutate } = save;
@@ -51,7 +63,7 @@ function Picker({ saved }: { saved: { ringtone: number; ringVolume: number } }) 
         }))}
         value={ringtone}
         onChange={(id) => (setRingtone(id), mutate({ ringtone: id }))}
-        onPlay={(id) => playOnce(id, volume)}
+        onPlay={(id) => play(id, volume)}
         volumeLabel={t("settings.calls.volume")}
         volume={volume}
         onVolume={setVolume}

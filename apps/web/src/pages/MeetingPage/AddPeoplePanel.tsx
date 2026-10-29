@@ -64,7 +64,12 @@ export function AddPeoplePanel({ conversationId, callId, onClose }: AddPeoplePan
       <div className="flex flex-col gap-3.5">
         <p className="m-0 text-[13px] leading-4.5 text-ink-muted">{t("calls.add.intro")}</p>
         {running.isError ? <ActionErrorNotice error={running.error} onRetry={() => void running.refetch()} /> : null}
-        {ring.isError ? <ActionErrorNotice error={ring.error} onRetry={() => ring.reset()} /> : null}
+        {ring.isError ? (
+          <ActionErrorNotice
+            error={ring.error}
+            onRetry={() => (ring.variables ? ring.mutate(ring.variables) : ring.reset())}
+          />
+        ) : null}
         {running.isPending ? <Spinner label={t("calls.add.loading")} /> : null}
         {call && members.length === 0 ? <p className="m-0 text-[13px]">{t("calls.add.everyone")}</p> : null}
         <ul aria-label={t("calls.add.members")} className="m-0 flex list-none flex-col gap-1 p-0">

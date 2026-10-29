@@ -123,7 +123,9 @@ async function takeSeat(
   const already = (await peopleIn(tx, call.id)).includes(place.me.id);
   if (!already && (await peopleCount(tx, call.id)) >= CHAT_CALL_LIMITS.people) throw full();
   // A person's own extra seats don't count toward the 20, so they are capped here (T-fix-5).
-  if (already && (await seatsOf(tx, call.id, place.me.id)) >= CHAT_CALL_LIMITS.seatsPerPerson) throw tooManySeats();
+  // A transfer replaces a seat once it connects, so it doesn't count against the cap.
+  const capped = already && !replaces;
+  if (capped && (await seatsOf(tx, call.id, place.me.id)) >= CHAT_CALL_LIMITS.seatsPerPerson) throw tooManySeats();
   const ticket = newTicket();
   const attendance = await insertAttendance(tx, seatFor(deps.calls, place, call, { ticket, replaces }));
   const answered = await deps.chatCalls.answeredByJoining(tx, call.id, place.me.id, deps.calls.now());

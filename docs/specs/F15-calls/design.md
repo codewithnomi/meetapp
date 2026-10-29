@@ -2,7 +2,7 @@
 feature: F15
 title: Calls from chat (audio and video)
 status: approved
-updated: 2026-10-27
+updated: 2026-10-29
 ---
 
 # F15 Calls from chat (audio and video): Design (HOW)
@@ -30,10 +30,13 @@ apps/api/src/modules/meetings/…          F02's join/pass/webhook code takes a 
 apps/api/src/modules/chats/…             membership changes take people out of a running chat call; live line: ring messages
 apps/web/src/features/calls/             start/join from a chat, incoming-call state, ringtone player, call notes
 apps/web/src/features/devices/           Settings → Devices: device choices, preview, background effects (shared with F02)
-apps/web/src/pages/ChatsPage/            call buttons, Join, call notes; IncomingCall overlay (app-wide)
+apps/web/src/pages/ChatsPage/            call buttons, Join, call notes
+apps/web/src/pages/ChatCallPage/         the Calling screen (ringing, declined, no answer), then the call
+apps/web/src/features/calls/             also enter-call.ts (entering a call), call-keys.ts (cached answers), incoming-call-hooks.ts and
+                                         IncomingCalls.tsx (the app-wide incoming call), OtherDevice.tsx ("call on another device" bar)
 apps/web/src/pages/MeetingPage/          reused as the call screen; Add people panel; equal rights for chat calls
 apps/web/src/pages/DevicesSettingsPage/, CallsSettingsPage/   Settings → Devices and Settings → Calls
-packages/ui/src/…                        IncomingCall (organism), CallNote (molecule), BackgroundPicker (molecule),
+packages/ui/src/…                        IncomingCall (organism), CallNote, OtherDeviceBar (molecules), BackgroundPicker (molecule),
                                          RingtonePicker (molecule), CallingScreen (template)
 apps/web/public/backgrounds/             8 background pictures (drawn for MeetApp, no outside licence, D073) and the background tool's model files
                                          (new folder; the build tool copies public/ into the app as it is)
@@ -47,7 +50,8 @@ apps/web/public/backgrounds/             8 background pictures (drawn for MeetAp
 4. **In the call:** F02's call screen with a side panel: **Add people** (chat members not in the call, each Ringing… / Declined with **Ring again** / **Add**; the control bar's people button opens it) and **Chat** (the chat itself, no polls). No organizer controls and no Meeting info. The canvas's "Stop ringing" for one person is left out: a ring stops on its own after 30 seconds.
 5. **Chat notes:** "Sara Malik started a call · 03:12 · 2 people" with **Join** (while running); "Call ended · 1h 05m · Sara, Omar and you"; "Missed call from Omar · 17:42" with **Call back**.
 6. **Loading and errors (AC-18, 19):** starting, joining or accepting shows a spinner on the button; a failure shows "Couldn't start the call" (or "Couldn't join the call") with **Retry**; if the backend or call server can't be reached, F02's message appears within 10 seconds. All text comes from the translation file.
-7. **Settings → Devices:** preview (with the chosen background), background grid (None, Blur, 8 pictures), camera, microphone with level, speaker with **Test speakers**, noise suppression. **Settings → Calls:** 5 ringtones with play buttons, volume.
+7. **Another device:** a window that isn't in the person's running chat call shows a bar above the screen (it never covers anything): "You're in a call on another device" with the call's name, **Join on this device** and **Transfer to this device**; while it works, "Moving the call…"; a failure shows its message with **Retry**.
+8. **Settings → Devices:** preview (with the chosen background), background grid (None, Blur, 8 pictures), camera, microphone with level, speaker with **Test speakers**, noise suppression. **Settings → Calls:** 5 ringtones with play buttons, volume.
 
 ## 3. How it works
 
@@ -59,7 +63,7 @@ apps/web/public/backgrounds/             8 background pictures (drawn for MeetAp
 
 ### 3.2 Starting and joining (AC-01–04, 12, 20–22, 27)
 - `POST /conversations/:id/calls` `{ media }`: checks the person may write in the chat (F14's read-only rules, AC-02), the rate limit (AC-22), then creates the call (or finds the running one), an attendance for the person, and returns F02's join answer (ticket + call-server pass, no lobby). For a new call it also writes the "started a call" note and rings the others (3.3).
-- `POST /calls/:callId/join` for **Join** from the chat: same checks, no ringing.
+- `POST /calls/:callId/join` for **Join** from the chat: same checks, no ringing. Joining (or starting into the running call) while being rung for it answers that ring: it becomes `accepted` and every window, the caller's too, gets `ring_stop` "accepted".
 - The camera choice is the app's: video call starts with the camera on, audio call off; a missing or blocked device starts the call with that device off and shows F02's device message (AC-27).
 
 ### 3.3 Ringing (AC-04–11, 19, 24)
@@ -67,7 +71,7 @@ apps/web/public/backgrounds/             8 background pictures (drawn for MeetAp
 - **Who is rung:** the chat's other accepted members, unless the group has more than 20 (AC-04), and never a person who blocked the caller in their one-to-one chat (that chat is read-only anyway, AC-24).
 - **Delivery:** live-line message `{ t: "ring", callId, conversationId, from: { userId, name, photoUrl }, media, groupName?, expiresAt }` to all the person's lines (F14's per-person channel). The app shows the incoming call and plays the ringtone (quieter while in a call, AC-10). People with no line open get nothing now and the missed note later (AC-11).
 - **Stopping:** `{ t: "ring_stop", callId, reason: "accepted" | "declined" | "cancelled" | "missed" | "ended" }` to the person's lines, so every window stops at once (AC-06, 07, 09).
-- **30 seconds:** a delayed job on the existing BullMQ queue fires at `rang_at + 30 s` and marks still-ringing rows `missed`, sends `ring_stop`, and writes missed notes; the every-minute clean-up also ends any ring older than 35 seconds (so a lost job can't leave anyone ringing, AC-19).
+- **30 seconds:** a delayed job (it takes rings up to half a second younger, since they are written a moment after the call starts) on the existing BullMQ queue fires at `rang_at + 30 s` and marks still-ringing rows `missed`, sends `ring_stop`, and writes missed notes; the every-minute clean-up also ends any ring older than 35 seconds (so a lost job can't leave anyone ringing, AC-19).
 - **Caller leaves first (group):** F02's webhook handler, chat-call branch: when the caller's last participant leaves and no other attendance exists, all `ringing` rows become `cancelled`, `ring_stop` (`cancelled`) goes out, missed notes are written and the call ends (AC-09).
 - **Already in this call / rung twice:** a person already in the call is never rung; a person rung by two calls at once sees both (the newer on top), each with its own buttons.
 - **The caller's name and photo** are copied into the ring when it is sent; if the caller is removed or deleted meanwhile, the ring is cancelled.
@@ -99,8 +103,8 @@ apps/web/public/backgrounds/             8 background pictures (drawn for MeetAp
 ### 3.8 Devices, rings and transfer, ready for mobile (AC-33, 34; D075)
 - **Ring targets:** the ring service doesn't send to "the desktop"; it sends to the person's **ring targets**: a small interface (`RingTarget.ring(userId, ring)`, `RingTarget.stop(userId, callId, reason)`) with one kind now, the live line (all the person's open windows). F11 adds a push target (phone notifications, Apple/Google) behind the same interface. The ring record, the 30-second clock, accept/decline and missed notes stay in the backend and don't change (AC-34).
 - **Answer from anywhere:** accept and decline carry nothing device-specific; whichever device calls first wins (conditional update), the others get `ring_stop`.
-- **Seats per device:** each device in a call has its own attendance (F02 already allows two). `GET /me/calls/active` lists the person's running calls (call, chat, which devices are in), so any device can show "You're in a call on another device" (AC-33).
-- **Transfer:** `POST /calls/:callId/transfer` `{ fromAttendanceId }` returns a normal join answer for the new device; the new seat records the seat it replaces (no new status or column was needed). When LiveKit reports the new participant joined, the backend removes the old one (`RemoveParticipant`, attendance `transferred`). The call server identity is the account plus a seat number, and other apps show one person, so others don't see a leave and a new join. If the new device never connects within 30 seconds, the old seat stays and nothing changes. `GET /me/calls/active` lists chat calls only (meetings keep F02's own join).
+- **Seats per device:** each device in a call has its own attendance, at most 3 per person per call (two devices plus one while moving the call; a 4th is refused with 409 `CALL_DEVICES`; a transfer replaces a seat and is always allowed). `GET /me/calls/active` lists the person's running calls (call, chat, which devices are in), so any device can show "You're in a call on another device" (AC-33).
+- **Transfer:** `POST /calls/:callId/transfer` `{ fromAttendanceId }` returns a normal join answer for the new device; the new seat records the seat it replaces in `acted_by` (no new status or column was needed); the app moves the seat that has been in the call longest. When LiveKit reports the new participant joined, the backend removes the old one (`RemoveParticipant`; its attendance becomes `left`, reason `leave`). The call server identity is the account plus a seat number, and other apps show one person, so others don't see a leave and a new join. If the new device never connects within 30 seconds, the old seat stays and nothing changes. `GET /me/calls/active` lists chat calls only (meetings keep F02's own join).
 - **Sign-in per device:** desktop uses its token (F01); the phone will use its own session the same way, so nothing in the call rules depends on the kind of device.
 
 ### 3.9 Settings (AC-29–32)
@@ -147,7 +151,7 @@ apps/web/public/backgrounds/             8 background pictures (drawn for MeetAp
 ## Security & privacy
 - **S1, S2 (AC-20):** every route checks chat membership (accepted) and the workspace at that moment; others get 404. Chat calls never accept meeting tickets from F02's lobby paths, and F02's organizer routes refuse chat calls.
 - **S4 (AC-21):** F02's pass rules: one call, short-lived, removed on leave, removal from the chat, or end.
-- **S5 (AC-22):** each start counts 1 and each person rung by Add people counts 1; at most 10 a minute per person (Redis counter under an HMAC, as F01); the 11th gets 429 `CALL_RATE` with the seconds to wait.
+- **S5 (AC-22):** each start, join, accept and transfer counts 1 (they all take a seat through the same step) and each person rung by Add people counts 1; at most 10 a minute per person (Redis counter under an HMAC, as F01); the 11th gets 429 `CALL_RATE` with the seconds to wait.
 - **S10 (AC-23):** logs carry ids and timings only; never passes, names in rings, or chat text.
 - **Blocks (AC-24):** the blocked person's one-to-one chat is read-only, so no call; rings never go to a blocker from that chat; group calls are normal.
 - **Backgrounds:** processing on the device; the model files and pictures are served by the app itself; the desktop security policy needs no new address (the tool's default internet download is turned off by `assetPaths`).

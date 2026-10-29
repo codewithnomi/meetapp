@@ -173,8 +173,9 @@ async function callRequest(path: string, media: "video" | "audio", token: string
   const sentAt = Date.now();
   const answer = await postRaw(path, { media }, token);
   const ms = Date.now() - sentAt;
-  const body = (await answer.json().catch(() => ({}))) as { call?: { callId: string }; code?: string };
-  return { status: answer.status, code: body.code, callId: body.call?.callId, ms, sentAt };
+  // Errors come as { error: { code } } (the standard error body).
+  const body = (await answer.json().catch(() => ({}))) as { call?: { callId: string }; error?: { code?: string } };
+  return { status: answer.status, code: body.error?.code, callId: body.call?.callId, ms, sentAt };
 }
 
 export const startCall = (member: Member, conversationId: string, media: "video" | "audio" = "video") =>

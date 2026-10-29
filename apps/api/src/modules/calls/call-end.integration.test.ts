@@ -198,7 +198,7 @@ describe("timeouts and ending", { timeout: 120_000 }, () => {
     for (const l of lines) l.ws.terminate();
   });
 
-  it("T-fix-9 [AC-F15-03] joining while rung answers the ring: the caller's Calling moves into the call", async () => {
+  it("TC-F15-80 [AC-F15-03] joining while rung answers the ring: the caller's Calling moves into the call", async () => {
     const { people, workspaceId } = await team("fx9j", 2);
     const [m1, m2] = people as [Person, Person];
     const id = await chatOf(m1, workspaceId, [m2]);

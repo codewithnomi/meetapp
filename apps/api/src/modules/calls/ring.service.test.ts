@@ -46,4 +46,13 @@ describe("accept", () => {
     expect(targets.stop).toHaveBeenCalledWith("mo", "call-1", "accepted");
     expect(targets.stop).toHaveBeenCalledWith("olivia", "call-1", "accepted");
   });
+
+  it("T-fix-9 [AC-F15-19] accepting a call that just ended keeps the ring stopped and tells every window", async () => {
+    const { deps, chatCalls, targets } = fakeDeps(async () => {
+      throw new AppError(409, "CALL_ENDED", "This call has ended.");
+    });
+    await expect(createRingService(deps).accept("mo", "call-1")).rejects.toMatchObject({ code: "CALL_ENDED" });
+    expect(chatCalls.reopenRing).not.toHaveBeenCalled();
+    expect(targets.stop).toHaveBeenCalledWith("mo", "call-1", "ended");
+  });
 });
