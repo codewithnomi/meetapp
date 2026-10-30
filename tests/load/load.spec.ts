@@ -95,6 +95,8 @@ const CHAT_SPACING_MS = 1_500;
 async function chatDelivery(page: Page, link: string, room: string): Promise<number[]> {
   const guest = await knockAsGuest(link, "Load Sender");
   await page.getByRole("button", { name: "Admit all" }).click();
+  // Letting in finishes on the backend a moment later: wait until the lobby is empty before sending.
+  await expect(page.getByRole("button", { name: "Admit all" })).toHaveCount(0, { timeout: 15_000 });
   await controls(page).getByRole("button", { name: /^Chat/ }).click();
   await watchChat(page, "load-");
   const sender = guest.ready(room);

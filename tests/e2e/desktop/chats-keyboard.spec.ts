@@ -146,7 +146,7 @@ async function leaveWithKeyboard(page: Page) {
   const dialog = page.getByRole("dialog", { name: "Leave this group?" });
   await expect(dialog).toContainText("won't get new messages");
   await press(page, dialog.getByRole("button", { name: "Leave group" }));
-  await expect(page.getByRole("heading", { level: 1, name: "Choose a chat" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "Choose a chat" })).toBeVisible();
 }
 
 /** Xena's part: accept the first group's request and delete the second's. */
@@ -207,7 +207,7 @@ test("TC-F14-61 [AC-F14-30, AC-F14-26, AC-F14-23] messages are announced; status
   // Mo is on Home: the side menu's Chat item names the unread count.
   await box.fill(hello);
   await box.press("Enter");
-  await expect(chatItem(mo.page)).toHaveAccessibleName(/^Chat \d+/, { timeout: 10_000 });
+  await expect(chatItem(mo.page)).toHaveAccessibleName(/^Chat, \d+ unread/, { timeout: 10_000 });
   await press(mo.page, chatItem(mo.page));
   const row = mo.page.getByRole("button", { name: /^Olivia Owner, .*unread/ });
   await expect(row).toBeVisible();

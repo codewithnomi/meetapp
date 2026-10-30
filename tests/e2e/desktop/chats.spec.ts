@@ -23,7 +23,8 @@ async function inWorkspace(page: Page, workspace: string) {
 /** The number on the side menu's Chat item (0 when none). */
 async function unreadOf(page: Page): Promise<number> {
   const name = (await chatItem(page).getAttribute("aria-label")) ?? "Chat";
-  const count = /^Chat (\d+)/.exec(name)?.[1];
+  // "Chat, 3 unread chats" since F14 T-fix-4.
+  const count = /^Chat, (\d+) unread/.exec(name)?.[1];
   return count ? Number(count) : 0;
 }
 
@@ -36,7 +37,7 @@ test("TC-F14-10 [AC-F14-06] a new person's Chat says No chats yet, and New chat 
   await openScreen(page, "Chat");
   await expect(page.getByText("No chats yet")).toBeVisible();
   await page.getByRole("button", { name: "New chat" }).last().click();
-  await expect(page.getByRole("heading", { level: 1, name: "New chat" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: "New chat" })).toBeVisible();
 });
 
 test("TC-F14-04 [AC-F14-02, AC-F14-07, AC-F14-20] a message arrives live; the badge and bold row clear on opening", async () => {
