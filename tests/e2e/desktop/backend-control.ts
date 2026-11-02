@@ -64,3 +64,19 @@ export async function runCallJob(name: "ending-soon" | "time-limit", callId: str
   await queue.add(name, { callId }, { jobId: `e2e-${name}-${callId}-${String(Date.now())}`, removeOnComplete: true });
   await queue.close();
 }
+
+/**
+ * Forgets the per-address sign-up counts: every test signs up from 127.0.0.1, and the whole run needs
+ * more than the 50 an hour a real office address gets. The limit itself is tested in rate-limit.test.ts.
+ */
+export function clearSignUpCounts(): void {
+  const container = find("redis");
+  if (!container) return;
+  execFileSync("docker", [
+    "exec",
+    container,
+    "sh",
+    "-c",
+    'redis-cli --scan --pattern "rate:sign-ups:*" | xargs -r redis-cli del > /dev/null',
+  ]);
+}

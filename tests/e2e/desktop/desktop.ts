@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { _electron, expect, test, type ElectronApplication, type Page } from "@playwright/test";
+import { clearSignUpCounts } from "./backend-control.ts";
 
 const DESKTOP = fileURLToPath(new URL("../../../apps/desktop", import.meta.url));
 
@@ -198,6 +199,7 @@ function accountFile(): string {
 
 /** Creates an account through the app's bridge, with the code from the fake inbox. */
 async function signUpThroughBridge(page: Page, email: string, name = "E2E Person"): Promise<void> {
+  clearSignUpCounts();
   const since = new Date();
   const started = await page.evaluate(
     ([address, password, person]) =>

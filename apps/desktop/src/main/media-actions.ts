@@ -27,8 +27,12 @@ export interface MediaSystem {
 }
 
 const KINDS = new Set(["camera", "microphone"]);
+/** On Linux the screen is sometimes missing from the first lists after start; ask again, briefly. */
+const SCREEN_RETRIES = 3;
+const RETRY_MS = 250;
+const pause = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-export function createMediaActions(system: MediaSystem, picker: SharePicker) {
+export function createMediaActions(system: MediaSystem, picker: SharePicker, wait = () => pause(RETRY_MS)) {
   // Only a source from the latest list may be chosen. The page sees stand-in ids ("share-1" …), never
   // the system's, so it can't capture a screen around our picker.
   let offered = new Map<string, ShareSourceInfo>();
@@ -40,7 +44,11 @@ export function createMediaActions(system: MediaSystem, picker: SharePicker) {
     }),
     requestAccess: async (kind: AccessKind) => KINDS.has(kind) && (await system.ask(kind)),
     getShareSources: async () => {
-      const sources = await system.sources();
+      let sources = await system.sources();
+      for (let retry = 0; retry < SCREEN_RETRIES && !sources.some((s) => s.kind === "screen"); retry++) {
+        await wait();
+        sources = await system.sources();
+      }
       offered = new Map(sources.map((source, index) => [`share-${String(index + 1)}`, source]));
       return [...offered].map(([id, source]) => ({ ...source, id }));
     },
