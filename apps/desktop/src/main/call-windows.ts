@@ -3,6 +3,11 @@
 // windows' reports merge, which actions may pass, and which missed calls get a notification.
 // call-windows-bridge.ts gives them the real windows, screens and focus.
 
+/** Main window ↔ main: `report` (state) and `action` (to carry out). */
+export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
+/** Small window ↔ main: `state` (to show) and `act` (a button press). */
+export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
+
 export const RING_SIZE = { width: 360, height: 132 };
 export const MINI_SIZE = { width: 320, height: 236 };
 /** Distance from the screen's edges for the default corner. */
@@ -217,4 +222,70 @@ export function missedToNotify(missed: MissedInfo[], focus: FocusHistory, told: 
   const fresh = missed.filter((m) => !told.has(m.callId));
   for (const m of fresh) told.add(m.callId);
   return fresh.filter((m) => !focus.inFrontAt(m.endedAt));
+}
+
+const short = (v: unknown, max = 200) => typeof v === "string" && v.length <= max;
+const isPhoto = (v: unknown) => v === undefined || (short(v, 400_000) && (v as string).startsWith("data:image/"));
+const isPerson = (v: unknown) => {
+  const p = v as Record<string, unknown> | null;
+  return typeof p === "object" && p !== null && short(p["name"]) && short(p["initials"], 4) && isPhoto(p["photo"]);
+};
+const isKind = (v: unknown) => v === "video" || v === "audio";
+const optional = (v: unknown) => v === undefined || short(v);
+
+function isRing(v: unknown): boolean {
+  const r = v as Record<string, unknown>;
+  return (
+    typeof r === "object" &&
+    r !== null &&
+    short(r["callId"], 100) &&
+    isPerson(r["caller"]) &&
+    isKind(r["kind"]) &&
+    optional(r["chatName"]) &&
+    optional(r["busyIn"])
+  );
+}
+function isCall(v: unknown): boolean {
+  if (v === null) return true;
+  const c = v as Record<string, unknown>;
+  const speaker = c?.["speaker"] as Record<string, unknown> | undefined;
+  return (
+    typeof c === "object" &&
+    short(c["title"]) &&
+    Number.isFinite(c["joinedAt"]) &&
+    Number.isInteger(c["people"]) &&
+    ["lobby", "calling", "in-call", "reconnecting"].includes(c["phase"] as string) &&
+    isPerson(speaker) &&
+    typeof speaker?.["hasVideo"] === "boolean" &&
+    typeof speaker["sharing"] === "boolean" &&
+    ["mic", "camera", "hand", "canUnmute", "canShare"].every((k) => typeof c[k] === "boolean")
+  );
+}
+function isMissed(v: unknown): boolean {
+  const m = v as Record<string, unknown>;
+  return (
+    typeof m === "object" &&
+    m !== null &&
+    short(m["callId"], 100) &&
+    short(m["from"]) &&
+    optional(m["chatName"]) &&
+    isKind(m["kind"]) &&
+    short(m["conversationId"], 100) &&
+    Number.isFinite(m["endedAt"])
+  );
+}
+
+/** Checks a main window's report before main uses it (design.md 3.1); at most 20 entries per list. */
+export function isCallWindowsState(value: unknown): value is CallWindowsState {
+  const s = value as Record<string, unknown>;
+  const list = (v: unknown, check: (x: unknown) => boolean) => Array.isArray(v) && v.length <= 20 && v.every(check);
+  return (
+    typeof s === "object" && s !== null && list(s["rings"], isRing) && isCall(s["call"]) && list(s["missed"], isMissed)
+  );
+}
+
+/** Only main's own small windows may press buttons on CALL_WINDOW_CHANNEL; only main windows may report. */
+export function senderAllowed(senderId: number, smallWindowIds: ReadonlySet<number>, channel: string): boolean {
+  const small = smallWindowIds.has(senderId);
+  return channel === CALL_WINDOW_CHANNEL ? small : !small;
 }

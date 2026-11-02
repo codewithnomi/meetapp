@@ -18,7 +18,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - Merging reports from several main windows; focus history for "was in front".
   - The 150 ms flicker wait; share and backToCall bring the main window forward.
   - Covers: AC-F16-01, 05, 08, 09, 14, 19, 20, 24. Tests: TC-F16-01, 02, 16, 18, 29, 38, 41, 43, 44, 61.
-- [ ] **T3: Safety first.**
+- [x] **T3: Safety first.**
   - The `call-windows` session with every permission, device, display-media request and download refused.
   - `call-window.html`'s own CSP (app-protocol and dev-server hook).
   - The small windows' preload (`meetappCallWindow`) and the main window's `callWindows` bridge.

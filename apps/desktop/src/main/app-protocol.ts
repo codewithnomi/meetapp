@@ -1,7 +1,7 @@
 // Serves the built screens from app://meetapp (design.md section 5). Pages get the same origin on every
 // start (so saved settings stay) and can only read files from the screens' folder.
 import { readFile, realpath } from "node:fs/promises";
-import { protocol } from "electron";
+import { protocol, type Protocol } from "electron";
 import { contentType, fileForAddress, isInside } from "./serve-files.ts";
 
 const APP_SCHEME = "app";
@@ -13,8 +13,9 @@ export function registerAppScheme(): void {
   ]);
 }
 
-export function serveScreens(rendererDir: string, csp: string): void {
-  protocol.handle(APP_SCHEME, async (request) => {
+/** `csp` gives each page its policy (F16: the small windows' page has its own). `on` is a session's protocol. */
+export function serveScreens(rendererDir: string, csp: (url: string) => string, on: Protocol = protocol): void {
+  on.handle(APP_SCHEME, async (request) => {
     const file = fileForAddress(rendererDir, request.url);
     if (!file) return new Response(null, { status: 400 });
     try {
@@ -22,7 +23,7 @@ export function serveScreens(rendererDir: string, csp: string): void {
       if (!isInside(await realpath(rendererDir), await realpath(file))) return new Response(null, { status: 404 });
       const body = await readFile(file);
       return new Response(body, {
-        headers: { "content-type": contentType(file), "content-security-policy": csp },
+        headers: { "content-type": contentType(file), "content-security-policy": csp(request.url) },
       });
     } catch (error) {
       const missing = (error as NodeJS.ErrnoException).code === "ENOENT";

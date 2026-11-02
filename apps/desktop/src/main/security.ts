@@ -143,3 +143,69 @@ export function canOpenHandOffStart(url: string, packaged: boolean): boolean {
     return false;
   }
 }
+
+/** F16 (D079): the page the small call windows show, and their own session. */
+export const CALL_WINDOW_PAGE = "call-window.html";
+export const CALL_WINDOW_PARTITION = "call-windows";
+
+/** The small windows' settings: the main window's, in their own session that refuses every permission. */
+export function callWindowPreferences(preloadPath: string) {
+  return { ...webPreferences(preloadPath), partition: CALL_WINDOW_PARTITION } as const;
+}
+
+/**
+ * The small windows' Content Security Policy (F16 design.md, Security): S17 tightened. They reach no
+ * address at all; pictures only from the app, data: (photos) and blob: (live video frames). In
+ * development the dev server's live-reload script and connection are allowed, as for the main window.
+ */
+export function callWindowPolicy(devServerUrl?: string): string {
+  const dev = devServerUrl ? originOf(devServerUrl) : undefined;
+  return [
+    "default-src 'self'",
+    dev ? `script-src 'self' 'nonce-${DEV_CSP_NONCE}'` : "script-src 'self'",
+    dev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
+    "font-src 'self'",
+    "img-src 'self' data: blob:",
+    dev ? `connect-src ${dev.replace(/^http/, "ws")}` : "connect-src 'none'",
+    "media-src 'none'",
+    "object-src 'none'",
+    "base-uri 'none'",
+    "form-action 'none'",
+    "frame-ancestors 'none'",
+  ].join("; ");
+}
+
+/** The policy for a page address: the small windows' page gets its own. */
+export function policyFor(url: string, mainPolicy: string, smallPolicy: string): string {
+  try {
+    return new URL(url).pathname.endsWith(`/${CALL_WINDOW_PAGE}`) ? smallPolicy : mainPolicy;
+  } catch {
+    return mainPolicy;
+  }
+}
+
+/**
+ * How each small window is made (F16 design.md 3.3, 3.8): its own page, session and preload; above other
+ * apps and full-screen windows on every Space; kept out of screen captures; shown without taking focus.
+ */
+export function smallWindowSetup(preloadPath: string, size: { width: number; height: number }) {
+  return {
+    options: {
+      ...size,
+      show: false,
+      frame: false,
+      resizable: false,
+      maximizable: false,
+      minimizable: false,
+      fullscreenable: false,
+      skipTaskbar: true,
+      alwaysOnTop: true,
+      title: "MeetApp",
+      webPreferences: callWindowPreferences(preloadPath),
+    },
+    alwaysOnTopLevel: "pop-up-menu",
+    visibleOnFullScreen: true,
+    contentProtection: true,
+    showInactive: true,
+  } as const;
+}

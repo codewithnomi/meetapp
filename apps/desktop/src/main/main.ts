@@ -14,7 +14,14 @@ import { guardContents, lockDownSession } from "./guards.ts";
 import { createMediaActions } from "./media-actions.ts";
 import { realMediaSystem, registerMediaBridge } from "./media-bridge.ts";
 import { createSharePicker } from "./media-permissions.ts";
-import { canOpenHandOffStart, contentSecurityPolicy, webPreferences, APP_ORIGIN } from "./security.ts";
+import {
+  canOpenHandOffStart,
+  callWindowPolicy,
+  contentSecurityPolicy,
+  policyFor,
+  webPreferences,
+  APP_ORIGIN,
+} from "./security.ts";
 import { startSentry } from "./sentry.ts";
 import { readSettings } from "./settings.ts";
 
@@ -26,6 +33,8 @@ const csp = contentSecurityPolicy({
   callServerUrl: settings.callServerUrl,
   gifApiUrl: settings.gifApiUrl,
 });
+
+const smallCsp = callWindowPolicy(settings.devServerUrl);
 
 if (settings.userDataDir) app.setPath("userData", settings.userDataDir);
 // Sandbox every page, including any created later, not only the main window.
@@ -93,6 +102,6 @@ void app.whenReady().then(() => {
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
-  if (!settings.devServerUrl) serveScreens(settings.rendererDir, csp);
+  if (!settings.devServerUrl) serveScreens(settings.rendererDir, (url) => policyFor(url, csp, smallCsp));
   openWindow();
 });

@@ -5,6 +5,7 @@
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
+import { CALL_WINDOWS_CHANNEL } from "../main/call-windows.ts";
 import { FILES_CHANNEL, POWER_CHANNEL } from "../main/chat-desktop.ts";
 import { MEDIA_ACTION_NAMES, MEDIA_CHANNEL } from "../main/media-actions.ts";
 
@@ -35,4 +36,29 @@ const power = {
   },
 };
 
-contextBridge.exposeInMainWorld("meetapp", { platform: process.platform, auth, media, deviceKey, files, power });
+// F16 (D079): report incoming calls and the current call so main can show the small windows above other
+// apps; carry out the button presses main passes back. Returns "stop listening".
+const callWindows = {
+  report: (state: unknown) => {
+    ipcRenderer.send(CALL_WINDOWS_CHANNEL, state);
+  },
+  onAction: (listener: (action: unknown) => void) => {
+    const handler = (_event: unknown, action: unknown) => {
+      listener(action);
+    };
+    ipcRenderer.on(CALL_WINDOWS_CHANNEL, handler);
+    return () => {
+      ipcRenderer.removeListener(CALL_WINDOWS_CHANNEL, handler);
+    };
+  },
+};
+
+contextBridge.exposeInMainWorld("meetapp", {
+  platform: process.platform,
+  auth,
+  media,
+  deviceKey,
+  files,
+  power,
+  callWindows,
+});

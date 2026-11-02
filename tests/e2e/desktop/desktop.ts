@@ -122,8 +122,10 @@ export function recordRequests(page: Page): string[] {
  * access with the share picker, the device key, and saving chat files (F03, design 6). Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power"],
+  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows"],
   files: ["save"],
+  // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
+  callWindows: ["report", "onAction"],
   // F14: the computer locked or unlocked (status shows Away).
   power: ["onLockChange"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
@@ -146,16 +148,26 @@ export const BRIDGE = {
 };
 
 /** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.media` and `.auth`. */
-export function bridgeKeys(
-  page: Page,
-): Promise<{ meetapp: string[]; files: string[]; power: string[]; media: string[]; auth: string[] }> {
+export function bridgeKeys(page: Page): Promise<{
+  meetapp: string[];
+  files: string[];
+  power: string[];
+  callWindows: string[];
+  media: string[];
+  auth: string[];
+}> {
   return page.evaluate(() => {
     const bridge =
-      (window as { meetapp?: { auth?: object; media?: object; files?: object; power?: object } }).meetapp ?? {};
+      (
+        window as {
+          meetapp?: { auth?: object; media?: object; files?: object; power?: object; callWindows?: object };
+        }
+      ).meetapp ?? {};
     return {
       meetapp: Object.keys(bridge),
       files: Object.keys(bridge.files ?? {}),
       power: Object.keys(bridge.power ?? {}),
+      callWindows: Object.keys(bridge.callWindows ?? {}),
       media: Object.keys(bridge.media ?? {}),
       auth: Object.keys(bridge.auth ?? {}),
     };

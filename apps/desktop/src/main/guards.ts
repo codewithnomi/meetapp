@@ -67,6 +67,24 @@ export function lockDownSession(session: Session, lock: LockDown): void {
   }
 }
 
+/**
+ * F16 (design.md, Security; D079): the small call windows' own session. They never need the camera,
+ * microphone, screen, a device or a download, so every one is refused. In development the dev server's
+ * answers get the small windows' policy (they load only call-window.html).
+ */
+export function lockDownCallWindowSession(session: Session, devServerUrl: string | undefined, csp: string): void {
+  session.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
+  session.setPermissionCheckHandler(() => false);
+  session.setDisplayMediaRequestHandler((_request, callback) => callback({}));
+  session.setDevicePermissionHandler(() => false);
+  session.on("will-download", (event) => event.preventDefault());
+  if (devServerUrl) {
+    session.webRequest.onHeadersReceived({ urls: [`${devServerUrl}/*`] }, (details, callback) => {
+      callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } });
+    });
+  }
+}
+
 /** Keeps a page inside the app. An https link it tries to open goes to the user's browser instead. */
 export function guardContents(
   contents: WebContents,

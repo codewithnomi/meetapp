@@ -66,7 +66,8 @@
 - **PR #21 on GitHub** (2026-11-02): 6 of 7 checks green after library security updates (zod, electron, storybook, undici) and 50-minute test limits. Desktop: sign-up limit fixed (tests reset the count), share picker asks again when the screen is missing (Linux), ringtone test no longer reads the token file; 9 Linux failures left (backgrounds, being-called, in-call, chat keyboard and file picker, pre-join, two long F02/F03 tests).
 - **F16 T1 done** (2026-11-02): Mac notifications need real signing (D080 updated); TC-F16-28 waits for F04.
 - **F16 T2 done** (2026-11-02): `call-windows.ts` rules (show/hide with the 150 ms wait, corner, stacking, places, merging windows, action allow-list and routing, missed calls judged at the ring's end); 12 tests.
-- **Next step:** F16 T3 (safety: own session, CSP, preloads, allow-list, content protection). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
+- **F16 T3 done** (2026-11-02): small windows' own session (everything refused), own CSP (`connect-src 'none'`), own preload (`meetappCallWindow`), main bridge `callWindows`, allow-list and sender check, window setup (content protection, above full screen); desktop rules updated; 45 tests.
+- **Next step:** F16 T4 (Electron wiring, `call-windows-bridge.ts`). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
