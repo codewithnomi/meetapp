@@ -5,80 +5,55 @@ verdict: FAIL
 date: 2026-11-02
 ---
 
-# F16 Calls while MeetApp isn't in front: Verification Report (round 1)
+# F16 Calls while MeetApp isn't in front: Verification Report (round 2)
 
-Run on 2026-11-02 on battery with `caffeinate`, while VS Code, Docker, Chrome, Firefox and Teams were also open on the 16 GB Mac.
+Round 1 (FAIL, 2026-11-02) led to T-fix-1 to T-fix-6; that report is in git history (commit a3001c9 and earlier).
 
 ## Automated tests (whole project)
 | Suite | Passed | Failed | Skipped |
 |---|---|---|---|
-| Unit + integration (coverage ≥ 80%) | 2298 | 0 | 10 todo |
-| Desktop e2e | 84 | 38 | 0 |
+| Unit | 1784 | 0 | 8 todo |
+| Integration | 1021 | 0 | 8 todo |
+| Visual (gallery, light + dark) | 651 | 30 | 0 |
+| E2E (desktop windows) | not run | | |
 
-- Container check: ✅. Storybook build: ✅. `pnpm check` (lint, types, architecture, unused code, duplication, structure, licenses): ✅. Screenshots: not run this round (they come after the fixes, with the owner's look).
-- **Desktop:** 35 of the 38 failures came one after another from test 84 onwards. The Mac ran out of memory: the owner saw "Your system has run out of application memory", with test copies of MeetApp counted together as "Electron". These failures are environment, not F16 code. Three F16 tests failed earlier in the run, from timing under the same load (TC-F16-03, 30/34, 36/37). All 10 F16 desktop tests had passed on their own the same day.
-- **Memory check** (one copy, development build, a call with the mini window open for one minute): about 620 MB in total and steady. The mini window itself grows from 127 to 150 MB a minute, which needs fixing (T-fix-2).
+- `pnpm check` (lint, formats, types, architecture, knip, jscpd 1.23 %, structure, licenses): ✅. `pnpm check:container`: ✅.
+- The 30 visual failures are all "snapshot doesn't exist": the new RingWindow, MiniCallWindow and IncomingCall Standalone stories have no saved pictures yet. The owner must look at them before `pnpm test:visual:update`.
+- Desktop e2e was stopped: its windows pop up above every app and disturbed the owner's work. It runs when the owner is away (memory note "quiet testing").
 
 ## Acceptance criteria
-ac-verifier: 22 of 27 fully verified.
-| AC | Result | Evidence |
-|---|---|---|
-| AC-F16-01–09, 11, 12, 14–24 | PASS | unit, UI and desktop tests (call-windows*.test.ts, report/use-call-windows/frames tests, RingWindow/MiniCallWindow tests, call-windows.spec.ts). AC-11's "can't start" path is TC-F16-24 |
-| AC-F16-10, 13b | WEAK | notification code is unit-tested; a real Mac notification needs signing (D080, TC-F16-27/28 by hand later) |
-| AC-F16-25 | WEAK | content protection flag tested; hand check TC-F16-57 skipped by the owner |
-| AC-F16-26 | WEAK | always-on-top and full-screen flags tested; hand check TC-F16-47 skipped by the owner |
+ac-verifier, code and tests only: AC-F16-01 to 24 PASS; AC-F16-25 and 26 WEAK (flags tested, owner hand checks TC-F16-57 and 47 skipped); AC-F16-10 and 13b WEAK for the real Mac notification (needs signing, D080).
+But the bug review shows **AC-F16-10 fails** for the most common case: a caller who hangs up before anyone answers (`ring_stop` reason `cancelled`, `use-call-windows.ts:42`) gives a "Missed call" note but no notification. AC-F16-12 contradicted AC-F16-10; the owner decided as in Teams (D081). Fix: T-fix-8.
 
 ## Security
-Dependency audit (prod): 15 known (5 low, 10 moderate), no high. Secrets scan: gitleaks runs on every commit (pre-commit hook), no leaks.
+- `pnpm audit --prod`: 15 (5 low, 10 moderate), no High or Critical. Secrets scan: gitleaks not run this round (stopped with the first run).
+- security-auditor: PASS, no Critical, High or Medium.
+
 | Severity | Where | Problem | Fix |
 |---|---|---|---|
-| Medium | call-windows-bridge.ts (`serveScreens` for the small session) | the small session serves every app file, not only `call-window.html` | serve only the small page and its built files (T-fix-3) |
-| Low | `readPlaces` | `call-windows.json` is not checked | validate it; write with mode 0600 (T-fix-3) |
-| Low | call-window-preload.ts | the mini window doesn't cap frame size itself | cap at 200 KB there too (T-fix-3) |
-| Low | notification on the lock screen | the caller's name is visible on a locked Mac | documented in privacy (T-fix-6); a "hide names" setting can come later |
-No Critical or High.
+| Low | call-windows-checks.ts:16 | any `data:image/*` (also SVG) accepted for photos | only PNG, JPEG, WebP (T-fix-9) |
+| Low | call-window-preload.ts:10-17 | old video channel not closed on relink | close it first (T-fix-9) |
+| Low | call-windows-notify.ts:16 | untouched notifications kept forever | limit (T-fix-9) |
 
 ## Quality targets
-| Target | Measured | Result |
-|---|---|---|
-| Ring window shows / Video opens the call (AC-03: within 3 s) | desktop test, < 3 s | ✅ |
-| Ring window closes when the ring ends (AC-06: within 2 s) | desktop test | ✅ |
-| Mini window state matches the call (AC-16: within 1 s) | desktop test | ✅ when idle; at risk under load (T-fix-1) |
-| Memory | one copy about 620 MB; mini window +23 MB a minute | ❌ growth (T-fix-2) |
-
-## Bugs found (bug-finder)
-1. **High:** the mini window's live video slows to about 1 picture a second or freezes. The main window is throttled exactly when the mini window shows: there is no `backgroundThrottling: false`, and macOS occlusion pauses it.
-2. **Medium-High:** the call report is postponed forever while the call screen redraws often, so the mini window can show a stale mic, camera or hand. It is a debounce, not a throttle.
-3. **Medium:** notification objects aren't kept, so their Call back click can be lost.
-4. **Medium:** a small window can stay blank if its first state arrives before the page listens. The live-video line has the same race.
-5. **Medium:** a window being dragged jumps back. `setBounds` runs on every update, so it should run only when the rect changes and never mid-drag.
-6. **Medium:** one too-long field (a large photo, or a long body text) drops the whole report, and missed calls are lost. The checks should be per entry, with clamping on the web side.
-7. **Medium-Low:** saving places can throw in the main process. `writeFileSync` needs a try/catch.
-8. **Medium:** stacked rings can grow over the mini window. The whole stack should be checked and kept on screen.
-9. **Medium-Low:** the 150 ms timer can fire 1 ms early, so the windows never show.
-10. **Low:** reloads and crashes, stale windows, the hidden list, missed-ring map pruning, photo refetching, and the frame cleanup (`video.pause`).
+Memory (under 10 % growth over 3 minutes with live video) is a desktop e2e test: not measured this round. New risk: the main window is never throttled (`main.ts:77`), so more battery and CPU even without a call (T-fix-10).
 
 ## UI review
-No Must fix. Should fix:
-- shortcut hints written into the texts (wrong on Windows);
-- the speaker caption is a live region, so every speaker change is announced;
-- the ring window isn't announced when it appears without focus;
-- `aria-describedby` covers only the name;
-- add Muted, Hand raised and Camera-on stories, and IncomingCall standalone stories;
-- disabled buttons hide their reason from the keyboard.
+No Must fix. Should fix: the ring is announced twice (`role="alert"` plus `alertdialog`); disabled Share doesn't say why; pixel sizes instead of tokens; long-title story. (T-fix-11)
 
 ## Code quality
-8.5/10, no Must fix. Should fix:
-- the duplicated dev-server CSP block in guards.ts;
-- comments where errors are ignored on purpose;
-- aliases of contract types;
-- files near 300 lines.
+8/10, no Must fix. Should fix: `act()` and `render()` growing (move `hideMini` into `routeAction`, split `render`), parallel `ringOrder`/`ringHeights` arrays, a stray comment, magic `+ 20`, `as Rect` casts. (T-fix-11)
 
 ## Documentation check
-- design.md: `photo` field, missed `text`, the controller and notify files, `onFramesWanted` and the frames channel, D079/D080 now accepted, the dev-only policy exceptions.
-- The Linux "hide while sharing the whole screen" is not built; move it to later.
-- desktop README preload row; web README pages row; progress "Now"; header dates; the desktop's types-only dependency on contracts.
-- The small windows' navigation guard is in fact applied by `web-contents-created` in main.ts (the security review confirmed it); make the design say so.
+Behind the code: design.md (sections 1, 3.2 `hideMini`, 3.3 hide rule, 3.5 throttling, 4 places file), requirements (places file, Linux screen share), tests.md (no TC for the mini hide ×, AC table missing TC-F16-62 to 67), runbook calls.md, operations, D079 note, features.md F04. No automated test covers the mini hide ×. (T-fix-12)
+
+## Bugs found
+1. Medium: no missed-call notification when the caller hangs up (above, T-fix-8).
+2. Low: a window dropped in a bad spot stays there (`call-windows-bridge.ts:98-103`).
+3. Low: `dragging` can stay on if `moved` never follows `will-move`.
+4. Low: unchanged views (with photos up to 400 KB) re-sent to ring windows every 200 ms.
+5. Low: with 5 or more rings the top ones overlap (AC-F16-08).
+(2 to 5: T-fix-9.)
 
 ## Verdict
-**FAIL.** All unit and integration tests pass and there are no Critical or High security issues. The live video freezes in real use, the mini window's state can go stale, the mini window grows in memory, and several Medium bugs and docs gaps remain. The full desktop run must be repeated on a Mac with enough free memory. Fix tasks T-fix-1 to T-fix-7 are in tasks.md.
+**FAIL.** Everything quiet passes, and security is fine. But one real bug remains: if the caller gives up before you answer, the Mac notification doesn't show. There are also small window bugs and documentation that is behind the code. The desktop window tests and the screenshots of the new screens still need a run while the owner is away and a look from the owner. Next: T-fix-8 to T-fix-12, then T-fix-7 again.

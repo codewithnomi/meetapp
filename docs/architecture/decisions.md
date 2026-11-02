@@ -524,3 +524,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** that is how Mac notifications work. Other routes, such as AppleScript or a helper app, would also need signing or would be less safe.
 - **T1 result (2026-11-02):** on the owner's Mac (macOS 26), Electron 44.10.1 refuses the notification as "not allowed" (UNErrorDomain error 1), both as shipped (ad hoc, linker-signed) and as a fully ad-hoc-signed copy with its own bundle id (`com.meetapp.dev`) and alert style. The app never appears in System Settings → Notifications. So development builds can't show it. F16 builds and unit-tests the notification code, and the hand check TC-F16-28 waits for real signing (F04).
 - **Alternatives:** buy the Apple Developer account now (cost); show missed calls only inside the app until F04.
+
+### D081: A caller hanging up counts as a missed call for the notification (F16)
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
+- **Decision:** when the caller hangs up before anyone answers, the person gets the missed-call Mac notification (AC-F16-12 changed). Only calls without a "Missed call" note, such as removal from a call, give none.
+- **Why:** it is the most common missed call; Teams notifies for it; AC-F16-10 already keyed on the "Missed call" note (AC-F15-09). The second verification found the code skipped it.
+- **Alternatives:** keep the old wording (no notification when the caller hangs up).

@@ -44,7 +44,7 @@ Anyone signed in to the **desktop app** (F02 meetings and F15 chat calls). The w
 ### Missed call notification
 - **AC-F16-10:** WHEN a call to the person ends without them answering on any device ("Missed call" note, F15), and no MeetApp window was in front when the ring ended, THEN a Mac notification appears: "Missed call from <name>" (or "… in <group name>"), with a **Call back** button.
 - **AC-F16-11:** WHEN the person presses Call back, THEN MeetApp comes to the front and starts a call of the same kind (video or audio) in that chat, as pressing the call button in the chat would. If the call can't start (the chat is now read-only, the person left it, the call limit is reached), MeetApp opens the chat and shows the same message its call button would. WHEN they click the notification itself, THEN MeetApp comes to the front and opens that chat.
-- **AC-F16-12:** Answered, declined and cancelled calls do not create a notification. A call whose ring ended while MeetApp was in front shows no notification either: the "Missed call" note in the chat is enough.
+- **AC-F16-12:** Answered and declined calls, and calls that end without a "Missed call" note (for example the person was removed from the call), do not create a notification. A caller who hangs up before anyone answers does create one (it is a missed call, AC-F15-09; as in Teams). A call whose ring ended while MeetApp was in front shows no notification either: the "Missed call" note in the chat is enough.
 - **AC-F16-13:** WHEN the Mac's notifications for MeetApp are turned off (Mac settings, Focus or Do Not Disturb), THEN MeetApp shows no error, works normally, and the chat still has the "Missed call" note.
 - **AC-F16-13b:** WHEN the first missed-call notification is about to show, THEN macOS asks the person once whether MeetApp may show notifications. WHEN they refuse, THEN AC-F16-13 applies and MeetApp doesn't ask again (they can turn it on in the Mac's settings).
 
@@ -90,6 +90,8 @@ Anyone signed in to the **desktop app** (F02 meetings and F15 chat calls). The w
 ## Owner's choices (2026-11-02)
 - The mini call window shows the speaker's live video, as in Teams.
 - A missed-call notification shows only when MeetApp wasn't in front.
+- The mini call window has a hide × (it stays hidden until MeetApp is in front again; the call goes on).
+- A caller hanging up before anyone answers gives a missed-call notification, as in Teams (owner, 2026-11-02, second verification).
 - MeetApp's own "Do not disturb" status doesn't silence calls or notifications; only the Mac's settings do (blocking calls can come later with admin settings).
 
 ## Open questions
