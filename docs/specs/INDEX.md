@@ -10,7 +10,7 @@
 | F03 | In-meeting chat | 1 | approved | approved | approved | approved | done | PASS 2026-10-21 (round 2, verification.md) |
 | F14 | Chats (one to one and groups) | 1 | approved | approved | approved | approved | done | PASS 2026-11-01 (round 2, verification.md) |
 | F15 | Calls from chat (audio and video) | 1 | approved | approved | approved | approved | done | PASS 2026-11-01 (round 2, verification.md) |
-| F16 | Calls while MeetApp isn't in front | 1 | approved | not started | not started | not started | not started | - |
+| F16 | Calls while MeetApp isn't in front | 1 | approved | draft | not started | not started | not started | - |
 | F04 | Desktop app | 1 | not started | not started | not started | not started | not started | - |
 | F13 | Scheduling & calendar | 1 | not started | not started | not started | not started | not started | - |
 | F05 | Live transcription | 2 | not started | not started | not started | not started | not started | - |
