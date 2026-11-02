@@ -59,7 +59,7 @@ Main recomputes after every report and every focus change. "In front" means some
 Several main windows report the same call; main keeps one window per call and sends actions to the window used last (AC-24). Small windows are created with:
 - `alwaysOnTop` at level `pop-up-menu`, so they sit above the Dock and other apps;
 - `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`, so they show over full-screen apps and on the Space in use (AC-26);
-- `skipTaskbar`, a frameless body and a fixed size that fits the drawn content (ring 360×200, or 360×264 with the busy line; mini 320×256), and a see-through window behind the rounded card (`transparent`).
+- `skipTaskbar`, a frameless body and a fixed size that fits the drawn content (ring 320×160, or 320×212 with the busy line, drawn more compact than the in-app card at the owner's request, 2026-11-02; mini 320×256), and a see-through window behind the rounded card (`transparent`).
 
 ### 3.4 Places (AC-19, 20)
 Each kind keeps one place: `{ ring: {x, y, displayId}, mini: {x, y, displayId} }` in `call-windows.json`, written after a drag ends. On show, the place is used if it still lies inside a connected screen's work area. Otherwise the window goes to the bottom-right corner of the main screen, 16 px from the edges. The mini window sits at its place; ring windows stack upwards from theirs with an 8 px gap and never overlap the mini window. When they would, the stack starts above it.

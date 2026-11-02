@@ -19,9 +19,9 @@ export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
 
 /** The ring window as drawn on the approved canvas: caller, then the three round answers with their words. */
-export const RING_SIZE = { width: 360, height: 200 };
+export const RING_SIZE = { width: 320, height: 160 };
 /** The ring window with the "You're in … Accepting leaves it." line (AC-F16-07). */
-export const RING_BUSY_HEIGHT = 264;
+export const RING_BUSY_HEIGHT = 212;
 /** A ring window's height. */
 export const ringHeight = (ring: { busyIn?: string | undefined }) =>
   ring.busyIn ? RING_BUSY_HEIGHT : RING_SIZE.height;

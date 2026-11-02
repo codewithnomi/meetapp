@@ -15,8 +15,8 @@ const meta = {
     decline: answer("Decline", "Decline"),
     hide: { label: "Hide (the call keeps ringing in MeetApp)", onClick: () => undefined },
   },
-  // The real window is 360 × 200 points, 264 with the busy line.
-  decorators: [(Story) => <div className="h-66 w-90">{Story()}</div>],
+  // The real window is 320 × 160 points, 212 with the busy line.
+  decorators: [(Story) => <div className="h-53 w-80">{Story()}</div>],
 } satisfies Meta<typeof RingWindow>;
 
 export default meta;

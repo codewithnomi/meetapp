@@ -49,14 +49,22 @@ function AnswerButton({
   icon,
   tone,
   buttonRef,
+  compact,
 }: {
   answer: Answer;
   icon: IconName;
   tone: "ok" | "no";
   buttonRef?: Ref<HTMLButtonElement> | undefined;
+  /** The small ring window above other apps (F16): smaller buttons. */
+  compact?: boolean | undefined;
 }) {
   return (
-    <span className="flex w-21 flex-col items-center gap-1.5 text-center text-[12px] font-semibold">
+    <span
+      className={cx(
+        "flex flex-col items-center text-center font-semibold",
+        compact ? "w-18 gap-1 text-[11px]" : "w-21 gap-1.5 text-[12px]",
+      )}
+    >
       <button
         type="button"
         aria-label={answer.label}
@@ -64,12 +72,13 @@ function AnswerButton({
         ref={buttonRef}
         onClick={answer.onClick}
         className={cx(
-          "grid size-14 cursor-pointer place-items-center rounded-full border-0",
+          "grid cursor-pointer place-items-center rounded-full border-0",
+          compact ? "size-11" : "size-14",
           tone === "ok" ? "bg-success text-stage" : "bg-danger-fill text-on-danger-fill",
           FOCUS_RING,
         )}
       >
-        <Icon name={icon} size={22} />
+        <Icon name={icon} size={compact ? 18 : 22} />
       </button>
       <span aria-hidden="true">{answer.short}</span>
     </span>
@@ -109,6 +118,47 @@ function useWindowKeys(onDecline: () => void, takeFocus: boolean) {
   return { first, box };
 }
 
+/** The caller's picture, name and kind of call; the small window adds × and the drag strip. */
+function CallerLine(props: IncomingCallProps & { who: string }) {
+  const who = props.who;
+  return (
+    <div className={cx("flex items-center", props.standalone ? cx("gap-3", DRAG) : "gap-3.5")}>
+      <span className="rounded-full p-1 ring-2 ring-success">
+        <Avatar
+          name={props.callerName}
+          {...(props.photoUrl ? { src: props.photoUrl } : {})}
+          size={props.standalone ? "md" : "lg"}
+        />
+      </span>
+      <span id={who} className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span
+          className={cx(
+            "truncate font-semibold",
+            props.standalone ? "text-[15px] leading-5" : "text-[17px] leading-5.5",
+          )}
+        >
+          {props.callerName}
+        </span>
+        <span className="text-[13px] opacity-85">{props.subtitle}</span>
+      </span>
+      {props.hide ? (
+        <button
+          type="button"
+          aria-label={props.hide.label}
+          title={props.hide.label}
+          onClick={props.hide.onClick}
+          className={cx(
+            "grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-full border-0 bg-transparent text-stage-ink hover:bg-stage-scrim",
+            FOCUS_RING,
+          )}
+        >
+          <Icon name="close" size={16} />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 export function IncomingCall(props: IncomingCallProps) {
   const { first, box } = useWindowKeys(props.decline.onClick, props.takeFocus ?? true);
   const who = useId();
@@ -119,40 +169,19 @@ export function IncomingCall(props: IncomingCallProps) {
       aria-describedby={who}
       ref={box}
       className={cx(
-        "box-border flex flex-col gap-4 rounded-xl bg-stage p-5 text-stage-ink",
+        "box-border flex flex-col rounded-xl bg-stage text-stage-ink",
+        props.standalone ? "gap-3 p-4" : "gap-4 p-5",
         props.standalone ? "h-full w-full overflow-hidden" : "w-90 max-w-[calc(100vw-48px)] shadow-2",
       )}
     >
-      <div className={cx("flex items-center gap-3.5", props.standalone && DRAG)}>
-        <span className="rounded-full p-1 ring-2 ring-success">
-          <Avatar name={props.callerName} {...(props.photoUrl ? { src: props.photoUrl } : {})} size="lg" />
-        </span>
-        <span id={who} className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate text-[17px] leading-5.5 font-semibold">{props.callerName}</span>
-          <span className="text-[13px] opacity-85">{props.subtitle}</span>
-        </span>
-        {props.hide ? (
-          <button
-            type="button"
-            aria-label={props.hide.label}
-            title={props.hide.label}
-            onClick={props.hide.onClick}
-            className={cx(
-              "grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-full border-0 bg-transparent text-stage-ink hover:bg-stage-scrim",
-              FOCUS_RING,
-            )}
-          >
-            <Icon name="close" size={16} />
-          </button>
-        ) : null}
-      </div>
+      <CallerLine {...props} who={who} />
       {props.busyNote ? (
         <p className="m-0 rounded-md bg-stage-scrim px-2.5 py-2 text-[13px] leading-4.5">{props.busyNote}</p>
       ) : null}
-      <div className="flex justify-center gap-3">
-        <AnswerButton answer={props.video} icon="camera" tone="ok" buttonRef={first} />
-        <AnswerButton answer={props.audio} icon="phone" tone="ok" />
-        <AnswerButton answer={props.decline} icon="leave" tone="no" />
+      <div className={cx("flex justify-center", props.standalone ? "gap-2" : "gap-3")}>
+        <AnswerButton compact={props.standalone} answer={props.video} icon="camera" tone="ok" buttonRef={first} />
+        <AnswerButton compact={props.standalone} answer={props.audio} icon="phone" tone="ok" />
+        <AnswerButton compact={props.standalone} answer={props.decline} icon="leave" tone="no" />
       </div>
     </section>
   );
