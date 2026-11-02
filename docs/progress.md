@@ -76,7 +76,8 @@
 - **F16 T9 done** (2026-11-02): `call-windows-notify.ts` (missed-call notification without Electron: translated words, names only, Call back, click opens the chat, refused = ignored); declined/cancelled/answered never missed; 3 new desktop + updated web tests. TC-F16-27/28 by hand once the app is signed (D080).
 - **F16 T10 done (milestone)** (2026-11-02): mini call window end to end: shows in a call, the lobby and while calling; the speaker's live video (JPEG pictures over a MessagePort from the main window, only while it shows); mute/camera/share/hand/Leave do what the call screen does, both ways within 1 s; Share brings MeetApp forward with our picker. Mini buttons restyled to the canvas (dark stage tiles). Place saving now only after a real drag (`will-move`), not macOS nudges. `call-windows.spec.ts` 10/10.
 - **F16 T11 done** (2026-11-02): place kept after restart (TC-F16-42). Hand checks TC-F16-47 and TC-F16-57 skipped by the owner, still pending; TC-F16-28 waits for signing (D080).
-- **Next step:** F16 T12 (documentation), then `/spec-verify F16`. Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
+- **F16 T12 done** (2026-11-02): security S17, overview, privacy, operations, desktop/web/contracts/ui READMEs, project structure; `pnpm check` green. **All 12 F16 steps done.**
+- **Next step:** `/spec-verify F16` (full suite, desktop tests, screenshots, reviews; about 1 hour, Mac on power, `pnpm dev` closed). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

@@ -12,6 +12,7 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | `src/main/chat-desktop.ts`, `chat-bridge.ts` | Meeting chat (F03): the right-click spelling menu (dictionaries from the app, never online), and `window.meetapp.files.save` (Save as, only for our backend's chat file links) |
 | `src/main/media-actions.ts`, `media-bridge.ts` | `window.meetapp.media`: the computer's camera/mic/screen permission, asking for it, the screens and windows to share under stand-in ids (F02) |
 | `src/main/device-key.ts` | `window.meetapp.deviceKey`: a random key for this app on this computer (a removed guest is recognised in the same call), file mode 0600 (F02) |
+| `src/main/call-windows.ts`, `call-windows-controller.ts`, `call-windows-bridge.ts`, `call-windows-notify.ts` | F16 (D079): the ring windows and the mini call window above other apps (rules, the controller, the Electron wiring with their own locked session and policy, places in `call-windows.json`, the live-video line) and missed-call notifications (D080); `src/preload/call-window-preload.ts` is their only bridge (`window.meetappCallWindow`) |
 | `src/main/app-protocol.ts`, `serve-files.ts` | Serves the built screens from `app://meetapp`, never anything outside their folder |
 | `src/main/auth-token.ts` | Keeps the sign-in token, encrypted with the system keychain (safeStorage), or in memory only when that isn't available (F01) |
 | `src/main/auth-client.ts`, `auth-actions.ts` | The sign-in calls main makes for the screens, and the list of actions the screens may ask for (F01) |

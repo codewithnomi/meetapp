@@ -17,9 +17,9 @@ interface MainBridge {
 }
 
 /** Call-state reports are sent at most this often; ring changes go at once (design.md 3.1). */
-export const REPORT_EVERY_MS = 200;
+const REPORT_EVERY_MS = 200;
 
-export function mainBridge(): MainBridge | undefined {
+function mainBridge(): MainBridge | undefined {
   return (window as { meetapp?: { callWindows?: MainBridge } }).meetapp?.callWindows;
 }
 

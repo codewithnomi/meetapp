@@ -4,7 +4,7 @@
 import type { CallWindowsCall } from "@meetapp/contracts";
 import { create } from "zustand";
 
-export interface CallScreenControls {
+interface CallScreenControls {
   toggleMic: () => void;
   toggleCamera: () => void;
   share: () => void;
