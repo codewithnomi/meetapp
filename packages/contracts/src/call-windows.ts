@@ -57,7 +57,7 @@ export type CallWindowView = { kind: "ring"; ring: CallWindowsRing } | { kind: "
 export type CallWindowAction =
   | { name: "accept"; callId: string; video: boolean }
   | { name: "decline" | "hide"; callId: string }
-  | { name: "toggleMic" | "toggleCamera" | "share" | "toggleHand" | "leave" | "backToCall" };
+  | { name: "toggleMic" | "toggleCamera" | "share" | "toggleHand" | "leave" | "backToCall" | "hideMini" };
 
 /** Actions only the desktop app sends, from a missed-call notification (AC-F16-11). */
 export type CallWindowsNotificationAction =

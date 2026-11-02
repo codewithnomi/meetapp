@@ -166,7 +166,7 @@ function overlaps(a: Rect, b: Rect): boolean {
 }
 
 const RING_ACTIONS = new Set(["accept", "decline", "hide"]);
-const CALL_ACTIONS = new Set(["toggleMic", "toggleCamera", "share", "toggleHand", "leave", "backToCall"]);
+const CALL_ACTIONS = new Set(["toggleMic", "toggleCamera", "share", "toggleHand", "leave", "backToCall", "hideMini"]);
 /** These open something in the main window, so it comes to the front first (AC-F16-03, 17). */
 const BRING_FORWARD = new Set(["accept", "share", "backToCall"]);
 

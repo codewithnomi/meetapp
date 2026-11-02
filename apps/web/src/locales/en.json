@@ -1217,6 +1217,7 @@
       "callingDetails": "Ringing",
       "controls": "Call controls",
       "back": "Back to the call window",
+      "hideMini": "Hide (the call goes on in MeetApp)",
       "mute": "Mute ({{keys}})",
       "unmute": "Unmute ({{keys}})",
       "micLocked": "Your microphone is turned off by the organizer",

@@ -68,6 +68,8 @@ export class CallWindowsController {
   private ringOrder: string[] = [];
   private ringHeights: number[] = [];
   private mini: SmallWindow | undefined;
+  /** The person hid the mini window with ×: it stays hidden until a MeetApp window has been in front. */
+  private miniHidden = false;
   /** The main window sending the mini window its pictures, and that mini window. */
   private framesFrom: number | undefined;
   private framesTo: number | undefined;
@@ -101,6 +103,7 @@ export class CallWindowsController {
   focusChanged(mainWindowId: number | undefined): void {
     this.focus.set(mainWindowId !== undefined, this.deps.now());
     if (mainWindowId !== undefined) {
+      this.miniHidden = false;
       this.forget(mainWindowId);
       this.usedLast.unshift(mainWindowId);
     }
@@ -115,6 +118,12 @@ export class CallWindowsController {
     if (!from || !isCallWindowAction(action)) return;
     const forRing = "callId" in action;
     if (forRing ? action.callId !== from.callId : from.kind !== "mini") return;
+    if (action.name === "hideMini") {
+      // Handled here: the call goes on, only this window hides (owner, 2026-11-02).
+      this.miniHidden = true;
+      this.render();
+      return;
+    }
     const route = routeAction(action, this.merged(), this.usedLast);
     if (!route.ok) return;
     if (action.name === "hide") {
@@ -183,7 +192,7 @@ export class CallWindowsController {
     const away = this.focus.awayLongEnough(this.deps.now());
     for (const id of this.hidden) if (!merged.rings.some((r) => r.callId === id)) this.hidden.delete(id);
     const wantedRings = away ? merged.rings.filter((r) => !this.hidden.has(r.callId)) : [];
-    const call = away ? merged.call : null;
+    const call = away && !this.miniHidden ? merged.call : null;
     this.closeUnwanted(wantedRings, call);
     const stack = [...wantedRings].reverse();
     const layout = layoutWindows({

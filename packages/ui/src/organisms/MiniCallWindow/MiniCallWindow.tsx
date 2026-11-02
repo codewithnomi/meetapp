@@ -38,6 +38,8 @@ export interface MiniCallWindowProps {
   hand: Toggle;
   leave: { label: string; onClick: () => void };
   back: { label: string; onClick: () => void };
+  /** The hide ×: hides the mini window, the call goes on (owner, 2026-11-02). */
+  hide?: { label: string; onClick: () => void } | undefined;
   /** The group of buttons' name: "Call controls". */
   controlsLabel: string;
 }
@@ -73,7 +75,7 @@ function StageButton(props: {
   );
 }
 
-function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "details" | "back">) {
+function Header({ title, details, back, hide }: Pick<MiniCallWindowProps, "title" | "details" | "back" | "hide">) {
   return (
     <div className={cx("flex items-center gap-2 py-2 pr-2.5 pl-3 text-[12px]", DRAG)}>
       <span aria-hidden="true" className="opacity-60">
@@ -84,6 +86,7 @@ function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "d
         <span className="tabular-nums opacity-80">{details}</span>
       </span>
       <StageButton icon="monitor" label={back.label} onClick={back.onClick} />
+      {hide ? <StageButton icon="close" label={hide.label} onClick={hide.onClick} /> : null}
     </div>
   );
 }
@@ -136,7 +139,7 @@ export function MiniCallWindow(props: MiniCallWindowProps) {
       aria-label={props.label}
       className="box-border flex h-full w-full flex-col overflow-hidden rounded-xl bg-stage text-stage-ink"
     >
-      <Header title={props.title} details={props.details} back={props.back} />
+      <Header title={props.title} details={props.details} back={props.back} hide={props.hide} />
       <Picture {...props} />
       <div role="group" aria-label={props.controlsLabel} className="flex justify-center gap-1.5 px-2 pt-2.5 pb-3">
         {props.controls ? <Toggles {...props} /> : null}

@@ -136,7 +136,12 @@ export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
       callBack(action.conversationId, action.video, last?.chatName ?? last?.from ?? "", !last?.chatName);
     } else if (action.name === "toggleMic" && screen.call && (screen.call.mic || screen.call.canUnmute))
       screen.controls?.toggleMic();
-    else if (action.name !== "toggleMic" && action.name !== "backToCall" && !("callId" in action))
+    else if (
+      action.name !== "toggleMic" &&
+      action.name !== "backToCall" &&
+      action.name !== "hideMini" &&
+      !("callId" in action)
+    )
       screen.controls?.[action.name]();
   };
   useEffect(() => bridge?.onAction((action) => run.current(action as CallWindowsMainAction)), [bridge]);

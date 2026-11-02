@@ -23,6 +23,7 @@ const meta = {
     hand: { label: "Raise your hand (⌘⇧K)", on: false, onClick: none },
     leave: { label: "Leave", onClick: none },
     back: { label: "Back to the call window", onClick: none },
+    hide: { label: "Hide (the call goes on in MeetApp)", onClick: none },
   },
   // The real window is 320 × 256 points.
   decorators: [(Story) => <div className="h-64 w-80">{Story()}</div>],

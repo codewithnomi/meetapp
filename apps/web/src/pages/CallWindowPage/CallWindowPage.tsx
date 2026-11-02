@@ -106,6 +106,7 @@ function Mini({ call }: { call: CallWindowsCall }) {
         onClick: () => act({ name: "leave" }),
       }}
       back={{ label: t("calls.windows.back"), onClick: () => act({ name: "backToCall" }) }}
+      hide={{ label: t("calls.windows.hideMini"), onClick: () => act({ name: "hideMini" }) }}
     />
   );
 }
