@@ -4,7 +4,7 @@
 // `document.body.dataset.ringtone` / `ringVolume`, which the app sets while ringing.
 import { expect, test, type Page } from "@playwright/test";
 import { API_URL, FAKE_MEDIA, closeApp, freshProfile, launchAs, type RunningApp } from "./desktop.ts";
-import { controls } from "./meeting-steps.ts";
+import { afterCallEnds, controls } from "./meeting-steps.ts";
 import { hostMeeting, joinWindow, team, windowFor } from "./meeting-team.ts";
 import { openScreen, switcher, switchTo } from "./workspace-steps.ts";
 
@@ -101,10 +101,7 @@ test("TC-F15-12 [AC-F15-06] Accept with video and Accept with audio put Mo in th
     .getByRole("group", { name: "Meeting controls" })
     .getByRole("button", { name: "Leave", exact: true })
     .click();
-  await olivia.page
-    .getByRole("group", { name: "Meeting controls" })
-    .getByRole("button", { name: "Leave", exact: true })
-    .click();
+  await afterCallEnds(olivia.page);
 
   await chatWith(olivia.page, "Mo", /Mo Member/);
   await olivia.page.getByRole("button", { name: "Audio call" }).click();

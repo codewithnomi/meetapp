@@ -3,7 +3,7 @@
 // organizer buttons. Reactions and hand are checked on the other person's window.
 import { expect, test, type Page } from "@playwright/test";
 import { closeApp, type RunningApp } from "./desktop.ts";
-import { controls, tile } from "./meeting-steps.ts";
+import { afterCallEnds, controls, tile } from "./meeting-steps.ts";
 import { team, windowFor } from "./meeting-team.ts";
 import { openScreen, switcher, switchTo } from "./workspace-steps.ts";
 
@@ -78,8 +78,7 @@ test("TC-F15-28 [AC-F15-12] equal controls, hand and reactions reach the other p
   // After the call the message is in the chat.
   // Olivia leaves; a one-to-one call then ends for Mo too (AC-F15-14), so Mo leaves only if still in it.
   await controls(olivia.page).getByRole("button", { name: "Leave", exact: true }).click();
-  const moLeave = controls(mo.page).getByRole("button", { name: "Leave", exact: true });
-  if (await moLeave.isVisible().catch(() => false)) await moLeave.click().catch(() => undefined);
+  await afterCallEnds(mo.page);
   await chatWith(mo.page, "Olivia", /Olivia Owner/);
   await expect(mo.page.getByRole("log", { name: "Messages" })).toContainText("Shared in the call", {
     timeout: 15_000,
