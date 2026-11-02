@@ -6,6 +6,7 @@ import { chatBlocks, chatEvents, chatMessages, conversationMembers, conversation
 import { and, desc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { startAuthTestApp, type AuthTestApp } from "../../test-support/auth-app.ts";
+import { freshWindow } from "../../test-support/meetings-setup.ts";
 import {
   caller,
   errorCode,
@@ -100,6 +101,7 @@ describe("messages in chats", { timeout: 60_000 }, () => {
     const { people, workspaceId } = await team("m36r", 2);
     const [m1, m2] = people as [Person, Person];
     const id = await start(m1, workspaceId, [m2]);
+    await freshWindow(10_000, 5_000);
     for (let i = 0; i < 10; i += 1) expect((await send(m1, id)).statusCode).toBe(200);
     const fast = await send(m1, id);
     expect(fast.statusCode).toBe(429);

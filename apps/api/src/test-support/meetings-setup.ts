@@ -121,13 +121,15 @@ export const statusOf = async (t: AuthTestApp, person: Joined) =>
   >();
 
 /**
- * The limits count per clock minute. A test that counts tries in the last seconds of a minute would see
- * the count start again halfway, so it waits for a fresh minute first.
+ * The limits count per clock window (a minute, or 10 seconds for chat messages). A test that counts tries
+ * near a window's end would see the count start again halfway, so it waits for a fresh window first.
  */
-export async function freshMinute(): Promise<void> {
-  const intoMinute = Date.now() % 60_000;
-  if (intoMinute > 40_000) await new Promise((done) => setTimeout(done, 60_000 - intoMinute + 200));
+export async function freshWindow(windowMs: number, needMs: number): Promise<void> {
+  const into = Date.now() % windowMs;
+  if (into > windowMs - needMs) await new Promise((done) => setTimeout(done, windowMs - into + 200));
 }
+
+export const freshMinute = () => freshWindow(60_000, 20_000);
 
 /** A call with the organizer, a co-organizer, a presenter and two attendees. */
 export async function roomOfFive(t: AuthTestApp, label: string) {
