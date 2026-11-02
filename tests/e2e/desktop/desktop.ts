@@ -125,7 +125,7 @@ export const BRIDGE = {
   meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows"],
   files: ["save"],
   // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
-  callWindows: ["report", "onAction"],
+  callWindows: ["report", "onAction", "onFramesWanted", "sendFrame"],
   // F14: the computer locked or unlocked (status shows Away).
   power: ["onLockChange"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],

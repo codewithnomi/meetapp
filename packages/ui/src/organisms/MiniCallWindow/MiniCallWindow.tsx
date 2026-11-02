@@ -4,8 +4,7 @@
 // window), their photo or initials when their camera is off, or a status ("Reconnecting…"); bottom: mute,
 // camera, share, hand and Leave. Every text arrives translated; the page carries out each press.
 import { Avatar } from "../../atoms/Avatar/index.ts";
-import { IconButton } from "../../atoms/IconButton/index.ts";
-import { Icon } from "../../atoms/Icon/index.ts";
+import { Icon, type IconName } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 
 interface Toggle {
@@ -42,6 +41,37 @@ export interface MiniCallWindowProps {
 
 const DRAG = "[-webkit-app-region:drag] [&_button]:[-webkit-app-region:no-drag]";
 
+/** A round button on the dark call card (approved canvas: soft tiles, red icon when off, accent when on). */
+function StageButton(props: {
+  icon: IconName;
+  label: string;
+  onClick: () => void;
+  off?: boolean | undefined;
+  on?: boolean | undefined;
+  disabled?: boolean | undefined;
+  /** True when the label already says what pressing does ("Mute" / "Unmute"). */
+  pressed?: boolean | undefined;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={props.label}
+      title={props.label}
+      aria-pressed={props.pressed}
+      disabled={props.disabled}
+      onClick={props.onClick}
+      className={cx(
+        "grid size-9.5 cursor-pointer place-items-center rounded-full border-0 disabled:cursor-not-allowed disabled:opacity-50",
+        props.on ? "bg-accent text-on-accent" : "bg-stage-tile hover:bg-stage-scrim",
+        !props.on && (props.off ? "text-stage-danger" : "text-stage-ink"),
+        FOCUS_RING,
+      )}
+    >
+      <Icon name={props.icon} size={18} />
+    </button>
+  );
+}
+
 function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "details" | "back">) {
   return (
     <div className={cx("flex items-center gap-2 py-2 pr-2.5 pl-3 text-[12px]", DRAG)}>
@@ -52,7 +82,7 @@ function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "d
         <strong className="truncate text-[13px]">{title}</strong>
         <span className="tabular-nums opacity-80">{details}</span>
       </span>
-      <IconButton icon="monitor" label={back.label} variant="ghost" size="sm" onClick={back.onClick} />
+      <StageButton icon="monitor" label={back.label} onClick={back.onClick} />
     </div>
   );
 }
@@ -78,25 +108,21 @@ function Picture(props: Pick<MiniCallWindowProps, "frameUrl" | "speakerName" | "
 function Toggles({ mic, camera, share, hand }: Pick<MiniCallWindowProps, "mic" | "camera" | "share" | "hand">) {
   return (
     <>
-      <IconButton
+      <StageButton
         icon={mic.on ? "mic" : "mic-off"}
         label={mic.label}
         off={!mic.on}
-        labelIsAction
-        size="sm"
         disabled={mic.disabled}
         onClick={mic.onClick}
       />
-      <IconButton
+      <StageButton
         icon={camera.on ? "camera" : "camera-off"}
         label={camera.label}
         off={!camera.on}
-        labelIsAction
-        size="sm"
         onClick={camera.onClick}
       />
-      <IconButton icon="screen" label={share.label} size="sm" disabled={share.disabled} onClick={share.onClick} />
-      <IconButton icon="hand" label={hand.label} active={hand.on} labelIsAction size="sm" onClick={hand.onClick} />
+      <StageButton icon="screen" label={share.label} disabled={share.disabled} onClick={share.onClick} />
+      <StageButton icon="hand" label={hand.label} on={hand.on} onClick={hand.onClick} />
     </>
   );
 }
@@ -117,7 +143,7 @@ export function MiniCallWindow(props: MiniCallWindowProps) {
           title={props.leave.label}
           onClick={props.leave.onClick}
           className={cx(
-            "grid h-8.5 w-13 cursor-pointer place-items-center rounded-full border-0 bg-danger-fill text-on-danger-fill",
+            "grid h-9.5 w-13 cursor-pointer place-items-center rounded-full border-0 bg-danger-fill text-on-danger-fill",
             FOCUS_RING,
           )}
         >

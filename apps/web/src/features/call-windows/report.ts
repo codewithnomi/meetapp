@@ -81,7 +81,7 @@ export interface CallScreenFacts {
 }
 
 /** Whom the mini window shows: whoever shares, else whoever speaks, else someone else, else you. */
-function speakerOf(people: Person[]): Person | undefined {
+export function speakerOf<P extends Person>(people: P[]): P | undefined {
   const others = people.filter((p) => !p.isYou);
   return people.find((p) => p.screen) ?? others.find((p) => p.speaking) ?? others[0] ?? people.find((p) => p.isYou);
 }
@@ -107,5 +107,21 @@ export function callForWindows(facts: CallScreenFacts): CallWindowsCall {
     hand: Boolean(me?.handRaisedAt),
     canUnmute: facts.may.microphone,
     canShare: facts.may.screen && facts.mayShare,
+  };
+}
+
+/** Waiting to be let in, or calling someone (AC-F16-14): only the state and Leave or Cancel. */
+export function waitingCall(phase: "lobby" | "calling", title: string): CallWindowsCall {
+  return {
+    title,
+    joinedAt: Date.now(),
+    people: 0,
+    phase,
+    speaker: { name: title, initials: initialsOf(title), hasVideo: false, sharing: false },
+    mic: false,
+    camera: false,
+    hand: false,
+    canUnmute: false,
+    canShare: false,
   };
 }

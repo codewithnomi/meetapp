@@ -247,3 +247,97 @@ test("TC-F16-50 TC-F16-51 TC-F16-54 [AC-F16-21, AC-F16-22] keyboard and Escape; 
   await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(0);
   await expect(olivia.page.getByText(/declined/i).first()).toBeVisible({ timeout: 10_000 });
 });
+
+// F16 T10: the mini call window (TC-F16-30, 34, 36, 37, 39, 40).
+const miniWindow = (page: Page) => page.getByRole("region", { name: /^Call: / });
+
+async function firstMini(app: ElectronApplication): Promise<Page> {
+  await expect.poll(() => smallPages(app).length, { timeout: 5_000 }).toBeGreaterThan(0);
+  const page = smallPages(app)[0] as Page;
+  await expect(miniWindow(page)).toBeVisible();
+  return page;
+}
+
+/** Mo accepts Olivia's video call inside MeetApp; both are in the call. */
+async function inCall() {
+  const { olivia, mo } = await setup();
+  await putAway(mo.app, false);
+  await olivia.page.getByRole("button", { name: "Video call" }).click();
+  await incoming(mo.page).getByRole("button", { name: "Accept with audio" }).click();
+  await expect(controls(mo.page)).toBeVisible({ timeout: 20_000 });
+  await expect(controls(olivia.page)).toBeVisible({ timeout: 20_000 });
+  return { olivia, mo };
+}
+
+test("TC-F16-30 TC-F16-34 [AC-F16-14, AC-F16-15] in a call the mini window shows over other apps with the speaker's live video", async () => {
+  const { olivia, mo } = await inCall();
+  await putAway(mo.app, true);
+  const mini = await firstMini(mo.app);
+  await expect(miniWindow(mini)).toContainText("Olivia Owner");
+  await expect(miniWindow(mini)).toContainText(/2 people/);
+  for (const name of [
+    /^Mute/,
+    /^Turn camera on/,
+    "Share screen",
+    /^Raise your hand/,
+    "Leave",
+    "Back to the call window",
+  ])
+    await expect(mini.getByRole("button", { name })).toBeVisible();
+  // Olivia's fake camera arrives as pictures from Mo's main window.
+  await expect(mini.locator('img[src^="blob:"]')).toBeVisible({ timeout: 5_000 });
+  const outside = await mini.evaluate(
+    () => [...document.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().bottom > innerHeight).length,
+  );
+  expect(outside).toBe(0);
+  expect(await smallState(mo.app)).toEqual([expect.objectContaining({ focused: false, onTop: true })]);
+  await putAway(mo.app, false);
+  await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(0);
+  await controls(mo.page).getByRole("button", { name: "Leave", exact: true }).click();
+  await afterCallEnds(olivia.page);
+});
+
+test("TC-F16-36 TC-F16-37 [AC-F16-16, AC-F16-17] mini buttons change the call within 1 s, both ways; Share opens our picker in front", async () => {
+  const { olivia, mo } = await inCall();
+  await putAway(mo.app, true);
+  const mini = await firstMini(mo.app);
+  await mini.getByRole("button", { name: /^Mute/ }).click();
+  await expect(controls(mo.page).getByRole("button", { name: /^Unmute/ })).toBeVisible({ timeout: 1_000 });
+  await expect(mini.getByRole("button", { name: /^Unmute/ })).toBeVisible({ timeout: 1_000 });
+  await mini.getByRole("button", { name: /^Raise your hand/ }).click();
+  await expect(mini.getByRole("button", { name: /^Lower your hand/ })).toBeVisible({ timeout: 2_000 });
+  await controls(mo.page)
+    .getByRole("button", { name: /^Unmute/ })
+    .click();
+  await expect(mini.getByRole("button", { name: /^Mute/ })).toBeVisible({ timeout: 1_000 });
+
+  await mini.getByRole("button", { name: "Share screen" }).click();
+  await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(0);
+  await expect(mo.page.getByRole("dialog", { name: /share/i })).toBeVisible({ timeout: 5_000 });
+  await mo.page.keyboard.press("Escape");
+  await controls(mo.page).getByRole("button", { name: "Leave", exact: true }).click();
+  await afterCallEnds(olivia.page);
+});
+
+test("TC-F16-39 TC-F16-40 [AC-F16-18] Leave in the mini window leaves the call and closes it", async () => {
+  const { olivia, mo } = await inCall();
+  await putAway(mo.app, true);
+  const mini = await firstMini(mo.app);
+  await mini.getByRole("button", { name: "Leave" }).click();
+  await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(0);
+  await afterCallEnds(olivia.page);
+});
+
+test("TC-F16-30 [AC-F16-14] while calling someone, the mini window says so and Cancel stops the ringing", async () => {
+  const { olivia, mo } = await setup();
+  await putAway(mo.app, false);
+  await olivia.page.getByRole("button", { name: "Audio call" }).click();
+  await expect(incoming(mo.page)).toBeVisible({ timeout: 5_000 });
+  await putAway(olivia.app, true);
+  const mini = await firstMini(olivia.app);
+  await expect(miniWindow(mini)).toContainText("Calling Mo Member…");
+  await expect(mini.getByRole("button", { name: /^Mute/ })).toHaveCount(0);
+  await mini.getByRole("button", { name: "Cancel" }).click();
+  await expect(incoming(mo.page)).toHaveCount(0, { timeout: 10_000 });
+  await expect.poll(() => smallPages(olivia.app).length, { timeout: 5_000 }).toBe(0);
+});

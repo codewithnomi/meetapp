@@ -4,12 +4,23 @@
 // shows missed-call notifications (D080: they need a signed app).
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { BrowserWindow, Notification, app, ipcMain, screen, session, type IpcMainEvent } from "electron";
+import {
+  BrowserWindow,
+  MessageChannelMain,
+  Notification,
+  app,
+  ipcMain,
+  screen,
+  session,
+  webContents,
+  type IpcMainEvent,
+} from "electron";
 import { serveScreens } from "./app-protocol.ts";
 import { CallWindowsController, type CallWindowsDeps, type SmallKind } from "./call-windows-controller.ts";
 import {
   CALL_WINDOW_CHANNEL,
   CALL_WINDOWS_CHANNEL,
+  FRAMES_CHANNEL,
   MINI_SIZE,
   RING_SIZE,
   senderAllowed,
@@ -43,11 +54,21 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
   window.setAlwaysOnTop(true, setup.alwaysOnTopLevel);
   window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: setup.visibleOnFullScreen });
   window.setContentProtection(setup.contentProtection);
-  // macOS also reports the app's own moves; only a drag by the person counts (AC-F16-19).
-  let placed = { x: Number.NaN, y: Number.NaN };
+  // Only a drag by the person counts (AC-F16-19): "will-move" fires only for those, never for the app's
+  // own setBounds or a small nudge by macOS. On macOS "moved" fires all along a drag, so the place is
+  // saved once the window has been still for 300 ms.
+  let dragging = false;
+  let settle: ReturnType<typeof setTimeout> | undefined;
+  window.on("will-move", () => {
+    dragging = true;
+  });
   window.on("moved", () => {
-    const { x, y } = window.getBounds();
-    if (x !== placed.x || y !== placed.y) onMoved(window);
+    if (!dragging) return;
+    clearTimeout(settle);
+    settle = setTimeout(() => {
+      dragging = false;
+      if (!window.isDestroyed()) onMoved(window);
+    }, 300);
   });
   void window.loadURL(new URL(CALL_WINDOW_PAGE, options.appUrl).toString());
   const ready = new Promise<void>((resolve) => window.webContents.once("did-finish-load", () => resolve()));
@@ -55,7 +76,6 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
     id: window.webContents.id,
     setBounds: (rect: { x: number; y: number; width: number; height: number }) => {
       if (window.isDestroyed()) return;
-      placed = { x: rect.x, y: rect.y };
       window.setBounds(rect);
     },
     showInactive: () => void ready.then(() => !window.isDestroyed() && window.showInactive()),
@@ -100,6 +120,20 @@ function computerFor(
     notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
     now: () => Date.now(),
     later: (ms, run) => void setTimeout(run, ms),
+    linkFrames: (miniId, mainId) => {
+      const mini = webContents.fromId(miniId);
+      const main = mains.get(mainId);
+      if (!mini || !main || main.isDestroyed()) return;
+      const { port1, port2 } = new MessageChannelMain();
+      main.webContents.postMessage(FRAMES_CHANNEL, null, [port1]);
+      const give = () => mini.postMessage(FRAMES_CHANNEL, null, [port2]);
+      if (mini.isLoading()) mini.once("did-finish-load", give);
+      else give();
+    },
+    unlinkFrames: (mainId) => {
+      const main = mains.get(mainId);
+      if (main && !main.isDestroyed()) main.webContents.postMessage(FRAMES_CHANNEL, null, []);
+    },
   };
 }
 

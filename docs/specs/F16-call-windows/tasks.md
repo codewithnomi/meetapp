@@ -49,7 +49,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - A refused or failing notification is ignored quietly.
   - The text holds names only.
   - Covers: AC-F16-10, 11, 12, 13, 13b, 23. Tests: TC-F16-20, 21, 22, 23, 25, 26, 27, 58.
-- [ ] **T10 (milestone): Mini call window.**
+- [x] **T10 (milestone): Mini call window.**
   - Shows in a call, the lobby and "Calling…" when MeetApp isn't in front.
   - Live speaker video over the MessagePort (stops when hidden).
   - Every button does what the call screen does, both ways within 1 s; share opens our picker in front.

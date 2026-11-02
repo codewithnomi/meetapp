@@ -52,6 +52,8 @@ function computer() {
     notify: vi.fn(),
     now: () => clock,
     later: (ms: number, run: () => void) => void timers.push({ at: clock + ms, run }),
+    linkFrames: vi.fn(),
+    unlinkFrames: vi.fn(),
   };
   const controller = new CallWindowsController(deps);
   const advance = (ms: number) => {
@@ -127,6 +129,20 @@ describe("F16 small windows, put together", () => {
     const upper = open("ring")[1] as { id: number };
     controller.moved(upper.id, 50, 100, 1);
     expect(saved.at(-1)).toEqual({ ring: { x: 50, y: 100 + RING_SIZE.height + GAP, displayId: 1 } });
+  });
+
+  it("TC-F16-33 [AC-F16-15] the live-video line opens with the mini window and closes with it", () => {
+    const { controller, deps, advance, open } = computer();
+    controller.report(1, report({ call }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS);
+    const mini = open("mini")[0] as { id: number };
+    expect(deps.linkFrames).toHaveBeenCalledWith(mini.id, 1);
+    controller.focusChanged(1);
+    expect(deps.unlinkFrames).toHaveBeenCalledWith(1);
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS);
+    expect(deps.linkFrames).toHaveBeenCalledTimes(2);
   });
 
   it("TC-F16-60 [AC-F16-06] a main window that crashes or reloads takes its small windows with it", () => {

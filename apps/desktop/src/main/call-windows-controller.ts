@@ -53,6 +53,10 @@ export interface CallWindowsDeps {
   notify: (missed: MissedInfo) => void;
   now: () => number;
   later: (ms: number, run: () => void) => void;
+  /** Opens the live-video line from a main window to the mini window (design.md 3.5). */
+  linkFrames: (miniWindowId: number, mainWindowId: number) => void;
+  /** Closes it: the main window stops sending pictures. */
+  unlinkFrames: (mainWindowId: number) => void;
 }
 
 export class CallWindowsController {
@@ -68,6 +72,9 @@ export class CallWindowsController {
   private ringOrder: string[] = [];
   private ringHeights: number[] = [];
   private mini: SmallWindow | undefined;
+  /** The main window sending the mini window its pictures, and that mini window. */
+  private framesFrom: number | undefined;
+  private framesTo: number | undefined;
   private places: Places;
 
   private readonly deps: CallWindowsDeps;
@@ -183,6 +190,7 @@ export class CallWindowsController {
       mini: call !== null,
     });
     if (call) this.mini = this.place(this.mini, "mini", layout.mini as Rect, { kind: "mini", call });
+    this.linkFrames(this.mini, merged.callWindow);
     stack.forEach((ring, index) => {
       const shown = this.place(this.rings.get(ring.callId), "ring", layout.rings[index] as Rect, {
         kind: "ring",
@@ -193,6 +201,15 @@ export class CallWindowsController {
     this.ringOrder = stack.map((ring) => ring.callId);
     this.ringHeights = stack.map(ringHeight);
     for (const missed of missedToNotify(merged.missed, this.focus, this.told)) this.deps.notify(missed);
+  }
+
+  private linkFrames(mini: SmallWindow | undefined, from: number | undefined): void {
+    const wanted = mini ? from : undefined;
+    if (wanted === this.framesFrom && mini?.id === this.framesTo) return;
+    if (this.framesFrom !== undefined) this.deps.unlinkFrames(this.framesFrom);
+    if (mini && wanted !== undefined) this.deps.linkFrames(mini.id, wanted);
+    this.framesFrom = wanted;
+    this.framesTo = mini?.id;
   }
 
   private closeUnwanted(wantedRings: RingInfo[], call: CallInfo | null): void {

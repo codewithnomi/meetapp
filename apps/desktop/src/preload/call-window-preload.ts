@@ -2,13 +2,12 @@
 // back, and the live-video pictures for the mini window. Nothing else: no auth, media, files or device key.
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
-import { CALL_WINDOW_CHANNEL } from "../main/call-windows.ts";
+import { CALL_WINDOW_CHANNEL, FRAMES_CHANNEL } from "../main/call-windows.ts";
 
 type Listener = (value: unknown) => void;
-const FRAME_PORT = `${CALL_WINDOW_CHANNEL}:frames`;
 
 let frameListener: ((frame: ArrayBuffer) => void) | undefined;
-ipcRenderer.on(FRAME_PORT, (event) => {
+ipcRenderer.on(FRAMES_CHANNEL, (event) => {
   const [port] = event.ports;
   if (!port) return;
   port.onmessage = (message: MessageEvent) => {

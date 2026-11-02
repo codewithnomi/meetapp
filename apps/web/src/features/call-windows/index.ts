@@ -2,4 +2,6 @@
 export { act, useFrameUrl, useSmallWindowView } from "./small-window-bridge.ts";
 export { useCallScreen, type CallScreenControls } from "./call-screen.ts";
 export { useCallWindows } from "./use-call-windows.ts";
-export { callForWindows } from "./report.ts";
+export { callForWindows, speakerOf } from "./report.ts";
+export { useFrameSender } from "./frames.ts";
+export { usePublishWaiting } from "./use-publish-waiting.ts";

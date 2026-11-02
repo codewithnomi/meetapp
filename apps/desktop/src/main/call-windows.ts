@@ -17,6 +17,8 @@ export type { CallInfo, CallWindowAction, CallWindowsState, MissedInfo, RingInfo
 export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 /** Small window ↔ main: `state` (to show) and `act` (a button press). */
 export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
+/** Main → a main window and the mini window: the two ends of the live-video line, or "stop" (design.md 3.5). */
+export const FRAMES_CHANNEL = "meetapp:call-window:frames";
 
 /** The ring window as drawn on the approved canvas: caller, then the three round answers with their words. */
 export const RING_SIZE = { width: 320, height: 160 };
