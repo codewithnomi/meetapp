@@ -28,6 +28,7 @@ function startSending(track: MediaStreamTrack, send: (frame: ArrayBuffer) => voi
   const video = document.createElement("video");
   video.muted = true;
   video.srcObject = new MediaStream([track]);
+  // A stand-in video that can't start just sends nothing; the mini window then shows the picture.
   void video.play().catch(() => undefined);
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;

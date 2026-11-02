@@ -1,7 +1,8 @@
 // The small windows put together (F16 design.md section 3), with a fake computer: TC-F16-60 and the
 // controller's part of TC-F16-01, 04, 41, 44 and 55. Real windows: tests/e2e/desktop/call-windows.spec.ts.
 import { describe, expect, it, vi } from "vitest";
-import { CallWindowsController, type SmallKind, type SmallState } from "./call-windows-controller.ts";
+import type { CallWindowView } from "@meetapp/contracts";
+import { CallWindowsController, type SmallKind } from "./call-windows-controller.ts";
 import { FLICKER_MS, GAP, RING_SIZE, type CallWindowsState, type Places } from "./call-windows.ts";
 
 const ring = (callId: string) => ({ callId, caller: { name: "Sara", initials: "SM" }, kind: "video" as const });
@@ -27,19 +28,19 @@ const report = (over: Partial<CallWindowsState> = {}): CallWindowsState => ({
 function computer() {
   let clock = 1_000;
   let nextId = 100;
-  const windows: { id: number; kind: SmallKind; open: boolean; states: SmallState[]; shown: number }[] = [];
+  const windows: { id: number; kind: SmallKind; open: boolean; states: CallWindowView[]; shown: number }[] = [];
   const timers: { at: number; run: () => void }[] = [];
   const saved: Places[] = [];
   const deps = {
     open: (kind: SmallKind) => {
-      const w = { id: nextId++, kind, open: true, states: [] as SmallState[], shown: 0 };
+      const w = { id: nextId++, kind, open: true, states: [] as CallWindowView[], shown: 0 };
       windows.push(w);
       return {
         id: w.id,
         setBounds: vi.fn(),
         showInactive: () => void (w.shown += 1),
         close: () => void (w.open = false),
-        send: (s: SmallState) => void w.states.push(s),
+        send: (s: CallWindowView) => void w.states.push(s),
       };
     },
     displays: () => [{ id: 1, workArea: { x: 0, y: 0, width: 1440, height: 900 } }],

@@ -38,6 +38,14 @@ function mediaRules(session: Session, { appUrl, picker }: LockDown): void {
   });
 }
 
+/** In development the dev server's answers get the policy (app:// answers carry it themselves). */
+function applyDevServerPolicy(session: Session, devServerUrl: string | undefined, csp: string): void {
+  if (!devServerUrl) return;
+  session.webRequest.onHeadersReceived({ urls: [`${devServerUrl}/*`] }, (details, callback) => {
+    callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } });
+  });
+}
+
 export function lockDownSession(session: Session, lock: LockDown): void {
   const { csp, devServerUrl } = lock;
   mediaRules(session, lock);
@@ -60,11 +68,7 @@ export function lockDownSession(session: Session, lock: LockDown): void {
     if (!isChatFileUrl(item.getURL(), lock.apiUrl)) cancel(event);
   });
   // app:// answers carry the CSP themselves (app-protocol.ts); in development the dev server's don't.
-  if (devServerUrl) {
-    session.webRequest.onHeadersReceived({ urls: [`${devServerUrl}/*`] }, (details, callback) => {
-      callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } });
-    });
-  }
+  applyDevServerPolicy(session, devServerUrl, csp);
 }
 
 /**
@@ -78,11 +82,7 @@ export function lockDownCallWindowSession(session: Session, devServerUrl: string
   session.setDisplayMediaRequestHandler((_request, callback) => callback({}));
   session.setDevicePermissionHandler(() => false);
   session.on("will-download", (event) => event.preventDefault());
-  if (devServerUrl) {
-    session.webRequest.onHeadersReceived({ urls: [`${devServerUrl}/*`] }, (details, callback) => {
-      callback({ responseHeaders: { ...details.responseHeaders, "Content-Security-Policy": [csp] } });
-    });
-  }
+  applyDevServerPolicy(session, devServerUrl, csp);
 }
 
 /** Keeps a page inside the app. An https link it tries to open goes to the user's browser instead. */

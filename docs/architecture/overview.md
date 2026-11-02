@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # How the System Is Built (Overview)

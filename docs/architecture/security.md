@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-28
+updated: 2026-11-02
 ---
 
 # Security Rules (Baseline)
@@ -33,7 +33,7 @@ Every feature's requirements must include a "Security & privacy" section.
 - S16. Only the minimum necessary data is sent to AI services.
 
 ## Desktop app (Electron)
-- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only). Scripts load only from the app; JavaScript `eval` is never allowed. Only the app's own WebAssembly may run (`'wasm-unsafe-eval'`, F15 D073, owner 2026-10-27: the background tool's engine, shipped with the app). Pages can't open windows; only the desktop app opens F16's two small call windows (D079): the same locked-down settings, their own session that refuses every permission, device, screen capture and download, their own stricter policy (`connect-src 'none'`, pictures only from the app, `data:` and `blob:`), their own preload (`window.meetappCallWindow` only, button presses checked against a list and by sender), no sign-in, and content protection so they never appear in a screen share.
+- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only). Scripts load only from the app; JavaScript `eval` is never allowed. Only the app's own WebAssembly may run (`'wasm-unsafe-eval'`, F15 D073, owner 2026-10-27: the background tool's engine, shipped with the app). Pages can't open windows; only the desktop app opens F16's two small call windows (D079): the same locked-down settings, their own session that refuses every permission, device, screen capture and download, their own stricter policy (`connect-src 'none'`, pictures only from the app, `data:` and `blob:`; in development only, the dev server's live reload as for the main window); their session serves only their own page, their own preload (`window.meetappCallWindow` only, button presses checked against a list and by sender), no sign-in, and content protection so they never appear in a screen share.
 - S18. Auto-updates are signed and verified.
 
 ## Code & dependencies

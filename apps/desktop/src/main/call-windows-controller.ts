@@ -26,7 +26,6 @@ import { cleanReport } from "./call-windows-checks.ts";
 
 export type SmallKind = "ring" | "mini";
 /** What a small window is told to show. */
-export type SmallState = CallWindowView;
 
 export interface SmallWindow {
   id: number;
@@ -34,11 +33,8 @@ export interface SmallWindow {
   /** Shows the window without taking focus from the app in front (AC-F16-01). */
   showInactive: () => void;
   close: () => void;
-  send: (state: SmallState) => void;
+  send: (state: CallWindowView) => void;
 }
-
-/** Actions only main sends (from a notification), never a small window (TC-F16-55). */
-export type MainOnlyAction = CallWindowsNotificationAction;
 
 export interface CallWindowsDeps {
   open: (kind: SmallKind) => SmallWindow;
@@ -130,7 +126,7 @@ export class CallWindowsController {
   }
 
   /** A notification's click or Call back (AC-F16-11): to the main window used last, in front. */
-  fromNotification(action: MainOnlyAction): void {
+  fromNotification(action: CallWindowsNotificationAction): void {
     const target = this.usedLast[0];
     if (target === undefined) return;
     this.deps.focusMain(target);
@@ -238,7 +234,7 @@ export class CallWindowsController {
     return (last !== undefined ? this.deps.displayOf(last) : undefined) ?? this.deps.primaryDisplayId();
   }
 
-  private place(window: SmallWindow | undefined, kind: SmallKind, rect: Rect, state: SmallState): SmallWindow {
+  private place(window: SmallWindow | undefined, kind: SmallKind, rect: Rect, state: CallWindowView): SmallWindow {
     const shown = window ?? this.deps.open(kind);
     shown.setBounds(rect);
     shown.send(state);

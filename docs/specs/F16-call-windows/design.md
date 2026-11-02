@@ -17,9 +17,12 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 ## 1. What gets created
 **Desktop (apps/desktop):**
 - `src/main/call-windows.ts`: pure rules, no Electron. When each window shows or hides (in front or not, AC-01, 05, 14). Corner placement, stacking and gap closing (AC-08, 09). Remembered places and the off-screen fallback (AC-19, 20). Merging reports from several MeetApp windows into one ring per call, one mini window and one notification per call (AC-24).
+- `src/main/call-windows-controller.ts`: the controller (no Electron): keeps the reports, the focus history and the open small windows, and decides after each change what shows where, which presses pass, and which missed calls get a notification. Tested with a fake computer.
+- `src/main/call-windows-checks.ts`: checks what reaches main: a report entry by entry (a bad entry is dropped, never the whole report) and the saved places.
+- `src/main/call-windows-notify.ts`: the missed-call notification (no Electron): translated words, names only, Call back; kept until used.
 - `src/main/call-windows-bridge.ts`: Electron wiring. Creates and destroys the small windows, tracks focus (`browser-window-focus` / `blur`, minimize, hide), keeps places in `userData/call-windows.json`, and shows notifications (`Notification`).
 - `src/preload/call-window-preload.ts`: the small windows' only bridge, `window.meetappCallWindow`: `onState(listener)`, `act(action)` and `onFrame(listener)`. Nothing else: no auth, media, files or deviceKey.
-- `src/preload/preload.ts`: the main window gains `window.meetapp.callWindows`: `report(state)`, `onAction(listener)` and `sendFrame(frame)`. This is the design change the desktop rules require for anything new in the preload.
+- `src/preload/preload.ts`: the main window gains `window.meetapp.callWindows`: `report(state)`, `onAction(listener)`, `onFramesWanted(listener)` (whether the mini window wants pictures now) and `sendFrame(frame)` (at most 200 KB). This is the design change the desktop rules require for anything new in the preload.
 
 **Screens (apps/web):**
 - A second small page, `call-window.html` (its own Vite entry: `src/app/call-window-main.tsx` renders `pages/CallWindowPage`, which uses `features/call-windows`). It shows the ring window or the mini call window from the state it receives, using the same `@meetapp/ui` components and translations. It has no router, no sign-in and no API client.
@@ -40,9 +43,9 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 ## 3. How it works
 ### 3.1 The report from the main window (AC-02, 06, 07, 15, 16, 18)
 Whenever its incoming calls or current call change, the main window sends one `CallWindowsState` (at most every 200 ms; immediately for ring changes):
-- `rings`: `[{ callId, caller: { name, initials, photoUrl? }, kind: "video" | "audio", chatName?, busyIn?: string }]`. `busyIn` is the current call's or meeting's name (AC-07).
+- `rings`: `[{ callId, caller: { name, initials, photo? }` (`photo`: a `data:image/…` picture read by the main window, at most 300 KB) `, kind: "video" | "audio", chatName?, busyIn?: string }]`. `busyIn` is the current call's or meeting's name (AC-07).
 - `call`: `{ title, joinedAt, people, phase: "lobby" | "calling" | "in-call" | "reconnecting", speaker: { name, initials, hasVideo, sharing }, mic, camera, hand, canUnmute, canShare } | null`
-- `missed`: `[{ callId, from, chatName?, kind, conversationId, endedAt }]` (rings that just ended as missed, once each). Answered, declined and cancelled rings never appear here (AC-12).
+- `missed`: `[{ callId, from, chatName?, kind, conversationId, endedAt, text: { title, body, callBack } }]` (`text`: the notification's translated words, names shortened to fit) (rings that just ended as missed, once each). Answered, declined and cancelled rings never appear here (AC-12).
 
 Rings come only from F15's `incoming-calls`, which already applies F15's rules on who may see a call (AC-23).
 
@@ -79,7 +82,7 @@ For each `missed` entry, main shows a notification once per `callId` (AC-24), bu
 macOS asks for permission with the first notification (AC-13b). A `failed` event, which happens when the app is unsigned or notifications are off, is ignored (AC-13).
 
 ### 3.8 Not in screen shares (AC-25)
-Both small windows call `setContentProtection(true)` (macOS and Windows), so they are left out of any screen capture, our own share included. On Linux, where this doesn't exist, our own share picker leaves out MeetApp's small windows as window sources, and the small windows hide while the person shares a whole screen. On the owner's Mac it is also checked by hand once, with our own share and one other capture app (tests.md).
+Both small windows call `setContentProtection(true)` (macOS and Windows), so they are left out of any screen capture, our own share included. On Linux, where this doesn't exist, hiding the small windows from shares is **later** (with F04's Linux work; the owner uses a Mac). On the owner's Mac it is also checked by hand once, with our own share and one other capture app (tests.md).
 
 ## 4. Data stored
 - **Server:** nothing new.
@@ -89,7 +92,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 **No backend change.** New desktop messages, inside the computer only:
 - `meetapp:call-windows` (main window ↔ main process): `report`, `action`
 - `meetapp:call-window` (small window ↔ main process): `state`, `act`
-- one MessagePort per mini window for frames.
+- `meetapp:call-window:frames` (main process → a main window and the mini window): the two ends of one MessagePort per mini window, for the live-video pictures; an empty message tells the main window to stop.
 
 ## Edge cases & errors
 - **The main window crashes or reloads:** on `render-process-gone` or `did-start-loading`, main drops that window's report, so its small windows close. After a reload the window reports again.
@@ -102,9 +105,9 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 - **The lock screen:** the small windows don't show over the lock screen. The notification shows only the name (AC-23).
 
 ## Security & privacy
-- **The small windows** use the same locked-down settings as the main window (S17: `contextIsolation`, `sandbox`, no `nodeIntegration`; `guardContents` blocks navigation and new windows). They load only `call-window.html` from the app.
+- **The small windows** use the same locked-down settings as the main window (S17: `contextIsolation`, `sandbox`, no `nodeIntegration`; `guardContents`, applied to every page by main.ts's `web-contents-created`, blocks navigation and new windows). They load only `call-window.html` from the app, and their session serves only that page and its `/assets/` files (`smallPageAllows`).
 - **Their own session:** the small windows use a separate session (`partition: "call-windows"`). `lockDownSession` is applied to it with every permission, device request and display-media request refused, and downloads refused, so they can never use the camera, microphone or screen.
-- **Their own security policy:** `call-window.html` gets its own CSP, built in security.ts (`connect-src 'none'`; `img-src 'self' data: blob:`; the rest as S17). It is sent by app-protocol.ts, and by the dev-server header hook for that page's path. This only tightens S17, so AC-22 ("the same security settings") is met. They have no access to the backend, the call server or the sign-in.
+- **Their own security policy:** `call-window.html` gets its own CSP, built in security.ts (`connect-src 'none'`; `img-src 'self' data: blob:`; the rest as S17). It is sent by app-protocol.ts; in development the small session's dev-server answers get it, with the dev server's live reload allowed (its script nonce, inline styles and its `ws://` address), as for the main window. This only tightens S17, so AC-22 ("the same security settings") is met. They have no access to the backend, the call server or the sign-in.
 - **Main** creates these windows itself; pages still can't open windows. With this design, apps/desktop/CLAUDE.md changes: "no new windows" becomes "pages can't open windows; only main opens the two call-window kinds (D079)". The preload list gains `callWindows`, `meetappCallWindow` and the existing `power`, which is missing from the list today.
 - **Messages:** every message from a small window is checked against the allow-list. Only main's own small windows may send on `meetapp:call-window` (checked by sender id).
 - **Notification text** is limited to names (AC-23). No message text appears, and the logs don't include names.
@@ -141,5 +144,5 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 - **Every AC** (AC-F16-01 to 26 and 13b) is mapped to test cases in tests.md.
 
 ## Decisions made here
-- **D079 (proposed):** small extra windows owned by main, driven by the main window's report; live video as JPEG pictures over a MessagePort.
-- **D080 (proposed):** missed-call notifications need a signed app; until real signing (F04), they may not show in development.
+- **D079 (accepted):** small extra windows owned by main, driven by the main window's report; live video as JPEG pictures over a MessagePort.
+- **D080 (accepted):** missed-call notifications need a signed app; until real signing (F04), they may not show in development.

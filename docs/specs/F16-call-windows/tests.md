@@ -431,7 +431,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 - **Level:** unit and desktop e2e (skip on Linux CI)
 - **Given** the real ring and mini windows
 - **When** created
-- **Then** `setContentProtection(true)` was called (unit) and the flag is on (e2e, macOS and Windows); on Linux the share picker leaves out MeetApp's small windows and they hide while a whole screen is shared
+- **Then** `setContentProtection(true)` was called (unit) and the flag is on (e2e, macOS and Windows). On Linux, hiding the small windows from shares is later (design.md 3.8)
 
 ### TC-F16-57: Not in the screen share, by hand
 - **Covers:** AC-F16-25

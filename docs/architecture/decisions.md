@@ -514,6 +514,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
 - **Decision:** the desktop main process opens small always-on-top windows (`call-window.html`). They show only a state the main MeetApp window reports, and they send button presses back to it. They have their own preload (`meetappCallWindow` only) and their own session with every permission refused, no network access and no sign-in. The mini window's live video arrives as small JPEG pictures (320×180, about 15 a second) over a MessagePort from the main window.
 - **Why:** one place keeps the call, the ringtone and the sign-in, so every rule from F02 and F15 applies unchanged. The small windows stay tiny and safe.
+- **Notes (2026-11-02):** in development only, the small page's policy also allows the dev server's live reload (its script nonce, inline styles, its `ws://` address), as the main window's does. The desktop app depends on `@meetapp/contracts` for these shapes, types only, so nothing is added to its bundles.
 - **Alternatives:** have the small windows join the call themselves (needs a sign-in in each window, and a second connection to the call server); show only a picture (the owner chose live video).
 
 ### D080: Missed-call notifications need a signed app (F16)
