@@ -481,23 +481,23 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 | AC-F16-05 | TC-F16-01, 11 |
 | AC-F16-06 | TC-F16-12, 13, 60 |
 | AC-F16-07 | TC-F16-06, 14, 15 |
-| AC-F16-08 | TC-F16-16, 17, 19 |
+| AC-F16-08 | TC-F16-16, 17, 19, 67, 69 |
 | AC-F16-09 | TC-F16-18, 19 |
-| AC-F16-10 | TC-F16-20, 21, 28 |
+| AC-F16-10 | TC-F16-20, 21, 28, 68 |
 | AC-F16-11 | TC-F16-23, 24, 25, 28 |
 | AC-F16-12 | TC-F16-21, 22 |
 | AC-F16-13 | TC-F16-26, 28 |
 | AC-F16-13b | TC-F16-27, 28 |
 | AC-F16-14 | TC-F16-29, 30, 61 |
-| AC-F16-15 | TC-F16-31, 32, 33, 34 |
+| AC-F16-15 | TC-F16-31, 32, 33, 34, 62, 64, 70, 71 |
 | AC-F16-16 | TC-F16-35, 36, 55 |
 | AC-F16-17 | TC-F16-37, 38 |
 | AC-F16-18 | TC-F16-32, 39, 40, 60 |
-| AC-F16-19 | TC-F16-41, 42 |
+| AC-F16-19 | TC-F16-41, 42, 69 |
 | AC-F16-20 | TC-F16-43 |
-| AC-F16-21 | TC-F16-48, 49, 50 |
-| AC-F16-22 | TC-F16-51, 52, 53, 54, 55, 59 |
-| AC-F16-23 | TC-F16-20, 28, 58, 59 |
+| AC-F16-21 | TC-F16-48, 49, 50, 63 |
+| AC-F16-22 | TC-F16-51, 52, 53, 54, 55, 59, 65 |
+| AC-F16-23 | TC-F16-20, 28, 58, 59, 66 |
 | AC-F16-24 | TC-F16-44, 45 |
 | AC-F16-25 | TC-F16-56, 57 |
 | AC-F16-26 | TC-F16-03, 30, 46, 47 |
@@ -513,4 +513,5 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 | TC-F16-68 | Caller hangs up before anyone answers: the ring stop is marked as a missed call and gives a notification; removal while ringing isn't marked and gives none (AC-F16-10, 12; D081) | use-call-windows.test.tsx, ring.integration.test.ts, call-security.integration.test.ts (T-fix-8) |
 | TC-F16-69 | Many rings never overlap (a second column); a drag always ends; only PNG, JPEG or WebP photos | call-windows.test.ts, call-windows-security.test.ts (T-fix-9) |
 | TC-F16-70 | A main window keeps full speed behind other apps only while it has a call (battery); live pictures still flow (TC-F16-62) | call-windows-controller.test.ts, call-windows.spec.ts (T-fix-10) |
+| TC-F16-71 | The mini window's × hides only it; the call goes on; it is back after MeetApp was in front (AC-F16-15) | call-windows-controller.test.ts (T-fix-12) |
 | TC-F16-67 | Notifications kept until used; a closed small window is reopened; timer margin; stack clear of the mini window | call-windows-notify.test.ts, call-windows-controller.test.ts, call-windows.test.ts (T-fix-4) |

@@ -72,7 +72,7 @@ Anyone signed in to the **desktop app** (F02 meetings and F15 chat calls). The w
 - **AC-F16-22:** The new windows show only MeetApp's own screens, with the same security settings as the main window (security S17: isolated, sandboxed, no Node, the same security policy). They can't open other web addresses or new windows. They talk to the call only through the main MeetApp window, so they hold no sign-in token.
 - **AC-F16-25:** The ring window and mini call window never appear in the person's own screen share.
 - **AC-F16-23:** The missed-call notification (also on the lock screen) shows only the caller's name and the group name, never message text. The windows show nothing about a call the person may not see (F15 rules).
-- No new data is stored on the server. The windows' places are stored only on this computer, in MeetApp's settings.
+- No new data is stored on the server. The windows' places are stored only on this computer, in a small file of MeetApp's (`call-windows.json`).
 - No new outside service: notifications go through the Mac's own notification system.
 
 ## Out of scope
@@ -80,6 +80,7 @@ Anyone signed in to the **desktop app** (F02 meetings and F15 chat calls). The w
 - "Busy on Busy" (refuse calls while in a call): later, with admin settings (F10).
 - Putting a call on hold: not planned (accepting leaves the current call, as decided in F15).
 - Ringing when MeetApp is completely closed (no window open and the app not running): that needs F04's "keep running in the background".
+- Hiding the small windows from screen shares on Linux (AC-F16-25 covers macOS and Windows): later, with F04's Linux work.
 - The web and mobile apps; Windows details come with F04 (the windows must not depend on anything Mac-only, except the notification wording).
 
 ## Decisions made without asking (technical defaults)

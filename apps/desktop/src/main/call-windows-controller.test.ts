@@ -147,6 +147,24 @@ describe("F16 small windows, put together", () => {
     expect(deps.linkFrames).toHaveBeenCalledTimes(2);
   });
 
+  it("TC-F16-71 [AC-F16-15] the mini window's × hides only it; the call goes on; it is back after MeetApp was in front", () => {
+    const { controller, deps, advance, open } = computer();
+    controller.report(1, report({ call }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS + 20);
+    const mini = open("mini")[0] as { id: number };
+    controller.act(mini.id, { name: "hideMini" });
+    expect(open("mini")).toHaveLength(0);
+    expect(deps.toMain).not.toHaveBeenCalled(); // the call is not touched
+    controller.report(1, report({ call }));
+    advance(FLICKER_MS + 20);
+    expect(open("mini")).toHaveLength(0); // stays hidden while MeetApp is still behind
+    controller.focusChanged(1);
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS + 20);
+    expect(open("mini")).toHaveLength(1);
+  });
+
   it("TC-F16-70 [AC-F16-15] a main window keeps full speed only while it has a call (battery)", () => {
     const { controller, deps } = computer();
     controller.report(1, report({ rings: [ring("a")] }));

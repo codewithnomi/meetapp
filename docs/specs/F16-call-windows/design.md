@@ -29,6 +29,10 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 - **Shared shapes** (`packages/contracts/src/call-windows.ts`, types only): the report, the view sent to a small window and the actions. The desktop app checks them with its own small validators, so no schema library is added to its preloads.
 - `features/call-windows/`, in the main window: builds the `report` from the incoming calls (F15 `incoming-calls.ts`) and the current call (F02/F15 call state), carries out the actions that come back, and sends the speaker frames.
 
+**Web files in `features/call-windows/`:** `use-call-windows.ts` (report and actions), `report.ts` (the report builder), `call-screen.ts` (`useCallScreen`, the current call's state), `small-window-bridge.ts` (the small page's side), `photos.ts` (photos as `data:` pictures), `frames.ts` (the speaker's pictures), `use-publish-waiting.ts` (lobby and calling). The pages ChatCallPage, LobbyPage and MeetingPage publish their call (`MeetingPage/mini-window.ts`, `view-state.ts`).
+
+**Existing files changed:** desktop `main.ts` (second window setup), `settings.ts` (`callWindowPreloadPath`), `guards.ts` (`lockDownCallWindowSession`, one dev-server CSP helper), `app-protocol.ts` (the small page's policy and allow-list), `security.ts`, `scripts/build.ts` (second preload bundle `out/call-window-preload`); web `vite.config.ts` (second input `call-window.html`), `features/calls` (`IncomingCalls.tsx`, `incoming-calls.ts`, `chat-call.ts`), `features/meetings/call/elapsed.ts`, `locales/en.json` (`calls.windows.*`); `knip.json`; the API's ring stop gains `missedCall` (D081).
+
 **UI (packages/ui):** organisms `RingWindow` and `MiniCallWindow`, each with a story and tests, drawn as on the approved canvas board. `RingWindow` reuses `IncomingCall`'s parts.
 
 ## 2. Screens and user flow (approved board "Calls while MeetApp isn't in front")
@@ -52,12 +56,12 @@ Rings come only from F15's `incoming-calls`, which already applies F15's rules o
 A photo reaches the small window as a `data:` picture prepared by the main window, so the small window never loads anything from the backend.
 
 ### 3.2 Actions back (AC-03, 04, 11, 16, 17)
-`act` accepts only: `accept {callId, video}`, `decline {callId}`, `hide {callId}`, `toggleMic`, `toggleCamera`, `share`, `toggleHand`, `leave`, `backToCall`. Main checks each action against an allow-list (unknown names and wrong arguments are refused, as for the existing bridges). Ring actions are refused unless their `callId` is one it is showing. Call actions are refused unless a call is reported. It then forwards the action to the right main window and brings that window to the front when needed (accept, share, backToCall). The main window runs the same code its own buttons run, so F02 rights (`canUnmute`) and F15 rules apply unchanged. `share` brings the main window to the front first, so F02's own picker opens there (AC-17).
+`act` accepts only: `accept {callId, video}`, `decline {callId}`, `hide {callId}`, `toggleMic`, `toggleCamera`, `share`, `toggleHand`, `leave`, `backToCall`, `hideMini` (the mini window's ×: main hides only the mini window, the call goes on, nothing is forwarded). Main checks each action against an allow-list (unknown names and wrong arguments are refused, as for the existing bridges). Ring actions are refused unless their `callId` is one it is showing. Call actions are refused unless a call is reported. It then forwards the action to the right main window and brings that window to the front when needed (accept, share, backToCall). The main window runs the same code its own buttons run, so F02 rights (`canUnmute`) and F15 rules apply unchanged. `share` brings the main window to the front first, so F02's own picker opens there (AC-17).
 
 ### 3.3 Showing and hiding (AC-01, 05, 06, 14, 18, 24, 26)
 Main recomputes after every report and every focus change. "In front" means some MeetApp main window is focused.
 - **Ring windows:** one per `callId` found in any main window's report, shown only while none is in front. A ring disappears from the reports when it ends, so its window closes on the next report (within 2 s, AC-06).
-- **Mini window:** shown while any main window reports a `call` and none is in front.
+- **Mini window:** shown while any main window reports a `call` and none is in front. After its × (`hideMini`) it stays hidden until a MeetApp window has been in front again.
 
 Several main windows report the same call; main keeps one window per call and sends actions to the window used last (AC-24). Small windows are created with:
 - `alwaysOnTop` at level `pop-up-menu`, so they sit above the Dock and other apps;
@@ -87,7 +91,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 
 ## 4. Data stored
 - **Server:** nothing new.
-- **This computer:** `userData/call-windows.json` (two places, AC-19). Nothing personal.
+- **This computer:** `userData/call-windows.json` (two places, AC-19). Nothing personal. Checked when read (`validPlaces`; a bad file counts as no places), written owner-only (mode 0600), and a failed write is ignored (the places are only a convenience).
 
 ## 5. Backend endpoints and messages
 **No backend change.** New desktop messages, inside the computer only:
@@ -101,7 +105,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 - **An action arrives for a ring that has just ended:** main ignores it, because the `callId` is no longer shown.
 - **An accept fails:** the main window shows F15's error in front.
 - **Screens change while a window shows:** main checks the place on `display-removed` / `display-metrics-changed` and moves the window to the fallback (AC-20).
-- **Focus flickers** (for example a menu of the other app): a 150 ms wait before showing avoids flashing windows.
+- **Focus flickers** (for example a menu of the other app): a 150 ms (plus a 20 ms margin, `TIMER_MARGIN_MS`) wait before showing avoids flashing windows.
 - **Reconnecting:** the mini window shows "Reconnecting…" and closes only when the call screen gives up (AC-18).
 - **The lock screen:** the small windows don't show over the lock screen. The notification shows only the name (AC-23).
 

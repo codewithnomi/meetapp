@@ -36,6 +36,9 @@ const picture = <img src={FRAME} alt="" />;
 
 export const SpeakerVideo: Story = { args: { video: picture } };
 export const CameraOff: Story = {};
+export const LongTitle: Story = {
+  args: { title: "Quarterly planning with the whole release team and our partners from the design studio" },
+};
 export const Sharing: Story = { args: { video: picture, caption: "Sara Malik is sharing" } };
 export const MutedByOrganizer: Story = {
   args: { mic: { label: "Your microphone is turned off by the organizer", on: false, onClick: none, disabled: true } },

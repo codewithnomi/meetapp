@@ -86,6 +86,7 @@ As in Teams: an incoming call rings in a small window above every app; a Mac not
 - Clicking a meeting link opens the desktop app (`meetapp://` links)
 - Desktop notifications (meeting starting, someone's waiting, mentions)
 - Remembers window size; runs smoothly in the background during calls
+- Ringing when MeetApp is fully closed (keeps running in the background; F16 rings only while it runs, D078)
 - Auto-update (ready, turned on when we go online)
 - **Depends on:** F02 · **Size:** medium
 
