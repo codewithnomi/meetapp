@@ -1,7 +1,7 @@
 ---
 feature: F16
 title: Calls while MeetApp isn't in front
-status: draft
+status: approved
 updated: 2026-11-02
 ---
 
