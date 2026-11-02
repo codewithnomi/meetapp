@@ -280,3 +280,15 @@ export function senderAllowed(senderId: number, smallWindowIds: ReadonlySet<numb
   const small = smallWindowIds.has(senderId);
   return channel === CALL_WINDOW_CHANNEL ? small : !small;
 }
+
+/** The saved places, keeping only well-formed entries (the file may have been edited by hand). */
+export function validPlaces(value: unknown): Places {
+  const places: Places = {};
+  if (typeof value !== "object" || value === null) return places;
+  for (const kind of ["ring", "mini"] as const) {
+    const place = (value as Record<string, unknown>)[kind] as Record<string, unknown> | undefined;
+    const ok = place && ["x", "y", "displayId"].every((key) => Number.isFinite(place[key]));
+    if (ok) places[kind] = { x: Number(place["x"]), y: Number(place["y"]), displayId: Number(place["displayId"]) };
+  }
+  return places;
+}

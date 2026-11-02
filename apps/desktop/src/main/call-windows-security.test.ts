@@ -7,6 +7,7 @@ import {
   isCallWindowAction,
   isCallWindowsState,
   senderAllowed,
+  validPlaces,
 } from "./call-windows.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
 import {
@@ -15,6 +16,7 @@ import {
   callWindowPreferences,
   contentSecurityPolicy,
   policyFor,
+  smallPageAllows,
   smallWindowSetup,
 } from "./security.ts";
 
@@ -163,5 +165,29 @@ describe("TC-F16-59 [AC-F16-22, AC-F16-23] no network from the small windows", (
     expect(csp).not.toContain("127.0.0.1");
     expect(csp).toContain("connect-src 'none'");
     expect(csp).toContain("media-src 'none'");
+  });
+});
+
+describe("T-fix-3 [AC-F16-22] the small session serves only the small page and its files", () => {
+  it("T-fix-3 [AC-F16-22] call-window.html and built files yes; the main app and anything else no", () => {
+    expect(smallPageAllows("app://meetapp/call-window.html")).toBe(true);
+    expect(smallPageAllows("app://meetapp/assets/call-window-abc.js")).toBe(true);
+    for (const url of [
+      "app://meetapp/index.html",
+      "app://meetapp/",
+      "app://meetapp/assets/other.html",
+      "app://meetapp/backgrounds/office.jpg",
+      "app://meetapp/assets/../index.html",
+      "not a url",
+    ])
+      expect(smallPageAllows(url)).toBe(false);
+  });
+
+  it("T-fix-3 [AC-F16-19] saved places keep only well-formed entries", () => {
+    expect(validPlaces({ ring: { x: 1, y: 2, displayId: 3 }, mini: { x: "a" }, extra: 1 })).toEqual({
+      ring: { x: 1, y: 2, displayId: 3 },
+    });
+    expect(validPlaces(null)).toEqual({});
+    expect(validPlaces({ mini: { x: 1, y: Infinity, displayId: 1 } })).toEqual({});
   });
 });

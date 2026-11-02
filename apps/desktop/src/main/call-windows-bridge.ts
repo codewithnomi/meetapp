@@ -24,11 +24,12 @@ import {
   MINI_SIZE,
   RING_SIZE,
   senderAllowed,
+  validPlaces,
   type Places,
 } from "./call-windows.ts";
 import { notifyMissed } from "./call-windows-notify.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
-import { CALL_WINDOW_PAGE, CALL_WINDOW_PARTITION, smallWindowSetup } from "./security.ts";
+import { CALL_WINDOW_PAGE, CALL_WINDOW_PARTITION, smallPageAllows, smallWindowSetup } from "./security.ts";
 
 export interface CallWindowsOptions {
   preloadPath: string;
@@ -41,10 +42,18 @@ export interface CallWindowsOptions {
 
 function readPlaces(file: string): Places {
   try {
-    const parsed = JSON.parse(readFileSync(file, "utf8")) as Places;
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
+    return validPlaces(JSON.parse(readFileSync(file, "utf8")));
   } catch {
+    // No file yet, or an unreadable one: the default corner is used.
     return {};
+  }
+}
+
+function writePlaces(file: string, places: Places): void {
+  try {
+    writeFileSync(file, JSON.stringify(places), { mode: 0o600 });
+  } catch {
+    // A full or read-only disk: the place is simply not remembered this time.
   }
 }
 
@@ -116,7 +125,7 @@ function computerFor(
       window.focus();
     },
     loadPlaces: () => readPlaces(placesFile),
-    savePlaces: (places) => writeFileSync(placesFile, JSON.stringify(places)),
+    savePlaces: (places) => writePlaces(placesFile, places),
     notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
     now: () => Date.now(),
     later: (ms, run) => void setTimeout(run, ms),
@@ -156,7 +165,8 @@ function listen(controller: CallWindowsController, mains: MainWindows): void {
 export function setUpCallWindows(options: CallWindowsOptions): { watch: (window: BrowserWindow) => void } {
   const smallSession = session.fromPartition(CALL_WINDOW_PARTITION);
   lockDownCallWindowSession(smallSession, options.devServerUrl, options.csp);
-  if (!options.devServerUrl) serveScreens(options.rendererDir, () => options.csp, smallSession.protocol);
+  if (!options.devServerUrl)
+    serveScreens(options.rendererDir, () => options.csp, smallSession.protocol, smallPageAllows);
   const mains: MainWindows = new Map();
   const controller: CallWindowsController = new CallWindowsController(computerFor(options, mains, () => controller));
   listen(controller, mains);

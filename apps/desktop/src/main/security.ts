@@ -212,3 +212,14 @@ export function smallWindowSetup(preloadPath: string, size: { width: number; hei
     showInactive: true,
   } as const;
 }
+
+/** The small windows' session serves only their own page and the built files it loads (security review). */
+export function smallPageAllows(url: string): boolean {
+  try {
+    const { pathname } = new URL(url);
+    if (pathname === `/${CALL_WINDOW_PAGE}`) return true;
+    return pathname.startsWith("/assets/") && !pathname.endsWith(".html") && !pathname.includes("..");
+  } catch {
+    return false;
+  }
+}

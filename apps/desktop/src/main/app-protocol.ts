@@ -13,9 +13,16 @@ export function registerAppScheme(): void {
   ]);
 }
 
-/** `csp` gives each page its policy (F16: the small windows' page has its own). `on` is a session's protocol. */
-export function serveScreens(rendererDir: string, csp: (url: string) => string, on: Protocol = protocol): void {
+/** `csp` gives each page its policy (F16: the small windows' page has its own). `on` is a session's protocol;
+ * `allows` limits what it serves (F16: the small session serves only the small page and its files). */
+export function serveScreens(
+  rendererDir: string,
+  csp: (url: string) => string,
+  on: Protocol = protocol,
+  allows: (url: string) => boolean = () => true,
+): void {
   on.handle(APP_SCHEME, async (request) => {
+    if (!allows(request.url)) return new Response(null, { status: 404 });
     const file = fileForAddress(rendererDir, request.url);
     if (!file) return new Response(null, { status: 400 });
     try {
