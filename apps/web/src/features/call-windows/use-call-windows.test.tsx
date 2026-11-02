@@ -159,7 +159,7 @@ describe("the main window and the small windows", () => {
     expect(controls.toggleMic).toHaveBeenCalledOnce();
   });
 
-  it("TC-F16-20 [AC-F16-10, AC-F16-12] an unanswered ring is reported as missed once; an answered one isn't", async () => {
+  it("TC-F16-20 [AC-F16-10, AC-F16-12] TC-F16-22 an unanswered ring is reported as missed once; answered, declined or cancelled ones aren't", async () => {
     show();
     await hear(RING);
     await hear({ t: "ring_stop", callId: CALL_ID, reason: "missed" });
@@ -167,8 +167,16 @@ describe("the main window and the small windows", () => {
     const missed = report.mock.calls.find(([r]) => r.missed.length === 1)?.[0].missed[0];
     expect(missed).toMatchObject({ callId: CALL_ID, from: "Omar Khan", conversationId: CHAT });
     report.mockReset();
-    await hear({ ...RING, callId: "00000000-0000-4000-8000-0000000000d2" });
-    await hear({ t: "ring_stop", callId: "00000000-0000-4000-8000-0000000000d2", reason: "accepted" });
+    // TC-F16-22: answered, declined and cancelled calls are never missed calls.
+    for (const [n, reason] of [
+      ["2", "accepted"],
+      ["3", "declined"],
+      ["4", "cancelled"],
+    ] as const) {
+      const callId = `00000000-0000-4000-8000-0000000000d${n}`;
+      await hear({ ...RING, callId });
+      await hear({ t: "ring_stop", callId, reason });
+    }
     await waitFor(() => expect(report).toHaveBeenCalled());
     expect(report.mock.calls.every(([r]) => r.missed.length === 0)).toBe(true);
   });

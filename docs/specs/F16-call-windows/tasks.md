@@ -43,7 +43,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - Video, Audio, Decline and ×; it closes when MeetApp comes forward (tone goes on), when the ring ends or the caller cancels.
   - Two callers stack; two MeetApp windows show one ring window; keyboard and Escape.
   - Covers: AC-F16-01–09, 21, 24. Tests: TC-F16-03, 05, 07, 08, 09, 10, 11, 12, 13, 19, 45, 50.
-- [ ] **T9: Missed-call notifications.**
+- [x] **T9: Missed-call notifications.**
   - Shown once per call, only when not in front at the ring's end.
   - Call back and clicking the notification work; no notification for answered, declined or cancelled calls.
   - A refused or failing notification is ignored quietly.

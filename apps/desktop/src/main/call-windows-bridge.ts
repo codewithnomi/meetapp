@@ -13,9 +13,9 @@ import {
   MINI_SIZE,
   RING_SIZE,
   senderAllowed,
-  type MissedInfo,
   type Places,
 } from "./call-windows.ts";
+import { notifyMissed } from "./call-windows-notify.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
 import { CALL_WINDOW_PAGE, CALL_WINDOW_PARTITION, smallWindowSetup } from "./security.ts";
 
@@ -67,25 +67,6 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
   };
 }
 
-function notifyMissed(missed: MissedInfo, controller: CallWindowsController): void {
-  if (!Notification.isSupported()) return;
-  const { title, body, callBack } = missed.text;
-  const notification = new Notification({ title, body, actions: [{ type: "button", text: callBack }] });
-  notification.on("click", () =>
-    controller.fromNotification({ name: "openChat", conversationId: missed.conversationId }),
-  );
-  notification.on("action", () =>
-    controller.fromNotification({
-      name: "callBack",
-      conversationId: missed.conversationId,
-      video: missed.kind === "video",
-    }),
-  );
-  // Unsigned app or notifications off (D080, AC-F16-13): nothing else happens; the chat has the note.
-  notification.on("failed", () => undefined);
-  notification.show();
-}
-
 type MainWindows = Map<number, BrowserWindow>;
 
 function computerFor(
@@ -116,7 +97,7 @@ function computerFor(
     },
     loadPlaces: () => readPlaces(placesFile),
     savePlaces: (places) => writeFileSync(placesFile, JSON.stringify(places)),
-    notify: (missed) => notifyMissed(missed, controller()),
+    notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
     now: () => Date.now(),
     later: (ms, run) => void setTimeout(run, ms),
   };
