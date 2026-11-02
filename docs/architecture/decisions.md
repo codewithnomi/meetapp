@@ -496,3 +496,10 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** a person's own extra seats don't count toward the 20 people, so without a cap one member could fill the call server's places with copies of themselves.
 - **Alternatives:** 2 seats (blocks moving the call from a second device); no cap (the flooding above).
 
+
+### D077: F14 + F15 merged with the GitHub desktop check red (owner, 2026-11-02)
+- **Date:** 2026-11-02. **Status:** accepted (owner: "Merge as is").
+- **Decision:** PR #21 is merged even though the GitHub "Desktop app tests" check is red. The verification ran in full on the owner's Mac and passed. On GitHub, 100 of 112 desktop tests pass, and each run 5–9 others time out on short waits; a different set fails each run. The backgrounds desktop test skips itself where backgrounds aren't available (GitHub has no graphics); the owner chose this.
+- **Why:** GitHub's free Linux computers are slower than the Mac. The Linux-only bugs found (share list missing the screen, sign-in key kept only in memory, sign-up limit, end-of-call timing) are fixed. What's left is timing, not broken features.
+- **Follow-up:** make the slow desktop tests wait smarter, one by one, until the GitHub check is green again (before F04's PR).
+- **Alternatives:** retry a failed desktop test once on GitHub; keep fixing before merging (several more 45-minute rounds).

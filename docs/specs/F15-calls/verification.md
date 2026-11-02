@@ -47,3 +47,6 @@ security-auditor: PASS, no Critical or High. One Low was found and fixed (a ghos
 
 ## Verdict
 **PASS.** All tests are green, every AC is met and there are no Critical or High security issues.
+
+## GitHub checks (PR #21, 2026-11-02)
+These are green: code checks, security (after the library updates), container, screenshots, and unit + integration (after the 10-second-window test fix). The desktop check stays red because of timing on GitHub's slower computers: 100 of 112 pass, and a different 5–9 time out each run. The owner chose to merge (D077). Linux-only bugs fixed in T-fix-10: the share list sometimes missed the screen; desktop tests now reset the sign-up count, sign in again after a restart, wait for a one-to-one call to end, and skip backgrounds where unavailable.
