@@ -25,7 +25,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - The action allow-list and sender check; locked-down window settings and content protection.
   - The apps/desktop/CLAUDE.md rule update (D079).
   - Covers: AC-F16-22, 25, and 23 (logs). Tests: TC-F16-51, 52, 53, 54, 55, 56, 59.
-- [ ] **T4: Electron wiring (`call-windows-bridge.ts`).**
+- [x] **T4: Electron wiring (`call-windows-bridge.ts`).**
   - Create and destroy the small windows: always on top, all Spaces and full screen, `showInactive`.
   - Track focus, minimize and hide.
   - Save places in `call-windows.json` after a drag; react to screen changes.

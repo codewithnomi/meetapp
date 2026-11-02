@@ -75,7 +75,7 @@ For each `missed` entry, main shows a notification once per `callId` (AC-24), bu
 - **Clicking it** brings the window used last to the front and opens the chat (`openChat {conversationId}`, added to the action list for main only).
 - **Call back** sends `callBack {conversationId, video}`, which the main window treats like its chat call button, including its messages when the call can't start (AC-11).
 
-macOS asks for permission with the first notification (AC-13b). A `failed` event, which happens when the app is unsigned or notifications are off, is logged once without names and otherwise ignored (AC-13).
+macOS asks for permission with the first notification (AC-13b). A `failed` event, which happens when the app is unsigned or notifications are off, is ignored (AC-13).
 
 ### 3.8 Not in screen shares (AC-25)
 Both small windows call `setContentProtection(true)` (macOS and Windows), so they are left out of any screen capture, our own share included. On Linux, where this doesn't exist, our own share picker leaves out MeetApp's small windows as window sources, and the small windows hide while the person shares a whole screen. On the owner's Mac it is also checked by hand once, with our own share and one other capture app (tests.md).

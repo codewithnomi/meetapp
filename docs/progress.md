@@ -67,7 +67,8 @@
 - **F16 T1 done** (2026-11-02): Mac notifications need real signing (D080 updated); TC-F16-28 waits for F04.
 - **F16 T2 done** (2026-11-02): `call-windows.ts` rules (show/hide with the 150 ms wait, corner, stacking, places, merging windows, action allow-list and routing, missed calls judged at the ring's end); 12 tests.
 - **F16 T3 done** (2026-11-02): small windows' own session (everything refused), own CSP (`connect-src 'none'`), own preload (`meetappCallWindow`), main bridge `callWindows`, allow-list and sender check, window setup (content protection, above full screen); desktop rules updated; 45 tests.
-- **Next step:** F16 T4 (Electron wiring, `call-windows-bridge.ts`). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
+- **F16 T4 done** (2026-11-02): `CallWindowsController` (decisions, tested with a fake computer) and `call-windows-bridge.ts` (real windows in the locked session, focus, places file, screens, notifications); 104 desktop unit tests pass, desktop build makes the new preload. A failed notification is ignored quietly (design.md updated).
+- **Next step:** F16 T5 (RingWindow and MiniCallWindow in the gallery). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

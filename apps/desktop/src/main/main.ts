@@ -3,6 +3,7 @@
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
+import { setUpCallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
@@ -63,7 +64,7 @@ function forwardLockChanges(window: BrowserWindow): void {
   });
 }
 
-function openWindow(): void {
+function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -75,6 +76,7 @@ function openWindow(): void {
   });
   window.once("ready-to-show", () => window.show());
   forwardLockChanges(window);
+  callWindows.watch(window);
   void window.loadURL(appUrl);
 }
 
@@ -103,5 +105,13 @@ void app.whenReady().then(() => {
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
   if (!settings.devServerUrl) serveScreens(settings.rendererDir, (url) => policyFor(url, csp, smallCsp));
-  openWindow();
+  openWindow(
+    setUpCallWindows({
+      preloadPath: settings.callWindowPreloadPath,
+      appUrl,
+      rendererDir: settings.rendererDir,
+      devServerUrl: settings.devServerUrl,
+      csp: smallCsp,
+    }),
+  );
 });
