@@ -6,13 +6,15 @@
 import { AppLayout, Notice, WorkspaceSwitcher, type AppNavItem, type IconName } from "@meetapp/ui";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavFolded } from "../chats/nav-folded.ts";
+import { useUnreadChats } from "../chats/use-chat-list.ts";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog.tsx";
 import { useCurrentWorkspace } from "./current-workspace.tsx";
 import type { MyWorkspace } from "./me.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
-export type AppScreen = "home" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
+export type AppScreen = "home" | "chat" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
 
 export interface WorkspaceShellProps {
   screen: AppScreen;
@@ -22,6 +24,7 @@ export interface WorkspaceShellProps {
 
 const ICONS: Record<Exclude<AppScreen, "join">, IconName> = {
   home: "home",
+  chat: "chat",
   meetings: "camera",
   people: "users",
   requests: "send",
@@ -34,8 +37,10 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
   const company = current?.kind === "company";
   // Workspace settings: the owner and admins (in Personal, its user).
   const manages = current !== undefined && current.role !== "member";
+  const unreadChats = useUnreadChats(current?.id);
   const screens: Exclude<AppScreen, "join">[] = [
     "home",
+    "chat",
     "meetings",
     ...(company ? (["people", "requests"] as const) : []),
     ...(manages ? (["workspace"] as const) : []),
@@ -48,6 +53,10 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
     current: id === screen,
     onSelect: () => onNavigate(id),
     ...(id === "requests" && current ? { badge: current.pendingRequests } : {}),
+    // Chats with unread messages (AC-F14-02).
+    ...(id === "chat"
+      ? { badge: unreadChats, badgeLabel: t("workspaces.nav.chatUnread", { count: unreadChats }) }
+      : {}),
   }));
 }
 
@@ -100,12 +109,32 @@ export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellP
   const { current, switchTo } = useCurrentWorkspace();
   const [creating, setCreating] = useState(false);
   const items = useNavItems(current, { screen, onNavigate });
+  const [folded, toggleFolded] = useNavFolded();
+  const nameOf = useWorkspaceName();
+  const name = current ? nameOf(current) : "";
   return (
     <>
       <AppLayout
         switcher={<Switcher onCreate={() => setCreating(true)} onJoin={() => onNavigate("join")} />}
         navLabel={t("workspaces.nav.label")}
         items={items}
+        fold={{
+          folded,
+          onToggle: toggleFolded,
+          foldLabel: t("workspaces.nav.fold"),
+          unfoldLabel: t("workspaces.nav.unfold"),
+          // Folded: the workspace's first letter; choosing it opens the menu with the switcher (as in Teams).
+          foldedSwitcher: (
+            <button
+              type="button"
+              aria-label={t("workspaces.nav.workspaceLetter", { name })}
+              onClick={toggleFolded}
+              className="grid size-9 place-items-center rounded-full bg-accent font-bold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            >
+              {name.slice(0, 1).toUpperCase()}
+            </button>
+          ),
+        }}
       >
         <ShellNotice />
         {children}

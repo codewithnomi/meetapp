@@ -4,6 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 
 /**
@@ -35,8 +36,42 @@ function bundledEmojiData(): Plugin {
   };
 }
 
+/**
+ * The background tool's engine (F15, D073): MediaPipe's WebAssembly files, served from the app itself
+ * (`/backgrounds/wasm/…`) so nothing is downloaded from a CDN. Taken from the installed package, so they
+ * always match its version; the model and pictures are in public/backgrounds.
+ */
+const WASM_FILES = [
+  "vision_wasm_internal.js",
+  "vision_wasm_internal.wasm",
+  "vision_wasm_nosimd_internal.js",
+  "vision_wasm_nosimd_internal.wasm",
+];
+
+function bundledBackgroundEngine(): Plugin {
+  const fromProcessors = createRequire(createRequire(import.meta.url).resolve("@livekit/track-processors"));
+  const folder = dirname(fromProcessors.resolve("@mediapipe/tasks-vision"));
+  const read = (file: string) => readFileSync(join(folder, "wasm", file));
+  const type = (file: string) => (file.endsWith(".wasm") ? "application/wasm" : "text/javascript");
+  return {
+    name: "meetapp-background-engine",
+    configureServer(server) {
+      server.middlewares.use((request, response, next) => {
+        const file = WASM_FILES.find((name) => request.url === `/backgrounds/wasm/${name}`);
+        if (!file) return next();
+        response.setHeader("content-type", type(file));
+        response.end(read(file));
+      });
+    },
+    generateBundle() {
+      for (const file of WASM_FILES)
+        this.emitFile({ type: "asset", fileName: `backgrounds/wasm/${file}`, source: read(file) });
+    },
+  };
+}
+
 export default defineConfig(({ command }) => ({
-  plugins: [react(), tailwindcss(), bundledEmojiData()],
+  plugins: [react(), tailwindcss(), bundledEmojiData(), bundledBackgroundEngine()],
   ...(command === "serve" ? { html: { cspNonce: DEV_CSP_NONCE } } : {}),
   envDir: "../..",
   server: { host: "127.0.0.1", port: 5173, strictPort: true },

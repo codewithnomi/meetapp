@@ -59,10 +59,15 @@ export const updateMeetingBodySchema = meetingOptionsSchema
   .meta({ id: "UpdateMeeting" });
 
 /** The workspace's guest switch (AC-F02-40): owner and admins. */
-/** Workspace settings: the guest switch (AC-F02-40) and the GIF switch (AC-F03-27); send either or both. */
+/** Workspace settings: the guest switch (AC-F02-40), the GIF switch (AC-F03-27) and chat with people
+ * outside the workspace (AC-F14-27); send any of them. */
 export const workspaceSettingsBodySchema = z
-  .object({ allowGuests: z.boolean().optional(), allowGifs: z.boolean().optional() })
-  .refine((body) => body.allowGuests !== undefined || body.allowGifs !== undefined, "nothing to change")
+  .object({
+    allowGuests: z.boolean().optional(),
+    allowGifs: z.boolean().optional(),
+    allowOutsideChat: z.boolean().optional(),
+  })
+  .refine((body) => Object.values(body).some((value) => value !== undefined), "nothing to change")
   .meta({ id: "WorkspaceSettings" });
 export type WorkspaceSettings = z.infer<typeof workspaceSettingsBodySchema>;
 

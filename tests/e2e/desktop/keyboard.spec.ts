@@ -3,23 +3,12 @@
 // Enter, Space, the arrow keys and Escape; the focused control always shows the focus ring. Needs the
 // backend and Mailpit, so it runs from `pnpm test`.
 import { randomUUID } from "node:crypto";
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { TEST_PASSWORD, closeApp, freshProfile, launch, launchNewAccount } from "./desktop.ts";
+import { tabTo } from "./keyboard-steps.ts";
 import { title } from "./workspace-steps.ts";
 
 const API_URL = process.env["MEETAPP_E2E_API_URL"] ?? "";
-
-/** Presses Tab until `target` has the focus (at most 40 times), then checks the focus ring shows. */
-async function tabTo(page: Page, target: Locator) {
-  for (let presses = 0; presses < 40; presses++) {
-    if (await target.evaluate((element) => element === document.activeElement)) {
-      expect(await target.evaluate((element) => element.matches(":focus-visible"))).toBe(true);
-      return;
-    }
-    await page.keyboard.press("Tab");
-  }
-  throw new Error(`Tab never reached ${String(target)}`);
-}
 
 async function signInWithKeyboard(page: Page, email: string) {
   await expect(title(page, "Sign in to MeetApp")).toBeVisible();

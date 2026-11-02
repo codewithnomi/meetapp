@@ -3,7 +3,7 @@
 import type { ChatEvent, ChatMessageView, MessageDocument } from "@meetapp/contracts";
 import type { ChatMessage } from "@meetapp/db";
 import { AppError } from "../../plugins/errors.ts";
-import { asTheyAreNow, notFound, roleOf, type CallsDeps } from "../calls/admission.ts";
+import { asTheyAreNow, meetingIdOf, notFound, roleOf, type CallsDeps } from "../calls/admission.ts";
 import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { isUsable } from "../meetings/meetings.service.ts";
 import type { ChatActionsRepository } from "./chat-actions.repository.ts";
@@ -11,6 +11,7 @@ import type { ChatFilesRepository } from "./chat-files.repository.ts";
 import type { ChatPollsRepository } from "./chat-polls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import type { ChatRepository, Cursor } from "./chat.repository.ts";
+import { meetingOf } from "./meeting-conversation.repository.ts";
 
 /** Bigger news goes out as `{ type, id, seq }` only and apps fetch the message (design 3.4). */
 export const MAX_PACKET_BYTES = 14 * 1024;
@@ -40,11 +41,12 @@ export const personKey = (attendance: { id: string; userId: string | null; guest
 export const invalid = () => new AppError(400, "CHAT_INVALID", "This message can't be sent.");
 
 /** The caller in this running call, allowed to do `action` in its chat; 404 or CHAT_OFF otherwise. */
-export async function chatActor({ calls }: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
+export async function chatActor(deps: ChatDeps, callId: string, ticketHash: string, action: ChatAction) {
+  const { calls } = deps;
   const attendance = await calls.attendances.byTicket(ticketHash);
   const present = (IN_CALL_STATUSES as readonly string[]).includes(attendance?.status ?? "");
   if (!attendance || attendance.callId !== callId || !present) throw notFound();
-  const row = await calls.meetings.find(attendance.meetingId);
+  const row = await calls.meetings.find(meetingIdOf(attendance));
   if (!row || !isUsable(row, calls.now())) throw notFound();
   const person = await asTheyAreNow(calls, row, attendance);
   const facts = {
@@ -58,7 +60,9 @@ export async function chatActor({ calls }: ChatDeps, callId: string, ticketHash:
     if (canChat(action, { ...facts, mode: "on" })) throw new AppError(403, "CHAT_OFF", "Chat is turned off.");
     throw notFound();
   }
-  return { attendance: person, row };
+  // The meeting's conversation: chat rows are read by conversation (F14 D065).
+  const conversationId = await deps.chat.conversationOf(row.meeting.workspaceId, row.meeting.id);
+  return { attendance: person, row, conversationId };
 }
 
 /** Sends news to the room; a packet too big for the call server carries only the id (design 3.4). */
@@ -88,15 +92,24 @@ const iso = (date: Date | null) => (date ? date.toISOString() : null);
 const firstLine = (message: ChatMessage) =>
   message.deletedAt ? DELETED_TEXT : ((message.plainText ?? "").split("\n")[0]?.slice(0, 200) ?? "");
 
-type Reaction = { messageId: string; attendanceId: string; emoji: string; reactorName: string };
+type Reaction = {
+  messageId: string;
+  attendanceId: string | null;
+  userId: string | null;
+  emoji: string;
+  reactorName: string;
+};
+type ReactionEntry = { names: string[]; attendanceIds: string[]; userIds: string[]; mine: boolean };
 
+/** `viewer` is the asker's join (meeting chats) or account (chats). */
 function reactionsFor(rows: Reaction[], messageId: string, viewer: string | undefined) {
-  const byEmoji = new Map<string, { names: string[]; attendanceIds: string[]; mine: boolean }>();
+  const byEmoji = new Map<string, ReactionEntry>();
   for (const row of rows.filter((reaction) => reaction.messageId === messageId)) {
-    const entry = byEmoji.get(row.emoji) ?? { names: [], attendanceIds: [], mine: false };
+    const entry = byEmoji.get(row.emoji) ?? { names: [], attendanceIds: [], userIds: [], mine: false };
     entry.names.push(row.reactorName);
-    entry.attendanceIds.push(row.attendanceId);
-    entry.mine ||= row.attendanceId === viewer;
+    if (row.attendanceId) entry.attendanceIds.push(row.attendanceId);
+    if (row.userId) entry.userIds.push(row.userId);
+    entry.mine ||= viewer !== undefined && (row.attendanceId === viewer || row.userId === viewer);
     byEmoji.set(row.emoji, entry);
   }
   return [...byEmoji].map(([emoji, entry]) => ({ emoji, count: entry.names.length, ...entry }));
@@ -147,12 +160,12 @@ function viewOf(message: ChatMessage, extras: Extras) {
 /** What apps see of these messages, for one viewer: quotes and reactions are added (AC-F03-13, 14). */
 export async function viewsOf(
   deps: ChatDeps,
-  meetingId: string,
+  conversationId: string,
   messages: ChatMessage[],
   viewer?: string,
 ): Promise<ChatMessageView[]> {
   const replyIds = [...new Set(messages.flatMap((message) => (message.replyToId ? [message.replyToId] : [])))];
-  const quoted = new Map((await deps.actions.quoted(meetingId, replyIds)).map((row) => [row.id, row]));
+  const quoted = new Map((await deps.actions.quoted(conversationId, replyIds)).map((row) => [row.id, row]));
   const ids = messages.map((message) => message.id);
   const reactions = await deps.actions.reactionsOf(ids);
   const polls = new Map((await deps.polls.byMessages(ids)).map((poll) => [poll.messageId, poll.id]));
@@ -180,32 +193,21 @@ export async function viewsOf(
 
 /** One message as apps see it. */
 export async function viewOne(deps: ChatDeps, message: ChatMessage, viewer?: string): Promise<ChatMessageView> {
-  const [view] = await viewsOf(deps, message.meetingId, [message], viewer);
+  const conversationId =
+    message.conversationId ?? (await deps.chat.conversationOf(message.workspaceId, meetingOf(message)));
+  const [view] = await viewsOf(deps, conversationId, [message], viewer);
   if (!view) throw notFound();
   return view;
 }
 
-/** The pinned messages of a meeting, oldest pin first (AC-F03-19). */
-export async function pinnedViews(deps: ChatDeps, meetingId: string, viewer?: string): Promise<ChatMessageView[]> {
-  const ids = await deps.actions.pinnedIds(meetingId);
-  const rows = await Promise.all(ids.map((id) => deps.chat.one(meetingId, id)));
+/** The pinned messages of a conversation, oldest pin first (AC-F03-19). */
+export async function pinnedViews(deps: ChatDeps, conversationId: string, viewer?: string): Promise<ChatMessageView[]> {
+  const ids = await deps.actions.pinnedIds(conversationId);
+  const rows = await Promise.all(ids.map((id) => deps.chat.one(conversationId, id)));
   return viewsOf(
     deps,
-    meetingId,
+    conversationId,
     rows.flatMap((message) => (message ? [message] : [])),
     viewer,
   );
-}
-
-/** Where a new message belongs and who sent it, as kept in the record. */
-export function sentBy({ attendance, row }: Awaited<ReturnType<typeof chatActor>>, callId: string) {
-  return {
-    workspaceId: row.meeting.workspaceId,
-    meetingId: row.meeting.id,
-    callId,
-    senderAttendanceId: attendance.id,
-    senderUserId: attendance.userId,
-    senderName: attendance.displayName,
-    senderGroup: attendance.participantGroup,
-  };
 }

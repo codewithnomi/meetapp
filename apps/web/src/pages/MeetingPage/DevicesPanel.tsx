@@ -4,6 +4,7 @@
 import { DevicePanel } from "@meetapp/ui";
 import type { Room } from "livekit-client";
 import { useTranslation } from "react-i18next";
+import { BackgroundChoice } from "../../features/devices/index.ts";
 import {
   deviceActions,
   deviceOptions,
@@ -67,6 +68,7 @@ export function DevicesPanel({ room, prefs, setPrefs, weak, onClose }: DevicesPa
         checked: prefs.noiseSuppression,
         onChange: act.noiseSuppression,
       }}
+      background={<BackgroundChoice value={prefs.background} onChange={act.background} />}
       note={weak ? { title: t("meetings.call.weakTitle"), text: t("meetings.call.weakBody") } : undefined}
     />
   );

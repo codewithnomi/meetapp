@@ -48,7 +48,8 @@ export interface ControlBarProps {
   people: PanelButton & { count: number };
   /** Meeting chat (F03): the unread count, up to 99; the label says it too ("Chat, 3 unread"). */
   chat?: (PanelButton & { unread: number }) | undefined;
-  info: PanelButton;
+  /** Meeting info; a call from a chat has none (F15). */
+  info?: PanelButton | undefined;
 }
 
 function LeaveGroup({ leave }: Pick<ControlBarProps, "leave">) {
@@ -145,7 +146,9 @@ function PanelButtons({ people, chat, info }: Pick<ControlBarProps, "people" | "
           onClick={chat.onClick}
         />
       ) : null}
-      <IconButton icon="info" variant="ghost" label={info.label} active={info.active} onClick={info.onClick} />
+      {info ? (
+        <IconButton icon="info" variant="ghost" label={info.label} active={info.active} onClick={info.onClick} />
+      ) : null}
     </div>
   );
 }

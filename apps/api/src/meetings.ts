@@ -1,6 +1,7 @@
 // Puts the meeting pieces together (F02): making and finding meetings, joining, the lobby, controls in a
 // call, the call server's reports, the record and the call jobs. Used through accounts.ts, so server.ts
 // and the integration tests run the same wiring.
+import type { RequestsDeps } from "./modules/chats/chats-requests.service.ts";
 import { hkdfSync } from "node:crypto";
 import type { Database } from "@meetapp/db";
 import { callServerUrl, type Config } from "./config/config.ts";
@@ -17,13 +18,13 @@ import { createRecordService } from "./modules/calls/record.service.ts";
 import { createRejoinService } from "./modules/calls/rejoin.service.ts";
 import { createWebhookService } from "./modules/calls/webhook.service.ts";
 import { createChatRepository } from "./modules/chat/chat.repository.ts";
-import { createChatService } from "./modules/chat/chat.service.ts";
+import { createChatService, type ChatDeps } from "./modules/chat/chat.service.ts";
 import { createChatActionsRepository } from "./modules/chat/chat-actions.repository.ts";
 import { createChatActionsService } from "./modules/chat/chat-actions.service.ts";
 import { createChatPollsRepository } from "./modules/chat/chat-polls.repository.ts";
 import { createChatPollsService } from "./modules/chat/chat-polls.service.ts";
 import { createChatAfterRepository } from "./modules/chat/chat-after.repository.ts";
-import { createChatAfterService } from "./modules/chat/chat-after.service.ts";
+import { createChatAfterService, type ChatAfterService } from "./modules/chat/chat-after.service.ts";
 import { createChatUpkeepRepository } from "./modules/chat/chat-upkeep.repository.ts";
 import { createChatUpkeepService } from "./modules/chat/chat-upkeep.service.ts";
 import { createChatFilesRepository } from "./modules/chat/chat-files.repository.ts";
@@ -35,6 +36,24 @@ import { createMeetingsRepository } from "./modules/meetings/meetings.repository
 import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
+import { createChatsRepository } from "./modules/chats/chats.repository.ts";
+import { createChatsPeopleService } from "./modules/chats/chats-people.service.ts";
+import { createChatsExtrasService } from "./modules/chats/chats-extras.service.ts";
+import { createChatsMessagesRepository } from "./modules/chats/chats-messages.repository.ts";
+import { createChatsMessagesService } from "./modules/chats/chats-messages.service.ts";
+import { createChatsGroupsRepository } from "./modules/chats/chats-groups.repository.ts";
+import { createChatsMembershipService } from "./modules/chats/chats-membership.service.ts";
+import { createChatsGroupsService } from "./modules/chats/chats-groups.service.ts";
+import { createChatsRequestsRepository } from "./modules/chats/chats-requests.repository.ts";
+import { createChatsRequestsService } from "./modules/chats/chats-requests.service.ts";
+import { createChatsService } from "./modules/chats/chats.service.ts";
+import type { ChatEvent } from "@meetapp/contracts";
+import type { Redis } from "ioredis";
+import type { Outbox } from "./emails/outbox.ts";
+import { createLivePublisher } from "./modules/chats/chats-live.ts";
+import { createPresenceStore } from "./modules/chats/chats-presence.ts";
+import { createChatsStatusService } from "./modules/chats/chats-status.service.ts";
+import { chatCallsFor } from "./chat-calls.ts";
 
 interface MeetingWiring {
   config: Config;
@@ -42,6 +61,10 @@ interface MeetingWiring {
   livekit: LiveKitProvider;
   /** Private file storage for chat files (F03). */
   storage: FileStorage;
+  /** Emails (F14: "Join me on MeetApp"). */
+  outbox: Outbox;
+  /** F14's live line shares news through Redis (D064). */
+  redis: Redis;
 }
 
 function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimiter): CallsDeps {
@@ -64,8 +87,91 @@ function callsDepsFor({ config, db, livekit }: MeetingWiring, limiter: RateLimit
 const keyFor = (config: Config, label: string) =>
   Buffer.from(hkdfSync("sha256", config.DATA_ENCRYPTION_KEY, "meetapp", label, 32)).toString("hex");
 
+/** One-to-one and group chats (F14), built on meeting chat's pieces. */
+/** What the chats services share (F14). */
+function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter">) {
+  const { db, redis } = wiring;
+  const chatsRepository = createChatsRepository(db);
+  const requestsDeps = {
+    chat: chatDeps.chat,
+    chats: chatsRepository,
+    requests: createChatsRequestsRepository(db),
+    limiter: calls.limiter,
+    now: calls.now,
+    live: createLivePublisher(redis),
+    // F15: replaced below once calls from chats are wired (AC-F15-25).
+    calls: { leftChat: () => Promise.resolve(), forgetPerson: () => Promise.resolve() } as RequestsDeps["calls"],
+  };
+  const presence = createPresenceStore(redis);
+  const status = createChatsStatusService({ ...requestsDeps, presence });
+  const messagesDeps = {
+    ...requestsDeps,
+    statuses: (viewer: string, ids: string[]) => status.visible(viewer, ids),
+    meetingChat: chatDeps,
+    messages: createChatsMessagesRepository(db),
+    // News goes out on the live line (D064); apps also catch up from the saved news.
+    publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
+  };
+  const groupsDeps = { ...requestsDeps, groups: createChatsGroupsRepository(db) };
+  return { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status };
+}
+
+function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
+  const { config, storage, outbox, redis } = wiring;
+  const { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status } = chatsDepsFor({
+    wiring,
+    calls,
+    chatDeps,
+  });
+  const callPieces = chatCallsFor({ db: wiring.db, calls, chat: chatDeps.chat, messagesDeps });
+  requestsDeps.calls.leftChat = callPieces.removal.leftChat;
+  requestsDeps.calls.forgetPerson = callPieces.removal.forgetPerson;
+  return {
+    /** Calls from chats (F15). */
+    ...callPieces,
+    /** Chats (F14): the list and starting chats; meeting chats come from F03's after-meeting rules. */
+    chats: createChatsService({
+      ...requestsDeps,
+      readableMeetings: (userId) => chatAfter.readable(userId),
+      statuses: (viewer, ids) => status.visible(viewer, ids),
+    }),
+    chatsRequests: createChatsRequestsService(requestsDeps),
+    chatsMessages: createChatsMessagesService(messagesDeps),
+    chatsExtras: createChatsExtrasService({ ...messagesDeps, storage }),
+    /** What each server's live line needs (D064). */
+    chatsStatus: status,
+    chatsLine: {
+      redis,
+      live: requestsDeps.live,
+      presence,
+      status,
+      conversationsOf: (userId: string) => chatsRepository.activeConversationIds(userId),
+      person: (userId: string) => messagesDeps.messages.person(userId),
+      /** F15: a window that opens while a call rings gets the ring too (TC-F15-44). */
+      ringsFor: (userId: string) => callPieces.rings.ringingFor(userId),
+    },
+    chatsGroups: createChatsGroupsService(groupsDeps),
+    chatsMembership: createChatsMembershipService(groupsDeps),
+    chatsPeople: createChatsPeopleService({
+      chats: chatsRepository,
+      limiter: calls.limiter,
+      outbox,
+      publicUrl: config.APP_PUBLIC_URL,
+      statuses: (viewer, ids) => status.visible(viewer, ids),
+    }),
+  };
+}
+
+interface ChatsWiring {
+  wiring: MeetingWiring;
+  calls: CallsDeps;
+  chatDeps: ChatDeps;
+  chatAfter: ChatAfterService;
+}
+
 /** Meeting chat (F03): messages, what people do to them, polls and files. */
-function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
+function chatPieces(wiring: MeetingWiring, calls: CallsDeps) {
+  const { config, db, storage } = wiring;
   const chatDeps = {
     calls,
     chat: createChatRepository(db),
@@ -76,12 +182,14 @@ function chatPieces({ config, db, storage }: MeetingWiring, calls: CallsDeps) {
     fileLinkSecret: keyFor(config, "chat-file-links-v1"),
     gifService: { apiUrl: config.GIF_API_URL, key: config.GIF_API_KEY },
   };
+  const chatAfter = createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) });
   return {
     chat: createChatService(chatDeps),
     chatActions: createChatActionsService(chatDeps),
     chatPolls: createChatPollsService(chatDeps),
     chatFiles: createChatFilesService(chatDeps, storage),
-    chatAfter: createChatAfterService({ ...chatDeps, after: createChatAfterRepository(db) }),
+    chatAfter,
+    ...chatsPieces({ wiring, calls, chatDeps, chatAfter }),
     chatUpkeep: createChatUpkeepService({ ...chatDeps, upkeep: createChatUpkeepRepository(db), storage }),
     chatDeps,
   };
@@ -116,6 +224,8 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     callsDeps,
     /** Starts the call jobs (server.ts); from then on new calls get their 30-hour jobs. */
     startCallJobs: async () => {
+      // F14 step 2 (D065): before serving, every meeting chat row gets its conversation; reads use it.
+      await chat.chatUpkeep.fillConversations();
       const started = await startCallJobs({ host: config.REDIS_HOST, port: config.REDIS_PORT }, callJobs);
       callsDeps.scheduler.schedule = started.schedule;
       return started;

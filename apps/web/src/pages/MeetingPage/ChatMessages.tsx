@@ -2,7 +2,8 @@
 // reply, and the More menu with Edit, Copy text, Pin and Delete for those allowed), polls drawn as
 // poll cards, and messages being sent with "Not sent" and Retry.
 import type { ChatMessageView } from "@meetapp/contracts";
-import { ChatMessage, EmojiPicker, MessageActions, SystemNote, type MenuAction } from "@meetapp/ui";
+import { CallNote, ChatMessage, EmojiPicker, MessageActions, SystemNote, type MenuAction } from "@meetapp/ui";
+import { callNoteText, useCallNoteActions } from "../../features/calls/index.ts";
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,19 +78,15 @@ function Actions({
   const { t } = useTranslation();
   const react = (emoji: string) => () => reactWith(view, message, emoji);
   const more = moreActions(t, view, message, own);
+  const label = own ? t("meetings.chat.actions.labelOwn") : t("meetings.chat.actions.label", { name });
   if (view.readOnly) {
     return more.length > 0 ? (
-      <MessageActions
-        label={t("meetings.chat.actions.label", { name })}
-        quickReactions={[]}
-        moreLabel={t("meetings.chat.actions.more")}
-        more={more}
-      />
+      <MessageActions label={label} quickReactions={[]} moreLabel={t("meetings.chat.actions.more")} more={more} />
     ) : null;
   }
   return (
     <MessageActions
-      label={t("meetings.chat.actions.label", { name })}
+      label={label}
       quickReactions={QUICK.map(([emoji, key]) => ({
         emoji,
         label: t(`meetings.chat.actions.react.${key}`),
@@ -127,9 +124,39 @@ interface MessageProps {
   continued?: boolean;
 }
 
+/** F15: a call note ("started a call" with Join, "Call ended", "Missed call" with Call back). */
+function CallNoteOf({ message }: { message: ChatMessageView }) {
+  const { t } = useTranslation();
+  const actions = useCallNoteActions();
+  const system = message.system;
+  const text = system ? callNoteText(t, system) : undefined;
+  if (!system || !text) return null;
+  const running =
+    system.event === "call_started" && system.callId !== undefined && system.callId === actions?.runningCallId;
+  if (system.event === "call_started") {
+    const join =
+      running && actions && system.callId
+        ? { label: t("calls.buttons.join"), onClick: () => actions.join(system.callId ?? "") }
+        : undefined;
+    return <CallNote kind={running ? "running" : "ended"} text={text} action={join} />;
+  }
+  if (system.event === "call_missed") {
+    const back = actions ? { label: t("calls.buttons.callBack"), onClick: actions.callBack } : undefined;
+    return <CallNote kind="missed" text={text} detail={timeOf(message.createdAt)} action={back} />;
+  }
+  return <CallNote kind="ended" text={text} />;
+}
+
+const timeOf = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const CALL_NOTES = new Set(["call_started", "call_ended", "call_missed"]);
+
 export function Message(props: MessageProps) {
   const { t } = useTranslation();
-  if (props.message.kind === "system") return <SystemNote text={noteText(t, props.message)} />;
+  if (props.message.kind === "system") {
+    if (CALL_NOTES.has(props.message.system?.event ?? "")) return <CallNoteOf message={props.message} />;
+    return <SystemNote text={noteText(t, props.message)} />;
+  }
   return <PersonMessage {...props} />;
 }
 

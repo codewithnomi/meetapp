@@ -13,28 +13,14 @@ import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { ticketOf } from "../../plugins/meeting-ticket.ts";
 import { idParam } from "../../plugins/workspace-access.ts";
 import { chatRoute } from "./chat-route.ts";
-import { MAX_FILE_BYTES, type ChatFilesService } from "./chat-files.service.ts";
-
-/** One byte over the limit still reaches the checker, which answers CHAT_FILE_TOO_BIG. */
-const BODY_LIMIT = MAX_FILE_BYTES + 1;
-
-function fileNameOf(header: unknown): string {
-  if (typeof header !== "string") return "file";
-  try {
-    return decodeURIComponent(header);
-  } catch {
-    return "file";
-  }
-}
+import type { ChatFilesService } from "./chat-files.service.ts";
+import { BODY_LIMIT, fileNameOf, rawBodies } from "./upload-body.ts";
 
 /** `attachment; filename*=UTF-8''…`: the browser always saves, never shows (RFC 6266). */
 const attachmentHeader = (fileName: string) => `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`;
 
 const uploads: FastifyPluginAsyncZod<{ files: ChatFilesService }> = async (app, { files }) => {
-  app.removeAllContentTypeParsers();
-  app.addContentTypeParser("*", { parseAs: "buffer", bodyLimit: BODY_LIMIT }, (_request, body, done) => {
-    done(null, body);
-  });
+  rawBodies(app);
   app.post(
     "/api/v1/calls/:callId/chat/attachments",
     {

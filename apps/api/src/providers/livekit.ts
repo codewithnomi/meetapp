@@ -81,13 +81,13 @@ export function createLiveKitProvider(config: Config) {
     ping: async () => {
       await rooms.listRooms();
     },
-    /** Makes the room if it doesn't exist; LiveKit returns the existing one otherwise. */
-    ensureRoom: (room: string, metadata: string) =>
+    /** Makes the room if it doesn't exist; LiveKit returns the existing one otherwise. Chat calls cap it at 25 (F15). */
+    ensureRoom: (room: string, metadata: string, maxParticipants = MAX_PARTICIPANTS) =>
       rooms.createRoom({
         name: room,
         emptyTimeout: EMPTY_ROOM_SECONDS,
         departureTimeout: EMPTY_ROOM_SECONDS,
-        maxParticipants: MAX_PARTICIPANTS,
+        maxParticipants,
         metadata,
       }),
     pass: (request: PassRequest) => issuePass(config, request),

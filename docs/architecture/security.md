@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-09
+updated: 2026-10-28
 ---
 
 # Security Rules (Baseline)
@@ -12,8 +12,8 @@ Every feature's requirements must include a "Security & privacy" section.
 - S1. Every request is checked **on the server**: is this user logged in, and allowed to see or do this?
 - S2. Workspaces are fully separated. A user never sees another workspace's meetings, chats, transcripts or AI answers.
 - S3. Meeting links are long and random (not guessable). Hosts can lock a meeting or use a waiting room.
-- S4. Call-server (LiveKit) tokens are valid for one meeting only, with minimum rights and a short lifetime.
-- S5. Rate limits on login, sign-up, meeting creation and AI questions.
+- S4. Call-server (LiveKit) tokens are valid for one call only (a meeting's or a chat's), with minimum rights and a short lifetime.
+- S5. Rate limits on login, sign-up, meeting creation and AI questions. Chats (F14): 10 messages in 10 seconds per person, 10 files a minute, 20 chat requests and 20 "Join me on MeetApp" emails a day, 30 email lookups a minute in New chat, 10 messages while a request waits, 10 typing signals in 10 seconds and at most 5 live lines per person (a 6th closes the oldest), 64 KB per live-line message. Calls from chats (F15): 10 call starts, joins, accepts, transfers and people rung by Add people a minute per person (`CALL_RATE`, 429 with the wait); at most 3 seats (devices) per person in one call (`CALL_DEVICES`).
 
 ## Data
 - S6. All traffic is encrypted (HTTPS/WSS; calls use encrypted WebRTC).
@@ -33,7 +33,7 @@ Every feature's requirements must include a "Security & privacy" section.
 - S16. Only the minimum necessary data is sent to AI services.
 
 ## Desktop app (Electron)
-- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only).
+- S17. Context isolation on, Node integration off, sandbox on. The security policy names every outside address the app may reach (F03: KLIPY for GIFs only). Scripts load only from the app; JavaScript `eval` is never allowed. Only the app's own WebAssembly may run (`'wasm-unsafe-eval'`, F15 D073, owner 2026-10-27: the background tool's engine, shipped with the app).
 - S18. Auto-updates are signed and verified.
 
 ## Code & dependencies

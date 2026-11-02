@@ -12,6 +12,10 @@ import { CurrentWorkspaceProvider, useCurrentWorkspace, type AppScreen } from ".
 import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
+import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
+import { LiveLineProvider } from "../features/chats/index.ts";
+import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
+import { ChatsPage } from "../pages/ChatsPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
 import {
   meetingErrorText,
@@ -31,11 +35,10 @@ import { NewPasswordPage } from "../pages/NewPasswordPage/index.ts";
 import { PeoplePage } from "../pages/PeoplePage/index.ts";
 import { WorkspaceSettingsPage } from "../pages/WorkspaceSettingsPage/index.ts";
 import { PreJoinPage } from "../pages/PreJoinPage/index.ts";
-import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { RequestsPage } from "../pages/RequestsPage/index.ts";
-import { SettingsPage } from "../pages/SettingsPage/index.ts";
 import { SignInPage } from "../pages/SignInPage/index.ts";
 import { TermsPage } from "../pages/TermsPage/index.ts";
+import { settingsRoutes } from "./settings-routes.tsx";
 
 /** After a screen change, keyboard and screen-reader users land on the new screen's title. */
 function useFocusOnScreenChange(): void {
@@ -187,6 +190,7 @@ function SignedOutRoutes() {
 
 const PATHS: Record<AppScreen, string> = {
   home: "/",
+  chat: "/chat",
   meetings: "/meetings",
   people: "/people",
   requests: "/requests",
@@ -208,11 +212,21 @@ function SignedInScreens() {
   const go = (screen: AppScreen) => void navigate(PATHS[screen]);
   const home = () => go("home");
   const settings = (screen: SettingsScreen) =>
-    void navigate(screen === "profile" ? "/settings" : "/settings/appearance");
+    void navigate(screen === "profile" ? "/settings" : `/settings/${screen}`);
   const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
+      <Route path="/chat" element={<ChatsPage onNavigate={go} />} />
+      <Route
+        path="/call"
+        element={
+          <ChatCallPage
+            onBackToChat={() => void navigate("/chat")}
+            onOutcome={(outcome) => void navigate("/meeting/ended", { state: outcome })}
+          />
+        }
+      />
       <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
       {meetingRoutes({ ...MEMBER_PLACES, userName: user?.name })}
       <Route
@@ -233,10 +247,21 @@ function SignedInScreens() {
       />
       <Route path="/workspace-settings" element={<WorkspaceSettingsPage onNavigate={go} />} />
       <Route path="/join" element={<JoinWorkspacePage onBack={home} />} />
-      <Route path="/settings" element={<ProfilePage onNavigate={settings} onBack={home} />} />
-      <Route path="/settings/appearance" element={<SettingsPage onNavigate={settings} onBack={home} />} />
+      {settingsRoutes(settings, home)}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+  );
+}
+
+/** A call rings on every screen (AC-F15-05), and a call on another device shows (AC-F15-33). */
+function Ringing() {
+  const navigate = useNavigate();
+  const toCall = () => void navigate("/call");
+  return (
+    <>
+      <IncomingCalls onAccepted={toCall} />
+      <OtherDevice onEntered={toCall} />
+    </>
   );
 }
 
@@ -245,7 +270,11 @@ function SignedInRoutes() {
   useAccountLook(user);
   return (
     <CurrentWorkspaceProvider>
-      <SignedInScreens />
+      {/* One live line while signed in (F14, D064). */}
+      <LiveLineProvider>
+        <Ringing />
+        <SignedInScreens />
+      </LiveLineProvider>
     </CurrentWorkspaceProvider>
   );
 }
@@ -254,8 +283,11 @@ export function AppRoutes() {
   const session = useSession();
   useFocusOnScreenChange();
   if (session.isPending) return <Waiting />;
-  if (session.isError) return <Unreachable code={session.error.code} onRetry={() => void session.refetch()} />;
-  if (session.data === null) return <SignedOutRoutes />;
+  // Only when it was never known who is signed in: a failed check in the background (a window getting
+  // focus on a busy computer) keeps the app as it is instead of rebuilding every screen.
+  if (session.isError && session.data === undefined)
+    return <Unreachable code={session.error.code} onRetry={() => void session.refetch()} />;
+  if (!session.data) return <SignedOutRoutes />;
   if (!session.data.termsAccepted) return <TermsPage />;
   return <SignedInRoutes />;
 }

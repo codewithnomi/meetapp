@@ -1,12 +1,10 @@
-// Chat requests (F03 design.md section 8): during a call each carries the meeting ticket; after the
-// meeting, reading (and organizers' Delete) goes through the signed-in meeting routes.
+// Chat requests (F03 design.md section 8; F14): during a call each carries the meeting ticket; after the
+// meeting, reading (and organizers' Delete) goes through the signed-in meeting routes; one-to-one and
+// group chats go through the signed-in conversation routes. Each is a "place".
 import type { ChatEvent, ChatMessageView, MessageDocument, PollView, RecentMeetingChats } from "@meetapp/contracts";
 import { apiRequest } from "../../api/index.ts";
 import type { Outgoing } from "./chat-state.ts";
 import type { Joined } from "../visit.ts";
-
-const base = (visit: Joined) => `/api/v1/calls/${visit.call?.callId ?? ""}/chat`;
-const headers = (visit: Joined) => ({ "x-meeting-ticket": visit.ticket });
 
 /** Where reading requests go: a running call (with the ticket) or a past meeting (signed in). */
 export interface ChatPlace {
@@ -16,17 +14,26 @@ export interface ChatPlace {
   attendanceId?: string | undefined;
   /** The running call (during a call): own messages from it can be edited or deleted. */
   callId?: string | undefined;
+  /** F14 chats: the viewer's account, to show "You" and their own reactions. */
+  userId?: string | undefined;
 }
 
 export const callPlace = (visit: Joined): ChatPlace => ({
-  path: base(visit),
-  headers: headers(visit),
+  path: `/api/v1/calls/${visit.call?.callId ?? ""}/chat`,
+  headers: { "x-meeting-ticket": visit.ticket },
   attendanceId: visit.attendanceId,
   callId: visit.call?.callId,
 });
 export const pastPlace = (meetingId: string): ChatPlace => ({
   path: `/api/v1/meetings/${meetingId}/chat`,
   headers: {},
+});
+
+/** A one-to-one or group chat (F14): signed-in routes, the viewer known by their account. */
+export const conversationPlace = (conversationId: string, userId: string): ChatPlace => ({
+  path: `/api/v1/conversations/${conversationId}`,
+  headers: {},
+  userId,
 });
 
 /** Past meetings whose chat the viewer may open (AC-F03-42). */
@@ -46,21 +53,21 @@ export function messagesPage(place: ChatPlace, before?: string): Promise<Message
   return apiRequest(`${place.path}/messages${query}`, { headers: place.headers });
 }
 
-export function oneMessage(visit: Joined, id: string): Promise<ChatMessageView> {
-  return apiRequest(`${base(visit)}/messages/${id}`, { headers: headers(visit) });
+export function oneMessage(place: ChatPlace, id: string): Promise<ChatMessageView> {
+  return apiRequest(`${place.path}/messages/${id}`, { headers: place.headers });
 }
 
 /** Missed news after a reconnect (design 3.4). */
-export function eventsAfter(visit: Joined, after: number): Promise<{ events: ChatEvent[]; gap: boolean }> {
-  return apiRequest(`${base(visit)}/events?after=${String(after)}`, { headers: headers(visit) });
+export function eventsAfter(place: ChatPlace, after: number): Promise<{ events: ChatEvent[]; gap: boolean }> {
+  return apiRequest(`${place.path}/events?after=${String(after)}`, { headers: place.headers });
 }
 
 /** Sends a message; the same `clientId` again never makes a second one (AC-F03-05). */
 export function sendMessage(
-  visit: Joined,
+  place: ChatPlace,
   message: Outgoing & { clientId: string; replyToId?: string | undefined },
 ): Promise<ChatMessageView> {
-  return apiRequest(`${base(visit)}/messages`, { method: "POST", body: message, headers: headers(visit) });
+  return apiRequest(`${place.path}/messages`, { method: "POST", body: message, headers: place.headers });
 }
 
 /** Adds or takes back the viewer's reaction (AC-F03-13). */
@@ -71,15 +78,15 @@ export function setReaction(place: ChatPlace, messageId: string, emoji: string, 
     : apiRequest(`${url}/${encodeURIComponent(emoji)}`, { method: "DELETE", headers: place.headers });
 }
 
-const json = (visit: Joined | ChatPlace, method: "POST" | "PATCH" | "PUT" | "DELETE", body?: unknown) => ({
+const json = (place: ChatPlace, method: "POST" | "PATCH" | "PUT" | "DELETE", body?: unknown) => ({
   method,
-  headers: "path" in visit ? visit.headers : headers(visit),
+  headers: place.headers,
   ...(body === undefined ? {} : { body }),
 });
 
 /** Edit or delete a message (AC-F03-10, 11). */
-export function editMessage(visit: Joined, id: string, body: MessageDocument): Promise<ChatMessageView> {
-  return apiRequest(`${base(visit)}/messages/${id}`, json(visit, "PATCH", { body }));
+export function editMessage(place: ChatPlace, id: string, body: MessageDocument): Promise<ChatMessageView> {
+  return apiRequest(`${place.path}/messages/${id}`, json(place, "PATCH", { body }));
 }
 export function deleteMessage(place: ChatPlace, id: string): Promise<undefined> {
   return apiRequest(`${place.path}/messages/${id}`, json(place, "DELETE"));
@@ -93,8 +100,8 @@ export function setPinned(place: ChatPlace, messageId: string, pinned: boolean):
 }
 
 /** Polls (AC-F03-21–23). */
-export function createPoll(visit: Joined, poll: NewPollInput): Promise<PollView> {
-  return apiRequest(`${base(visit)}/polls`, json(visit, "POST", { clientId: crypto.randomUUID(), ...poll }));
+export function createPoll(place: ChatPlace, poll: NewPollInput): Promise<PollView> {
+  return apiRequest(`${place.path}/polls`, json(place, "POST", { clientId: crypto.randomUUID(), ...poll }));
 }
 export function pollOf(place: ChatPlace, pollId: string): Promise<PollView> {
   return apiRequest(`${place.path}/polls/${pollId}`, { headers: place.headers });

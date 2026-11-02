@@ -2,11 +2,13 @@
 // took part (members and external people) and weren't removed read it, read-only. When the latest call
 // ended with chat "In-meeting only", only the organizer and co-organizers read it. Guests never do.
 import { notFound, asTheyAreNow, roleOf } from "../calls/admission.ts";
+import { IN_CALL_STATUSES } from "../calls/calls.repository.ts";
 import { canChat, type ChatAction } from "./chat.permissions.ts";
 import { parseCursor, pinnedViews, viewsOf, type ChatDeps } from "./chat-access.ts";
 import type { ChatAfterRepository } from "./chat-after.repository.ts";
 import { linkTo } from "./chat-files.service.ts";
 import { viewPoll } from "./chat-polls.service.ts";
+import { joinSeat } from "./chat-seat.ts";
 import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES } from "../../plugins/rate-limit.ts";
 
@@ -35,13 +37,14 @@ async function afterActor(deps: AfterDeps, userId: string, meetingId: string, ac
     callRunning: false,
   };
   if (!canChat(action, facts)) throw notFound();
-  return { attendance: person, row };
+  const conversationId = await deps.chat.conversationOf(row.meeting.workspaceId, meetingId);
+  return { attendance: person, row, conversationId };
 }
 
 /** Chat text for the AI features (F06, F07): only where the person may read, and marked as data (S14). */
 async function chatForAi(deps: AfterDeps, userId: string, meetingId: string) {
-  await afterActor(deps, userId, meetingId, "read");
-  const rows = await deps.chat.page(meetingId, 5000);
+  const { conversationId } = await afterActor(deps, userId, meetingId, "read");
+  const rows = await deps.chat.page(conversationId, 5000);
   const lines = rows
     .filter((message) => !message.deletedAt && (message.plainText ?? "") !== "")
     .reverse()
@@ -57,6 +60,35 @@ async function chatForAi(deps: AfterDeps, userId: string, meetingId: string) {
   };
 }
 
+/** How many of a person's meetings the chat list looks at (F14 AC-F14-28). */
+const LIST_LOOKED_AT = 200;
+
+/**
+ * Meetings whose chat this person may read now, for the chat list (F14 AC-F14-28): a running call they
+ * are in, or a past meeting under F03's after-meeting rules (AC-F03-42). No rate limit: it is the list.
+ */
+async function readable(deps: AfterDeps, userId: string) {
+  const joined = await deps.after.meetingsJoinedBy(userId, LIST_LOOKED_AT);
+  const meetings: { id: string; workspaceId: string; title: string; live: boolean }[] = [];
+  for (const { meetingId } of joined) {
+    // Chat calls (F15) belong to a chat, not a meeting.
+    if (!meetingId) continue;
+    const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
+    if (allowed) {
+      const { meeting } = allowed.row;
+      meetings.push({ id: meeting.id, workspaceId: meeting.workspaceId, title: meeting.title, live: false });
+      continue;
+    }
+    // During the call: in it now (F03 AC-F03-02).
+    const [latest] = await deps.after.joinsOf(meetingId, userId);
+    if (!latest || !(IN_CALL_STATUSES as readonly string[]).includes(latest.status)) continue;
+    const row = await deps.calls.meetings.find(meetingId);
+    if (row)
+      meetings.push({ id: meetingId, workspaceId: row.meeting.workspaceId, title: row.meeting.title, live: true });
+  }
+  return meetings;
+}
+
 /** Past meetings whose chat this person may open now, most recent first (AC-F03-42). */
 async function recent(deps: AfterDeps, userId: string) {
   const wait = await deps.calls.limiter.take(RATE_RULES.recentMeetingChats, userId);
@@ -65,6 +97,7 @@ async function recent(deps: AfterDeps, userId: string) {
   const meetings = [];
   for (const { meetingId, lastJoinedAt } of joined) {
     if (meetings.length === RECENT_SHOWN) break;
+    if (!meetingId) continue;
     // A meeting the person may no longer read is simply left out of the list (not an error).
     const allowed = await afterActor(deps, userId, meetingId, "read").catch(() => undefined);
     if (!allowed || !lastJoinedAt) continue;
@@ -83,31 +116,35 @@ async function recent(deps: AfterDeps, userId: string) {
 export function createChatAfterService(deps: AfterDeps) {
   return {
     page: async (userId: string, meetingId: string, query: { before?: string | undefined; limit: number }) => {
-      const { attendance } = await afterActor(deps, userId, meetingId, "read");
-      const rows = await deps.chat.page(meetingId, query.limit + 1, parseCursor(query.before));
-      const messages = await viewsOf(deps, meetingId, rows.slice(0, query.limit), attendance.id);
+      const { attendance, conversationId } = await afterActor(deps, userId, meetingId, "read");
+      const rows = await deps.chat.page(conversationId, query.limit + 1, parseCursor(query.before));
+      const messages = await viewsOf(deps, conversationId, rows.slice(0, query.limit), attendance.id);
       const hasMore = rows.length > query.limit;
       if (query.before) return { messages, hasMore };
-      return { messages, hasMore, pinned: await pinnedViews(deps, meetingId, attendance.id) };
+      return { messages, hasMore, pinned: await pinnedViews(deps, conversationId, attendance.id) };
     },
     /** A 5-minute download link, as during the call (AC-F03-31, 42). */
     link: async (userId: string, meetingId: string, attachmentId: string, preview: boolean) => {
-      await afterActor(deps, userId, meetingId, "download");
-      return linkTo(deps, meetingId, attachmentId, preview);
+      const { conversationId } = await afterActor(deps, userId, meetingId, "download");
+      return linkTo(deps, conversationId, attachmentId, preview);
     },
     /** Organizers and co-organizers may still remove a message afterwards (AC-F03-11). */
     delete: async (userId: string, meetingId: string, messageId: string) => {
-      const { attendance } = await afterActor(deps, userId, meetingId, "deleteAny");
-      if (!(await deps.actions.delete(meetingId, messageId, attendance.id))) throw notFound();
+      const { attendance, conversationId } = await afterActor(deps, userId, meetingId, "deleteAny");
+      const by = { attendanceId: attendance.id, userId: null };
+      if (!(await deps.actions.delete(conversationId, messageId, by))) throw notFound();
     },
     /** A poll's final result, as the person may see it (AC-F03-23, 42). */
     poll: async (userId: string, meetingId: string, pollId: string) => {
       const actor = await afterActor(deps, userId, meetingId, "read");
-      const poll = await deps.polls.byId(meetingId, pollId);
+      const poll = await deps.polls.byId(actor.conversationId, pollId);
       if (!poll) throw notFound();
-      return viewPoll(deps, poll, actor);
+      const no = () => Promise.resolve(false);
+      const seat = joinSeat(actor, { callId: null, mayDeleteAny: no, mayAttach: no, deliver: () => Promise.resolve() });
+      return viewPoll(deps, poll, seat);
     },
     recent: (userId: string) => recent(deps, userId),
+    readable: (userId: string) => readable(deps, userId),
     chatForAi: (userId: string, meetingId: string) => chatForAi(deps, userId, meetingId),
   };
 }

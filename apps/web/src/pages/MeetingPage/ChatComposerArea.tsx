@@ -2,7 +2,7 @@
 // box with the message and Save replaces it; the poll button opens "Create a poll" for those allowed;
 // "sending too fast" is said in words (AC-F03-06, 10, 14, 21).
 import type { ChatMessageView, MessageDocument } from "@meetapp/contracts";
-import { ChatComposer, IconButton, PollCreator, ReplyQuote } from "@meetapp/ui";
+import { ChatComposer, IconButton, PollCreator, ReplyQuote, type ChatComposerProps } from "@meetapp/ui";
 import { composerLabels, pollLabels } from "./chat-labels.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ToolButtons, WaitingFiles, useExpressions } from "./ChatTools.tsx";
@@ -11,9 +11,9 @@ import { useTranslation } from "react-i18next";
 import { createPoll, editMessage, type Outgoing, type UploadProblem } from "../../features/meetings/chat/index.ts";
 import { firstLineOf } from "./chat-texts.ts";
 import type { ChatView } from "./ChatMessages.tsx";
-import type { Joined } from "../../features/meetings/index.ts";
+import type { ChatPlace } from "../../features/meetings/chat/index.ts";
 
-function PollButton({ visit, onFailed }: { visit: Joined; onFailed: () => void }) {
+function PollButton({ place, onFailed }: { place: ChatPlace; onFailed: () => void }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -34,7 +34,7 @@ function PollButton({ visit, onFailed }: { visit: Joined; onFailed: () => void }
         labels={labels}
         onPost={(poll) => {
           setBusy(true);
-          void createPoll(visit, poll)
+          void createPoll(place, poll)
             .then(() => setOpen(false), onFailed)
             .finally(() => setBusy(false));
         }}
@@ -45,7 +45,13 @@ function PollButton({ visit, onFailed }: { visit: Joined; onFailed: () => void }
 
 export interface ComposerAreaProps {
   view: ChatView;
-  visit: Joined;
+  place: ChatPlace;
+  /** Instead of "Message everyone" (F14 chats: "Message <name>"). */
+  placeholder?: string | undefined;
+  /** F14: @mentions of the chat's members, and telling others that one is typing. */
+  mentions?: ChatComposerProps["mentions"];
+  onTyping?: (() => void) | undefined;
+  focusOnOpen?: boolean | undefined;
   attachments: Attachments;
   replyingTo: ChatMessageView | undefined;
   editing: ChatMessageView | undefined;
@@ -105,9 +111,9 @@ function Above({ props }: { props: ComposerAreaProps }) {
 }
 
 /** Saves an edit, or sends the text with the files waiting (AC-F03-10, 28). */
-function sendFrom({ view, visit, attachments, replyingTo, editing }: ComposerAreaProps, body: MessageDocument) {
+function sendFrom({ view, place, attachments, replyingTo, editing }: ComposerAreaProps, body: MessageDocument) {
   if (editing) {
-    void editMessage(visit, editing.id, body).catch(view.onFailed);
+    void editMessage(place, editing.id, body).catch(view.onFailed);
     return;
   }
   const attachmentIds = attachments.readyIds;
@@ -121,18 +127,18 @@ function sendFrom({ view, visit, attachments, replyingTo, editing }: ComposerAre
 
 export function ComposerArea(props: ComposerAreaProps) {
   const { t } = useTranslation();
-  const { view, visit, attachments, replyingTo, editing, onDone } = props;
+  const { view, place, attachments, replyingTo, editing, onDone } = props;
   // A GIF or sticker goes at once, with the reply if replying.
-  const expressions = useExpressions(visit, (content: Outgoing) => {
+  const expressions = useExpressions(place, (content: Outgoing) => {
     view.chat.send(content, undefined, replyingTo?.id);
     onDone();
   });
-  const labels = composerLabels(t);
+  const labels = { ...composerLabels(t), ...(props.placeholder ? { placeholder: props.placeholder } : {}) };
   const send = (body: MessageDocument) => (sendFrom(props, body), onDone());
   const tools = (
     <>
       <ToolButtons canAttach={view.rights.attach} onFiles={attachments.add} />
-      {view.rights.createPoll ? <PollButton visit={visit} onFailed={view.onFailed} /> : null}
+      {view.rights.createPoll ? <PollButton place={place} onFailed={view.onFailed} /> : null}
     </>
   );
   return (
@@ -149,6 +155,10 @@ export function ComposerArea(props: ComposerAreaProps) {
         onEscape={(editing ?? replyingTo) ? onDone : undefined}
         onPasteFiles={view.rights.attach ? attachments.add : undefined}
         above={<Above props={props} />}
+        mentions={props.mentions}
+        onTyping={props.onTyping}
+        focusOnOpen={props.focusOnOpen}
+        focusWhen={replyingTo?.id}
         tools={tools}
         expressions={expressions}
       />

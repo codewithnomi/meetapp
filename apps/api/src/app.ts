@@ -20,6 +20,15 @@ import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
 import { chatAfterRoutes } from "./modules/chat/chat-after.routes.ts";
+import { chatsLineRoutes, registerWebSockets } from "./modules/chats/chats-line.routes.ts";
+import { chatsExtrasRoutes } from "./modules/chats/chats-extras.routes.ts";
+import { chatsMessagesRoutes } from "./modules/chats/chats-messages.routes.ts";
+import { chatCallsRoutes } from "./modules/calls/chat-calls.routes.ts";
+import { ringRoutes } from "./modules/calls/ring.routes.ts";
+import { transferRoutes } from "./modules/calls/transfer.routes.ts";
+import { chatsGroupsRoutes } from "./modules/chats/chats-groups.routes.ts";
+import { chatsRequestsRoutes } from "./modules/chats/chats-requests.routes.ts";
+import { chatsRoutes } from "./modules/chats/chats.routes.ts";
 import { chatFilesRoutes } from "./modules/chat/chat-files.routes.ts";
 import { chatPollsRoutes } from "./modules/chat/chat-polls.routes.ts";
 import { chatRoutes } from "./modules/chat/chat.routes.ts";
@@ -86,6 +95,8 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     requestIdHeader: false,
   });
 
+  // First, so every route sees WebSocket upgrades (F14 live line, D064).
+  await registerWebSockets(app);
   recordRoutes(app);
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
@@ -103,12 +114,20 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
   });
   // After CORS, so a 401 still carries its CORS headers and the app can read "signed out" (T8).
-  registerSessionCheck(app, options.accounts ? authSessionReader(options.accounts.auth) : undefined);
+  const sessions = options.accounts ? authSessionReader(options.accounts.auth) : undefined;
+  registerSessionCheck(app, sessions);
   if (config.NODE_ENV === "development") await registerDocs(app);
 
   await app.register(healthRoutes, { health: createHealthService(options.healthChecks ?? {}) });
   await app.register(flagsRoutes, { flags: createFlagsService(options.flags ?? NO_FLAGS) });
   if (options.accounts) await registerAccountRoutes(app, config, options.accounts);
+  if (options.accounts && sessions)
+    await app.register(chatsLineRoutes, {
+      line: options.accounts.chatsLine,
+      sessions,
+      status: options.accounts.chatsStatus,
+      allowedOrigins: ALLOWED_ORIGINS,
+    });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }
@@ -155,4 +174,18 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(chatPollsRoutes, { polls: chatPolls });
   await app.register(chatFilesRoutes, { files: chatFiles });
   await app.register(chatAfterRoutes, { after: chatAfter });
+  await registerChatsRoutes(app, accounts);
+}
+
+/** One-to-one and group chats (F14). */
+async function registerChatsRoutes(app: FastifyInstance, accounts: Accounts): Promise<void> {
+  const { chats, chatsPeople, chatsRequests, chatsGroups, chatsMessages, chatsExtras, membershipLookup } = accounts;
+  await app.register(chatsRoutes, { chats, people: chatsPeople, lookup: membershipLookup });
+  await app.register(chatsRequestsRoutes, { requests: chatsRequests });
+  await app.register(chatsGroupsRoutes, { groups: chatsGroups });
+  await app.register(chatsMessagesRoutes, { messages: chatsMessages });
+  await app.register(chatCallsRoutes, { chatCalls: accounts.chatCalls });
+  await app.register(ringRoutes, { rings: accounts.rings });
+  await app.register(transferRoutes, { transfers: accounts.transfers });
+  await app.register(chatsExtrasRoutes, { extras: chatsExtras });
 }

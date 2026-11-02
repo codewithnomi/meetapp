@@ -9,6 +9,9 @@ overrides:
   typescript: "npm:@typescript/typescript6@6.0.2"
   # Security fix (2 critical advisories) for a library inside eslint-plugin-boundaries (D040).
   handlebars: ">=4.7.10"
+  # Security fixes (DoS, cache poisoning) for undici inside jsdom and @electron/get (2026-11-01).
+  "undici@7": ">=7.30.1 <8"
+  "undici@8": ">=8.12.2 <9"
 
 # Packages allowed to run install scripts. Electron's downloads its app binary (F00 T15).
 onlyBuiltDependencies:

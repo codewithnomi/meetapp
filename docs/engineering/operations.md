@@ -1,6 +1,6 @@
 ---
 status: draft
-updated: 2026-10-11
+updated: 2026-10-28
 ---
 
 # Running in Production (Operations)
@@ -30,6 +30,10 @@ Locally this runs as a Docker **"monitoring" profile**: `pnpm monitoring` starts
 **Background work for meetings (F02):** the same BullMQ queue runs, inside the API process: a clean-up every minute that ends calls whose room is gone, removes from the call server anyone the backend didn't let in, frees the places of people marked inside who aren't there (lost reports, or let in but never connected within a minute), and times out lobby waits after 30 minutes; two jobs per call at 29 h 50 min ("ends in 10 minutes") and 30 h (the call ends); and a daily forgetting of call-server reports older than 1 day. If Redis is down these don't run: calls still work, but an abandoned call stays open and lost reports aren't repaired until Redis is back (the clean-up then catches up on its next round). See [runbooks/calls.md](../runbooks/calls.md).
 
 **Background work for meeting chat (F03):** the same every-minute clean-up also deletes chat news older than 1 day (each meeting keeps its newest, so news numbers never restart), the files of deleted messages, and files uploaded but never sent within 1 hour. If Redis is down this doesn't run: chat still works, but old files wait in storage until Redis is back. GIFs depend on KLIPY (outside us): if it is down, the GIF tab says "GIFs aren't available right now" and nothing else is affected.
+
+**Background work for chats (F14):** the same every-minute clean-up also fills any meeting chat still without its conversation (re-runnable, D065), declines chat requests not answered in 30 days, deletes groups whose last member left 30 days ago (their files first), and deletes old chat news for every conversation (each keeps its newest number). Each API server checks its open live lines every second (signed out: closed within 2 seconds; no ping for 2 minutes: closed) and works out status every 30 seconds (Away after 5 idle minutes); Offline comes 30 seconds after a person's last line closes. Redis down: lines stay open, the apps are told to check for themselves, and normal delivery resumes when Redis is back. Load test: `pnpm test:load` includes a 250-person group chat (95% of messages on screen within 1 second).
+
+**Background work for calls from chats (F15):** each new chat call schedules a job at 30 seconds that stops rings nobody answered (they become missed calls, with a note in the chat); the every-minute clean-up also stops any ring older than 35 seconds, so a lost job can't leave anyone ringing. Chat calls also use F02's 30-hour end and ending rules (a one-to-one call ends when either person leaves, a group call when the last person leaves). If Redis is down, rings still stop at the next clean-up once it is back. See [runbooks/calls.md](../runbooks/calls.md).
 
 **Before chat runs online (F03):** add virus scanning of chat files (the backend checks content and type, but doesn't scan for viruses yet), and get a free production KLIPY key.
 

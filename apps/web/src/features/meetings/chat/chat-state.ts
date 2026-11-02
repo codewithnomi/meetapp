@@ -170,9 +170,14 @@ export const missedNews = (state: ChatState, event: ChatEvent) =>
   state.loaded && state.lastSeq > 0 && event.seq > state.lastSeq + 1;
 
 /** News sent to everyone has no "mine": it is worked out here from who reacted (verification round 1). */
-export function asSeenBy(message: ChatMessageView, viewerId: string): ChatMessageView {
-  return {
-    ...message,
-    reactions: message.reactions.map((reaction) => ({ ...reaction, mine: reaction.attendanceIds.includes(viewerId) })),
-  };
+/** News sent to everyone, with "mine" worked out for this viewer (their join, or their account in F14 chats). */
+export function asSeenBy(
+  message: ChatMessageView,
+  viewer: { attendanceId?: string | undefined; userId?: string | undefined },
+): ChatMessageView {
+  const mine = (reaction: ChatMessageView["reactions"][number]) =>
+    viewer.attendanceId !== undefined
+      ? reaction.attendanceIds.includes(viewer.attendanceId)
+      : viewer.userId !== undefined && reaction.userIds.includes(viewer.userId);
+  return { ...message, reactions: message.reactions.map((reaction) => ({ ...reaction, mine: mine(reaction) })) };
 }

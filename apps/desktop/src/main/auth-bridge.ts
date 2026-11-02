@@ -25,7 +25,9 @@ export function registerAuthBridge(actions: AuthActions, appUrl: string): void {
 
 /** The screens' requests to the backend carry the token (data and photos); token routes are cancelled. */
 export function applyApiAuth(session: Session, apiUrl: string, tokens: TokenStore): void {
-  const urls = [`${new URL(apiUrl).origin}/*`];
+  const origin = new URL(apiUrl).origin;
+  // F14 D064: the live line's upgrade (ws/wss to the same host and port) carries the token too.
+  const urls = [`${origin}/*`, `${origin.replace(/^http/, "ws")}/*`];
   session.webRequest.onBeforeRequest({ urls }, (details, callback) => {
     callback({ cancel: isTokenRoute(details.url, apiUrl) });
   });

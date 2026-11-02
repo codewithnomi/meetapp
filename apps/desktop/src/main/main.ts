@@ -1,12 +1,13 @@
 // The desktop app's main process (design.md section 5): one locked-down window showing apps/web.
 // Development: the Vite dev server (MEETAPP_RENDERER_URL). Otherwise: the built screens on app://meetapp.
 import { join } from "node:path";
-import { BrowserWindow, app, safeStorage, session, shell } from "electron";
+import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
 import { addSpellcheckMenu, registerFilesBridge, setUpSpellcheck } from "./chat-bridge.ts";
+import { POWER_CHANNEL } from "./chat-desktop.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
@@ -38,6 +39,21 @@ app.on("web-contents-created", (_event, contents) => {
 });
 app.on("window-all-closed", () => app.quit());
 
+/** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`. */
+function forwardLockChanges(window: BrowserWindow): void {
+  const send = (locked: boolean) => () => {
+    if (!window.isDestroyed()) window.webContents.send(POWER_CHANNEL, locked);
+  };
+  const lock = send(true);
+  const unlock = send(false);
+  powerMonitor.on("lock-screen", lock);
+  powerMonitor.on("unlock-screen", unlock);
+  window.once("closed", () => {
+    powerMonitor.off("lock-screen", lock);
+    powerMonitor.off("unlock-screen", unlock);
+  });
+}
+
 function openWindow(): void {
   const window = new BrowserWindow({
     width: 1200,
@@ -49,6 +65,7 @@ function openWindow(): void {
     webPreferences: webPreferences(settings.preloadPath),
   });
   window.once("ready-to-show", () => window.show());
+  forwardLockChanges(window);
   void window.loadURL(appUrl);
 }
 

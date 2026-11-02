@@ -8,6 +8,7 @@ import type { ChatUpkeepRepository } from "./chat-upkeep.repository.ts";
 
 const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
 const UNSENT_KEPT_MS = 60 * 60 * 1000;
+const REQUESTS_KEPT_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface UpkeepDeps extends ChatDeps {
   upkeep: ChatUpkeepRepository;
@@ -39,10 +40,30 @@ async function modeChanged(deps: UpkeepDeps, meetingId: string, byName: string):
   await broadcast(deps, call.id, { seq: saved.seq, type: "chat_mode_changed", id: view.id, message: view });
 }
 
+type StoredFile = { storageKey: string; previewKey: string | null };
+
+async function removeStored(deps: UpkeepDeps, files: StoredFile[]) {
+  for (const file of files) {
+    await deps.storage.delete(file.storageKey);
+    if (file.previewKey) await deps.storage.delete(file.previewKey);
+  }
+}
+
+/** Groups whose last member left 30 days ago go, files first (F14 AC-F14-18). */
+async function forgetEmptyGroups(deps: UpkeepDeps, before: Date) {
+  const { ids, files } = await deps.upkeep.groupsToDelete(before);
+  await removeStored(deps, files);
+  await deps.upkeep.forgetConversations(ids);
+}
+
 /** Old catch-up news, deleted messages' files and files never sent are removed (design 3.4, 6). */
 async function cleanUp(deps: UpkeepDeps): Promise<void> {
+  // F14 step 2: fill any meeting chat row still without its conversation (nothing to do once filled).
+  await deps.upkeep.fillConversations();
   const now = deps.calls.now().getTime();
   await deps.upkeep.forgetEventsBefore(new Date(now - EVENTS_KEPT_MS));
+  await deps.upkeep.expireRequests(new Date(now - REQUESTS_KEPT_MS));
+  await forgetEmptyGroups(deps, new Date(now - REQUESTS_KEPT_MS));
   for (const file of await deps.upkeep.filesToRemove(new Date(now - UNSENT_KEPT_MS))) {
     // A file that is already gone is fine; the row goes only after its file, so nothing is left behind.
     await deps.storage.delete(file.storageKey);
@@ -55,10 +76,18 @@ export function createChatUpkeepService(deps: UpkeepDeps) {
   return {
     modeChanged: (meetingId: string, byName: string) => modeChanged(deps, meetingId, byName),
     cleanUp: () => cleanUp(deps),
+    /** F14 step 2 (D065), also run on every clean-up; returns the rows filled. */
+    fillConversations: () => deps.upkeep.fillConversations(),
     /** Called by the account deletion (F10; until then by support, privacy-legal.md). */
     forgetPerson: (userId: string) => deps.upkeep.forgetPerson(userId),
     exportFor: (userId: string) => deps.upkeep.exportFor(userId),
     /** Called before a meeting record is deleted (F06/F10), so its files are removed too (AC-F03-43). */
     beforeMeetingDeleted: (meetingId: string) => deps.upkeep.markMeetingFiles(meetingId),
+    /**
+     * Called before a team workspace is deleted (F10, AC-F14-35): its chat files leave storage now; the
+     * conversations, messages and file rows then go with the workspace row (cascade).
+     */
+    beforeWorkspaceDeleted: async (workspaceId: string) =>
+      removeStored(deps, await deps.upkeep.workspaceFiles(workspaceId)),
   };
 }

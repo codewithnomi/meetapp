@@ -117,6 +117,24 @@ describe("TC-F02-112 [AC-F02-54] the share picker's list", () => {
     expect(picker.take()).toEqual({ id: "window:42:0", name: "Notes" });
   });
 
+  it("TC-F02-112 [AC-F02-54] a list without the screen (Linux, just after start) is asked for again", async () => {
+    const screen = { id: "screen:1:0", name: "Entire screen", kind: "screen" as const, thumbnail: "data:x" };
+    const answers = [[], [], [screen]];
+    let asked = 0;
+    const system = {
+      status: () => "granted",
+      ask: async () => true,
+      sources: async () => answers[asked++] ?? [],
+      deviceKey: () => "key",
+    };
+    const actions = createMediaActions(system, createSharePicker(), async () => {});
+    expect((await actions.getShareSources()).map((source) => source.kind)).toEqual(["screen"]);
+    expect(asked).toBe(3);
+    asked = 99;
+    expect(await actions.getShareSources()).toEqual([]);
+    expect(asked).toBe(99 + 4);
+  });
+
   it("TC-F02-113 [AC-F02-54] only the listed actions with the right arguments are accepted", () => {
     expect(isValidMediaCall("accessStatus", [])).toBe(true);
     expect(isValidMediaCall("chooseShareSource", ["share-1"])).toBe(true);

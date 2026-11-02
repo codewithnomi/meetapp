@@ -51,6 +51,11 @@ export const attendanceSchema = z
 /** The join answer also carries the meeting ticket, kept only in the app's memory. */
 export const joinedSchema = attendanceSchema.extend({ ticket: z.string() }).meta({ id: "Joined" });
 
+/** F15: the start answer, F02's join answer, and whether anyone is being rung. False when a call was already
+ * running (it was joined) or nobody rings (a group of more than 20): the app goes straight into the call.
+ */
+export const startedCallSchema = joinedSchema.extend({ ringing: z.boolean() }).meta({ id: "StartedChatCall" });
+
 export const attendanceParamsSchema = z.object({ attendanceId: z.string() });
 export const callParamsSchema = z.object({ callId: z.string() });
 export const meetingTicketHeadersSchema = z.object({ "x-meeting-ticket": z.string().max(200).optional() });

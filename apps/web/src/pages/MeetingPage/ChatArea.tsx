@@ -3,11 +3,10 @@
 // messages" button (AC-F03-08), the pinned bar, replying, editing, and deleting after a question.
 // Read only when chat is off (the box gives way to a note, AC-F03-35) or after the meeting (AC-F03-42).
 import type { ChatMessageView } from "@meetapp/contracts";
-import { Button, ChatPanel, Dialog, Notice } from "@meetapp/ui";
-import { useLayoutEffect, useRef, useState } from "react";
+import { Button, ChatPanel, Dialog, Notice, Spinner, type ChatComposerProps } from "@meetapp/ui";
+import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { deleteMessage, type Chat } from "../../features/meetings/chat/index.ts";
-import type { Joined } from "../../features/meetings/index.ts";
+import { deleteMessage, type Chat, type ChatPlace } from "../../features/meetings/chat/index.ts";
 import { continuesGroup, firstLineOf, isOwn, time } from "./chat-texts.ts";
 import type { Attachments } from "./chat-attachments.ts";
 import { ComposerArea } from "./ChatComposerArea.tsx";
@@ -76,6 +75,18 @@ function LoadFailed({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+/** Above the composer: the load failure with Retry, a spinner until the first page, then the page's footer. */
+function noticeOf(
+  chat: { state: { loadFailed: boolean }; reload: () => void },
+  loaded: boolean,
+  footer: ReactNode,
+  loading: string,
+) {
+  if (chat.state.loadFailed) return <LoadFailed onRetry={chat.reload} />;
+  if (!loaded) return <Spinner label={loading} />;
+  return footer;
+}
+
 /** "Delete this message?" before anything is removed (AC-F03-10). */
 function DeleteDialog({
   chat,
@@ -116,15 +127,32 @@ function DeleteDialog({
   );
 }
 
+/** The message box's place and extras: files, chat off, and (F14) its words, mentions and typing. */
+interface Writing {
+  place: ChatPlace;
+  attachments: Attachments;
+  off: boolean;
+  /** "Message Bilal Ahmed" instead of "Message everyone". */
+  placeholder?: string;
+  mentions?: ChatComposerProps["mentions"];
+  onTyping?: () => void;
+  /** F14: the box takes the focus when the chat opens. */
+  focusOnOpen?: boolean;
+}
+
 export interface ChatAreaProps {
   chat: Chat;
   /** In a call: the message box, or "Chat is turned off" when `off`. Absent after the meeting. */
-  writing?: { visit: Joined; attachments: Attachments; off: boolean } | undefined;
+  writing?: Writing | undefined;
+  /** F14: "… is typing" and "Seen", just above the message box. */
+  footer?: ReactNode;
   /** Files are being dragged over the meeting window (AC-F03-29). */
   dropping: boolean;
   rights: ChatRights;
   /** The signed-in viewer's account (none for guests). */
   viewerUserId?: string | undefined;
+  /** F14 Chat screen: the conversation header shown above the messages instead of the panel's title. */
+  header?: ReactNode;
   /** The panel's title; "Chat" by default, the meeting's title after it. */
   title?: string | undefined;
   onClose: () => void;
@@ -180,7 +208,11 @@ function Composer({ view, writing, act }: { view: ChatView; writing: ChatAreaPro
   return (
     <ComposerArea
       view={view}
-      visit={writing.visit}
+      place={writing.place}
+      placeholder={writing.placeholder}
+      mentions={writing.mentions}
+      onTyping={writing.onTyping}
+      focusOnOpen={writing.focusOnOpen}
       attachments={writing.attachments}
       replyingTo={act.replyingTo}
       editing={act.editing}
@@ -202,6 +234,7 @@ export function ChatArea(props: ChatAreaProps) {
     <>
       <ChatPanel
         title={title ?? t("meetings.chat.title")}
+        header={props.header}
         closeLabel={t("meetings.chat.close")}
         onClose={onClose}
         listLabel={t("meetings.chat.messages")}
@@ -217,7 +250,7 @@ export function ChatArea(props: ChatAreaProps) {
         dropArea={
           dropping ? { title: t("meetings.chat.files.dropTitle"), hint: t("meetings.chat.files.dropHint") } : undefined
         }
-        notice={chat.state.loadFailed ? <LoadFailed onRetry={chat.reload} /> : undefined}
+        notice={noticeOf(chat, loaded, props.footer, t("meetings.chat.loading"))}
         newMessages={scroll.missed ? { label: t("meetings.chat.newMessages"), onClick: scroll.toNewest } : undefined}
         composer={<Composer view={view} writing={writing} act={act} />}
       />

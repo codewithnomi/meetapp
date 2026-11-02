@@ -2,10 +2,7 @@
 // with its name in X-File-Name and report progress; downloads ask for a 5-minute link and save it with
 // "Save as" in the desktop app; GIFs are searched at KLIPY by the app itself, as KLIPY requires (D059).
 import { apiFileUrl, apiRequest } from "../../api/index.ts";
-import type { Joined } from "../visit.ts";
 import type { ChatPlace } from "./chat-api.ts";
-
-const base = (visit: Joined) => `/api/v1/calls/${visit.call?.callId ?? ""}/chat`;
 
 /** What the server says about an upload (TC-F03-52), or "failed" when it couldn't be reached. */
 export type UploadProblem =
@@ -27,13 +24,13 @@ function readJson(text: string): unknown {
 }
 
 /** Uploads one file, reporting progress (0–100); rejects with an UploadProblem. */
-export function uploadFile(visit: Joined, file: File, onProgress: (percent: number) => void): Promise<Uploaded> {
+export function uploadFile(place: ChatPlace, file: File, onProgress: (percent: number) => void): Promise<Uploaded> {
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
-    request.open("POST", apiFileUrl(`${base(visit)}/attachments`) ?? "");
+    request.open("POST", apiFileUrl(`${place.path}/attachments`) ?? "");
     request.setRequestHeader("content-type", "application/octet-stream");
     request.setRequestHeader("x-file-name", encodeURIComponent(file.name));
-    request.setRequestHeader("x-meeting-ticket", visit.ticket);
+    for (const [name, value] of Object.entries(place.headers)) request.setRequestHeader(name, value);
     request.upload.onprogress = (event) => {
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     };
@@ -77,8 +74,8 @@ export interface GifSettings {
   customerId: string;
 }
 
-export function gifSettings(visit: Joined): Promise<GifSettings> {
-  return apiRequest(`${base(visit)}/gif-settings`, { headers: { "x-meeting-ticket": visit.ticket } });
+export function gifSettings(place: ChatPlace): Promise<GifSettings> {
+  return apiRequest(`${place.path}/gif-settings`, { headers: place.headers });
 }
 
 export interface FoundGif {

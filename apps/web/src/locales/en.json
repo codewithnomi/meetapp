@@ -45,7 +45,51 @@
     "nav": {
       "label": "Settings",
       "profile": "Profile and account",
-      "appearance": "Appearance"
+      "appearance": "Appearance",
+      "devices": "Devices",
+      "calls": "Calls",
+      "privacy": "Privacy"
+    },
+    "privacy": {
+      "title": "Privacy",
+      "readReceipts": "Read receipts",
+      "readReceiptsHint": "Others see when you've read their messages in one-to-one chats and small groups, and you see theirs. Turn off to stop both.",
+      "blockedTitle": "Blocked people",
+      "blockedNone": "You haven't blocked anyone.",
+      "unblock": "Unblock {{name}}"
+    },
+    "devices": {
+      "title": "Devices",
+      "intro": "Used for every call and meeting on this computer.",
+      "you": "You",
+      "previewNote": "Preview · only you see this",
+      "missing": {
+        "camera": "Your chosen camera isn't connected. The computer's default camera is used.",
+        "microphone": "Your chosen microphone isn't connected. The computer's default microphone is used.",
+        "speakers": "Your chosen speaker isn't connected. The computer's default speaker is used."
+      }
+    },
+    "calls": {
+      "title": "Calls",
+      "intro": "Your ringtone follows you to every computer.",
+      "ringtone": "Ringtone",
+      "volume": "Ringtone volume",
+      "play": "Play {{name}}",
+      "loading": "Loading your ringtone…",
+      "tones": {
+        "bright": "Bright",
+        "chime": "Chime",
+        "pulse": "Pulse",
+        "classic": "Classic",
+        "gentle": "Gentle"
+      },
+      "hints": {
+        "bright": "Clear and short, the default",
+        "chime": "Soft bells",
+        "pulse": "Low and steady",
+        "classic": "A familiar phone ring",
+        "gentle": "Quiet, for shared rooms"
+      }
     }
   },
   "auth": {
@@ -214,12 +258,18 @@
     },
     "nav": {
       "label": "Main",
+      "fold": "Collapse menu",
+      "unfold": "Expand menu",
+      "workspaceLetter": "Workspace: {{name}}",
       "home": "Home",
       "settings": "Settings",
       "people": "People",
       "requests": "Requests and invitations",
       "meetings": "Meetings",
-      "workspace": "Workspace settings"
+      "workspace": "Workspace settings",
+      "chat": "Chat",
+      "chatUnread_one": "Chat, {{count}} unread chat",
+      "chatUnread_other": "Chat, {{count}} unread chats"
     },
     "create": {
       "title": "Create a company workspace",
@@ -377,7 +427,9 @@
       "loading": "Loading workspace settings",
       "chatTitle": "Meeting chat",
       "allowGifs": "Allow GIFs",
-      "allowGifsHint": "People can search and send GIFs in this workspace's meeting chat. Their search words go to our GIF service (KLIPY); names and meetings never do."
+      "allowGifsHint": "People can search and send GIFs in this workspace's meeting chat. Their search words go to our GIF service (KLIPY); names and meetings never do.",
+      "allowOutsideChat": "Chat with people outside the workspace",
+      "allowOutsideChatHint": "Members can start chats with anyone on MeetApp by email, and people outside can send them chat requests. When off, existing outside chats become read-only."
     }
   },
   "profile": {
@@ -832,6 +884,7 @@
       "actionFailed": "That didn't work. Try again.",
       "actions": {
         "label": "Actions for {{name}}'s message",
+        "labelOwn": "Actions for your message",
         "reply": "Reply",
         "more": "More actions",
         "edit": "Edit",
@@ -944,7 +997,8 @@
         "search": "Find something fun"
       },
       "announce": "New message from {{name}}: {{text}}",
-      "loadFailed": "The messages couldn't be loaded."
+      "loadFailed": "The messages couldn't be loaded.",
+      "loading": "Loading messages…"
     },
     "recent": {
       "title": "Recent meetings",
@@ -953,6 +1007,244 @@
       "openChat": "Open chat",
       "openChatFor": "Open chat of {{title}}",
       "failed": "That didn't work. Check your connection and try again."
+    }
+  },
+  "chats": {
+    "heading": "Chat",
+    "newChat": "New chat",
+    "search": "Find a chat or person",
+    "filters": {
+      "label": "Show",
+      "all": "All",
+      "unread": "Unread",
+      "chats": "Chats",
+      "meetings": "Meeting chats"
+    },
+    "requests": "Chat requests",
+    "pinned": "Pinned",
+    "list": "Chats",
+    "empty": {
+      "title": "No chats yet",
+      "action": "New chat"
+    },
+    "pick": {
+      "title": "Choose a chat",
+      "hint": "Or start a new one."
+    },
+    "you": "You: {{text}}",
+    "from": "{{name}}: {{text}}",
+    "waiting": "Waiting for {{name}} to accept",
+    "notAccepted": "{{name}} didn't accept",
+    "rowLabel": "{{title}}, {{details}}",
+    "unread_one": "{{count}} unread",
+    "unread_other": "{{count}} unread",
+    "muted": "Muted",
+    "status": {
+      "available": "Available",
+      "away": "Away",
+      "in_call": "In a call",
+      "offline": "Offline"
+    },
+    "people_one": "{{count}} person",
+    "people_other": "{{count}} people",
+    "more": "More for this chat",
+    "actions": {
+      "pin": "Pin",
+      "unpin": "Unpin",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "hide": "Hide",
+      "details": "Group details",
+      "block": "Block {{name}}"
+    },
+    "readOnly": {
+      "blocked": "You can't send messages in this chat.",
+      "outside_off": "Chat with people outside the workspace is turned off.",
+      "left_workspace": "This person is no longer in the workspace.",
+      "left": "You're no longer in this chat."
+    },
+    "hello": "Say hello to {{name}}",
+    "helloHint": "Messages you send appear here.",
+    "new": {
+      "title": "New chat",
+      "close": "Close new chat",
+      "to": "To:",
+      "hint": "Type a name, or anyone's email. One person opens a one-to-one chat; two or more start a group.",
+      "suggestions": "Suggestions",
+      "remove": "Remove {{name}}",
+      "external": "(External)",
+      "externalDetail": "Not in this workspace · they'll get a chat request first",
+      "noAccount": "No one with this email uses MeetApp yet. Invite them by email; you can chat once they join.",
+      "invite": "Invite {{email}}",
+      "invited": "Invitation sent to {{email}}.",
+      "groupName": "Group name",
+      "groupNameHint": "Optional",
+      "cancel": "Cancel",
+      "start": "Start chat",
+      "inviteFailed": "Couldn't send the invitation to {{email}}. Try again.",
+      "starting": "Starting…"
+    },
+    "failed": "Something went wrong. Try again.",
+    "messageTo": "Message {{name}}",
+    "typing_one": "{{names}} is typing…",
+    "typing_other": "{{names}} are typing…",
+    "and": " and ",
+    "seen": "Seen",
+    "seenBy": "Seen by {{names}}",
+    "mentionsLabel": "People in this chat",
+    "requestsPane": {
+      "title": "Chat requests",
+      "hint": "People outside your workspaces. They can't see your status until you accept.",
+      "none": "No chat requests",
+      "intro": "{{email}} wants to chat with you",
+      "introGroup": "{{name}} added you to {{group}}",
+      "preview": "Preview messages",
+      "previewList": "Preview of messages",
+      "explanation": "Accept to chat and share your status. Delete removes the request; {{name}} isn't told and can't ask again for 30 days.",
+      "accept": "Accept",
+      "delete": "Delete",
+      "deleteTitle": "Delete this chat request?",
+      "alsoBlock": "Also block {{name}} (they can't message you or see your status)",
+      "cancel": "Cancel"
+    },
+    "group": {
+      "close": "Close group details",
+      "name": "Group name",
+      "nameError": "Use 1 to 80 characters",
+      "people": "People ({{count}})",
+      "add": "Add people",
+      "remove": "Remove {{name}} from the group",
+      "leave": "Leave group",
+      "you": "{{name}} (you)",
+      "pending": "{{name}} (asked to join)",
+      "addTitle": "Add people to {{group}}",
+      "historyLegend": "What can they see?",
+      "history": {
+        "none": "Don't include history",
+        "days": "History from the last few days",
+        "all": "All history",
+        "daysField": "Days",
+        "daysError": "Choose 1 to 365 days"
+      },
+      "addButton": "Add",
+      "cancel": "Cancel",
+      "leaveTitle": "Leave this group?",
+      "leaveHint": "You'll keep what you've seen, but won't get new messages.",
+      "addHint": "Colleagues join at once; people from outside get a chat request first."
+    },
+    "load": {
+      "chats": "Loading chats…",
+      "requests": "Loading chat requests…",
+      "members": "Loading the group…",
+      "failed": "Couldn't load this. Check your connection and try again.",
+      "retry": "Retry"
+    }
+  },
+  "calls": {
+    "notes": {
+      "started": "{{name}} started a call",
+      "ended": "Call ended · {{duration}}",
+      "missed": "Missed call from {{name}}"
+    },
+    "duration": {
+      "seconds": "{{s}}s",
+      "minutes": "{{m}}m {{s}}s",
+      "hours": "{{h}}h {{m}}m"
+    },
+    "buttons": {
+      "video": "Video call",
+      "audio": "Audio call",
+      "join": "Join",
+      "callBack": "Call back",
+      "starting": "Starting the call…"
+    },
+    "readOnly": {
+      "blocked": "You can't call in this chat.",
+      "outside_off": "Calls with people outside the workspace are turned off.",
+      "left_workspace": "This person is no longer in the workspace.",
+      "left": "You're no longer in this chat.",
+      "pending": "You can call once they accept your chat request."
+    },
+    "failed": {
+      "start": "Couldn't start the call.",
+      "join": "Couldn't join the call.",
+      "ended": "This call has ended.",
+      "full": "This call is full.",
+      "rate": "You're calling too often. Try again in a minute.",
+      "devices": "You're already in this call on 3 devices. Leave it on one of them first.",
+      "retry": "Retry"
+    },
+    "calling": {
+      "heading_video": "Video call · {{name}}",
+      "heading_audio": "Audio call · {{name}}",
+      "title": "Calling {{name}}…",
+      "line": "Ringing. They can accept with video or audio.",
+      "declinedTitle": "{{name}} declined",
+      "declinedLine": "They can call you back from the chat.",
+      "noAnswerTitle": "No answer",
+      "noAnswerLine": "{{name}} didn't answer. They'll see a missed call in the chat.",
+      "cancel": "Cancel",
+      "close": "Close",
+      "callAgain": "Call again",
+      "backToChat": "Back to chat",
+      "preview": "Your camera is on. Others see you once they accept."
+    },
+    "incoming": {
+      "label": "Incoming call",
+      "video": "Video call",
+      "audio": "Audio call",
+      "busy": "You're in {{title}}. Accepting leaves it.",
+      "acceptVideo": "Accept with video",
+      "acceptAudio": "Accept with audio",
+      "leave_acceptVideo": "Leave current call and accept with video",
+      "leave_acceptAudio": "Leave current call and accept with audio",
+      "videoShort": "Video",
+      "audioShort": "Audio",
+      "decline": "Decline"
+    },
+    "add": {
+      "button": "Add people",
+      "title": "Add people",
+      "close": "Close Add people",
+      "intro": "People in this chat who aren't in the call. Their app rings when you add them.",
+      "members": "Chat members",
+      "ringing": "Ringing…",
+      "declined": "Declined",
+      "add": "Add",
+      "addNamed": "Add {{name}} to the call",
+      "ringAgain": "Ring again",
+      "ringAgainNamed": "Ring {{name}} again",
+      "loading": "Loading the chat's members…",
+      "everyone": "Everyone in this chat is in the call.",
+      "note": "To call someone who isn't in this chat, add them to the group first. A call holds up to 20 people.",
+      "full": "This call has 20 people, the most it can hold."
+    },
+    "otherDevice": {
+      "label": "Call on another device",
+      "title": "You're in a call on another device",
+      "join": "Join on this device",
+      "transfer": "Transfer to this device",
+      "moving": "Moving the call…"
+    }
+  },
+  "devices": {
+    "backgrounds": {
+      "legend": "Background",
+      "none": "None",
+      "blur": "Blur",
+      "hint": "Made on this computer. If it slows your video, MeetApp turns it off and tells you.",
+      "unavailable": "Not available on this computer",
+      "turnedOff": "Background turned off to keep your video smooth",
+      "pictures": {
+        "office": "Office",
+        "living-room": "Living room",
+        "bookshelf": "Bookshelf",
+        "cafe": "Café",
+        "nature": "Nature",
+        "city-view": "City view",
+        "calm-waves": "Calm waves",
+        "soft-shapes": "Soft shapes"
+      }
     }
   }
 }

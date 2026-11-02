@@ -1,7 +1,7 @@
 // The pre-join's devices remember every change at once (AC-F02-09, 10).
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { loadPrefs } from "./device-prefs.ts";
+import { loadPrefs } from "../devices/index.ts";
 import { stubNoDevices } from "./fake-visit.ts";
 import { usePreJoinDevices } from "./pre-join-devices.ts";
 

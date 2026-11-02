@@ -75,6 +75,7 @@ Like the Teams **Chat** screen (owner, 2026-10-21, D062): a chat list on the lef
 - Start an **audio or video call** from any one-to-one or group chat, as in Teams; the other person's app rings (accept or decline), missed calls show in the chat
 - Uses F02's calling (call server, devices, sharing, quality); a call's chat is the chat it started from
 - Add people to a running call
+- Settings: choose microphone, speaker and camera with a live preview; background blur and built-in background pictures (also in meetings); choose from 5 ringtones (owner, 2026-10-27)
 - **Depends on:** F02, F14 · **Size:** large
 
 ### F04 Desktop app

@@ -4,6 +4,25 @@
 import { expect, type ElectronApplication, type Locator, type Page } from "@playwright/test";
 
 export const controls = (page: Page) => page.getByRole("group", { name: "Meeting controls" });
+/**
+ * After the other person left a one-to-one call, it ends here too (AC-F15-14). On a slow computer that
+ * can happen before this window's own Leave is pressed, so: leave if still in it, wait until the call is
+ * gone, and come back from the end screen to the app's menu.
+ */
+export async function afterCallEnds(page: Page): Promise<void> {
+  const leave = controls(page).getByRole("button", { name: "Leave", exact: true });
+  await leave.click({ timeout: 2_000 }).catch(() => undefined);
+  await expect(controls(page)).toHaveCount(0, { timeout: 15_000 });
+  const home = page.getByRole("button", { name: /^Back to (home|chat)$/ });
+  if (
+    await home
+      .first()
+      .isVisible()
+      .catch(() => false)
+  )
+    await home.first().click();
+  await expect(page.getByRole("navigation", { name: "Main" })).toBeVisible({ timeout: 10_000 });
+}
 export const tile = (page: Page, name: RegExp) => page.getByRole("figure", { name });
 /** The meeting shortcuts' modifier keys: ⌘⇧ on a Mac, Ctrl+Shift elsewhere. */
 export const SHORTCUT = process.platform === "darwin" ? "Meta+Shift" : "Control+Shift";

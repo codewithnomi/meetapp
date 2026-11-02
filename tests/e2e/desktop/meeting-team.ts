@@ -39,6 +39,9 @@ async function createTeam(): Promise<Team> {
   };
 }
 
+/** A team of its own, for tests that must not see what earlier tests left behind (three sign-ups). */
+export const freshTeam = (): Promise<Team> => createTeam();
+
 /** The team, made on first use (a failed attempt is tried again by the next test). */
 export function team(): Promise<Team> {
   created ??= createTeam().catch((error: unknown) => {

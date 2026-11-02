@@ -6,7 +6,7 @@ import { detailsOf } from "../meetings/meetings.service.ts";
 import { notFound, roleOf, roomMetadata, type CallsDeps } from "./admission.ts";
 import { endForEveryone } from "./call-events.repository.ts";
 import { canActOn, publishSources } from "./calls.permissions.ts";
-import { actor } from "./lobby.service.ts";
+import { actor, ownSeat } from "./lobby.service.ts";
 
 const present = (attendance: CallAttendance | undefined, callId: string) =>
   attendance?.callId === callId && (attendance.status === "admitted" || attendance.status === "in_call");
@@ -58,7 +58,7 @@ export function createControlsService(deps: CallsDeps) {
   const handAt = (raised: boolean) => ({ handRaisedAt: raised ? deps.now().toISOString() : "" });
   return {
     hand: async (callId: string, ticketHash: string, raised: boolean) => {
-      const { attendance } = await actor(deps, callId, ticketHash, "talk");
+      const attendance = await ownSeat(deps, callId, ticketHash);
       await quietly(deps.livekit.setAttributes(callId, attendance.id, handAt(raised)));
     },
     lowerHand: async (callId: string, ticketHash: string, targetId: string) => {

@@ -38,6 +38,8 @@ The services `pnpm dev` starts in Docker (`infra/docker-compose.yml`, design.md 
 | "Port 5432 is in use by another program" | Another program (often your own PostgreSQL, Redis or a web app) uses it | Stop it, or move MeetApp's port in `.env` (e.g. `POSTGRES_PORT=5433`). For `API_PORT` also change `VITE_API_URL` and `APP_PUBLIC_URL` |
 | Health shows a service `down` | That container stopped | `docker compose -f infra/docker-compose.yml --env-file .env up -d --wait`; the backend reconnects by itself |
 | A sign-up, sign-in or reset code doesn't arrive | Emails go to the fake inbox, sent by a queue inside the backend | Look in Mailpit at http://127.0.0.1:8025; if it's empty, check that `pnpm dev` (the backend) is running |
+| Chat messages (F14) arrive only after 10 seconds, or the chat list refreshes slowly | Redis (the cache) is down, so the live line can't pass news between servers; the app falls back to checking every 10 s (open chat) and 30 s (list) | Start the services again (row above); news is live again as soon as Redis is back, with nothing lost |
+| A person shows "Offline" although their app is open | Their live line closed (sleep, network change); status turns Offline 35 seconds after the last line closes | The app reconnects by itself (waits of 1, 2, 4… up to 30 s); the status returns on the next key or mouse action |
 | "set in .env" when starting | A setting is missing from `.env` | `pnpm dev` adds missing settings automatically; or copy the line from `.env.example` |
 | "Expected Node 24, found 20" | The terminal uses another Node.js | See [getting-started.md](../getting-started.md) step 2 |
 | The first start takes long | Docker downloads the services once (about 2 GB) | Wait; later starts take under 2 minutes |

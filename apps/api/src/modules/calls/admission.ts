@@ -35,12 +35,33 @@ export interface CallsDeps {
   events: CallEventsRepository;
   /** Gives a new call its 30-hour jobs; set once the jobs run (server.ts), a no-op until then. */
   scheduler: { schedule: (call: Call) => Promise<void> };
+  /**
+   * F15: what chat calls do when someone leaves, a call ends, its 30 seconds of ringing pass, or the
+   * every-minute clean-up runs (set by the chat wiring; meeting calls ignore it).
+   */
+  chatCallHooks?: {
+    /** A seat connected: a transfer's old seat leaves now (AC-F15-33). */
+    joined: (attendanceId: string) => Promise<void>;
+    left: (callId: string) => Promise<void>;
+    ended: (callId: string) => Promise<void>;
+    ringTimeout: (callId: string) => Promise<void>;
+    sweep: () => Promise<void>;
+  };
   /** Where the app connects to the call server (config: callServerUrl). */
   serverUrl: string;
   now: () => Date;
 }
 
 export const notFound = () => new AppError(404, "NOT_FOUND", "Not found.");
+
+/**
+ * The meeting of a meeting's call or join (F02). A chat call (F15, D072) has none, so meeting-only steps
+ * (lobby, rejoin, the meeting's chat) treat it as not found.
+ */
+export function meetingIdOf(row: { meetingId: string | null }): string {
+  if (row.meetingId === null) throw notFound();
+  return row.meetingId;
+}
 
 /**
  * The person as they are now (S2): a member removed from the workspace counts as from outside from then

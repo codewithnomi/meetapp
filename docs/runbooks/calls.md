@@ -41,8 +41,14 @@ Fills a meeting with simulated people and measures the app (TC-F02-25, 41, 92; t
 | Each tile's shown frames against the frames it receives | at least 90% |
 | Memory of the app in a 25-person meeting, 5 minutes | under 700 MB |
 | Chat: a message shown in the app (100 people, 50 messages, 95th percentile; F03) | under 1 s |
+| Group chat of 250: a message shown in the app (300 messages, 95th percentile; F14), no live line dropped | under 1 s |
+| Chat call of 20 (F15 TC-F15-76, `chatCall20`): join answer, 95th percentile; the 21st person gets 409 CALL_FULL | under 3 s |
+| Ring speed (F15 TC-F15-77, `ringSpeed`): 250 connected people, 20 groups of 20 call at once; start request to `ring` on each line, 95th percentile | under 2 s |
+| Same test: accept answer, 95th percentile (one person per group) | under 3 s |
 
 For chat, a sender joins the 100-person meeting through the backend as a guest (the app's organizer lets it in) and sends 50 messages 1.5 s apart (under the 10-in-10-seconds limit); the app notes when each one shows (`chat` in the results).
+
+For the 250-person group (F14 TC-F14-42, `group250` in the results), 249 people are written straight into the test database (the backend allows only 50 sign-ups an hour) with sessions only the test knows; each opens a live line and they send 300 messages over 3 minutes; they are removed afterwards. `pnpm test:load -- -g TC-F14-42` runs only this one (about 3 minutes).
 
 The 20 joins are spaced 7 seconds apart: the backend allows 10 joins a minute from one address (S5).
 
@@ -58,3 +64,28 @@ If it stops early: `docker compose -f infra/load/docker-compose.load.yml --env-f
   4. Uploads from the app need the backend to accept the `X-File-Name` header (CORS list in `apps/api/src/app.ts`); a missing header there blocks every upload.
 - **After the meeting:** people who took part open the chat from **Meetings → Recent meetings → Open chat** (read-only; organizers can still delete messages).
 - **A person asks to delete their account (until F10):** removing their chat text and files is one backend step, `chatUpkeep.forgetPerson(<their user id>)`; run it within 30 days of the request (privacy-legal.md). It keeps "Deleted user · message removed" in place of their messages.
+
+## Calls from chats (F15)
+
+### Two people calling each other on one Mac
+Run `pnpm dev`, then `pnpm dev:window` and sign in as another person. Open a chat between them and press **Video call** or **Audio call**: the other window rings within 2 seconds (top right, on any screen).
+
+### When a call doesn't ring
+- The person being called needs a MeetApp window open: with none open, nothing rings and they get a missed call in the chat later.
+- The live line must be connected (the chat list updates live). If it isn't, check the status page (API) and Redis.
+- A one-to-one chat whose request isn't accepted yet can't call; a blocked person is never rung.
+- Search Loki for the call id (the request to start the call carries it in its answer).
+
+### Ringing never stops
+The 30-second job stops rings; the every-minute clean-up stops any ring older than 35 seconds. If rings keep going, Redis (the queue) is probably down: restart it with `pnpm dev`.
+
+### Backgrounds don't work
+- Settings → Devices shows "Not available on this computer" when the computer can't run them; calls still work with the plain camera.
+- "Background turned off to keep your video smooth": the computer made fewer than 15 frames a second for 5 seconds. Choose it again, or close other busy apps.
+- The engine and model load from the app itself (`/backgrounds/…`); the desktop security policy allows only the app's own WebAssembly.
+
+### Messages people may see
+- "You're calling too often" (429 `CALL_RATE`): starts, joins, answers, moves and Add people count, 10 a minute per person; wait the seconds shown.
+- "You're already in this call on 3 devices" (`CALL_DEVICES`): leave it on one device first, or use **Transfer to this device**.
+- "Moving the call…" stays: the new device didn't connect within 30 seconds, so the old one stays in the call; try again.
+

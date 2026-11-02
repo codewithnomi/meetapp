@@ -401,3 +401,105 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** add **F14 Chats** (one-to-one and group chats that stay, contacts for personal accounts and colleagues in organizations, meeting chats in the same list) and **F15 Calls from chat** (audio and video calls from any chat, ringing, missed calls), built right after F03 and before F04. They reuse F03's chat building blocks and F02's calling. When unsure how something works, follow Teams.
 - **Why:** the owner wants people to use MeetApp every day like Teams, not only for scheduled meetings.
 - **Cost:** none now (same free tools and call server); more work in Phase 1.
+
+### D063: Typing an exact email in "New chat" shows whether it uses MeetApp (F14)
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 requirements, 2026-10-21).
+- **Decision:** as in Teams, a person who types an exact email in New chat sees whether it has a MeetApp account, so they can chat or invite. Only exact emails (no lists, no partial matches), at most 30 lookups a minute per person.
+- **Why:** chatting with people outside the workspace needs it, and Teams does the same. F01 hides it at sign-in (AC-F01-02, 13), where it would help someone guess passwords; here the lookup is signed in, limited and logged.
+- **Cost:** none.
+
+### D064: A live line (WebSocket) for chats outside calls (F14)
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 design, 2026-10-21).
+- **Decision:** while the app is open it keeps one WebSocket to the backend (`@fastify/websocket`, Fastify team, MIT; vetted with `/add-dependency` in F14 T1). It carries new messages, edits, reactions, "is typing", "Seen", status and chat-list changes. Servers share news through Redis publish/subscribe (ioredis, already used), so it works with several API servers. Everything that changes data still goes through normal requests with their checks; the line only delivers.
+- **Vetted (F14 T1, 2026-10-21):** `@fastify/websocket` 11.3.1 (18 September 2026, at least two weeks old; 11.3.4 was too new), MIT, Fastify team (3 maintainers), regular releases, about 100 KB, depends only on `ws` 8, `duplexify` and `fastify-plugin`; licenses check passes; no new audit findings. Installed in T9, the task that first uses it.
+- **Why:** F03's chat news travels through the call server, which exists only during a call. Teams-style chats need instant delivery any time. Polling every few seconds would be slow and heavy for 100+ people.
+- **Cost:** none (inside the existing backend and Redis).
+- **Alternatives:** Server-Sent Events (one direction only; typing and activity would need extra requests); a separate realtime service (more to run, not needed at our size).
+
+### D065: One conversation model for direct, group and meeting chats (F14)
+- **Date:** 2026-10-21. **Status:** accepted (owner approved the F14 design, 2026-10-21).
+- **Decision:** a `conversations` table (kinds: direct, group, meeting); F03's chat tables gain `conversation_id`, filled for existing meeting chats by a re-runnable step, so messages, reactions, pins, polls and files work the same in every chat. Meeting chats keep F03's rules and their call-server delivery during calls.
+- **Why:** Teams treats meeting chats as chats in the same list; one model means one set of checks and one set of tests.
+- **Cost:** none; a careful two-step migration (no column dropped in F14).
+
+### D066: Chat rows name the person by account outside calls (F14)
+- **Date:** 2026-10-21. **Status:** accepted (technical gap found while building F14 T8; within the approved D065 design).
+- **Decision:** F03's chat tables named who sent, reacted, pinned, created a poll, voted, uploaded or deleted by their join of a call. One-to-one and group chats have no call, so migration `0007_chats_people` adds the account next to it (`user_id` on reactions; `deleted_by_user_id`, `uploader_user_id`, `pinned_by_user_id`, `creator_user_id`, `voter_user_id`), lets a reaction have no join, keeps "sent once" per account for chat messages, and adds `mentioned_user_ids` (mentions) and `conversation_members.left_at` (what left people may read). Add-only; meeting chats keep using joins. In code, F03's rules take a "seat" (`chat-seat.ts`): a call's join or a chat's account, with its own rights check, reading window and news delivery.
+- **Why:** the same message, reaction and reply rules for every chat (D065) without copying F03's code.
+- **Cost:** none.
+
+### D067: @mention libraries for the message box (F14)
+- **Date:** 2026-10-26. **Status:** accepted (needed for AC-F14-22 within the approved design; recorded at the F14 verification, which found it missing).
+- **Decision:** the message box's @mentions use `@tiptap/extension-mention` and `@tiptap/suggestion` (same Tiptap version as the editor F03 already uses, D058) and `@floating-ui/dom` to place the name list next to the cursor. Added to `packages/ui` in F14 T16.
+- **Vetted:** all MIT; Tiptap libraries come from the same team and release as the editor already in use; `@floating-ui/dom` is the widely used positioning library (Floating UI team), small and with no dependencies besides its own core; licenses check passes; no audit findings.
+- **Why:** Teams-style @mentions inside the rich text editor; writing our own suggestion popup and positioning would be more code to keep accessible and correct.
+- **Cost:** none.
+- **Alternatives:** a hand-written popup (more code, keyboard and screen-reader work); a different editor (would redo F03's composer).
+
+### D068: Status after closing the app (F14)
+- **Date:** 2026-10-27. **Status:** accepted (owner, 2026-10-27: "show away as Teams does").
+- **Decision:** when someone closes MeetApp (or their connection drops), colleagues see **Away** for a short wait (30 seconds), then **Offline**. The same rule applies to a normal close and a dropped connection, so a quick reconnect never shows Offline.
+- **Why:** the owner wants status to behave like Microsoft Teams, which shows Away before Offline.
+- **Cost:** none (already how F14 works).
+
+### D069: F14's second verification waits; F15 starts on top of F14 (process)
+- **Date:** 2026-10-27. **Status:** accepted (owner, 2026-10-27: busy with calls and screen sharing; "keep its testing for later").
+- **Decision:** F14's second verification (T-fix-9: full suite, desktop tests, screenshots) runs later, at a time the owner chooses, together with F15's. F15 is built on branch `feat/F15-calls`, started from `feat/F14-chats` (F15 needs F14's chats). F14 stays "in progress" until its verification passes; F14's Pull Request is opened first, F15's after it.
+- **Why:** the full check opens app windows and keeps the Mac busy for a long time, which would disturb the owner's work; documents and per-task tests don't.
+- **Cost:** none. Risk: a problem only the full check finds is found later; both features are checked before either is merged.
+
+### D070: One status "In a call" for meetings and chat calls (F14, F15)
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 requirements, 2026-10-27).
+- **Decision:** the status shown while someone is in any call (a meeting or a call from a chat) is **In a call**, replacing F14's "In a meeting" (F14 AC-26 points here). It changes back within 30 seconds of leaving; D068 still applies when the app closes.
+- **Why:** Teams shows "In a call" for both; one status is simpler to understand.
+- **Cost:** none.
+
+### D071: Calls from chats follow Teams (F15)
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 requirements, 2026-10-27).
+- **Decision:** a call rings for 30 seconds; groups with more than 20 members don't ring (members join from the chat); a chat call holds at most 20 people and lasts at most 30 hours; everyone in a chat call is equal (no organizer controls); a one-to-one call ends when either person leaves; being called during another call can be accepted, leaving the other call (no hold); a declined or unanswered call shows as a missed call.
+- **Why:** the owner's standing instruction: match Microsoft Teams when unsure.
+- **Cost:** none (same call server, D017).
+- **Alternatives:** larger chat calls (meetings already cover up to 100, F02); hold and call waiting (more work, rarely needed now).
+
+### D072: A call belongs to a meeting or a chat (F15)
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 design, 2026-10-27).
+- **Decision:** `calls` and `call_attendances` get an optional `conversation_id`, and `meeting_id` becomes optional; a check makes each call belong to exactly one. Chat calls reuse F02's joining, call-server passes, webhooks, leaving and 30-hour end; a partial unique index allows one running call per chat. Organizer-only routes refuse chat calls.
+- **Why:** the same proven call code for meetings and chats (as D065 did for chat messages), no fake "hidden meetings".
+- **Cost:** none; add-only migration.
+- **Alternatives:** a hidden meeting row per chat call (needs fake links and passcodes, confusing records); separate call tables (duplicated code).
+
+### D073: Background blur and pictures with LiveKit's track processors (F15)
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 design, 2026-10-27).
+- **Decision:** `@livekit/track-processors` (LiveKit, Apache-2.0) applies blur or a picture to the person's own camera on their computer. Its model and engine files are copied into the app (`assetPaths`) so nothing is downloaded from the internet and the desktop security policy needs no new address. 8 background pictures ship with the app; they were drawn for MeetApp, so no outside licence applies (`apps/web/public/backgrounds/LICENSES.md`). The tool's model files (MediaPipe, Apache-2.0) are listed there too.
+- **Vetted (F15 T1, 2026-10-27):** `@livekit/track-processors` 0.8.2 (12 October 2026, at least two weeks old), Apache-2.0, LiveKit team, regular releases, about 440 KB; its one dependency `@mediapipe/tasks-vision` 0.10.14 (Google, Apache-2.0, about 20 MB, mostly the detection engine that ships with the app). Licence check passes; no new audit findings (17 earlier ones remain, 2 high in `undici` and `zod`, for a later `/deps-update`).
+- **Why:** made by the call server's team and built for `livekit-client`, which we already use; runs on the device, free.
+- **Cost:** none.
+- **Built (F15 T18, 2026-10-27):** the engine files are copied from the installed package at build time (`vite.config.ts`), the model (Apache-2.0) is in `apps/web/public/backgrounds/`, and the 8 pictures were drawn for MeetApp (no outside rights; `public/backgrounds/LICENSES.md`). The desktop security policy now allows the app's own WebAssembly (`'wasm-unsafe-eval'`; JavaScript `eval` stays blocked), approved by the owner on 2026-10-27.
+- **Alternatives:** our own model and drawing code (much more work); a cloud service (costs money, sends video away).
+
+### D074: Ringtones generated by the app (F15)
+- **Date:** 2026-10-27. **Status:** accepted (owner approved the F15 design, 2026-10-27).
+- **Decision:** the 5 ringtones are short tone patterns made with the browser's Web Audio API, not sound files.
+- **Why:** no licensing questions, tiny, the same on every computer, volume easy to control.
+- **Cost:** none.
+- **Alternatives:** licensed or free sound files (licence checks, larger app).
+
+### D075: Rings go to "ring targets"; calls can move between devices (F15, ready for F11)
+- **Date:** 2026-10-27. **Status:** accepted (owner, 2026-10-27: "make sure … we will not be changing the core when we build the mobile app").
+- **Decision:** the backend owns ringing (record, 30-second clock, accept/decline, missed notes) and sends rings through "ring targets": today the live line to open desktop windows; F11 adds phone push notifications behind the same interface. Each device in a call is its own seat; **Transfer to this device** connects the new seat first, then removes the old one, and is built and tested desktop-to-desktop in F15.
+- **Why:** Teams rings every device and moves calls between them; building the core this way now means the mobile app only adds a delivery route and a button.
+- **Cost:** none now; phone push uses Apple's and Google's free notification services (checked in F11).
+
+### D076: Seats per person and what counts toward the call limit (F15)
+- **Date:** 2026-10-29. **Status:** accepted (found in F15's first verification; security review).
+- **Decision:** one person may have at most 3 seats in one chat call (two devices, plus one while moving the call; a 4th gets 409 `CALL_DEVICES`; a transfer replaces a seat and is always allowed). Starts, joins, accepts and transfers each count 1 toward the 10-a-minute call limit, as each person rung by Add people does.
+- **Why:** a person's own extra seats don't count toward the 20 people, so without a cap one member could fill the call server's places with copies of themselves.
+- **Alternatives:** 2 seats (blocks moving the call from a second device); no cap (the flooding above).
+
+
+### D077: F14 + F15 merged with the GitHub desktop check red (owner, 2026-11-02)
+- **Date:** 2026-11-02. **Status:** accepted (owner: "Merge as is").
+- **Decision:** PR #21 is merged even though the GitHub "Desktop app tests" check is red. The verification ran in full on the owner's Mac and passed. On GitHub, 100 of 112 desktop tests pass, and each run 5–9 others time out on short waits; a different set fails each run. The backgrounds desktop test skips itself where backgrounds aren't available (GitHub has no graphics); the owner chose this.
+- **Why:** GitHub's free Linux computers are slower than the Mac. The Linux-only bugs found (share list missing the screen, sign-in key kept only in memory, sign-up limit, end-of-call timing) are fixed. What's left is timing, not broken features.
+- **Follow-up:** make the slow desktop tests wait smarter, one by one, until the GitHub check is green again (before F04's PR).
+- **Alternatives:** retry a failed desktop test once on GitHub; keep fixing before merging (several more 45-minute rounds).

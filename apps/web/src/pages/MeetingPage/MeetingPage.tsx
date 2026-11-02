@@ -3,9 +3,11 @@
 // announcements for screen readers. When the call drops or ends, the app asks the backend what
 // happened (removed, ended, …) and shows that message.
 import { useSession } from "../../features/auth/index.ts";
-import { MeetingLayout, SegmentedControl, type LobbyBar } from "@meetapp/ui";
+import { MeetingLayout, Notice, SegmentedControl, type LobbyBar } from "@meetapp/ui";
+import { useBackgroundSlow } from "../../features/devices/index.ts";
 import type { TFunction } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { callPlace } from "../../features/meetings/chat/index.ts";
 import { useTranslation } from "react-i18next";
 import { Navigate } from "react-router";
 import {
@@ -27,7 +29,8 @@ import { DevicesPanel } from "./DevicesPanel.tsx";
 import { EndDialog } from "./EndDialog.tsx";
 import { Notices } from "./Notices.tsx";
 import { ShareDialog } from "./ShareDialog.tsx";
-import { useCall, type CallState, type MeetingPageProps } from "./use-call.ts";
+import { AddPeoplePanel } from "./AddPeoplePanel.tsx";
+import { useCall, useCallConversation, type CallState, type MeetingPageProps } from "./use-call.ts";
 
 export type { MeetingPageProps };
 
@@ -115,7 +118,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const { room, me } = call;
   const view = useView();
   const { setOpen } = call.chat;
-  const files = useAttachments(visit);
+  const files = useAttachments(useMemo(() => callPlace(visit), [visit]));
   const session = useSession();
   const canAttach = call.me !== undefined && call.me.group !== "guest";
   const dropping = useFileDrop(
@@ -140,7 +143,9 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const onOptions = can(me?.role, "options")
     ? (meetingId: string) => view.setDialog({ kind: "options", meetingId })
     : undefined;
-  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id };
+  // A call from a chat (F15): Add people instead of Participants, no Meeting info.
+  const conversationId = useCallConversation(visit);
+  return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id, conversationId };
 }
 
 type Screen = ReturnType<typeof useScreen>;
@@ -166,7 +171,20 @@ function Controls({ screen }: { screen: Screen }) {
       onShare={share}
       onLeave={actions.leave}
       onEnd={() => view.setDialog({ kind: "end" })}
+      chatCall={screen.conversationId !== undefined}
     />
+  );
+}
+
+/** "Background turned off to keep your video smooth" (AC-F15-31), until dismissed. */
+function BackgroundSlow() {
+  const { t } = useTranslation();
+  const { turnedOff, clear } = useBackgroundSlow();
+  if (!turnedOff) return null;
+  return (
+    <Notice tone="neutral" action={{ label: t("meetings.call.dismiss"), onClick: clear }}>
+      {t("devices.backgrounds.turnedOff")}
+    </Notice>
   );
 }
 
@@ -174,17 +192,20 @@ function ScreenNotices({ screen }: { screen: Screen }) {
   const { call, view } = screen;
   const { events, actions, room, care } = call;
   return (
-    <Notices
-      notice={events.notice}
-      failed={view.failed}
-      connecting={room.connection === "connecting"}
-      reconnecting={room.connection === "reconnecting"}
-      gone={care.gone}
-      onUnmute={actions.microphone}
-      onDismiss={events.clearNotice}
-      onDismissFailed={() => view.setFailed(false)}
-      onDismissGone={care.clearGone}
-    />
+    <>
+      <BackgroundSlow />
+      <Notices
+        notice={events.notice}
+        failed={view.failed}
+        connecting={room.connection === "connecting"}
+        reconnecting={room.connection === "reconnecting"}
+        gone={care.gone}
+        onUnmute={actions.microphone}
+        onDismiss={events.clearNotice}
+        onDismissFailed={() => view.setFailed(false)}
+        onDismissGone={care.clearGone}
+      />
+    </>
   );
 }
 
@@ -217,11 +238,15 @@ function ScreenPanel({ screen }: { screen: Screen }) {
         onClose={close}
       />
     );
+  if (view.panel === "people" && screen.conversationId && call.visit.call)
+    return <AddPeoplePanel conversationId={screen.conversationId} callId={call.visit.call.callId} onClose={close} />;
   if (view.panel === "chat") {
     const role = call.me?.role;
+    // A chat call's panel is the chat itself: no moderating and no polls, as in the chat (AC-F15-12).
+    const meeting = screen.conversationId === undefined;
     const rights = {
-      moderate: role === "organizer" || role === "co_organizer",
-      createPoll: role !== undefined && role !== "attendee",
+      moderate: meeting && (role === "organizer" || role === "co_organizer"),
+      createPoll: meeting && role !== undefined && role !== "attendee",
       attach: call.me !== undefined && call.me.group !== "guest",
     };
     const onFailed = () => view.setFailed(true);
@@ -229,7 +254,11 @@ function ScreenPanel({ screen }: { screen: Screen }) {
       <ChatArea
         chat={call.chat}
         viewerUserId={screen.userId}
-        writing={{ visit: call.visit, attachments: screen.files, off: call.room.state.options?.chatMode === "off" }}
+        writing={{
+          place: call.chat.place,
+          attachments: screen.files,
+          off: call.room.state.options?.chatMode === "off",
+        }}
         dropping={screen.dropping && rights.attach}
         rights={rights}
         onClose={close}

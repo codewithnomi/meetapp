@@ -10,6 +10,7 @@ export * from "./Input/index.ts";
 export * from "./LevelMeter/index.ts";
 export * from "./ReactionChip/index.ts";
 export * from "./Spinner/index.ts";
+export * from "./StatusDot/index.ts";
 export * from "./Sticker/index.ts";
 export * from "./Toggle/index.ts";
 export * from "./Tooltip/index.ts";

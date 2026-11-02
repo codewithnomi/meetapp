@@ -35,8 +35,8 @@ const CREATE = {
 
 const SETTINGS = {
   schema: {
-    summary: "Workspace settings: Allow guests, Allow GIFs",
-    description: `Owner and admins (in a personal workspace, its user). Guests off: guests can't join the workspace's meetings (F02). GIFs off: no GIFs in its meetings' chat (F03). ${NOT_A_MEMBER}`,
+    summary: "Workspace settings: Allow guests, Allow GIFs, Chat with people outside the workspace",
+    description: `Owner and admins (in a personal workspace, its user). Guests off: guests can't join the workspace's meetings (F02). GIFs off: no GIFs in its meetings' chat (F03). Outside chat off: no new chats with people outside, and chats with them turn read-only (F14). ${NOT_A_MEMBER}`,
     tags,
     params: workspaceParamsSchema,
     body: workspaceSettingsBodySchema,

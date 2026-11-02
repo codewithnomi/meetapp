@@ -3,6 +3,8 @@
 // and the spell-check menu offers corrections, "Add to dictionary" and the usual editing commands.
 
 export const FILES_CHANNEL = "meetapp:files";
+/** F14: the computer locked or unlocked (main → screens only). */
+export const POWER_CHANNEL = "meetapp:power";
 export const SPELLCHECK_LANGUAGES = ["en-US"];
 
 /** A chat file link from our own backend (`/api/v1/chat-files/<token>`); nothing else is ever saved. */

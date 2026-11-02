@@ -1,6 +1,7 @@
 // TC-F02-90 (AC-F02-45), the "source is scanned for text" part: the new meeting screens hold no
 // hard-coded words. Text between tags, and text props such as label="…" or title="…", must come from
-// t("…"). (Missing keys are caught by en.test.ts for the whole app.)
+// t("…"). (Missing keys are caught by en.test.ts for the whole app.) Since F14 also the Chat screen
+// (TC-F14-62, AC-F14-30), and the calls screens (TC-F15-58, AC-F15-18).
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -15,6 +16,13 @@ const FOLDERS = [
   "pages/MeetingPage",
   "pages/WorkspaceSettingsPage",
   "features/meetings",
+  "pages/ChatsPage",
+  "features/chats",
+  "features/calls",
+  "features/devices",
+  "pages/CallsSettingsPage",
+  "pages/DevicesSettingsPage",
+  "pages/ChatCallPage",
 ];
 
 function screens(dir: string): string[] {
@@ -25,11 +33,12 @@ function screens(dir: string): string[] {
   });
 }
 
-const BETWEEN_TAGS = />\s*([A-Za-z][A-Za-z ,.'!?-]*[A-Za-z.!?])\s*</g;
+// "=>" is an arrow function, not the end of a tag.
+const BETWEEN_TAGS = /(?<!=)>\s*([A-Za-z][A-Za-z ,.'!?-]*[A-Za-z.!?])\s*</g;
 const TEXT_PROPS = /\b(?:label|title|placeholder|aria-label|description|hint|alt)="([^"{}]*[A-Za-z][^"{}]*)"/g;
 
 describe("TC-F02-90 no hard-coded text in the meeting screens", () => {
-  it("TC-F02-90 [AC-F02-45] every word on screen comes from the translation file", () => {
+  it("TC-F02-90 TC-F14-62 [AC-F02-45] [AC-F14-30] every word on screen comes from the translation file", () => {
     const files = FOLDERS.flatMap(screens);
     expect(files.length).toBeGreaterThan(10);
     const found = files.flatMap((file) => {
@@ -39,5 +48,20 @@ describe("TC-F02-90 no hard-coded text in the meeting screens", () => {
       return words.map((word) => `${relative(SRC, join(SRC, file))}: ${word}`);
     });
     expect(found).toEqual([]);
+  });
+
+  it("TC-F15-58 [AC-F15-18] the calls and devices folders and the Add people panel are scanned, and the scan catches hard-coded text", () => {
+    const files = FOLDERS.flatMap(screens);
+    for (const part of [
+      "features/calls",
+      "features/devices",
+      "CallsSettingsPage",
+      "DevicesSettingsPage",
+      "ChatCallPage",
+    ])
+      expect(files.some((file) => file.includes(part))).toBe(true);
+    expect(files.some((file) => file.endsWith("pages/MeetingPage/AddPeoplePanel.tsx"))).toBe(true);
+    expect([...`<b>Call now</b>`.matchAll(BETWEEN_TAGS)]).toHaveLength(1);
+    expect([...`<Button label="Accept" />`.matchAll(TEXT_PROPS)]).toHaveLength(1);
   });
 });

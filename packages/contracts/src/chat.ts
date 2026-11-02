@@ -2,9 +2,9 @@
 // body may have (design 5.2): a short list of blocks with a few allowed marks, never HTML. Anything
 // else is refused, so nothing a person types or pastes can become page code.
 import { z } from "zod";
+import { systemNoteSchema } from "./chat-notes.ts";
 
-export const CHAT_MODES = ["on", "in_meeting", "off"] as const;
-export type ChatMode = (typeof CHAT_MODES)[number];
+export { CHAT_MODES, type ChatMode } from "./chat-notes.ts";
 
 /** MeetApp's own sticker set (AC-F03-26): names only; the pictures are built into the app. */
 export const STICKERS = [
@@ -85,6 +85,8 @@ const markSchema = z.discriminatedUnion("type", [
 const inlineSchema = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("text"), text: z.string().min(1), marks: z.array(markSchema).max(6).optional() }),
   z.strictObject({ type: z.literal("hardBreak") }),
+  /** "@Name" for a member of the chat (F14 AC-F14-22); anyone else becomes plain text on the server. */
+  z.strictObject({ type: z.literal("mention"), userId: z.uuid(), text: z.string().min(1).max(120) }),
 ]);
 
 const paragraphSchema = z.strictObject({ type: z.literal("paragraph"), content: z.array(inlineSchema).optional() });
@@ -127,7 +129,7 @@ function listDepth(list: List): number {
 }
 
 function paragraphText(paragraph: Paragraph): string {
-  return (paragraph.content ?? []).map((part) => (part.type === "text" ? part.text : "\n")).join("");
+  return (paragraph.content ?? []).map((part) => (part.type === "hardBreak" ? "\n" : part.text)).join("");
 }
 
 function listText(list: List): string[] {
@@ -229,6 +231,8 @@ export const chatMessageSchema = z
         names: z.array(z.string()),
         /** Who reacted (their joins), so each app works out "mine" itself from news sent to everyone. */
         attendanceIds: z.array(z.string()),
+        /** Who reacted in one-to-one and group chats (their accounts; F14). */
+        userIds: z.array(z.string()),
         /** For the person who asked; false in news sent to the whole room. */
         mine: z.boolean(),
       }),
@@ -250,9 +254,7 @@ export const chatMessageSchema = z
     /** For a poll message: the poll to fetch (results depend on who asks, AC-F03-22). */
     pollId: z.uuid().nullable(),
     /** A note such as "Aisha Khan pinned a message" (kind "system"). */
-    system: z
-      .object({ event: z.enum(["pinned", "chat_mode"]), name: z.string(), mode: z.enum(CHAT_MODES).optional() })
-      .nullable(),
+    system: systemNoteSchema.nullable(),
   })
   .meta({ id: "ChatMessage" });
 export type ChatMessageView = z.infer<typeof chatMessageSchema>;

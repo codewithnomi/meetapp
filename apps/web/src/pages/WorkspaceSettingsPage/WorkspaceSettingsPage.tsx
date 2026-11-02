@@ -11,6 +11,7 @@ import { ActionErrorNotice } from "../../features/auth/index.ts";
 import {
   WorkspaceShell,
   useAllowGifs,
+  useAllowOutsideChat,
   useAllowGuests,
   useCurrentWorkspace,
   useMe,
@@ -111,6 +112,27 @@ function GifsSwitch({ workspace }: { workspace: MyWorkspace }) {
   );
 }
 
+/** F14 AC-F14-27: chats with people outside the workspace (only company workspaces have colleagues). */
+function OutsideChatSwitch({ workspace }: { workspace: MyWorkspace }) {
+  const { t } = useTranslation();
+  const change = useAllowOutsideChat(workspace.id);
+  const checked = change.isPending ? change.variables : workspace.allowOutsideChat;
+  return (
+    <>
+      <Toggle
+        id="allow-outside-chat"
+        className="max-w-130"
+        label={t("workspaces.settings.allowOutsideChat")}
+        description={t("workspaces.settings.allowOutsideChatHint")}
+        checked={checked}
+        disabled={change.isPending}
+        onChange={(next) => change.mutate(next)}
+      />
+      <ActionErrorNotice error={change.error} onRetry={() => change.reset()} />
+    </>
+  );
+}
+
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
@@ -144,6 +166,7 @@ function SettingsContent({ workspace }: { workspace: MyWorkspace }) {
       </Section>
       <Section id="workspace-chat-title" title={t("workspaces.settings.chatTitle")}>
         <GifsSwitch workspace={workspace} />
+        {workspace.kind === "company" ? <OutsideChatSwitch workspace={workspace} /> : null}
       </Section>
     </main>
   );

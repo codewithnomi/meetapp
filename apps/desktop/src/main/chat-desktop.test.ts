@@ -55,7 +55,9 @@ describe("TC-F03-93 content security policy for GIFs", () => {
   it("TC-F03-93 [AC-F03-24] KLIPY's API may be called and its pictures shown; no other outside host", () => {
     const csp = contentSecurityPolicy({ apiUrl: API, gifApiUrl: "https://api.klipy.com" });
     const part = (name: string) => csp.split("; ").find((entry) => entry.startsWith(name)) ?? "";
-    expect(part("connect-src")).toBe("connect-src 'self' http://127.0.0.1:3000 https://api.klipy.com");
+    expect(part("connect-src")).toBe(
+      "connect-src 'self' http://127.0.0.1:3000 ws://127.0.0.1:3000 https://api.klipy.com",
+    );
     expect(part("img-src")).toBe("img-src 'self' data: http://127.0.0.1:3000 https://static.klipy.com");
   });
 });

@@ -1,6 +1,10 @@
 // The design system's icon names mapped to Lucide icons (same style: line icons on a 24px grid).
 import {
+  BellOff,
   Calendar,
+  Mail,
+  Menu,
+  Phone,
   Captions,
   Check,
   ChevronDown,
@@ -58,6 +62,7 @@ import {
   Underline,
   Upload,
   type LucideIcon,
+  PhoneMissed,
 } from "lucide-react";
 
 export const ICONS = {
@@ -120,6 +125,13 @@ export const ICONS = {
   quote: TextQuote,
   edit: Pencil,
   trash: Trash2,
+  // F14 chats: the side menu's fold button, audio calls, chat requests.
+  menu: Menu,
+  phone: Phone,
+  mail: Mail,
+  muted: BellOff,
+  // F15 calls from chats: a missed call note.
+  "phone-missed": PhoneMissed,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

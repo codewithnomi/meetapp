@@ -74,13 +74,17 @@ export function contentSecurityPolicy({ apiUrl, devServerUrl, callServerUrl, gif
   const connect = [
     "'self'",
     api,
+    // F14 D064: the live line to the same backend (ws/wss), and nowhere else.
+    ...(api ? [api.replace(/^http/, "ws")] : []),
     ...callServerSources(callServerUrl),
     ...(gifApiUrl ? [originOf(gifApiUrl) ?? ""] : []),
     ...(dev ? [dev.replace(/^http/, "ws")] : []),
   ].join(" ");
   return [
     "default-src 'self'",
-    dev ? `script-src 'self' 'nonce-${DEV_CSP_NONCE}'` : "script-src 'self'",
+    // F15 D073 (owner, 2026-10-27): the background tool's WebAssembly engine, shipped with the app, may be
+    // compiled. Scripts still load only from the app itself.
+    dev ? `script-src 'self' 'wasm-unsafe-eval' 'nonce-${DEV_CSP_NONCE}'` : "script-src 'self' 'wasm-unsafe-eval'",
     // Development only: Vite injects the page's styles at run time as inline <style> tags.
     dev ? "style-src 'self' 'unsafe-inline'" : "style-src 'self'",
     "font-src 'self'",

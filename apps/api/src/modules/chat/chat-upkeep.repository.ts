@@ -2,20 +2,61 @@
 // account's chat (AC-F03-44), and a person's chat for a data request. Database access only.
 import {
   callAttendances,
+  callRings,
   chatAttachments,
   chatEvents,
+  conversationMembers,
+  conversations,
   chatMessages,
   chatPollVotes,
   chatReactions,
   type Database,
   type Executor,
 } from "@meetapp/db";
-import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 
 const DELETED_USER = "Deleted user";
+/** Rows filled per step, so one fill never holds a long lock (design 4, "order of the change"). */
+const FILL_BATCH = 5_000;
+const FILLED_TABLES = ["chat_messages", "chat_events", "chat_pins", "chat_polls", "chat_attachments"] as const;
+
+/**
+ * F14 step 2 (D065): every meeting gets its conversation and every meeting chat row its `conversation_id`.
+ * Safe to stop and run again; returns how many rows it filled (0 once everything is filled).
+ */
+async function fillConversations(db: Database): Promise<number> {
+  await db.execute(sql`
+    insert into conversations (workspace_id, kind, meeting_id)
+    select m.workspace_id, 'meeting', m.id from meetings m
+    where not exists (select 1 from conversations c where c.meeting_id = m.id)
+    on conflict (meeting_id) do nothing`);
+  let filled = 0;
+  for (const table of FILLED_TABLES) {
+    for (;;) {
+      const done = await db.execute(sql`
+        update ${sql.identifier(table)} t set conversation_id = c.id, updated_at = now()
+        from conversations c
+        where c.meeting_id = t.meeting_id
+          and t.id in (select id from ${sql.identifier(table)} where conversation_id is null and meeting_id is not null limit ${FILL_BATCH})`);
+      const count = done.rowCount ?? 0;
+      filled += count;
+      if (count < FILL_BATCH) break;
+    }
+  }
+  return filled;
+}
 
 const joinsOf = (db: Executor, userId: string) =>
   db.select({ id: callAttendances.id }).from(callAttendances).where(eq(callAttendances.userId, userId));
+
+/** Files a person uploaded: through their joins of calls (F03) or their account (F14 chats, D066). */
+const uploadedBy = (userId: string, joins: string[]) =>
+  joins.length === 0
+    ? eq(chatAttachments.uploaderUserId, userId)
+    : or(inArray(chatAttachments.uploaderAttendanceId, joins), eq(chatAttachments.uploaderUserId, userId));
+
+const byJoinOrAccount = (table: typeof chatReactions, userId: string, joins: string[]) =>
+  joins.length === 0 ? eq(table.userId, userId) : or(inArray(table.attendanceId, joins), eq(table.userId, userId));
 
 /** A person's own messages and files, for a data request (privacy-legal.md). */
 async function exportFor(db: Database, userId: string) {
@@ -23,24 +64,41 @@ async function exportFor(db: Database, userId: string) {
   const messages = await db
     .select({
       meetingId: chatMessages.meetingId,
+      // F14: messages in one-to-one and group chats too (AC-F14-33).
+      conversationId: chatMessages.conversationId,
       createdAt: chatMessages.createdAt,
       kind: chatMessages.kind,
       text: chatMessages.plainText,
     })
     .from(chatMessages)
     .where(and(eq(chatMessages.senderUserId, userId), isNull(chatMessages.deletedAt)));
-  const files =
-    joins.length === 0
-      ? []
-      : await db
-          .select({
-            id: chatAttachments.id,
-            fileName: chatAttachments.fileName,
-            storageKey: chatAttachments.storageKey,
-          })
-          .from(chatAttachments)
-          .where(and(inArray(chatAttachments.uploaderAttendanceId, joins), eq(chatAttachments.status, "ready")));
-  return { messages, files };
+  const files = await db
+    .select({
+      id: chatAttachments.id,
+      fileName: chatAttachments.fileName,
+      storageKey: chatAttachments.storageKey,
+    })
+    .from(chatAttachments)
+    .where(and(uploadedBy(userId, joins), eq(chatAttachments.status, "ready")));
+  return { messages, files, calls: await callsOf(db, userId) };
+}
+
+/** F15: the person's calls from chats (when they joined and left) and the rings they got (AC-F15-28). */
+async function callsOf(db: Database, userId: string) {
+  const seats = await db
+    .select({
+      callId: callAttendances.callId,
+      conversationId: callAttendances.conversationId,
+      joinedAt: callAttendances.joinedAt,
+      leftAt: callAttendances.leftAt,
+    })
+    .from(callAttendances)
+    .where(and(eq(callAttendances.userId, userId), isNotNull(callAttendances.conversationId)));
+  const rings = await db
+    .select({ callId: callRings.callId, state: callRings.state, rangAt: callRings.rangAt })
+    .from(callRings)
+    .where(eq(callRings.userId, userId));
+  return { seats, rings };
 }
 
 /** A deleted account's chat: text and files go, the name becomes "Deleted user" (AC-F03-44). */
@@ -59,33 +117,74 @@ function forgetPerson(db: Database, userId: string) {
         deletedAt: new Date(),
       })
       .where(and(eq(chatMessages.senderUserId, userId), ne(chatMessages.kind, "system")));
-    if (joins.length === 0) return;
-    await tx
-      .update(chatAttachments)
-      .set({ status: "deleted" })
-      .where(inArray(chatAttachments.uploaderAttendanceId, joins));
-    await tx.delete(chatReactions).where(inArray(chatReactions.attendanceId, joins));
+    await tx.update(chatAttachments).set({ status: "deleted" }).where(uploadedBy(userId, joins));
+    await tx.delete(chatReactions).where(byJoinOrAccount(chatReactions, userId, joins));
     // Only named votes can be found; anonymous ones never point to a person.
-    await tx.delete(chatPollVotes).where(inArray(chatPollVotes.attendanceId, joins));
+    await tx
+      .delete(chatPollVotes)
+      .where(
+        joins.length === 0
+          ? eq(chatPollVotes.voterUserId, userId)
+          : or(inArray(chatPollVotes.attendanceId, joins), eq(chatPollVotes.voterUserId, userId)),
+      );
   });
+}
+
+/** F14: group chats whose last member left before `before`, with their files (AC-F14-18). */
+async function groupsToDelete(db: Database, before: Date) {
+  const gone = await db
+    .select({ id: conversations.id })
+    .from(conversations)
+    .where(and(eq(conversations.kind, "group"), lt(conversations.deletedAt, before)))
+    .limit(100);
+  const ids = gone.map((row) => row.id);
+  const files =
+    ids.length === 0
+      ? []
+      : await db
+          .select({ storageKey: chatAttachments.storageKey, previewKey: chatAttachments.previewKey })
+          .from(chatAttachments)
+          .where(inArray(chatAttachments.conversationId, ids));
+  return { ids, files };
+}
+
+/** F14: chat requests not answered in 30 days are tidied away (AC-F14-12; reads hide them already). */
+function expireRequests(db: Database, before: Date) {
+  return db
+    .update(conversationMembers)
+    .set({ state: "declined", updatedAt: new Date() })
+    .where(and(eq(conversationMembers.state, "pending"), lt(conversationMembers.requestedAt, before)));
+}
+
+/** Every file of a workspace's chats, for removing from storage before the workspace row goes. */
+function workspaceFiles(db: Database, workspaceId: string) {
+  return db
+    .select({ storageKey: chatAttachments.storageKey, previewKey: chatAttachments.previewKey })
+    .from(chatAttachments)
+    .where(eq(chatAttachments.workspaceId, workspaceId));
 }
 
 export function createChatUpkeepRepository(db: Database) {
   return {
+    fillConversations: () => fillConversations(db),
+    expireRequests: (before: Date) => expireRequests(db, before),
+    groupsToDelete: (before: Date) => groupsToDelete(db, before),
+    /** Messages, files' rows, pins, polls and news go with it (cascade). */
+    forgetConversations: (ids: string[]) =>
+      ids.length === 0 ? Promise.resolve() : db.delete(conversations).where(inArray(conversations.id, ids)),
     /** Catch-up news is kept a day (design 3.4). */
     /**
      * Old news goes, except each meeting's newest piece: news numbers continue from it and never start
      * again at 1 during a long call (verification round 1).
      */
     forgetEventsBefore: (before: Date) =>
-      db
-        .delete(chatEvents)
-        .where(
-          and(
-            lt(chatEvents.createdAt, before),
-            sql`${chatEvents.seq} < (select max(e.seq) from ${chatEvents} e where e.meeting_id = ${chatEvents.meetingId})`,
-          ),
+      db.delete(chatEvents).where(
+        and(
+          lt(chatEvents.createdAt, before),
+          // The newest news of each conversation stays, so numbers continue instead of restarting.
+          sql`${chatEvents.seq} < (select max(e.seq) from ${chatEvents} e where e.conversation_id = ${chatEvents.conversationId})`,
         ),
+      ),
     /** Files to remove from storage: deleted ones, and uploads never sent within the hour (AC-F03-34). */
     filesToRemove: (unsentBefore: Date) =>
       db
@@ -106,6 +205,7 @@ export function createChatUpkeepRepository(db: Database) {
     /** Before a meeting record is deleted (F06/F10): its files are marked, so the clean-up removes them. */
     markMeetingFiles: (meetingId: string) =>
       db.update(chatAttachments).set({ status: "deleted" }).where(eq(chatAttachments.meetingId, meetingId)),
+    workspaceFiles: (workspaceId: string) => workspaceFiles(db, workspaceId),
     forgetPerson: (userId: string) => forgetPerson(db, userId),
     exportFor: (userId: string) => exportFor(db, userId),
   };

@@ -46,11 +46,18 @@ export const RATE_RULES = {
   callActions: { name: "call-actions", limit: 30, windowSeconds: 60 },
   // F03: 10 chat messages in 10 seconds per person (AC-F03-06); reactions and votes have their own limit.
   chatMessages: { name: "chat-messages", limit: 10, windowSeconds: 10 },
+  // F15: calls started plus people rung by Add people, 10 a minute per person (AC-F15-22).
+  chatCalls: { name: "chat-calls", limit: 10, windowSeconds: 60 },
   chatReactions: { name: "chat-reactions", limit: 30, windowSeconds: 60 },
   // 10 file uploads a minute per person, sent or not (AC-F03-34).
   chatUploads: { name: "chat-uploads", limit: 10, windowSeconds: 60 },
   /** "Recent meetings" with Open chat per person: 30 a minute (each checks up to 50 meetings; F03 verification). */
   recentMeetingChats: { name: "recent-meeting-chats", limit: 30, windowSeconds: 60 },
+  /** F14: exact-email lookups in New chat (D063) per person: 30 a minute; "Join me" emails: 20 a day. */
+  chatEmailLookups: { name: "chat-email-lookups", limit: 30, windowSeconds: 60 },
+  chatInvites: { name: "chat-invites", limit: 20, windowSeconds: 24 * 60 * 60 },
+  /** New chat requests to people outside the workspace: 20 a day per person (AC-F14-12). */
+  chatRequests: { name: "chat-requests", limit: 20, windowSeconds: 24 * 60 * 60 },
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
    * database or the call server (S5; F02 verification). */
   attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },

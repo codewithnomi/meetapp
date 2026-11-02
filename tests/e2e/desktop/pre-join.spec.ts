@@ -2,7 +2,7 @@
 // remembered, camera and mic off on entry), TC-F02-20 device problems (macOS status mocked in the page's
 // bridge), TC-F02-21 guest name and Terms text. Needs the backend and Mailpit (`pnpm test`).
 import { expect, test } from "@playwright/test";
-import { FAKE_MEDIA, closeApp, freshProfile, launch, launchNewAccount } from "./desktop.ts";
+import { FAKE_MEDIA, closeApp, freshProfile, launch, launchAs, launchNewAccount } from "./desktop.ts";
 import { controls, fakeAccessStatus, infoLink, meetNow, meterPeak } from "./meeting-steps.ts";
 
 test.describe.configure({ timeout: 120_000 });
@@ -46,7 +46,8 @@ test("TC-F02-19 [AC-F02-09] preview and meter work, Test speakers plays, devices
   await closeApp(me.app);
 
   // The next start remembers the choices.
-  const again = await launch(profile, { VITE_API_URL: API_URL }, FAKE_MEDIA);
+  // Signs in again where the token lives only in memory (Linux); the device choices stay in the profile.
+  const again = await launchAs(me.email, profile, FAKE_MEDIA);
   await again.page.getByRole("button", { name: "Meetings" }).click();
   await again.page.getByRole("button", { name: "Meet now" }).click();
   await expect(again.page.getByRole("button", { name: "Turn camera on" })).toBeVisible();

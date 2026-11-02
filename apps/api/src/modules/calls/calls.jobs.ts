@@ -14,6 +14,8 @@ const WARNING_BEFORE_MS = 10 * 60 * 1000;
 const START_GRACE_MS = 60 * 1000;
 const EVENTS_KEPT_MS = 24 * 60 * 60 * 1000;
 const SIMULATED = "sim_";
+/** A chat call's rings stop 30 seconds after it starts (F15 AC-F15-08). */
+const RING_MS = 30 * 1000;
 
 /** People inside the call server who shouldn't be, and people marked inside who aren't (lost reports). */
 async function repairCall(deps: CallsDeps, call: Call, now: Date, keepSimulated: boolean): Promise<void> {
@@ -63,9 +65,12 @@ export function createCallJobs(deps: CallsDeps, { keepSimulated = false, alsoCle
         // One call that fails doesn't stop the others; the next round tries it again.
         if (rooms.has(call.id)) await repairCall(deps, call, now, keepSimulated).catch(() => undefined);
         else if (await abandoned(deps, call, now)) {
-          await deps.events.endCall(call.id, "last_left", now).catch(() => undefined);
+          const ended = await deps.events.endCall(call.id, "last_left", now).catch(() => false);
+          if (ended) await deps.chatCallHooks?.ended(call.id).catch(() => undefined);
         }
       }
+      // F15: rings older than 35 seconds stop even if their own job was lost (AC-F15-19).
+      await deps.chatCallHooks?.sweep().catch(() => undefined);
       await alsoCleanUp?.().catch(() => undefined);
     },
     /** 10 minutes before 30 hours, everyone is told (once, AC-F02-39). */
@@ -84,7 +89,12 @@ export function createCallJobs(deps: CallsDeps, { keepSimulated = false, alsoCle
       if (deps.now().getTime() < call.startedAt.getTime() + CALL_LIMIT_MS) return;
       if (await deps.events.endCall(callId, "time_limit", deps.now())) {
         await deps.livekit.deleteRoom(callId).catch(() => undefined);
+        await deps.chatCallHooks?.ended(callId);
       }
+    },
+    /** F15: 30 seconds after a chat call started, its unanswered rings stop (AC-F15-08). */
+    ringTimeout: async (callId: string): Promise<void> => {
+      await deps.chatCallHooks?.ringTimeout(callId);
     },
   };
 }
@@ -101,6 +111,7 @@ export async function startCallJobs(connection: ConnectionOptions, jobs: CallJob
       if (job.name === CLEAN_UP) await jobs.cleanUp();
       else if (job.name === "ending-soon" && callId) await jobs.endingSoon(callId);
       else if (job.name === "time-limit" && callId) await jobs.timeLimit(callId);
+      else if (job.name === "ring-timeout" && callId) await jobs.ringTimeout(callId);
     },
     { connection },
   );
@@ -118,6 +129,13 @@ export async function startCallJobs(connection: ConnectionOptions, jobs: CallJob
         delay: after(limit - WARNING_BEFORE_MS),
       });
       await queue.add("time-limit", data, { ...done, jobId: `${call.id}-time-limit`, delay: after(limit) });
+      if (call.conversationId) {
+        await queue.add("ring-timeout", data, {
+          ...done,
+          jobId: `${call.id}-ring-timeout`,
+          delay: after(startedAt + RING_MS),
+        });
+      }
     },
     close: async () => {
       await worker.close();

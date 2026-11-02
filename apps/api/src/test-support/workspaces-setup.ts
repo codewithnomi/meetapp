@@ -1,6 +1,7 @@
 // Test helpers for the workspace tests: people with session tokens, workspaces set up straight in the
 // database (invitations come in T12), and short wrappers for the HTTP calls.
-import { workspaceMembers, workspaces } from "@meetapp/db";
+import { user, workspaceMembers, workspaces } from "@meetapp/db";
+import { eq } from "drizzle-orm";
 import { issueSession } from "../plugins/auth.ts";
 import { bearer, createUser, testEmail, type AuthTestApp } from "./auth-app.ts";
 
@@ -31,6 +32,24 @@ export async function seedWorkspace(t: AuthTestApp, people: [Person, Role][], na
     .insert(workspaceMembers)
     .values(people.map(([person, role]) => ({ workspaceId, userId: person.id, role })));
   return workspaceId;
+}
+
+/** The person's Personal workspace (they are its only member). */
+export async function seedPersonal(t: AuthTestApp, person: Person): Promise<string> {
+  const [row] = await t.database.db
+    .insert(workspaces)
+    .values({ name: "Personal", kind: "personal", createdBy: person.id })
+    .returning({ id: workspaces.id });
+  if (!row) throw new Error("personal workspace not created");
+  await t.database.db.insert(workspaceMembers).values({ workspaceId: row.id, userId: person.id, role: "owner" });
+  return row.id;
+}
+
+/** A person with a chosen display name (accounts made for tests are all "Test Person"). */
+export async function namedPerson(t: AuthTestApp, label: string, name: string): Promise<Person> {
+  const person = await newPerson(t, label);
+  await t.database.db.update(user).set({ name }).where(eq(user.id, person.id));
+  return person;
 }
 
 export function caller(t: AuthTestApp) {

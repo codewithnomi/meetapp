@@ -1,7 +1,7 @@
 // The call connection with a stand-in for the call server (AC-F02-19, 21, 24, 29, 36, T-fix-3).
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_PREFS, type DevicePrefs } from "../device-prefs.ts";
+import { DEFAULT_PREFS, type DevicePrefs } from "../../devices/index.ts";
 import { VISIT } from "../fake-visit.ts";
 import type { Joined } from "../visit.ts";
 import { useMeetingRoom, type RoomHandlers } from "./meeting-room.ts";

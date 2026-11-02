@@ -43,3 +43,11 @@ Words used in MeetApp's documents and code, in plain English.
 | **SFU / call server** | The server (LiveKit) that passes audio/video between participants. |
 | **TURN** | A relay that keeps calls working when company firewalls block direct connections. |
 | **Feature flag** | An on/off switch to enable a feature for some users before everyone. |
+
+## Calls from chats (F15)
+- **Chat call:** an audio or video call started from a one-to-one or group chat (not a meeting). Everyone in it is equal.
+- **Ring / ringing:** the incoming call that shows on every open window of the person called, for up to 30 seconds.
+- **In a call:** the status shown while a person is in a meeting or a chat call.
+- **Seat:** one device's place in a call; a person may have up to 3 in one call.
+- **Ring target:** where a ring is delivered: today every open app window; later phone notifications.
+

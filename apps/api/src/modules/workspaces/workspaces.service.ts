@@ -24,8 +24,15 @@ const limitReached = (who: "you" | "they") =>
     `${who === "you" ? "You" : "They"} can own at most ${String(OWNED_WORKSPACE_LIMIT)} workspaces.`,
   );
 
-export function createWorkspacesService(repository: WorkspacesRepository) {
-  return { ...workspaceRules(repository), ...peopleRules(repository) };
+/** What other features do when someone stops being a member (F14: they leave the workspace's chats). */
+export interface MembershipHooks {
+  memberGone: (workspaceId: string, userId: string) => Promise<void>;
+}
+
+const NO_HOOKS: MembershipHooks = { memberGone: () => Promise.resolve() };
+
+export function createWorkspacesService(repository: WorkspacesRepository, hooks: MembershipHooks = NO_HOOKS) {
+  return { ...workspaceRules(repository), ...peopleRules(repository), ...departureRules(repository, hooks) };
 }
 
 /** Creating, renaming and listing. */
@@ -62,40 +69,22 @@ function workspaceRules(repository: WorkspacesRepository) {
 }
 
 /** Roles, removal, leaving and the hand-over. */
-function peopleRules(repository: WorkspacesRepository) {
-  /** The other person's current role here; 404 when they aren't a member. */
-  async function targetRole(membership: Membership, userId: string) {
-    const role = await repository.memberRole(membership.workspaceId, userId);
-    if (role === undefined) throw notFound();
-    return role;
-  }
+/** The other person's current role here; 404 when they aren't a member. */
+async function targetRole(repository: WorkspacesRepository, membership: Membership, userId: string) {
+  const role = await repository.memberRole(membership.workspaceId, userId);
+  if (role === undefined) throw notFound();
+  return role;
+}
 
+function peopleRules(repository: WorkspacesRepository) {
   return {
     async changeRole(membership: Membership, userId: string, role: "admin" | "member"): Promise<void> {
       ensureCompany(membership);
-      const current = await targetRole(membership, userId);
+      const current = await targetRole(repository, membership, userId);
       const action = roleChangeAction(current);
       if (!action) throw ownerUntouchable();
       ensureAllowed(membership, action);
       if (!(await repository.setRole(membership.workspaceId, userId, current, role))) throw notFound();
-    },
-    async remove(membership: Membership, userId: string): Promise<void> {
-      ensureCompany(membership);
-      const current = await targetRole(membership, userId);
-      const action = removalAction(current);
-      if (!action) throw ownerUntouchable();
-      ensureAllowed(membership, action);
-      const removed = await repository.remove(membership.workspaceId, userId, current, membership.userId);
-      if (!removed) throw notFound();
-    },
-    async leave(membership: Membership): Promise<void> {
-      ensureCompany(membership);
-      if (membership.role === "owner") {
-        throw new AppError(409, "OWNER_MUST_TRANSFER", "Hand the workspace over to someone else before leaving.");
-      }
-      ensureAllowed(membership, "leave");
-      // Nothing removed: they were removed meanwhile, or made the owner by a hand-over just now.
-      if (!(await repository.leave(membership.workspaceId, membership.userId))) throw notFound();
     },
     async transfer(membership: Membership, userId: string): Promise<void> {
       ensureAllowed(membership, "transfer");
@@ -114,3 +103,29 @@ function peopleRules(repository: WorkspacesRepository) {
 }
 
 export type WorkspacesService = ReturnType<typeof createWorkspacesService>;
+
+/** Removing someone and leaving: other features hear about it (F14: chats, AC-F14-34). */
+function departureRules(repository: WorkspacesRepository, hooks: MembershipHooks) {
+  return {
+    async remove(membership: Membership, userId: string): Promise<void> {
+      ensureCompany(membership);
+      const current = await targetRole(repository, membership, userId);
+      const action = removalAction(current);
+      if (!action) throw ownerUntouchable();
+      ensureAllowed(membership, action);
+      const removed = await repository.remove(membership.workspaceId, userId, current, membership.userId);
+      if (!removed) throw notFound();
+      await hooks.memberGone(membership.workspaceId, userId);
+    },
+    async leave(membership: Membership): Promise<void> {
+      ensureCompany(membership);
+      if (membership.role === "owner") {
+        throw new AppError(409, "OWNER_MUST_TRANSFER", "Hand the workspace over to someone else before leaving.");
+      }
+      ensureAllowed(membership, "leave");
+      // Nothing removed: they were removed meanwhile, or made the owner by a hand-over just now.
+      if (!(await repository.leave(membership.workspaceId, membership.userId))) throw notFound();
+      await hooks.memberGone(membership.workspaceId, membership.userId);
+    },
+  };
+}
