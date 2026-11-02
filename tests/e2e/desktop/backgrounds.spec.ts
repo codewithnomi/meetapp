@@ -28,6 +28,9 @@ test("TC-F15-49 [AC-F15-30] blur and every picture load only from the app itself
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await page.getByRole("button", { name: "Devices", exact: true }).click();
   await expect(page.locator("video")).toBeVisible();
+  // GitHub's Linux computers have no graphics for the tool, so the picker is off there; the owner chose
+  // to run this test only where backgrounds work (2026-11-02).
+  test.skip(await page.getByRole("radio", { name: "Blur" }).isDisabled(), "backgrounds not available on this computer");
   for (const name of CHOICES) {
     await page.getByRole("radio", { name }).click();
     await expect(page.getByRole("radio", { name })).toBeChecked();
