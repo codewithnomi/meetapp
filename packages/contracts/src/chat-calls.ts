@@ -86,6 +86,8 @@ export const ringStopMessageSchema = z.object({
   t: z.literal("ring_stop"),
   callId: z.uuid(),
   reason: z.enum(RING_STOP_REASONS),
+  /** Set when this ring became a missed call (a "Missed call" note was written; AC-F16-10, D081). */
+  missedCall: z.literal(true).optional(),
 });
 export type RingMessage = z.infer<typeof ringMessageSchema>;
 

@@ -206,6 +206,14 @@ describe("the main window and the small windows", () => {
     expect(report.mock.calls.every(([r]) => r.missed.length === 0)).toBe(true);
   });
 
+  it("TC-F16-68 [AC-F16-10, AC-F16-12] a caller who hangs up before anyone answers gives a missed call (D081)", async () => {
+    show();
+    await hear(RING);
+    await hear({ t: "ring_stop", callId: CALL_ID, reason: "cancelled", missedCall: true });
+    await waitFor(() => expect(report.mock.calls.some(([r]) => r.missed.length === 1)).toBe(true));
+    expect(report.mock.calls.find(([r]) => r.missed.length === 1)?.[0].missed[0]).toMatchObject({ callId: CALL_ID });
+  });
+
   it("TC-F16-24 [AC-F16-11] Call back that can't start opens the chat instead", async () => {
     fakeApi({ [`POST /api/v1/conversations/${CHAT}/calls`]: () => json({ error: { code: "CHAT_READ_ONLY" } }, 403) });
     const routes = show();

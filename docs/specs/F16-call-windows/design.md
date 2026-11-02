@@ -37,7 +37,7 @@ The main process knows whether any MeetApp window is in front, so it decides whe
    - **Decline** works as in F15.
    - **×** closes the window and silences the ringtone on this computer, while the main window keeps showing the call silently.
 2. **Several calls ring.** Main stacks one window per call upwards from the remembered place, newest on top, above the mini call window if one shows. When one closes, the others move down.
-3. **Nobody answers.** The ring ends as "missed". The main window reports it. If no MeetApp window was in front at that moment, main shows the notification "Missed call from Sara" (or "… in Release team") with **Call back**. Call back brings MeetApp to the front and starts the same kind of call; clicking the notification opens the chat.
+3. **Nobody answers.** The ring ends as "missed", or the caller hangs up first (D081: the server marks that ring stop `missedCall: true`, because it wrote a "Missed call" note; a removal while ringing is not marked). The main window reports it. If no MeetApp window was in front at that moment, main shows the notification "Missed call from Sara" (or "… in Release team") with **Call back**. Call back brings MeetApp to the front and starts the same kind of call; clicking the notification opens the chat.
 4. **In a call, the person switches to another app.** Main opens the mini call window, also with `showInactive()`. It shows the speaker's live video (a picture when their camera is off, the screen when someone shares), name, call name, timer and people count, and the buttons from AC-15, plus a hide **×** (owner, 2026-11-02: hides it until MeetApp has been in front again; the call goes on). A button press goes to the main window. **Back to the call** brings MeetApp to the front. When MeetApp comes to the front, the mini window hides.
 
 ## 3. How it works
@@ -45,7 +45,7 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 Whenever its incoming calls or current call change, the main window sends one `CallWindowsState` (at most every 200 ms; immediately for ring changes):
 - `rings`: `[{ callId, caller: { name, initials, photo? }` (`photo`: a `data:image/…` picture read by the main window, at most 300 KB) `, kind: "video" | "audio", chatName?, busyIn?: string }]`. `busyIn` is the current call's or meeting's name (AC-07).
 - `call`: `{ title, joinedAt, people, phase: "lobby" | "calling" | "in-call" | "reconnecting", speaker: { name, initials, hasVideo, sharing }, mic, camera, hand, canUnmute, canShare } | null`
-- `missed`: `[{ callId, from, chatName?, kind, conversationId, endedAt, text: { title, body, callBack } }]` (`text`: the notification's translated words, names shortened to fit) (rings that just ended as missed, once each). Answered, declined and cancelled rings never appear here (AC-12).
+- `missed`: `[{ callId, from, chatName?, kind, conversationId, endedAt, text: { title, body, callBack } }]` (`text`: the notification's translated words, names shortened to fit) (rings that just ended as missed, once each). Answered and declined rings, and stops without a "Missed call" note (removal), never appear here (AC-12).
 
 Rings come only from F15's `incoming-calls`, which already applies F15's rules on who may see a call (AC-23).
 

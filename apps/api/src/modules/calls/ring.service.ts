@@ -88,7 +88,7 @@ async function cancel(deps: RingDeps, userId: string, callId: string) {
   if (starter?.userId !== userId) throw notFound();
   const stopped = await deps.chatCalls.stopCallRings(callId, "cancelled", deps.calls.now());
   for (const row of stopped) {
-    await deps.targets.stop(row.userId, callId, "cancelled");
+    await deps.targets.stop(row.userId, callId, "cancelled", true);
     await deps.missed(place.conversation, { id: userId, name: place.me.name }, callId, row.userId);
   }
 }

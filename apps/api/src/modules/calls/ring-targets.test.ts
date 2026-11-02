@@ -31,7 +31,7 @@ describe("ring targets", () => {
     expect(push.ring).toHaveBeenCalledTimes(1);
     expect(push.ring).toHaveBeenCalledWith("u1", ring);
     expect(push.stop).toHaveBeenCalledTimes(1);
-    expect(push.stop).toHaveBeenCalledWith("u1", ring.callId, "accepted");
+    expect(push.stop).toHaveBeenCalledWith("u1", ring.callId, "accepted", undefined);
   });
 
   it("TC-F15-45 [AC-F15-34] a target that throws does not stop the other, and nothing is thrown", async () => {

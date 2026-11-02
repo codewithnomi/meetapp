@@ -242,7 +242,7 @@ describe("timeouts and ending", { timeout: 120_000 }, () => {
     await leave(alone, m1.id);
     expect(await stateOf(alone, m2.id)).toBe("cancelled");
     expect(await stateOf(alone, m3.id)).toBe("cancelled");
-    for (const l of lines) expect(await until(() => stopFor(alone, "cancelled")(l))).toBeTruthy();
+    for (const l of lines) expect((await until(() => stopFor(alone, "cancelled")(l)))?.missedCall).toBe(true); // TC-F16-68
     expect((await notes(id, "call_missed", alone)).map((n) => n.forUserId).sort()).toEqual([m2.id, m3.id].sort());
     expect((await callRow(alone))?.endedAt).not.toBeNull();
 
