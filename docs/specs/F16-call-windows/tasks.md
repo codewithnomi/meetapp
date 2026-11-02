@@ -1,7 +1,7 @@
 ---
 feature: F16
 title: Calls while MeetApp isn't in front
-status: approved
+status: in-progress
 updated: 2026-11-02
 ---
 
@@ -10,7 +10,7 @@ updated: 2026-11-02
 Small steps, done in order. Each step should be finishable and testable in one sitting.
 Tick `[x]` when done and verified. Per D052, each step runs only its own tests; the whole suite, desktop tests and screenshots run at `/spec-verify`.
 
-- [ ] **T1: Notification check (D080).** On the owner's Mac, try an ad-hoc-signed development build with a "Missed call" notification and a Call back button. Write the result into D080: does it show, does Call back appear? No feature code. Covers: AC-F16-10, 13b (feasibility). Check: the result is recorded, and TC-F16-28 says when it can be run.
+- [x] **T1: Notification check (D080).** Result: not possible without real signing; recorded in D080, and TC-F16-28 waits for F04. On the owner's Mac, try an ad-hoc-signed development build with a "Missed call" notification and a Call back button. Write the result into D080: does it show, does Call back appear? No feature code. Covers: AC-F16-10, 13b (feasibility). Check: the result is recorded, and TC-F16-28 says when it can be run.
 - [ ] **T2: The rules (`call-windows.ts`, no Electron).**
   - When the ring and mini windows show or hide.
   - Corner placement, stacking, gap closing, no overlap with the mini window.
