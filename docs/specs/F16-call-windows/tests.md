@@ -15,8 +15,8 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 **Set-up (design.md "Test approach"):**
 - No backend change, so no new server tests. Rules in `call-windows.ts` are pure and unit-tested with fake screens, fake focus and a fake clock. The Electron wiring uses a fake `Notification` and fake `BrowserWindow` in unit tests.
 - Desktop e2e uses 2 or 3 Electron windows (F02/F15 style: caller M1, receiver M2, a second caller M3). Camera and microphone are fake devices. "Not in front" = main window minimized or another (non-MeetApp) window focused.
-- **D077:** e2e cases marked (skip on Linux CI) skip what Linux can't do (content protection, all-Spaces, full-screen). They run on the owner's Mac and macOS runs.
-- **D080:** notification cases are unit-tested with a fake `Notification`; the real macOS notification and permission question are manual (TC-F16-33) once the app is signed.
+- **Platforms:** the desktop cases run on the owner's Mac. What only a person can confirm (over a full-screen app, absent from a screen share) is in the hand checks TC-F16-47 and TC-F16-57; the flags themselves are unit-tested. Cases marked "(skip on Linux CI)" depend on macOS/Windows features; on GitHub's Linux computers they may need a skip (see D077 for those runs).
+- **D080:** notification cases are unit-tested with a fake `Notification`; the real macOS notification and permission question are manual (TC-F16-28) once the app is signed.
 - The F02 and F15 suites must keep passing.
 
 ## Test cases
@@ -357,7 +357,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 - **Level:** unit
 - **Given** fake `BrowserWindow`
 - **When** the ring and mini windows are created
-- **Then** `alwaysOnTop` level `pop-up-menu`, `setVisibleOnAllWorkspaces(true, {visibleOnFullScreen:true})`, `skipTaskbar`, frameless, fixed sizes (ring 360x132, mini 320x236)
+- **Then** `alwaysOnTop` level `pop-up-menu`, `setVisibleOnAllWorkspaces(true, {visibleOnFullScreen:true})`, `skipTaskbar`, frameless, fixed sizes (ring 320x160, 320x212 with the busy line; mini 320x256)
 
 ### TC-F16-47: Over a full-screen app by hand
 - **Covers:** AC-F16-26
@@ -431,7 +431,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 - **Level:** unit and desktop e2e (skip on Linux CI)
 - **Given** the real ring and mini windows
 - **When** created
-- **Then** `setContentProtection(true)` was called (unit) and the flag is on (e2e, macOS and Windows). On Linux, hiding the small windows from shares is later (design.md 3.8)
+- **Then** `setContentProtection(true)` was called (unit) (the e2e checks the windows are on top; the capture itself is the hand check TC-F16-57). On Linux, hiding the small windows from shares is later (design.md 3.8)
 
 ### TC-F16-57: Not in the screen share, by hand
 - **Covers:** AC-F16-25
@@ -501,3 +501,13 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 | AC-F16-24 | TC-F16-44, 45 |
 | AC-F16-25 | TC-F16-56, 57 |
 | AC-F16-26 | TC-F16-03, 30, 46, 47 |
+
+## Cases added after the first verification (2026-11-02)
+| Case | What | Where |
+|---|---|---|
+| TC-F16-62 | Live pictures keep coming with MeetApp minimized (≥10 different in 2 s) | call-windows.spec.ts (TC-F16-34) |
+| TC-F16-63 | Fresh reports while the call screen redraws all the time | use-call-windows.test.tsx (TC-F16-32) |
+| TC-F16-64 | The mini window's memory stays within 10 % over 3 minutes of live video | call-windows.spec.ts (T-fix-2) |
+| TC-F16-65 | The small session serves only its page and `/assets/`; saved places validated, written owner-only (0600) | call-windows-security.test.ts (T-fix-3) |
+| TC-F16-66 | Reports checked entry by entry; long names shortened | call-windows-security.test.ts, report.test.ts (T-fix-4) |
+| TC-F16-67 | Notifications kept until used; a closed small window is reopened; timer margin; stack clear of the mini window | call-windows-notify.test.ts, call-windows-controller.test.ts, call-windows.test.ts (T-fix-4) |

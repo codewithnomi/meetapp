@@ -20,7 +20,7 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 - `src/main/call-windows-controller.ts`: the controller (no Electron): keeps the reports, the focus history and the open small windows, and decides after each change what shows where, which presses pass, and which missed calls get a notification. Tested with a fake computer.
 - `src/main/call-windows-checks.ts`: checks what reaches main: a report entry by entry (a bad entry is dropped, never the whole report) and the saved places.
 - `src/main/call-windows-notify.ts`: the missed-call notification (no Electron): translated words, names only, Call back; kept until used.
-- `src/main/call-windows-bridge.ts`: Electron wiring. Creates and destroys the small windows, tracks focus (`browser-window-focus` / `blur`, minimize, hide), keeps places in `userData/call-windows.json`, and shows notifications (`Notification`).
+- `src/main/call-windows-bridge.ts`: Electron wiring. Creates and destroys the small windows, tracks each main window's `focus`, `blur`, `minimize`, `restore`, `hide` and `show`, keeps places in `userData/call-windows.json`, and shows notifications (`Notification`).
 - `src/preload/call-window-preload.ts`: the small windows' only bridge, `window.meetappCallWindow`: `onState(listener)`, `act(action)` and `onFrame(listener)`. Nothing else: no auth, media, files or deviceKey.
 - `src/preload/preload.ts`: the main window gains `window.meetapp.callWindows`: `report(state)`, `onAction(listener)`, `onFramesWanted(listener)` (whether the mini window wants pictures now) and `sendFrame(frame)` (at most 200 KB). This is the design change the desktop rules require for anything new in the preload.
 
@@ -69,6 +69,7 @@ Each kind keeps one place: `{ ring: {x, y, displayId}, mini: {x, y, displayId} }
 
 ### 3.5 Live video in the mini window (AC-15, owner's choice)
 When the mini window opens, main creates a `MessageChannelMain` and gives one end to the main window and the other to the mini window. The main window draws the speaker's video, or the shared screen, into a 320×180 canvas about 15 times a second. It sends each picture as a JPEG `ArrayBuffer`, about 10–15 KB, so about 200 KB/s that never leaves the computer. The mini window draws each picture straight onto a canvas and frees it at once (T-fix-2: no picture addresses pile up, memory stays flat). Sending stops while the mini window is hidden. When the speaker has no video, no pictures are sent and the mini window shows their picture or initials. This keeps the mini window free of the call server and of any sign-in.
+The main window runs with `backgroundThrottling: false` (T-fix-1), so it keeps drawing pictures and sending reports at full speed while it is behind other apps, which is exactly when the mini window shows.
 
 ### 3.6 Ringtone (AC-04, 05)
 The ringtone keeps playing in the main window, as in F15, so a ring window closing or opening never breaks it (AC-05). **×** sends `hide`, and the main window then silences that ring's tone (F15's existing mute-per-ring). Several rings play one tone (AC-08), as F15 already does. When `busyIn` is set, the main window plays F15's quieter tone (AC-07, AC-F15-10).
@@ -95,7 +96,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 - `meetapp:call-window:frames` (main process → a main window and the mini window): the two ends of one MessagePort per mini window, for the live-video pictures; an empty message tells the main window to stop.
 
 ## Edge cases & errors
-- **The main window crashes or reloads:** on `render-process-gone` or `did-start-loading`, main drops that window's report, so its small windows close. After a reload the window reports again.
+- **The main window crashes or reloads:** on `render-process-gone` or a real reload (`did-start-navigation` of the main frame), main drops that window's report, so its small windows close. After a reload the window reports again.
 - **Main window closed while a small window shows:** the small windows close with it (the app quits when the last main window closes, as today).
 - **An action arrives for a ring that has just ended:** main ignores it, because the `callId` is no longer shown.
 - **An accept fails:** the main window shows F15's error in front.
@@ -138,7 +139,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
   - the mini window shows in a call when the window is minimized, its buttons change the call, and Leave closes it;
   - the small windows have content protection and the locked-down settings;
   - small windows can't navigate or send unknown actions.
-  These tests skip what Linux can't do (see D077).
+  What only a person can confirm is in the hand checks (TC-F16-47, 57).
 - **Notification:** unit-tested with a fake `Notification`. On the owner's Mac, checked by hand once signing allows (D080), including the first-time macOS permission question (AC-13b).
 - **Screen-share check (AC-25):** by hand on the owner's Mac, with our own share and one other capture app; the e2e test checks the content-protection flag.
 - **Every AC** (AC-F16-01 to 26 and 13b) is mapped to test cases in tests.md.

@@ -42,6 +42,14 @@ Measurable goals. Specs and tests use these numbers. All are **proposals**; the 
 | Browsers | Latest 2 versions of Chrome, Edge, Firefox, Safari |
 | iOS / Android (later) | iOS 16+ / Android 10+ |
 
+## Calls while MeetApp isn't in front (F16)
+| What | Target |
+|---|---|
+| Ring window shows; pressing Video or Audio opens the call | within **3 seconds** |
+| Ring window closes after the ring ends | within **2 seconds** |
+| Mini call window shows the call's state (mic, camera, hand) | within **1 second** |
+| Mini call window's memory during a call with live video | **flat** (under 10 % growth over 3 minutes) |
+
 ## Accessibility & languages
 - **WCAG 2.2 AA**: full keyboard use, screen reader support, good contrast, captions.
 - UI language: English at launch; built so more languages (including right-to-left like Urdu/Arabic) can be added without code changes.

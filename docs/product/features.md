@@ -180,7 +180,7 @@ Noted by the owner during the F02 look check (2026-10-20), for after a first usa
 
 ## The build order at a glance
 ```
-F00 → F01 → F02 → F03 → F14 → F15 → F04 → F13      (Phase 1: working Teams-style app)
+F00 → F01 → F02 → F03 → F14 → F15 → F16 → F04 → F13      (Phase 1: working Teams-style app)
     → F05 → F06                        (Phase 2: AI notes)
     → F07 → F08 → F09                  (Phase 3: AI assistant)
     → F10 → F11 → F12                  (Phase 4: web, mobile, business, local AI)

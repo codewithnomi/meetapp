@@ -5,7 +5,7 @@ The React app the desktop app shows: the sign-in screens, the side menu with the
 
 | Folder | What |
 |---|---|
-| `src/app/` | Entry (`main.tsx`), app shell (`App.tsx`), translations setup, stylesheet |
+| `src/app/` | Entry (`main.tsx`; F16: `call-window-main.tsx` for the small call windows' page), app shell (`App.tsx`), translations setup, stylesheet |
 | `src/pages/` | Screens: sign-in (`SignInPage`, `CreateAccountPage`, `CodePage`, `NewPasswordPage`, `TermsPage`, `BrowserSignInPage`), `HomePage`, `PeoplePage`, `RequestsPage`, `JoinWorkspacePage`, `ProfilePage`, `SettingsPage` (Appearance); F02: `MeetingsPage`, `JoinMeetingPage` (guests, from sign-in), `PreJoinPage`, `LobbyPage`, `MeetingPage`, `MeetingEndedPage`, `WorkspaceSettingsPage`; F03: the chat panel inside `MeetingPage` (`Chat*.tsx`) and Recent meetings with Open chat in `MeetingsPage`; F14: `ChatsPage` (the chat list, a conversation, New chat, Chat requests, Group details), `PrivacyPage`; F15: `ChatCallPage` (Calling, then the call), `DevicesSettingsPage`, `CallsSettingsPage`, and the Add people panel in `MeetingPage`; F16: `CallWindowPage` (the small call windows' page, from `call-window.html`) |
 | `src/features/auth/` | Sign-in through the desktop's main process (`window.meetapp.auth`); the screens never see the token |
 | `src/features/workspaces/` | `/me` every 30 s, the open workspace, the side menu, members, invitations, join link and requests |
