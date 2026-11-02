@@ -74,5 +74,7 @@ export default defineConfig(({ command }) => ({
   plugins: [react(), tailwindcss(), bundledEmojiData(), bundledBackgroundEngine()],
   ...(command === "serve" ? { html: { cspNonce: DEV_CSP_NONCE } } : {}),
   envDir: "../..",
+  // F16 (D079): the small call windows' own page next to the app's.
+  build: { rolldownOptions: { input: { main: "index.html", callWindow: "call-window.html" } } },
   server: { host: "127.0.0.1", port: 5173, strictPort: true },
 }));

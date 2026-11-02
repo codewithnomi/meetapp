@@ -223,3 +223,14 @@ export {
   type CallMedia,
   type RingMessage,
 } from "./chat-calls.ts";
+export type {
+  CallWindowAction,
+  CallWindowView,
+  CallWindowsCall,
+  CallWindowsMainAction,
+  CallWindowsMissed,
+  CallWindowsNotificationAction,
+  CallWindowsPerson,
+  CallWindowsRing,
+  CallWindowsState,
+} from "./call-windows.ts";

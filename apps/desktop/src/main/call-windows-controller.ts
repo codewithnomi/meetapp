@@ -2,6 +2,7 @@
 // focus history and the open small windows, and decides after each change which windows show where, which
 // button presses pass, and which missed calls get a notification. Free of Electron: the computer's side
 // comes in as `CallWindowsDeps` (call-windows-bridge.ts gives the real one, tests a fake).
+import type { CallWindowView, CallWindowsNotificationAction } from "@meetapp/contracts";
 import {
   FLICKER_MS,
   createFocusHistory,
@@ -22,7 +23,7 @@ import {
 
 export type SmallKind = "ring" | "mini";
 /** What a small window is told to show. */
-export type SmallState = { kind: "ring"; ring: RingInfo } | { kind: "mini"; call: CallInfo };
+export type SmallState = CallWindowView;
 
 export interface SmallWindow {
   id: number;
@@ -34,8 +35,7 @@ export interface SmallWindow {
 }
 
 /** Actions only main sends (from a notification), never a small window (TC-F16-55). */
-export type MainOnlyAction =
-  { name: "openChat"; conversationId: string } | { name: "callBack"; conversationId: string; video: boolean };
+export type MainOnlyAction = CallWindowsNotificationAction;
 
 export interface CallWindowsDeps {
   open: (kind: SmallKind) => SmallWindow;

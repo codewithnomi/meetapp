@@ -4,6 +4,16 @@
 // call-windows-bridge.ts gives them the real windows, screens and focus.
 
 /** Main window ↔ main: `report` (state) and `action` (to carry out). */
+import type {
+  CallWindowAction,
+  CallWindowsCall as CallInfo,
+  CallWindowsMissed as MissedInfo,
+  CallWindowsRing as RingInfo,
+  CallWindowsState,
+} from "@meetapp/contracts";
+
+export type { CallInfo, CallWindowAction, CallWindowsState, MissedInfo, RingInfo };
+
 export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 /** Small window ↔ main: `state` (to show) and `act` (a button press). */
 export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
@@ -37,42 +47,6 @@ export interface Places {
   mini?: Place;
 }
 
-export interface RingInfo {
-  callId: string;
-  caller: { name: string; initials: string; photo?: string };
-  kind: "video" | "audio";
-  chatName?: string;
-  /** The current call's or meeting's name when the person is busy (AC-F16-07). */
-  busyIn?: string;
-}
-export interface CallInfo {
-  title: string;
-  joinedAt: number;
-  people: number;
-  phase: "lobby" | "calling" | "in-call" | "reconnecting";
-  speaker: { name: string; initials: string; photo?: string; hasVideo: boolean; sharing: boolean };
-  mic: boolean;
-  camera: boolean;
-  hand: boolean;
-  canUnmute: boolean;
-  canShare: boolean;
-}
-export interface MissedInfo {
-  callId: string;
-  from: string;
-  chatName?: string;
-  kind: "video" | "audio";
-  conversationId: string;
-  endedAt: number;
-  /** The notification's words, translated by the main window (AC-F16-21, 23: names only). */
-  text: { title: string; body: string; callBack: string };
-}
-/** What one MeetApp main window reports (design.md 3.1). */
-export interface CallWindowsState {
-  rings: RingInfo[];
-  call: CallInfo | null;
-  missed: MissedInfo[];
-}
 export interface Merged {
   rings: RingInfo[];
   call: CallInfo | null;
@@ -181,11 +155,6 @@ export function layoutWindows(input: LayoutInput): { mini?: Rect; rings: Rect[] 
 function overlaps(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 }
-
-export type CallWindowAction =
-  | { name: "accept"; callId: string; video: boolean }
-  | { name: "decline" | "hide"; callId: string }
-  | { name: "toggleMic" | "toggleCamera" | "share" | "toggleHand" | "leave" | "backToCall" };
 
 const RING_ACTIONS = new Set(["accept", "decline", "hide"]);
 const CALL_ACTIONS = new Set(["toggleMic", "toggleCamera", "share", "toggleHand", "leave", "backToCall"]);

@@ -32,7 +32,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - Drop a window's report on a crash or reload.
   - Covers: AC-F16-06, 19, 20, 26. Tests: TC-F16-46, 60.
 - [x] **T5: The two windows in the gallery.** `RingWindow` and `MiniCallWindow` organisms (packages/ui) as on the approved canvas, with stories for every state, names for screen readers, keyboard use and Escape. All texts are translated. Covers: AC-F16-02, 07, 15, 21. Tests: TC-F16-04, 14, 31, 48, 49. Screenshots are made at verification.
-- [ ] **T6: The small page (`call-window.html`).** A separate Vite entry that shows `RingWindow` or `MiniCallWindow` from the state it receives and sends button presses with `act`. It has no router, sign-in or API client. Covers: AC-F16-02, 15, 22. Tests: covered by T3 (TC-F16-53, 54) and T8 / T10.
+- [x] **T6: The small page (`call-window.html`).** A separate Vite entry that shows `RingWindow` or `MiniCallWindow` from the state it receives and sends button presses with `act`. It has no router, sign-in or API client. Covers: AC-F16-02, 15, 22. Tests: covered by T3 (TC-F16-53, 54) and T8 / T10.
 - [ ] **T7: The main window's side (`features/call-windows`).**
   - The report builder: rings, busy text, call phases and missed rings.
   - The action handler, running the same code as the screen buttons; Call back with the chat button's messages.

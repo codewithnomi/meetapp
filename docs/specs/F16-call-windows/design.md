@@ -22,7 +22,8 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 - `src/preload/preload.ts`: the main window gains `window.meetapp.callWindows`: `report(state)`, `onAction(listener)` and `sendFrame(frame)`. This is the design change the desktop rules require for anything new in the preload.
 
 **Screens (apps/web):**
-- A second small page, `call-window.html` (its own Vite entry, `src/call-window/`). It shows the ring window or the mini call window from the state it receives, using the same `@meetapp/ui` components and translations. It has no router, no sign-in and no API client.
+- A second small page, `call-window.html` (its own Vite entry: `src/app/call-window-main.tsx` renders `pages/CallWindowPage`, which uses `features/call-windows`). It shows the ring window or the mini call window from the state it receives, using the same `@meetapp/ui` components and translations. It has no router, no sign-in and no API client.
+- **Shared shapes** (`packages/contracts/src/call-windows.ts`, types only): the report, the view sent to a small window and the actions. The desktop app checks them with its own small validators, so no schema library is added to its preloads.
 - `features/call-windows/`, in the main window: builds the `report` from the incoming calls (F15 `incoming-calls.ts`) and the current call (F02/F15 call state), carries out the actions that come back, and sends the speaker frames.
 
 **UI (packages/ui):** organisms `RingWindow` and `MiniCallWindow`, each with a story and tests, drawn as on the approved canvas board. `RingWindow` reuses `IncomingCall`'s parts.

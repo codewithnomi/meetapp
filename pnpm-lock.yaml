@@ -208,6 +208,9 @@ importers:
       '@meetapp/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@meetapp/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@types/node':
         specifier: ^26.6.5
         version: 26.6.5
