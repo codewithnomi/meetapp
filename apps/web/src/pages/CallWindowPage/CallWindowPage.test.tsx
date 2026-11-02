@@ -1,7 +1,7 @@
 // The small call window's page (F16 T6): shows what the desktop app sends and sends each press back
 // (AC-F16-02, 07, 15, 16, 21). The bridge is faked: window.meetappCallWindow.
 import type { CallWindowView, CallWindowsCall } from "@meetapp/contracts";
-import { act as react, render, screen } from "@testing-library/react";
+import { act as react, render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../../app/i18n.ts";
@@ -10,9 +10,13 @@ import { CallWindowPage } from "./CallWindowPage.tsx";
 let show: (view: CallWindowView) => void = () => undefined;
 let frame: (bytes: ArrayBuffer) => void = () => undefined;
 const sent = vi.fn();
+const drawn = vi.fn();
+const closed = vi.fn();
 
 beforeEach(() => {
   sent.mockReset();
+  drawn.mockReset();
+  closed.mockReset();
   (window as { meetappCallWindow?: unknown }).meetappCallWindow = {
     onState: (listener: (view: CallWindowView) => void) => {
       show = listener;
@@ -24,11 +28,15 @@ beforeEach(() => {
       return () => undefined;
     },
   };
-  URL.createObjectURL = vi.fn(() => "blob:app://meetapp/frame-1");
-  URL.revokeObjectURL = vi.fn();
+  vi.stubGlobal(
+    "createImageBitmap",
+    vi.fn(async () => ({ width: 320, height: 180, close: closed })),
+  );
+  HTMLCanvasElement.prototype.getContext = (() => ({ drawImage: drawn })) as never;
 });
 afterEach(() => {
   delete (window as { meetappCallWindow?: unknown }).meetappCallWindow;
+  vi.unstubAllGlobals();
 });
 
 const call: CallWindowsCall = {
@@ -82,8 +90,11 @@ describe("CallWindowPage", () => {
     react(() => show({ kind: "mini", call }));
     expect(screen.getByText("00:01:05 · 4 people")).toBeInTheDocument();
     expect(screen.getByText("Sara Malik is speaking")).toBeInTheDocument();
-    react(() => frame(new ArrayBuffer(8)));
-    expect(document.querySelector('img[src="blob:app://meetapp/frame-1"]')).not.toBeNull();
+    expect(document.querySelector("canvas")).not.toBeNull();
+    await react(async () => frame(new ArrayBuffer(8)));
+    await waitFor(() => expect(drawn).toHaveBeenCalledOnce());
+    // Each picture is freed right after drawing, so memory stays flat (T-fix-2).
+    expect(closed).toHaveBeenCalledOnce();
     for (const name of [
       "Mute (⌘⇧M)",
       "Turn camera on (⌘⇧O)",

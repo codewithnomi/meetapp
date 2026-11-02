@@ -2,7 +2,7 @@
 // button presses back, and the mini window's live-video pictures. Outside the desktop app there is no
 // bridge, and the page shows nothing.
 import type { CallWindowAction, CallWindowView } from "@meetapp/contracts";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 
 interface SmallWindowBridge {
   onState: (listener: (view: unknown) => void) => () => void;
@@ -26,21 +26,31 @@ export function act(action: CallWindowAction): void {
   bridge()?.act(action);
 }
 
-/** The latest live-video picture as a blob: address, freed when the next one arrives (design.md 3.5). */
-export function useFrameUrl(): string | undefined {
-  const [url, setUrl] = useState<string>();
+/**
+ * Draws each live-video picture straight onto `canvas` and frees it at once (design.md 3.5): no picture
+ * addresses pile up, so the mini window's memory stays flat during a long call. Clears it when stopped.
+ */
+export function useFrameCanvas(canvas: RefObject<HTMLCanvasElement | null>, active: boolean): void {
   useEffect(() => {
-    let last: string | undefined;
+    if (!active) return;
+    let live = true;
     const stop = bridge()?.onFrame((frame) => {
-      const next = URL.createObjectURL(new Blob([frame], { type: "image/jpeg" }));
-      setUrl(next);
-      if (last) URL.revokeObjectURL(last);
-      last = next;
+      void createImageBitmap(new Blob([frame], { type: "image/jpeg" }))
+        .then((picture) => {
+          const target = canvas.current;
+          if (live && target) {
+            target.width = picture.width;
+            target.height = picture.height;
+            target.getContext("2d")?.drawImage(picture, 0, 0);
+          }
+          picture.close();
+        })
+        // A damaged picture is skipped; the next one comes 66 ms later.
+        .catch(() => undefined);
     });
     return () => {
+      live = false;
       stop?.();
-      if (last) URL.revokeObjectURL(last);
     };
-  }, []);
-  return url;
+  }, [canvas, active]);
 }

@@ -34,8 +34,9 @@ function startSending(track: MediaStreamTrack, send: (frame: ArrayBuffer) => voi
   canvas.height = HEIGHT;
   const context = canvas.getContext("2d");
   let busy = false;
+  let stopped = false;
   const timer = setInterval(() => {
-    if (busy || !context || video.videoWidth === 0) return;
+    if (stopped || busy || !context || video.videoWidth === 0) return;
     const { sx, sy, sw, sh } = cover(video.videoWidth, video.videoHeight);
     context.drawImage(video, sx, sy, sw, sh, 0, 0, WIDTH, HEIGHT);
     busy = true;
@@ -43,7 +44,9 @@ function startSending(track: MediaStreamTrack, send: (frame: ArrayBuffer) => voi
       (blob) => {
         void blob
           ?.arrayBuffer()
-          .then(send)
+          .then((frame) => {
+            if (!stopped) send(frame);
+          })
           .finally(() => (busy = false));
         if (!blob) busy = false;
       },
@@ -52,7 +55,9 @@ function startSending(track: MediaStreamTrack, send: (frame: ArrayBuffer) => voi
     );
   }, FRAME_EVERY_MS);
   return () => {
+    stopped = true;
     clearInterval(timer);
+    video.pause();
     video.srcObject = null;
   };
 }

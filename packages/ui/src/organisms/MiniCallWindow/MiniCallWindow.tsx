@@ -3,6 +3,7 @@
 // time and people, and "Back to the call"; middle: the speaker's live video (a picture sent by the main
 // window), their photo or initials when their camera is off, or a status ("Reconnecting…"); bottom: mute,
 // camera, share, hand and Leave. Every text arrives translated; the page carries out each press.
+import type { ReactNode } from "react";
 import { Avatar } from "../../atoms/Avatar/index.ts";
 import { Icon, type IconName } from "../../atoms/Icon/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
@@ -23,8 +24,8 @@ export interface MiniCallWindowProps {
   details: string;
   speakerName: string;
   speakerPhoto?: string | undefined;
-  /** The latest picture of the speaker's video (a blob: address); none shows the photo or initials. */
-  frameUrl?: string | undefined;
+  /** The speaker's live video, drawn by the page (F16: a canvas fed by the main window); none shows the photo or initials. */
+  video?: ReactNode;
   /** "Sara Malik is speaking", "Sara Malik is sharing", "Reconnecting…", "Waiting to be let in…". */
   caption: string;
   /** Lobby, calling and reconnecting show only Leave (or Cancel). */
@@ -87,11 +88,11 @@ function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "d
   );
 }
 
-function Picture(props: Pick<MiniCallWindowProps, "frameUrl" | "speakerName" | "speakerPhoto" | "caption">) {
+function Picture(props: Pick<MiniCallWindowProps, "video" | "speakerName" | "speakerPhoto" | "caption">) {
   return (
     <div className="relative mx-2 grid h-37.5 place-items-center overflow-hidden rounded-md bg-stage-scrim">
-      {props.frameUrl ? (
-        <img src={props.frameUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      {props.video ? (
+        <div className="absolute inset-0 [&>*]:h-full [&>*]:w-full [&>*]:object-cover">{props.video}</div>
       ) : (
         <Avatar name={props.speakerName} {...(props.speakerPhoto ? { src: props.speakerPhoto } : {})} size="lg" />
       )}

@@ -4,8 +4,9 @@
 import type { CallWindowsCall, CallWindowsRing } from "@meetapp/contracts";
 import type { TFunction } from "i18next";
 import { MiniCallWindow, RingWindow } from "@meetapp/ui";
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { act, useFrameUrl, useSmallWindowView } from "../../features/call-windows/index.ts";
+import { act, useFrameCanvas, useSmallWindowView } from "../../features/call-windows/index.ts";
 import { useElapsed } from "../../features/meetings/index.ts";
 
 function Ring({ ring }: { ring: CallWindowsRing }) {
@@ -53,10 +54,17 @@ function caption(call: CallWindowsCall, t: TFunction): string {
   return t(call.speaker.sharing ? "calls.windows.sharing" : "calls.windows.speaking", { name: call.speaker.name });
 }
 
+/** The speaker's live video, drawn from the main window's pictures (named in the caption, so hidden here). */
+function LiveVideo() {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  useFrameCanvas(canvas, true);
+  return <canvas ref={canvas} aria-hidden="true" />;
+}
+
 function Mini({ call }: { call: CallWindowsCall }) {
   const { t } = useTranslation();
   const time = useElapsed(call.joinedAt);
-  const frame = useFrameUrl();
+  const live = call.speaker.hasVideo || call.speaker.sharing;
   const inCall = call.phase === "in-call";
   const details = { lobby: t("calls.windows.lobbyDetails"), calling: t("calls.windows.callingDetails") }[
     call.phase as "lobby" | "calling"
@@ -68,7 +76,7 @@ function Mini({ call }: { call: CallWindowsCall }) {
       details={details ?? t("calls.windows.details", { time, count: call.people })}
       speakerName={call.speaker.name}
       speakerPhoto={call.speaker.photo}
-      frameUrl={call.speaker.hasVideo || call.speaker.sharing ? frame : undefined}
+      video={live ? <LiveVideo /> : undefined}
       caption={caption(call, t)}
       controls={inCall}
       controlsLabel={t("calls.windows.controls")}

@@ -290,11 +290,13 @@ test("TC-F16-30 TC-F16-34 [AC-F16-14, AC-F16-15] in a call the mini window shows
   ])
     await expect(mini.getByRole("button", { name })).toBeVisible();
   // Olivia's fake camera arrives as pictures from Mo's main window.
-  await expect(mini.locator('img[src^="blob:"]')).toBeVisible({ timeout: 5_000 });
-  // Live, not frozen: with MeetApp minimized new pictures keep coming (about 15 a second).
+  await expect(mini.locator("canvas")).toBeVisible({ timeout: 5_000 });
+  // Live, not frozen: with MeetApp minimized new pictures keep being drawn (about 15 a second).
   const seen = new Set<string>();
   for (let i = 0; i < 20; i += 1) {
-    seen.add((await mini.locator("img").getAttribute("src")) ?? "");
+    seen.add(
+      await mini.locator("canvas").evaluate((c: HTMLCanvasElement) => c.toDataURL("image/jpeg", 0.3).slice(-200)),
+    );
     await mini.waitForTimeout(100);
   }
   expect(seen.size).toBeGreaterThanOrEqual(10);
@@ -383,4 +385,29 @@ test("TC-F16-42 [AC-F16-19] a remembered place is used again after MeetApp resta
   await firstSmall(mo.app);
   await expect.poll(async () => (await smallState(mo.app))[0]?.bounds).toMatchObject({ x: display.x, y: display.y });
   await olivia.page.getByRole("button", { name: "Cancel" }).click();
+});
+
+// F16 T-fix-2: the mini window's memory stays flat during a call with live video (it grew about 23 MB a
+// minute in the first verification). Three minutes; under 10 % growth after the first half minute.
+test("T-fix-2 [AC-F16-15] the mini window's memory stays flat over three minutes of live video", async () => {
+  test.setTimeout(360_000);
+  const { olivia, mo } = await inCall();
+  await putAway(mo.app, true);
+  const mini = await firstMini(mo.app);
+  await expect(mini.locator("canvas")).toBeVisible({ timeout: 5_000 });
+  const memory = () =>
+    mo.app.evaluate(({ app, webContents }, page) => {
+      const small = webContents.getAllWebContents().find((w) => w.getURL().includes(page));
+      const pid = small?.getOSProcessId();
+      return app.getAppMetrics().find((m) => m.pid === pid)?.memory.workingSetSize ?? 0;
+    }, SMALL);
+  await mini.waitForTimeout(30_000);
+  const start = await memory();
+  await mini.waitForTimeout(150_000);
+  const end = await memory();
+  expect(start).toBeGreaterThan(0);
+  expect(end / start).toBeLessThan(1.1);
+  await putAway(mo.app, false);
+  await controls(mo.page).getByRole("button", { name: "Leave", exact: true }).click();
+  await afterCallEnds(olivia.page);
 });

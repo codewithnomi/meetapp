@@ -46,8 +46,8 @@ describe("MiniCallWindow", () => {
   });
 
   it("TC-F16-31 [AC-F16-15] the speaker's live video replaces the picture", () => {
-    render(<MiniCallWindow {...props({ frameUrl: "blob:app://meetapp/1" })} />);
-    expect(document.querySelector('img[src="blob:app://meetapp/1"]')).not.toBeNull();
+    render(<MiniCallWindow {...props({ video: <canvas data-testid="live" /> })} />);
+    expect(screen.getByTestId("live")).toBeInTheDocument();
     expect(screen.queryByText("SM")).toBeNull();
   });
 

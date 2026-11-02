@@ -203,6 +203,8 @@ export function routeAction(
 export function missedToNotify(missed: MissedInfo[], focus: FocusHistory, told: Set<string>): MissedInfo[] {
   const fresh = missed.filter((m) => !told.has(m.callId));
   for (const m of fresh) told.add(m.callId);
+  // Remember only recent calls (a report holds at most 20 missed calls).
+  for (const id of told) if (told.size > 200) told.delete(id);
   return fresh.filter((m) => !focus.inFrontAt(m.endedAt));
 }
 

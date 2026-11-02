@@ -37,6 +37,8 @@ function useMissedCalls(rings: RingMessage[]) {
         if (message.t !== "ring_stop") return;
         const ring = known.current.get(message.callId);
         known.current.delete(message.callId);
+        // Rings answered here never get a stop for this window's list; keep the map small.
+        if (known.current.size > 50) known.current.delete(known.current.keys().next().value as string);
         if (!ring || (message.reason !== "missed" && message.reason !== "ended")) return;
         const entry = missedCall(ring, Date.now(), t);
         byChat.current.set(entry.conversationId, entry);
