@@ -30,7 +30,14 @@ export interface IncomingCallProps {
   label: string;
   /** Only the top ring takes focus when several ring at once (default true). */
   takeFocus?: boolean | undefined;
+  /** F16 ring window: a × that hides only this window (AC-F16-04), named in full. */
+  hide?: { label: string; onClick: () => void } | undefined;
+  /** F16 ring window: the window fills its own small window and can be dragged by its top part. */
+  standalone?: boolean | undefined;
 }
+
+/** Dragging a frameless desktop window by this part; its buttons stay clickable. */
+const DRAG = "[-webkit-app-region:drag] [&_button]:[-webkit-app-region:no-drag]";
 
 /** Typing somewhere: a new ring must not take the keys away from it. */
 const typing = (element: Element | null) =>
@@ -111,9 +118,12 @@ export function IncomingCall(props: IncomingCallProps) {
       aria-label={props.label}
       aria-describedby={who}
       ref={box}
-      className="box-border flex w-90 max-w-[calc(100vw-48px)] flex-col gap-4 rounded-xl bg-stage p-5 text-stage-ink shadow-2"
+      className={cx(
+        "box-border flex flex-col gap-4 rounded-xl bg-stage p-5 text-stage-ink",
+        props.standalone ? "h-full w-full overflow-hidden" : "w-90 max-w-[calc(100vw-48px)] shadow-2",
+      )}
     >
-      <div className="flex items-center gap-3.5">
+      <div className={cx("flex items-center gap-3.5", props.standalone && DRAG)}>
         <span className="rounded-full p-1 ring-2 ring-success">
           <Avatar name={props.callerName} {...(props.photoUrl ? { src: props.photoUrl } : {})} size="lg" />
         </span>
@@ -121,6 +131,20 @@ export function IncomingCall(props: IncomingCallProps) {
           <span className="truncate text-[17px] leading-5.5 font-semibold">{props.callerName}</span>
           <span className="text-[13px] opacity-85">{props.subtitle}</span>
         </span>
+        {props.hide ? (
+          <button
+            type="button"
+            aria-label={props.hide.label}
+            title={props.hide.label}
+            onClick={props.hide.onClick}
+            className={cx(
+              "grid size-8 shrink-0 cursor-pointer place-items-center self-start rounded-full border-0 bg-transparent text-stage-ink hover:bg-stage-scrim",
+              FOCUS_RING,
+            )}
+          >
+            <Icon name="close" size={16} />
+          </button>
+        ) : null}
       </div>
       {props.busyNote ? (
         <p className="m-0 rounded-md bg-stage-scrim px-2.5 py-2 text-[13px] leading-4.5">{props.busyNote}</p>

@@ -62,12 +62,8 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
 
 function notifyMissed(missed: MissedInfo, controller: CallWindowsController): void {
   if (!Notification.isSupported()) return;
-  const body = missed.chatName ? `from ${missed.from} in ${missed.chatName}` : `from ${missed.from}`;
-  const notification = new Notification({
-    title: "Missed call",
-    body,
-    actions: [{ type: "button", text: "Call back" }],
-  });
+  const { title, body, callBack } = missed.text;
+  const notification = new Notification({ title, body, actions: [{ type: "button", text: callBack }] });
   notification.on("click", () =>
     controller.fromNotification({ name: "openChat", conversationId: missed.conversationId }),
   );

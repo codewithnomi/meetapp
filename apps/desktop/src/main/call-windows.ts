@@ -64,6 +64,8 @@ export interface MissedInfo {
   kind: "video" | "audio";
   conversationId: string;
   endedAt: number;
+  /** The notification's words, translated by the main window (AC-F16-21, 23: names only). */
+  text: { title: string; body: string; callBack: string };
 }
 /** What one MeetApp main window reports (design.md 3.1). */
 export interface CallWindowsState {
@@ -261,6 +263,12 @@ function isCall(v: unknown): boolean {
     ["mic", "camera", "hand", "canUnmute", "canShare"].every((k) => typeof c[k] === "boolean")
   );
 }
+function isText(v: unknown): boolean {
+  const t = v as Record<string, unknown> | null;
+  return (
+    typeof t === "object" && t !== null && short(t["title"], 60) && short(t["body"], 200) && short(t["callBack"], 40)
+  );
+}
 function isMissed(v: unknown): boolean {
   const m = v as Record<string, unknown>;
   return (
@@ -271,7 +279,8 @@ function isMissed(v: unknown): boolean {
     optional(m["chatName"]) &&
     isKind(m["kind"]) &&
     short(m["conversationId"], 100) &&
-    Number.isFinite(m["endedAt"])
+    Number.isFinite(m["endedAt"]) &&
+    isText(m["text"])
   );
 }
 

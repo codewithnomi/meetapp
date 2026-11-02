@@ -119,7 +119,14 @@ describe("F16 small windows, put together", () => {
 
   it("TC-F16-44 [AC-F16-24] two main windows: one ring window, one mini window, one notification", () => {
     const { controller, deps, advance, open } = computer();
-    const missed = { callId: "c9", from: "Sara", kind: "audio" as const, conversationId: "k1", endedAt: 2_000 };
+    const missed = {
+      callId: "c9",
+      from: "Sara",
+      kind: "audio" as const,
+      conversationId: "k1",
+      endedAt: 2_000,
+      text: { title: "Missed call", body: "from Sara", callBack: "Call back" },
+    };
     controller.focusChanged(undefined);
     advance(FLICKER_MS);
     controller.report(1, report({ rings: [ring("c1")], call, missed: [missed] }));

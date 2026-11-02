@@ -169,7 +169,14 @@ describe("TC-F16-41 TC-F16-43 [AC-F16-19, AC-F16-20] remembered places", () => {
 
 describe("TC-F16-44 [AC-F16-24] several MeetApp windows", () => {
   it("TC-F16-44 [AC-F16-24] the same ring, call and missed call from two windows count once", () => {
-    const missed = { callId: "c9", from: "Sara", kind: "audio" as const, conversationId: "k1", endedAt: 5 };
+    const missed = {
+      callId: "c9",
+      from: "Sara",
+      kind: "audio" as const,
+      conversationId: "k1",
+      endedAt: 5,
+      text: { title: "Missed call", body: "from Sara", callBack: "Call back" },
+    };
     const merged = mergeReports(
       new Map([
         [1, state({ rings: [ring("c1")], call, missed: [missed] })],
@@ -202,7 +209,14 @@ describe("TC-F16-38 [AC-F16-17] actions", () => {
 });
 
 describe("TC-F16-21 [AC-F16-10, AC-F16-12] missed calls judged at the moment the ring ended", () => {
-  const missed = { callId: "c1", from: "Sara", kind: "video" as const, conversationId: "k1", endedAt: 31_000 };
+  const missed = {
+    callId: "c1",
+    from: "Sara",
+    kind: "video" as const,
+    conversationId: "k1",
+    endedAt: 31_000,
+    text: { title: "Missed call", body: "from Sara", callBack: "Call back" },
+  };
   it("TC-F16-21 [AC-F16-10] away at that moment: notify once; in front at that moment: never", () => {
     const away = createFocusHistory(0, true);
     away.set(false, 30_000);

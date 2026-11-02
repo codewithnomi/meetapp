@@ -18,3 +18,5 @@ export * from "./SharePicker/index.ts";
 export * from "./VideoTile/index.ts";
 export * from "./WorkspaceSwitcher/index.ts";
 export * from "./IncomingCall/index.ts";
+export * from "./MiniCallWindow/index.ts";
+export * from "./RingWindow/index.ts";
