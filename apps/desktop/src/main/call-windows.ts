@@ -18,8 +18,15 @@ export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 /** Small window ↔ main: `state` (to show) and `act` (a button press). */
 export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
 
-export const RING_SIZE = { width: 360, height: 132 };
-export const MINI_SIZE = { width: 320, height: 236 };
+/** The ring window as drawn on the approved canvas: caller, then the three round answers with their words. */
+export const RING_SIZE = { width: 360, height: 200 };
+/** The ring window with the "You're in … Accepting leaves it." line (AC-F16-07). */
+export const RING_BUSY_HEIGHT = 264;
+/** A ring window's height. */
+export const ringHeight = (ring: { busyIn?: string | undefined }) =>
+  ring.busyIn ? RING_BUSY_HEIGHT : RING_SIZE.height;
+/** The mini call window: top line, the 150-point picture and the buttons (approved canvas). */
+export const MINI_SIZE = { width: 320, height: 256 };
 /** Distance from the screen's edges for the default corner. */
 export const EDGE = 16;
 /** Space between stacked windows. */
@@ -129,7 +136,8 @@ export interface LayoutInput {
   /** The screen holding the MeetApp window used last: the default corner (AC-F16-01). */
   lastUsedDisplayId: number;
   places: Places;
-  rings: number;
+  /** The ring windows' heights, from the bottom of the stack up. */
+  rings: number[];
   mini: boolean;
 }
 
@@ -142,12 +150,13 @@ export function layoutWindows(input: LayoutInput): { mini?: Rect; rings: Rect[] 
   const corner = displays.some((d) => d.id === input.lastUsedDisplayId) ? input.lastUsedDisplayId : input.primaryId;
   const mini = input.mini ? { ...placeOrFallback(places.mini, displays, corner, MINI_SIZE), ...MINI_SIZE } : undefined;
   const start = placeOrFallback(places.ring, displays, corner, RING_SIZE);
-  let bottom = start.y;
-  const first = { ...start, ...RING_SIZE };
-  if (mini && overlaps(first, mini)) bottom = Math.min(start.y, mini.y - GAP - RING_SIZE.height);
+  // The remembered place is the bottom window's top at the usual height; the stack grows up from its bottom.
+  let bottom = start.y + RING_SIZE.height;
+  if (mini && overlaps({ ...start, ...RING_SIZE }, mini)) bottom = Math.min(bottom, mini.y - GAP);
   const rings: Rect[] = [];
-  for (let i = 0; i < input.rings; i += 1) {
-    rings.push({ x: start.x, y: bottom - i * (RING_SIZE.height + GAP), ...RING_SIZE });
+  for (const height of input.rings) {
+    rings.push({ x: start.x, y: bottom - height, width: RING_SIZE.width, height });
+    bottom -= height + GAP;
   }
   return { ...(mini ? { mini } : {}), rings };
 }

@@ -7,6 +7,7 @@ import {
   FLICKER_MS,
   GAP,
   RING_SIZE,
+  ringHeight,
   createFocusHistory,
   isCallWindowAction,
   isCallWindowsState,
@@ -65,6 +66,7 @@ export class CallWindowsController {
   private readonly told = new Set<string>();
   /** The ring windows from the bottom of the stack up (the newest on top, AC-F16-08). */
   private ringOrder: string[] = [];
+  private ringHeights: number[] = [];
   private mini: SmallWindow | undefined;
   private places: Places;
 
@@ -131,9 +133,8 @@ export class CallWindowsController {
     const from = this.kindOf(senderId);
     if (!from) return;
     // A ring higher in the stack stands for the bottom place it was stacked from.
-    const above = from.callId ? Math.max(0, this.ringOrder.indexOf(from.callId)) : 0;
-    const bottomY = y + above * (RING_SIZE.height + GAP);
-    this.places = { ...this.places, [from.kind]: { x, y: bottomY, displayId } };
+    const placeY = from.callId ? this.stackPlaceY(from.callId, y) : y;
+    this.places = { ...this.places, [from.kind]: { x, y: placeY, displayId } };
     this.deps.savePlaces(this.places);
     this.render();
   }
@@ -157,6 +158,14 @@ export class CallWindowsController {
     if (index >= 0) this.usedLast.splice(index, 1);
   }
 
+  /** Where the bottom ring's top would be, for a ring of the stack dragged to `y`. */
+  private stackPlaceY(callId: string, y: number): number {
+    const index = Math.max(0, this.ringOrder.indexOf(callId));
+    let bottom = y + (this.ringHeights[index] ?? RING_SIZE.height);
+    for (const height of this.ringHeights.slice(0, index)) bottom += height + GAP;
+    return bottom - RING_SIZE.height;
+  }
+
   private render(): void {
     const merged = this.merged();
     const away = this.focus.awayLongEnough(this.deps.now());
@@ -164,16 +173,16 @@ export class CallWindowsController {
     const wantedRings = away ? merged.rings.filter((r) => !this.hidden.has(r.callId)) : [];
     const call = away ? merged.call : null;
     this.closeUnwanted(wantedRings, call);
+    const stack = [...wantedRings].reverse();
     const layout = layoutWindows({
       displays: this.deps.displays(),
       primaryId: this.deps.primaryDisplayId(),
       lastUsedDisplayId: this.lastUsedDisplay(),
       places: this.places,
-      rings: wantedRings.length,
+      rings: stack.map(ringHeight),
       mini: call !== null,
     });
     if (call) this.mini = this.place(this.mini, "mini", layout.mini as Rect, { kind: "mini", call });
-    const stack = [...wantedRings].reverse();
     stack.forEach((ring, index) => {
       const shown = this.place(this.rings.get(ring.callId), "ring", layout.rings[index] as Rect, {
         kind: "ring",
@@ -182,6 +191,7 @@ export class CallWindowsController {
       this.rings.set(ring.callId, shown);
     });
     this.ringOrder = stack.map((ring) => ring.callId);
+    this.ringHeights = stack.map(ringHeight);
     for (const missed of missedToNotify(merged.missed, this.focus, this.told)) this.deps.notify(missed);
   }
 

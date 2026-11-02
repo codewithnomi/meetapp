@@ -93,6 +93,14 @@ test("TC-F16-03 TC-F16-07 TC-F16-11 [AC-F16-01, AC-F16-02, AC-F16-03, AC-F16-05]
   await olivia.page.getByRole("button", { name: "Video call" }).click();
   const small = await firstSmall(mo.app);
   await expect(ringWindow(small)).toContainText("Olivia Owner");
+  // Every button and its word fit inside the small window (nothing cut off at the bottom or sides).
+  const outside = await small.evaluate(
+    () =>
+      [...document.querySelectorAll("button, button + span")]
+        .map((el) => el.getBoundingClientRect())
+        .filter((r) => r.bottom > innerHeight || r.right > innerWidth || r.top < 0 || r.left < 0).length,
+  );
+  expect(outside).toBe(0);
   await expect(ringWindow(small)).toContainText("Video call");
   for (const name of ["Accept with video", "Accept with audio", "Decline", /^Hide/])
     await expect(small.getByRole("button", { name })).toBeVisible();

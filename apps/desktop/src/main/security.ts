@@ -194,6 +194,9 @@ export function smallWindowSetup(preloadPath: string, size: { width: number; hei
       ...size,
       show: false,
       frame: false,
+      // See-through behind the rounded corners (the page draws the card).
+      transparent: true,
+      hasShadow: true,
       resizable: false,
       maximizable: false,
       minimizable: false,

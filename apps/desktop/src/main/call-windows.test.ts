@@ -6,6 +6,7 @@ import {
   GAP,
   FLICKER_MS,
   MINI_SIZE,
+  RING_BUSY_HEIGHT,
   RING_SIZE,
   createFocusHistory,
   layoutWindows,
@@ -78,7 +79,7 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
       primaryId: 1,
       lastUsedDisplayId: 2,
       places: {},
-      rings: 1,
+      rings: Array<number>(1).fill(RING_SIZE.height),
       mini: false,
     });
     expect(rings[0]).toEqual({
@@ -94,7 +95,7 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
       primaryId: 1,
       lastUsedDisplayId: 1,
       places: {},
-      rings: 3,
+      rings: Array<number>(3).fill(RING_SIZE.height),
       mini: true,
     });
     expect(mini).toBeDefined();
@@ -108,13 +109,28 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
     expect((rings[0] as Rect).y + RING_SIZE.height).toBeLessThanOrEqual((mini as Rect).y);
   });
 
+  it("TC-F16-16 [AC-F16-07, AC-F16-08] a busy ring is taller; the stack still has a gap and no overlap", () => {
+    const { rings } = layoutWindows({
+      displays: [main],
+      primaryId: 1,
+      lastUsedDisplayId: 1,
+      places: {},
+      rings: [RING_BUSY_HEIGHT, RING_SIZE.height],
+      mini: false,
+    });
+    const [bottom, top] = rings as [Rect, Rect];
+    expect(bottom.height).toBe(RING_BUSY_HEIGHT);
+    expect(bottom.y + bottom.height).toBe(900 - EDGE);
+    expect(top.y + top.height + GAP).toBe(bottom.y);
+  });
+
   it("TC-F16-18 [AC-F16-09] when a ring ends the others close the gap", () => {
     const three = layoutWindows({
       displays: [main],
       primaryId: 1,
       lastUsedDisplayId: 1,
       places: {},
-      rings: 3,
+      rings: Array<number>(3).fill(RING_SIZE.height),
       mini: false,
     }).rings;
     const two = layoutWindows({
@@ -122,7 +138,7 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
       primaryId: 1,
       lastUsedDisplayId: 1,
       places: {},
-      rings: 2,
+      rings: Array<number>(2).fill(RING_SIZE.height),
       mini: false,
     }).rings;
     const one = layoutWindows({
@@ -130,7 +146,7 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
       primaryId: 1,
       lastUsedDisplayId: 1,
       places: {},
-      rings: 1,
+      rings: Array<number>(1).fill(RING_SIZE.height),
       mini: false,
     }).rings;
     expect(two).toEqual(three.slice(0, 2));
@@ -149,7 +165,7 @@ describe("TC-F16-41 TC-F16-43 [AC-F16-19, AC-F16-20] remembered places", () => {
       primaryId: 1,
       lastUsedDisplayId: 1,
       places,
-      rings: 2,
+      rings: Array<number>(2).fill(RING_SIZE.height),
       mini: true,
     });
     expect(mini).toEqual({ x: 800, y: 600, ...MINI_SIZE });

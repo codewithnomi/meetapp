@@ -24,8 +24,8 @@ const meta = {
     leave: { label: "Leave", onClick: none },
     back: { label: "Back to the call window", onClick: none },
   },
-  // The real window is 320 × 236 points.
-  decorators: [(Story) => <div className="h-59 w-80">{Story()}</div>],
+  // The real window is 320 × 256 points.
+  decorators: [(Story) => <div className="h-64 w-80">{Story()}</div>],
 } satisfies Meta<typeof MiniCallWindow>;
 
 export default meta;
