@@ -511,13 +511,13 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Alternatives:** keep it in F04 (later); do it as fix tasks of F15 (too big for fixes, needs its own ACs and security check).
 
 ### D079: Ring and mini call windows are small windows driven by the main window (F16)
-- **Date:** 2026-11-02. **Status:** proposed.
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
 - **Decision:** the desktop main process opens small always-on-top windows (`call-window.html`). They show only a state the main MeetApp window reports, and they send button presses back to it. They have their own preload (`meetappCallWindow` only) and their own session with every permission refused, no network access and no sign-in. The mini window's live video arrives as small JPEG pictures (320×180, about 15 a second) over a MessagePort from the main window.
 - **Why:** one place keeps the call, the ringtone and the sign-in, so every rule from F02 and F15 applies unchanged. The small windows stay tiny and safe.
 - **Alternatives:** have the small windows join the call themselves (needs a sign-in in each window, and a second connection to the call server); show only a picture (the owner chose live video).
 
 ### D080: Missed-call notifications need a signed app (F16)
-- **Date:** 2026-11-02. **Status:** proposed.
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
 - **Decision:** missed-call notifications use Electron's `Notification`. Since Electron 42 (macOS UNNotification), macOS shows them only for a code-signed app. T1 checks whether ad-hoc signing in development is enough. If not, the notification can be seen only after real signing (Apple Developer, $99 a year, F04), and until then the app behaves as AC-F16-13 says.
 - **Why:** that is how Mac notifications work. Other routes, such as AppleScript or a helper app, would also need signing or would be less safe.
 - **Alternatives:** buy the Apple Developer account now (cost); show missed calls only inside the app until F04.
