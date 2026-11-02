@@ -165,7 +165,8 @@ export function IncomingCall(props: IncomingCallProps) {
   const busy = useId();
   return (
     <section
-      role="alertdialog"
+      // In its own window (F16) it never takes focus, so RingWindow announces it once instead.
+      role={props.standalone ? "dialog" : "alertdialog"}
       aria-label={props.label}
       aria-describedby={props.busyNote ? `${who} ${busy}` : who}
       ref={box}

@@ -37,6 +37,8 @@ export const EDGE = 16;
 export const GAP = 8;
 /** Focus must stay away this long before windows show, so a passing menu doesn't flash them. */
 export const FLICKER_MS = 150;
+/** Timers may fire a moment early; the re-check after FLICKER_MS waits this much longer (bug review). */
+export const TIMER_MARGIN_MS = 20;
 
 export interface Rect {
   x: number;
@@ -225,16 +227,21 @@ export function isCallWindowAction(value: unknown): value is CallWindowAction {
 }
 
 /** Which main window gets an action, and whether it comes to the front; refused when nothing matches. */
-export function routeAction(
-  action: CallWindowAction,
-  merged: Merged,
-  usedLast: number[],
-): { ok: false } | { ok: true; target: number; focus: boolean } {
+export type Route =
+  | { ok: false }
+  /** The mini window's ×: only that window hides, the call goes on; nothing goes to a main window. */
+  | { ok: true; hides: "mini" }
+  /** To this main window; a ring's × also hides that ring here (AC-F16-04). */
+  | { ok: true; target: number; focus: boolean; hides?: "ring" };
+
+export function routeAction(action: CallWindowAction, merged: Merged, usedLast: number[]): Route {
+  if (action.name === "hideMini") return merged.call ? { ok: true, hides: "mini" } : { ok: false };
   const focus = BRING_FORWARD.has(action.name);
   if ("callId" in action) {
     if (!merged.rings.some((r) => r.callId === action.callId)) return { ok: false };
     const target = usedLast[0];
-    return target === undefined ? { ok: false } : { ok: true, target, focus };
+    if (target === undefined) return { ok: false };
+    return action.name === "hide" ? { ok: true, target, focus, hides: "ring" } : { ok: true, target, focus };
   }
   if (!merged.call || merged.callWindow === undefined) return { ok: false };
   return { ok: true, target: merged.callWindow, focus };

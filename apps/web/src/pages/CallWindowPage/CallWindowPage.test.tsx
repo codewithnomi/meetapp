@@ -61,7 +61,7 @@ describe("CallWindowPage", () => {
         ring: { callId: "c1", caller: { name: "Sara Malik", initials: "SM" }, kind: "video", chatName: "Release team" },
       }),
     );
-    expect(screen.getByRole("alertdialog", { name: "Incoming video call from Sara Malik" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Incoming video call from Sara Malik" })).toBeInTheDocument();
     expect(screen.getByText("Video call · Release team")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Accept with audio" }));
     await userEvent.click(screen.getByRole("button", { name: /^Hide/ }));
@@ -118,6 +118,11 @@ describe("CallWindowPage", () => {
     render(<CallWindowPage />);
     react(() => show({ kind: "mini", call: { ...call, mic: false, canUnmute: false } }));
     expect(screen.getByRole("button", { name: "Your microphone is turned off by the organizer" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    react(() => show({ kind: "mini", call: { ...call, canShare: false } }));
+    expect(screen.getByRole("button", { name: "Sharing your screen isn't allowed in this call" })).toHaveAttribute(
       "aria-disabled",
       "true",
     );

@@ -6,6 +6,7 @@ import type { CallWindowView, CallWindowsNotificationAction } from "@meetapp/con
 import {
   FLICKER_MS,
   GAP,
+  TIMER_MARGIN_MS,
   RING_SIZE,
   ringHeight,
   createFocusHistory,
@@ -25,7 +26,6 @@ import {
 import { cleanReport } from "./call-windows-checks.ts";
 
 export type SmallKind = "ring" | "mini";
-/** What a small window is told to show. */
 
 export interface SmallWindow {
   id: number;
@@ -67,8 +67,7 @@ export class CallWindowsController {
   private readonly hidden = new Set<string>();
   private readonly told = new Set<string>();
   /** The ring windows from the bottom of the stack up (the newest on top, AC-F16-08). */
-  private ringOrder: string[] = [];
-  private ringHeights: number[] = [];
+  private stacked: { callId: string; height: number }[] = [];
   private mini: SmallWindow | undefined;
   /** The person hid the mini window with ×: it stays hidden until a MeetApp window has been in front. */
   private miniHidden = false;
@@ -113,8 +112,7 @@ export class CallWindowsController {
       this.usedLast.unshift(mainWindowId);
     }
     this.render();
-    // A margin: timers may fire a moment early, and the windows must not miss their turn (bug review).
-    this.deps.later(FLICKER_MS + 20, () => this.render());
+    this.deps.later(FLICKER_MS + TIMER_MARGIN_MS, () => this.render());
   }
 
   /** A small window's button press (design.md 3.2). Only main's own small windows may send. */
@@ -123,18 +121,12 @@ export class CallWindowsController {
     if (!from || !isCallWindowAction(action)) return;
     const forRing = "callId" in action;
     if (forRing ? action.callId !== from.callId : from.kind !== "mini") return;
-    if (action.name === "hideMini") {
-      // Handled here: the call goes on, only this window hides (owner, 2026-11-02).
-      this.miniHidden = true;
-      this.render();
-      return;
-    }
     const route = routeAction(action, this.merged(), this.usedLast);
     if (!route.ok) return;
-    if (action.name === "hide") {
-      this.hidden.add(action.callId);
-      this.render();
-    }
+    if (route.hides === "mini") this.miniHidden = true;
+    if (route.hides === "ring" && forRing) this.hidden.add(action.callId);
+    if (route.hides) this.render();
+    if (!("target" in route)) return;
     if (route.focus) this.deps.focusMain(route.target);
     this.deps.toMain(route.target, action);
   }
@@ -195,20 +187,35 @@ export class CallWindowsController {
 
   /** Where the bottom ring's top would be, for a ring of the stack dragged to `y`. */
   private stackPlaceY(callId: string, y: number): number {
-    const index = Math.max(0, this.ringOrder.indexOf(callId));
-    let bottom = y + (this.ringHeights[index] ?? RING_SIZE.height);
-    for (const height of this.ringHeights.slice(0, index)) bottom += height + GAP;
+    const index = Math.max(
+      0,
+      this.stacked.findIndex((ring) => ring.callId === callId),
+    );
+    let bottom = y + (this.stacked[index]?.height ?? RING_SIZE.height);
+    for (const { height } of this.stacked.slice(0, index)) bottom += height + GAP;
     return bottom - RING_SIZE.height;
   }
 
   private render(): void {
     const merged = this.merged();
+    const { rings, call } = this.wanted(merged);
+    this.closeUnwanted(rings, call);
+    this.placeAll([...rings].reverse(), call, merged.callWindow);
+    for (const missed of missedToNotify(merged.missed, this.focus, this.told)) this.deps.notify(missed);
+  }
+
+  /** The rings and the call to show now: none while a MeetApp window is in front (AC-F16-05, 14). */
+  private wanted(merged: ReturnType<typeof mergeReports>): { rings: RingInfo[]; call: CallInfo | null } {
     const away = this.focus.awayLongEnough(this.deps.now());
     for (const id of this.hidden) if (!merged.rings.some((r) => r.callId === id)) this.hidden.delete(id);
-    const wantedRings = away ? merged.rings.filter((r) => !this.hidden.has(r.callId)) : [];
-    const call = away && !this.miniHidden ? merged.call : null;
-    this.closeUnwanted(wantedRings, call);
-    const stack = [...wantedRings].reverse();
+    return {
+      rings: away ? merged.rings.filter((r) => !this.hidden.has(r.callId)) : [],
+      call: away && !this.miniHidden ? merged.call : null,
+    };
+  }
+
+  /** Places the mini window and the ring stack (`stack`: bottom first), and links the live video. */
+  private placeAll(stack: RingInfo[], call: CallInfo | null, callWindow: number | undefined): void {
     const layout = layoutWindows({
       displays: this.deps.displays(),
       primaryId: this.deps.primaryDisplayId(),
@@ -217,18 +224,14 @@ export class CallWindowsController {
       rings: stack.map(ringHeight),
       mini: call !== null,
     });
-    if (call) this.mini = this.place(this.mini, "mini", layout.mini as Rect, { kind: "mini", call });
-    this.linkFrames(this.mini, merged.callWindow);
+    if (call && layout.mini) this.mini = this.place(this.mini, "mini", layout.mini, { kind: "mini", call });
+    this.linkFrames(this.mini, callWindow);
     stack.forEach((ring, index) => {
-      const shown = this.place(this.rings.get(ring.callId), "ring", layout.rings[index] as Rect, {
-        kind: "ring",
-        ring,
-      });
-      this.rings.set(ring.callId, shown);
+      const rect = layout.rings[index];
+      if (!rect) return;
+      this.rings.set(ring.callId, this.place(this.rings.get(ring.callId), "ring", rect, { kind: "ring", ring }));
     });
-    this.ringOrder = stack.map((ring) => ring.callId);
-    this.ringHeights = stack.map(ringHeight);
-    for (const missed of missedToNotify(merged.missed, this.focus, this.told)) this.deps.notify(missed);
+    this.stacked = stack.map((ring) => ({ callId: ring.callId, height: ringHeight(ring) }));
   }
 
   private linkFrames(mini: SmallWindow | undefined, from: number | undefined): void {

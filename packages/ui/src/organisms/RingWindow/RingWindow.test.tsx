@@ -19,7 +19,10 @@ describe("RingWindow", () => {
   it("TC-F16-04 [AC-F16-02] shows the caller, the kind of call, the group, and four buttons", async () => {
     const p = props();
     render(<RingWindow {...p} />);
-    expect(screen.getByRole("alertdialog", { name: "Incoming video call from Sara Malik" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Incoming video call from Sara Malik" })).toBeInTheDocument();
+    // Announced once: one alert, and the window itself is a plain dialog (second verification).
+    expect(screen.getAllByRole("alert")).toHaveLength(1);
+    expect(screen.queryByRole("alertdialog")).toBeNull();
     expect(screen.getByText("Sara Malik")).toBeInTheDocument();
     expect(screen.getByText("Video call · Release team")).toBeInTheDocument();
     expect(screen.getByText("SM")).toBeInTheDocument();
@@ -38,9 +41,7 @@ describe("RingWindow", () => {
   it("TC-F16-48 [AC-F16-21] announced when it appears; the description includes the busy line", () => {
     render(<RingWindow {...props()} busyNote="You're in Release team. Accepting leaves it." />);
     expect(screen.getByRole("alert")).toHaveTextContent("Incoming video call from Sara Malik");
-    expect(screen.getByRole("alertdialog")).toHaveAccessibleDescription(
-      /Video call · Release team.*Accepting leaves it/,
-    );
+    expect(screen.getByRole("dialog")).toHaveAccessibleDescription(/Video call · Release team.*Accepting leaves it/);
   });
 
   it("TC-F16-04 [AC-F16-02] a photo is shown when there is one", () => {

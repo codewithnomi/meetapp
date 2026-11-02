@@ -1224,6 +1224,7 @@
       "cameraOff": "Turn camera off ({{keys}})",
       "cameraOn": "Turn camera on ({{keys}})",
       "share": "Share screen",
+      "shareLocked": "Sharing your screen isn't allowed in this call",
       "raiseHand": "Raise your hand ({{keys}})",
       "lowerHand": "Lower your hand ({{keys}})",
       "leave": "Leave",

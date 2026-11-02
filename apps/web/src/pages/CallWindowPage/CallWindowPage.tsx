@@ -61,6 +61,37 @@ function LiveVideo() {
   return <canvas ref={canvas} aria-hidden="true" />;
 }
 
+/** The four toggles; a disabled one says why (AC-F16-16, 21). */
+function toggles(call: CallWindowsCall, t: TFunction) {
+  return {
+    mic: {
+      label:
+        call.canUnmute || call.mic
+          ? t(call.mic ? "calls.windows.mute" : "calls.windows.unmute", { keys: shortcutText("M") })
+          : t("calls.windows.micLocked"),
+      on: call.mic,
+      disabled: !call.mic && !call.canUnmute,
+      onClick: () => act({ name: "toggleMic" }),
+    },
+    camera: {
+      label: t(call.camera ? "calls.windows.cameraOff" : "calls.windows.cameraOn", { keys: shortcutText("O") }),
+      on: call.camera,
+      onClick: () => act({ name: "toggleCamera" }),
+    },
+    share: {
+      // A disabled button says why (AC-F16-21).
+      label: t(call.canShare ? "calls.windows.share" : "calls.windows.shareLocked"),
+      disabled: !call.canShare,
+      onClick: () => act({ name: "share" }),
+    },
+    hand: {
+      label: t(call.hand ? "calls.windows.lowerHand" : "calls.windows.raiseHand", { keys: shortcutText("K") }),
+      on: call.hand,
+      onClick: () => act({ name: "toggleHand" }),
+    },
+  };
+}
+
 function Mini({ call }: { call: CallWindowsCall }) {
   const { t } = useTranslation();
   const time = useElapsed(call.joinedAt);
@@ -81,26 +112,7 @@ function Mini({ call }: { call: CallWindowsCall }) {
       captionIsStatus={call.phase !== "in-call"}
       controls={inCall}
       controlsLabel={t("calls.windows.controls")}
-      mic={{
-        label:
-          call.canUnmute || call.mic
-            ? t(call.mic ? "calls.windows.mute" : "calls.windows.unmute", { keys: shortcutText("M") })
-            : t("calls.windows.micLocked"),
-        on: call.mic,
-        disabled: !call.mic && !call.canUnmute,
-        onClick: () => act({ name: "toggleMic" }),
-      }}
-      camera={{
-        label: t(call.camera ? "calls.windows.cameraOff" : "calls.windows.cameraOn", { keys: shortcutText("O") }),
-        on: call.camera,
-        onClick: () => act({ name: "toggleCamera" }),
-      }}
-      share={{ label: t("calls.windows.share"), disabled: !call.canShare, onClick: () => act({ name: "share" }) }}
-      hand={{
-        label: t(call.hand ? "calls.windows.lowerHand" : "calls.windows.raiseHand", { keys: shortcutText("K") }),
-        on: call.hand,
-        onClick: () => act({ name: "toggleHand" }),
-      }}
+      {...toggles(call, t)}
       leave={{
         label: t(call.phase === "calling" ? "calls.windows.cancel" : "calls.windows.leave"),
         onClick: () => act({ name: "leave" }),
