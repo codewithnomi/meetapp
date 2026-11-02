@@ -145,20 +145,63 @@ export function layoutWindows(input: LayoutInput): { mini?: Rect; rings: Rect[] 
   const corner = displays.some((d) => d.id === input.lastUsedDisplayId) ? input.lastUsedDisplayId : input.primaryId;
   const mini = input.mini ? { ...placeOrFallback(places.mini, displays, corner, MINI_SIZE), ...MINI_SIZE } : undefined;
   const start = placeOrFallback(places.ring, displays, corner, RING_SIZE);
-  // The remembered place is the bottom window's top at the usual height; the stack grows up from its bottom.
-  let bottom = start.y + RING_SIZE.height;
-  const total = input.rings.reduce((sum, height) => sum + height, 0) + GAP * Math.max(0, input.rings.length - 1);
-  // The whole stack, not just its first window, stays clear of the mini window (bug review).
-  if (mini && overlaps({ x: start.x, y: bottom - total, width: RING_SIZE.width, height: total }, mini))
-    bottom = Math.min(bottom, mini.y - GAP);
-  // Nothing goes above the top of the screen: with many rings the top ones overlap instead.
   const top = (displays.find((d) => d.id === corner) ?? (displays[0] as Display)).workArea.y;
+  // The remembered place is the bottom window's top at the usual height; the stack grows up from its bottom.
+  // A stack that would pass the top of the screen goes on in a new column to the left, so rings never
+  // cover each other (AC-F16-08, second verification).
   const rings: Rect[] = [];
-  for (const height of input.rings) {
-    rings.push({ x: start.x, y: Math.max(top, bottom - height), width: RING_SIZE.width, height });
+  let x = start.x;
+  const startBottom = start.y + RING_SIZE.height;
+  let bottom = columnBottom(x, startBottom, input.rings, mini);
+  let inColumn = 0;
+  for (const [index, height] of input.rings.entries()) {
+    if (bottom - height < top && inColumn > 0) {
+      x -= RING_SIZE.width + GAP;
+      bottom = columnBottom(x, startBottom, input.rings.slice(index), mini);
+      inColumn = 0;
+    }
+    rings.push({ x, y: Math.max(top, bottom - height), width: RING_SIZE.width, height });
     bottom -= height + GAP;
+    inColumn += 1;
   }
   return { ...(mini ? { mini } : {}), rings };
+}
+
+/** Where a column of rings starts: its whole height stays clear of the mini window (bug review). */
+function columnBottom(x: number, bottom: number, heights: number[], mini: Rect | undefined): number {
+  const total = heights.reduce((sum, height) => sum + height, 0) + GAP * Math.max(0, heights.length - 1);
+  if (mini && overlaps({ x, y: bottom - total, width: RING_SIZE.width, height: Math.max(total, 1) }, mini))
+    return Math.min(bottom, mini.y - GAP);
+  return bottom;
+}
+
+/** A drag has ended once the window has been still this long (macOS sends "moved" all along a drag). */
+export const DRAG_SETTLE_MS = 300;
+
+/**
+ * Follows a person's drag (AC-F16-19): `willMove` fires only for their drags, `moved` while it goes on.
+ * The settle timer also starts on `willMove`, so a drag without any "moved" never stays on (bug review).
+ */
+export function watchDrag(later: (run: () => void, ms: number) => () => void, onSettled: () => void) {
+  let dragging = false;
+  let cancel: (() => void) | undefined;
+  const settleSoon = () => {
+    cancel?.();
+    cancel = later(() => {
+      dragging = false;
+      onSettled();
+    }, DRAG_SETTLE_MS);
+  };
+  return {
+    willMove: () => {
+      dragging = true;
+      settleSoon();
+    },
+    moved: () => {
+      if (dragging) settleSoon();
+    },
+    dragging: () => dragging,
+  };
 }
 
 function overlaps(a: Rect, b: Rect): boolean {

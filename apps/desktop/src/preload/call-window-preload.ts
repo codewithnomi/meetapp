@@ -7,9 +7,13 @@ import { CALL_WINDOW_CHANNEL, FRAMES_CHANNEL } from "../main/call-windows.ts";
 type Listener = (value: unknown) => void;
 
 let frameListener: ((frame: ArrayBuffer) => void) | undefined;
+// Each new line replaces the old one, which is closed (security review).
+let framePort: MessagePort | undefined;
 ipcRenderer.on(FRAMES_CHANNEL, (event) => {
   const [port] = event.ports;
   if (!port) return;
+  framePort?.close();
+  framePort = port;
   port.onmessage = (message: MessageEvent) => {
     // At most 200 KB a picture, as the sender promises (security review).
     if (message.data instanceof ArrayBuffer && message.data.byteLength <= 200_000) frameListener?.(message.data);

@@ -14,6 +14,8 @@ export interface NotificationKind {
 
 /** Shown notifications are kept until used, or their Call back click could be lost (bug review). */
 const shown = new Set<NotificationLike>();
+/** Never touched ones are let go after this many newer ones (security review). */
+const KEPT_NOTIFICATIONS = 50;
 
 export function notifyMissed(
   missed: CallWindowsMissed,
@@ -24,6 +26,7 @@ export function notifyMissed(
   const { title, body, callBack } = missed.text;
   const notification = new Kind({ title, body, actions: [{ type: "button", text: callBack }] });
   shown.add(notification);
+  if (shown.size > KEPT_NOTIFICATIONS) shown.delete(shown.values().next().value as NotificationLike);
   const done = () => shown.delete(notification);
   notification.on("click", () => {
     done();

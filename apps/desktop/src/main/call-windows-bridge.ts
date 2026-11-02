@@ -25,6 +25,7 @@ import {
   RING_SIZE,
   senderAllowed,
   type Places,
+  watchDrag,
 } from "./call-windows.ts";
 import { validPlaces } from "./call-windows-checks.ts";
 import { notifyMissed } from "./call-windows-notify.ts";
@@ -62,42 +63,47 @@ interface SmallWindowEvents {
   onClosed: (id: number) => void;
 }
 
+/**
+ * Only a drag by the person counts (AC-F16-19): "will-move" fires only for those, never for the app's
+ * own setBounds or a small nudge by macOS. `onSettled` runs once the window is still.
+ */
+function followDrag(window: BrowserWindow, onSettled: () => void) {
+  const drag = watchDrag((run, ms) => {
+    const timer = setTimeout(run, ms);
+    return () => clearTimeout(timer);
+  }, onSettled);
+  window.on("will-move", drag.willMove);
+  window.on("moved", drag.moved);
+  return drag;
+}
+
 function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, { onMoved, onClosed }: SmallWindowEvents) {
   const setup = smallWindowSetup(options.preloadPath, kind === "ring" ? RING_SIZE : MINI_SIZE);
   const window = new BrowserWindow(setup.options);
+  // Placed only when the place changes, and never while the person drags it (no jumping back).
+  let placed = "";
+  // Sent only when the view changes: it can hold photos of up to 400 KB (bug review).
+  let sent = "";
   window.setAlwaysOnTop(true, setup.alwaysOnTopLevel);
   window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: setup.visibleOnFullScreen });
   window.setContentProtection(setup.contentProtection);
-  // Only a drag by the person counts (AC-F16-19): "will-move" fires only for those, never for the app's
-  // own setBounds or a small nudge by macOS. On macOS "moved" fires all along a drag, so the place is
-  // saved once the window has been still for 300 ms.
-  let dragging = false;
-  let settle: ReturnType<typeof setTimeout> | undefined;
-  window.on("will-move", () => {
-    dragging = true;
-  });
-  window.on("moved", () => {
-    if (!dragging) return;
-    clearTimeout(settle);
-    settle = setTimeout(() => {
-      dragging = false;
-      if (!window.isDestroyed()) onMoved(window);
-    }, 300);
+  const drag = followDrag(window, () => {
+    // Forget the last place, so a window dropped where it can't stay is moved back (bug review).
+    placed = "";
+    if (!window.isDestroyed()) onMoved(window);
   });
   const id = window.webContents.id;
   let closing = false;
   window.on("closed", () => {
     if (!closing) onClosed(id);
   });
-  // Placed only when the place changes, and never while the person drags it (no jumping back).
-  let placed = "";
   void window.loadURL(new URL(CALL_WINDOW_PAGE, options.appUrl).toString());
   const ready = new Promise<void>((resolve) => window.webContents.once("did-finish-load", () => resolve()));
   return {
     id,
     setBounds: (rect: { x: number; y: number; width: number; height: number }) => {
       const key = JSON.stringify(rect);
-      if (window.isDestroyed() || dragging || key === placed) return;
+      if (window.isDestroyed() || drag.dragging() || key === placed) return;
       placed = key;
       window.setBounds(rect);
     },
@@ -106,8 +112,12 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, { onMoved
       closing = true;
       if (!window.isDestroyed()) window.destroy();
     },
-    send: (state: unknown) =>
-      void ready.then(() => !window.isDestroyed() && window.webContents.send(CALL_WINDOW_CHANNEL, state)),
+    send: (state: unknown) => {
+      const key = JSON.stringify(state);
+      if (key === sent) return;
+      sent = key;
+      void ready.then(() => !window.isDestroyed() && window.webContents.send(CALL_WINDOW_CHANNEL, state));
+    },
   };
 }
 

@@ -17,6 +17,7 @@ import {
   type CallWindowsState,
   type Display,
   type Rect,
+  watchDrag,
 } from "./call-windows.ts";
 
 const main: Display = { id: 1, workArea: { x: 0, y: 0, width: 1440, height: 900 } };
@@ -273,5 +274,42 @@ describe("TC-F16-21 [AC-F16-10, AC-F16-12] missed calls judged at the moment the
     front.set(true, 30_000);
     front.set(false, 32_000);
     expect(missedToNotify([missed], front, new Set())).toEqual([]);
+  });
+});
+
+describe("TC-F16-69 [AC-F16-08, AC-F16-19] second verification: many rings and drags", () => {
+  it("TC-F16-69 [AC-F16-08] eight rings never cover each other or the mini window, and stay on the screen", () => {
+    const { rings, mini } = layoutWindows({
+      displays: [main],
+      primaryId: 1,
+      lastUsedDisplayId: 1,
+      places: {},
+      rings: Array<number>(8).fill(RING_SIZE.height),
+      mini: true,
+    });
+    const all = [...rings, mini as Rect];
+    for (let i = 0; i < all.length; i += 1)
+      for (let j = i + 1; j < all.length; j += 1) expect(overlaps(all[i] as Rect, all[j] as Rect)).toBe(false);
+    for (const ring of rings) expect(ring.y).toBeGreaterThanOrEqual(main.workArea.y);
+  });
+
+  it("TC-F16-69 [AC-F16-19] a drag ends even without any move report", () => {
+    const timers: (() => void)[] = [];
+    const settled: string[] = [];
+    const drag = watchDrag(
+      (run) => {
+        timers.push(run);
+        return () => undefined;
+      },
+      () => settled.push("settled"),
+    );
+    expect(drag.dragging()).toBe(false);
+    drag.moved();
+    expect(timers).toHaveLength(0); // the app's own moves don't count
+    drag.willMove();
+    expect(drag.dragging()).toBe(true);
+    timers.at(-1)?.();
+    expect(drag.dragging()).toBe(false);
+    expect(settled).toEqual(["settled"]);
   });
 });

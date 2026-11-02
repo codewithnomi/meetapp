@@ -153,6 +153,11 @@ describe("TC-F16-55 [AC-F16-22, AC-F16-03, AC-F16-16] allow-list and sender chec
     expect(
       cleanReport({ rings: [{ ...good, caller: { ...good.caller, photo: big } }], call: null, missed: [] })?.rings,
     ).toHaveLength(1);
+    // TC-F16-69: only PNG, JPEG or WebP photos; an SVG is dropped.
+    const svg = "data:image/svg+xml;base64,PHN2Zz4=";
+    expect(
+      cleanReport({ rings: [{ ...good, caller: { ...good.caller, photo: svg } }], call: null, missed: [] })?.rings,
+    ).toHaveLength(0);
   });
 });
 

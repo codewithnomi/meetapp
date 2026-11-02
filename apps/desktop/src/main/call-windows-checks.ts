@@ -13,7 +13,9 @@ export interface Places {
 }
 
 const short = (v: unknown, max = 200) => typeof v === "string" && v.length <= max;
-const isPhoto = (v: unknown) => v === undefined || (short(v, 400_100) && (v as string).startsWith("data:image/"));
+// Photos only as PNG, JPEG or WebP pictures (no SVG; security review).
+const isPhoto = (v: unknown) =>
+  v === undefined || (short(v, 400_100) && /^data:image\/(png|jpeg|webp);base64,/.test(v as string));
 const isPerson = (v: unknown) => {
   const p = v as Record<string, unknown> | null;
   return typeof p === "object" && p !== null && short(p["name"]) && short(p["initials"], 4) && isPhoto(p["photo"]);
