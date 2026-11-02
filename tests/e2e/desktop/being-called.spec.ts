@@ -3,7 +3,7 @@
 // during a meeting: quiet tone and button names, 54 the chosen ringtone). The ringtone itself is read from
 // `document.body.dataset.ringtone` / `ringVolume`, which the app sets while ringing.
 import { expect, test, type Page } from "@playwright/test";
-import { API_URL, FAKE_MEDIA, closeApp, freshProfile, launchAs, storedToken, type RunningApp } from "./desktop.ts";
+import { API_URL, FAKE_MEDIA, closeApp, freshProfile, launchAs, type RunningApp } from "./desktop.ts";
 import { controls } from "./meeting-steps.ts";
 import { hostMeeting, joinWindow, team, windowFor } from "./meeting-team.ts";
 import { openScreen, switcher, switchTo } from "./workspace-steps.ts";
@@ -38,13 +38,13 @@ async function setup(options: { second?: boolean; ringtone?: { ringtone: number;
   const olivia = await windowFor(owner);
   windows.push(mo1, olivia);
   if (options.ringtone) {
-    const token = await storedToken(mo1.app, profile);
-    const saved = await fetch(`${API_URL ?? ""}/api/v1/me/settings`, {
-      method: "PATCH",
-      headers: { authorization: `Bearer ${token ?? ""}`, "content-type": "application/json", origin: "app://meetapp" },
-      body: JSON.stringify(options.ringtone),
-    });
-    expect(saved.status).toBe(204);
+    // Saved from Mo's window: main adds the sign-in token (Linux keeps it only in memory, no file).
+    const status = await mo1.page.evaluate(
+      async ([url, body]) =>
+        (await fetch(url, { method: "PATCH", headers: { "content-type": "application/json" }, body })).status,
+      [`${API_URL ?? ""}/api/v1/me/settings`, JSON.stringify(options.ringtone)] as const,
+    );
+    expect(status).toBe(204);
     await mo1.page.reload();
   }
   const mo2 = options.second ? await launchAs(member.email, undefined, FAKE_MEDIA) : undefined;
