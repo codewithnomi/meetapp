@@ -3,6 +3,8 @@
 // real-window side of TC-F16-51, 54). The small windows are the pages showing call-window.html.
 import { expect, test, type ElectronApplication, type Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { FAKE_MEDIA, closeApp, freshProfile, launchAs, launchNewAccount, type RunningApp } from "./desktop.ts";
 import { afterCallEnds, controls } from "./meeting-steps.ts";
 import { team, windowFor } from "./meeting-team.ts";
@@ -340,4 +342,33 @@ test("TC-F16-30 [AC-F16-14] while calling someone, the mini window says so and C
   await mini.getByRole("button", { name: "Cancel" }).click();
   await expect(incoming(mo.page)).toHaveCount(0, { timeout: 10_000 });
   await expect.poll(() => smallPages(olivia.app).length, { timeout: 5_000 }).toBe(0);
+});
+
+// F16 T11: a remembered place is kept after a restart (TC-F16-42). A real drag can't be made from a test
+// (macOS reports only a person's drags as "will-move"), so the place is written where the app keeps it;
+// the drag itself is covered by the controller tests (TC-F16-41).
+test("TC-F16-42 [AC-F16-19] a remembered place is used again after MeetApp restarts", async () => {
+  const { workspace, owner, member } = await team();
+  const profile = freshProfile();
+  const first = await launchAs(member.email, profile, FAKE_MEDIA);
+  const display = await first.app.evaluate(({ screen }) => {
+    const { id, workArea } = screen.getPrimaryDisplay();
+    return { id, x: workArea.x + 40, y: workArea.y + 60 };
+  });
+  await closeApp(first.app);
+  writeFileSync(
+    join(profile, "call-windows.json"),
+    JSON.stringify({ ring: { x: display.x, y: display.y, displayId: display.id } }),
+  );
+
+  const mo = await launchAs(member.email, profile, FAKE_MEDIA);
+  const olivia = await windowFor(owner);
+  windows.push(mo, olivia);
+  await Promise.all([olivia, mo].map((w) => inWorkspace(w.page, workspace)));
+  await chatWith(olivia.page, "Mo", /Mo Member/);
+  await putAway(mo.app, true);
+  await olivia.page.getByRole("button", { name: "Audio call" }).click();
+  await firstSmall(mo.app);
+  await expect.poll(async () => (await smallState(mo.app))[0]?.bounds).toMatchObject({ x: display.x, y: display.y });
+  await olivia.page.getByRole("button", { name: "Cancel" }).click();
 });
