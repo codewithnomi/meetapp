@@ -5,12 +5,18 @@
 import { IncomingCall, Notice } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { useAnswer, useRingtone, useRings } from "./incoming-call-hooks.ts";
+import { useIncomingCalls } from "./incoming-calls.ts";
 
 export function IncomingCalls({ onAccepted }: { onAccepted: () => void }) {
   const { t } = useTranslation();
   const rings = useRings();
+  const silenced = useIncomingCalls((state) => state.silenced);
   const { accept, decline, busyIn } = useAnswer(onAccepted);
-  useRingtone(rings.length > 0, busyIn !== undefined);
+  // One tone for every ring (AC-F16-08), unless each was silenced with the ring window's × (AC-F16-04).
+  useRingtone(
+    rings.some((ring) => !silenced.includes(ring.callId)),
+    busyIn !== undefined,
+  );
   if (rings.length === 0 && !accept.isError) return null;
   const busy = busyIn !== undefined;
   return (

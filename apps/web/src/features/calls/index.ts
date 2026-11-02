@@ -9,3 +9,7 @@ export { CallNoteActionsProvider, useCallNoteActions, type CallNoteActions } fro
 export { CALL_KEYS } from "./call-keys.ts";
 export { IncomingCalls } from "./IncomingCalls.tsx";
 export { OtherDevice } from "./OtherDevice.tsx";
+export { useIncomingCalls } from "./incoming-calls.ts";
+export { useAnswer } from "./incoming-call-hooks.ts";
+export { startCall } from "./calls-api.ts";
+export { useEnterCall } from "./enter-call.ts";

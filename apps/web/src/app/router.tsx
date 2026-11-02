@@ -13,6 +13,7 @@ import { BrowserSignInPage } from "../pages/BrowserSignInPage/index.ts";
 import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
+import { useCallWindows } from "../features/call-windows/index.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
@@ -257,6 +258,8 @@ function SignedInScreens() {
 function Ringing() {
   const navigate = useNavigate();
   const toCall = () => void navigate("/call");
+  // F16: rings and the call also show in small windows above other apps (desktop app only).
+  useCallWindows({ toCall, toChat: () => void navigate("/chat") });
   return (
     <>
       <IncomingCalls onAccepted={toCall} />

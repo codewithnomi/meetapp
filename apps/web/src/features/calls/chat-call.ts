@@ -23,6 +23,8 @@ interface ChatCallState {
   backTo: string | undefined;
   /** Reads `backTo` once and forgets it. */
   takeBackTo: () => string | undefined;
+  /** Opens this chat next time the Chat screen shows (F16: a missed-call notification). */
+  openChat: (conversationId: string) => void;
   begin: (call: ChatCall) => void;
   move: (phase: CallPhase) => void;
   end: () => void;
@@ -37,6 +39,7 @@ export const useChatCall = create<ChatCallState>((set, get) => ({
     set({ backTo: undefined });
     return id;
   },
+  openChat: (conversationId) => set({ backTo: conversationId }),
   begin: (call) => set({ call, left: undefined, backTo: undefined }),
   move: (phase) => set(({ call }) => (call ? { call: { ...call, phase } } : {})),
   // Ending twice (Cancel, then the "cancelled" news) changes nothing the second time.
