@@ -512,7 +512,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D079: Ring and mini call windows are small windows driven by the main window (F16)
 - **Date:** 2026-11-02. **Status:** proposed.
-- **Decision:** the desktop main process opens small always-on-top windows (`call-window.html`). They show only a state the main MeetApp window reports, and they send button presses back to it. They have no network access and no sign-in. The mini window's live video arrives as small JPEG pictures (320×180, about 15 a second) over a MessagePort from the main window.
+- **Decision:** the desktop main process opens small always-on-top windows (`call-window.html`). They show only a state the main MeetApp window reports, and they send button presses back to it. They have their own preload (`meetappCallWindow` only) and their own session with every permission refused, no network access and no sign-in. The mini window's live video arrives as small JPEG pictures (320×180, about 15 a second) over a MessagePort from the main window.
 - **Why:** one place keeps the call, the ringtone and the sign-in, so every rule from F02 and F15 applies unchanged. The small windows stay tiny and safe.
 - **Alternatives:** have the small windows join the call themselves (needs a sign-in in each window, and a second connection to the call server); show only a picture (the owner chose live video).
 

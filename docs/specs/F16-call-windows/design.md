@@ -41,12 +41,14 @@ The main process knows whether any MeetApp window is in front, so it decides whe
 Whenever its incoming calls or current call change, the main window sends one `CallWindowsState` (at most every 200 ms; immediately for ring changes):
 - `rings`: `[{ callId, caller: { name, initials, photoUrl? }, kind: "video" | "audio", chatName?, busyIn?: string }]`. `busyIn` is the current call's or meeting's name (AC-07).
 - `call`: `{ title, joinedAt, people, phase: "lobby" | "calling" | "in-call" | "reconnecting", speaker: { name, initials, hasVideo, sharing }, mic, camera, hand, canUnmute, canShare } | null`
-- `missed`: `[{ callId, from, chatName?, kind, conversationId }]` (rings that just ended as missed, once each).
+- `missed`: `[{ callId, from, chatName?, kind, conversationId, endedAt }]` (rings that just ended as missed, once each). Answered, declined and cancelled rings never appear here (AC-12).
+
+Rings come only from F15's `incoming-calls`, which already applies F15's rules on who may see a call (AC-23).
 
 A photo reaches the small window as a `data:` picture prepared by the main window, so the small window never loads anything from the backend.
 
 ### 3.2 Actions back (AC-03, 04, 11, 16, 17)
-`act` accepts only: `accept {callId, video}`, `decline {callId}`, `hide {callId}`, `toggleMic`, `toggleCamera`, `share`, `toggleHand`, `leave`, `backToCall`. Main checks each action against an allow-list (unknown names and wrong arguments are refused, as for the existing bridges). It checks that the `callId` is one it is showing. It then forwards the action to the right main window and brings that window to the front when needed (accept, share, backToCall). The main window runs the same code its own buttons run, so F02 rights (`canUnmute`) and F15 rules apply unchanged. `share` brings the main window to the front first, so F02's own picker opens there (AC-17).
+`act` accepts only: `accept {callId, video}`, `decline {callId}`, `hide {callId}`, `toggleMic`, `toggleCamera`, `share`, `toggleHand`, `leave`, `backToCall`. Main checks each action against an allow-list (unknown names and wrong arguments are refused, as for the existing bridges). Ring actions are refused unless their `callId` is one it is showing. Call actions are refused unless a call is reported. It then forwards the action to the right main window and brings that window to the front when needed (accept, share, backToCall). The main window runs the same code its own buttons run, so F02 rights (`canUnmute`) and F15 rules apply unchanged. `share` brings the main window to the front first, so F02's own picker opens there (AC-17).
 
 ### 3.3 Showing and hiding (AC-01, 05, 06, 14, 18, 24, 26)
 Main recomputes after every report and every focus change. "In front" means some MeetApp main window is focused.
@@ -62,13 +64,13 @@ Several main windows report the same call; main keeps one window per call and se
 Each kind keeps one place: `{ ring: {x, y, displayId}, mini: {x, y, displayId} }` in `call-windows.json`, written after a drag ends. On show, the place is used if it still lies inside a connected screen's work area. Otherwise the window goes to the bottom-right corner of the main screen, 16 px from the edges. The mini window sits at its place; ring windows stack upwards from theirs with an 8 px gap and never overlap the mini window. When they would, the stack starts above it.
 
 ### 3.5 Live video in the mini window (AC-15, owner's choice)
-When the mini window opens, main creates a `MessageChannelMain` and gives one end to the main window and the other to the mini window. The main window draws the speaker's video, or the shared screen, into a 320×180 canvas about 15 times a second. It sends each picture as a JPEG `ArrayBuffer`, about 10–15 KB, so about 200 KB/s that never leaves the computer. The mini window shows it in an `<img>`. Sending stops while the mini window is hidden. When the speaker has no video, no pictures are sent and the mini window shows their picture or initials. This keeps the mini window free of the call server and of any sign-in.
+When the mini window opens, main creates a `MessageChannelMain` and gives one end to the main window and the other to the mini window. The main window draws the speaker's video, or the shared screen, into a 320×180 canvas about 15 times a second. It sends each picture as a JPEG `ArrayBuffer`, about 10–15 KB, so about 200 KB/s that never leaves the computer. The mini window shows it in an `<img>` through a `blob:` address. Sending stops while the mini window is hidden. When the speaker has no video, no pictures are sent and the mini window shows their picture or initials. This keeps the mini window free of the call server and of any sign-in.
 
 ### 3.6 Ringtone (AC-04, 05)
-The ringtone keeps playing in the main window, as in F15, so a ring window closing or opening never breaks it (AC-05). **×** sends `hide`, and the main window then silences that ring's tone (F15's existing mute-per-ring). Several rings play one tone (AC-08), as F15 already does.
+The ringtone keeps playing in the main window, as in F15, so a ring window closing or opening never breaks it (AC-05). **×** sends `hide`, and the main window then silences that ring's tone (F15's existing mute-per-ring). Several rings play one tone (AC-08), as F15 already does. When `busyIn` is set, the main window plays F15's quieter tone (AC-07, AC-F15-10).
 
 ### 3.7 Missed-call notification (AC-10–13b, 23; D080)
-For each `missed` entry, main shows a notification once per `callId` (AC-24), but only if no main window was in front at that moment.
+For each `missed` entry, main shows a notification once per `callId` (AC-24), but only if no main window was in front at `endedAt`. Main keeps a short focus history, so a late report is judged by the focus at the moment the ring ended, not when the report arrives.
 - **Content:** title "Missed call", body "from <name>" or "from <name> in <group>", and one action, `Call back`.
 - **Clicking it** brings the window used last to the front and opens the chat (`openChat {conversationId}`, added to the action list for main only).
 - **Call back** sends `callBack {conversationId, video}`, which the main window treats like its chat call button, including its messages when the call can't start (AC-11).
@@ -76,7 +78,7 @@ For each `missed` entry, main shows a notification once per `callId` (AC-24), bu
 macOS asks for permission with the first notification (AC-13b). A `failed` event, which happens when the app is unsigned or notifications are off, is logged once without names and otherwise ignored (AC-13).
 
 ### 3.8 Not in screen shares (AC-25)
-Both small windows call `setContentProtection(true)` (macOS and Windows), so they are left out of any screen capture, our own share included. On Linux, where this doesn't exist, our own share picker leaves out MeetApp's small windows by their window ids.
+Both small windows call `setContentProtection(true)` (macOS and Windows), so they are left out of any screen capture, our own share included. On Linux, where this doesn't exist, our own share picker leaves out MeetApp's small windows as window sources, and the small windows hide while the person shares a whole screen. On the owner's Mac it is also checked by hand once, with our own share and one other capture app (tests.md).
 
 ## 4. Data stored
 - **Server:** nothing new.
@@ -89,7 +91,7 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 - one MessagePort per mini window for frames.
 
 ## Edge cases & errors
-- **The main window crashes or reloads:** its report disappears, so its small windows close. After a reload the window reports again.
+- **The main window crashes or reloads:** on `render-process-gone` or `did-start-loading`, main drops that window's report, so its small windows close. After a reload the window reports again.
 - **Main window closed while a small window shows:** the small windows close with it (the app quits when the last main window closes, as today).
 - **An action arrives for a ring that has just ended:** main ignores it, because the `callId` is no longer shown.
 - **An accept fails:** the main window shows F15's error in front.
@@ -100,8 +102,9 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
 
 ## Security & privacy
 - **The small windows** use the same locked-down settings as the main window (S17: `contextIsolation`, `sandbox`, no `nodeIntegration`; `guardContents` blocks navigation and new windows). They load only `call-window.html` from the app.
-- **Their security policy** is stricter: `connect-src 'none'`, pictures only from `data:` and the app. They have no access to the backend, the call server or the sign-in (AC-22).
-- **Main** creates these windows itself; pages still can't open windows. The preload rule in apps/desktop/CLAUDE.md is updated to list `meetappCallWindow` and `callWindows`.
+- **Their own session:** the small windows use a separate session (`partition: "call-windows"`). `lockDownSession` is applied to it with every permission, device request and display-media request refused, and downloads refused, so they can never use the camera, microphone or screen.
+- **Their own security policy:** `call-window.html` gets its own CSP, built in security.ts (`connect-src 'none'`; `img-src 'self' data: blob:`; the rest as S17). It is sent by app-protocol.ts, and by the dev-server header hook for that page's path. This only tightens S17, so AC-22 ("the same security settings") is met. They have no access to the backend, the call server or the sign-in.
+- **Main** creates these windows itself; pages still can't open windows. With this design, apps/desktop/CLAUDE.md changes: "no new windows" becomes "pages can't open windows; only main opens the two call-window kinds (D079)". The preload list gains `callWindows`, `meetappCallWindow` and the existing `power`, which is missing from the list today.
 - **Messages:** every message from a small window is checked against the allow-list. Only main's own small windows may send on `meetapp:call-window` (checked by sender id).
 - **Notification text** is limited to names (AC-23). No message text appears, and the logs don't include names.
 - **Content protection** keeps the small windows out of screen shares (AC-25).
@@ -132,7 +135,8 @@ Both small windows call `setContentProtection(true)` (macOS and Windows), so the
   - the small windows have content protection and the locked-down settings;
   - small windows can't navigate or send unknown actions.
   These tests skip what Linux can't do (see D077).
-- **Notification:** unit-tested with a fake `Notification`. On the owner's Mac, checked by hand once signing allows (D080).
+- **Notification:** unit-tested with a fake `Notification`. On the owner's Mac, checked by hand once signing allows (D080), including the first-time macOS permission question (AC-13b).
+- **Screen-share check (AC-25):** by hand on the owner's Mac, with our own share and one other capture app; the e2e test checks the content-protection flag.
 - **Every AC** (AC-F16-01 to 26 and 13b) is mapped to test cases in tests.md.
 
 ## Decisions made here
