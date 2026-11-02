@@ -96,10 +96,10 @@ describe("CallWindowPage", () => {
     // Each picture is freed right after drawing, so memory stays flat (T-fix-2).
     expect(closed).toHaveBeenCalledOnce();
     for (const name of [
-      "Mute (⌘⇧M)",
-      "Turn camera on (⌘⇧O)",
+      /^Mute \((⌘⇧|Ctrl\+Shift\+)M\)$/,
+      /^Turn camera on \((⌘⇧|Ctrl\+Shift\+)O\)$/,
       "Share screen",
-      "Raise your hand (⌘⇧K)",
+      /^Raise your hand \((⌘⇧|Ctrl\+Shift\+)K\)$/,
       "Leave",
       "Back to the call window",
     ])
@@ -117,7 +117,10 @@ describe("CallWindowPage", () => {
   it("TC-F16-31 [AC-F16-16, AC-F16-18] locked microphone, reconnecting and calling", () => {
     render(<CallWindowPage />);
     react(() => show({ kind: "mini", call: { ...call, mic: false, canUnmute: false } }));
-    expect(screen.getByRole("button", { name: "Your microphone is turned off by the organizer" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Your microphone is turned off by the organizer" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     react(() => show({ kind: "mini", call: { ...call, phase: "reconnecting" } }));
     expect(screen.getByText("Reconnecting…")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Share screen" })).toBeNull();

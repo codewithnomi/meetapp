@@ -162,11 +162,12 @@ function CallerLine(props: IncomingCallProps & { who: string }) {
 export function IncomingCall(props: IncomingCallProps) {
   const { first, box } = useWindowKeys(props.decline.onClick, props.takeFocus ?? true);
   const who = useId();
+  const busy = useId();
   return (
     <section
       role="alertdialog"
       aria-label={props.label}
-      aria-describedby={who}
+      aria-describedby={props.busyNote ? `${who} ${busy}` : who}
       ref={box}
       className={cx(
         "box-border flex flex-col rounded-xl bg-stage text-stage-ink",
@@ -176,7 +177,9 @@ export function IncomingCall(props: IncomingCallProps) {
     >
       <CallerLine {...props} who={who} />
       {props.busyNote ? (
-        <p className="m-0 rounded-md bg-stage-scrim px-2.5 py-2 text-[13px] leading-4.5">{props.busyNote}</p>
+        <p id={busy} className="m-0 rounded-md bg-stage-scrim px-2.5 py-2 text-[13px] leading-4.5">
+          {props.busyNote}
+        </p>
       ) : null}
       <div className={cx("flex justify-center", props.standalone ? "gap-2" : "gap-3")}>
         <AnswerButton compact={props.standalone} answer={props.video} icon="camera" tone="ok" buttonRef={first} />

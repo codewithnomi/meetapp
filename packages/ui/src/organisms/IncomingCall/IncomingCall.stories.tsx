@@ -31,3 +31,12 @@ export const DuringAnotherCall: Story = {
     audio: answer("Leave current call and accept with audio", "Audio"),
   },
 };
+/** F16: the compact card a RingWindow draws in its own small window, with × and the drag strip. */
+export const Standalone: Story = {
+  args: {
+    takeFocus: false,
+    standalone: true,
+    hide: { label: "Hide (the call keeps ringing in MeetApp)", onClick: () => undefined },
+  },
+  decorators: [(Story) => <div className="h-40 w-80">{Story()}</div>],
+};

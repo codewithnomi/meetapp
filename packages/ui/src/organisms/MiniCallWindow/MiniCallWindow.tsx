@@ -28,6 +28,8 @@ export interface MiniCallWindowProps {
   video?: ReactNode;
   /** "Sara Malik is speaking", "Sara Malik is sharing", "Reconnecting…", "Waiting to be let in…". */
   caption: string;
+  /** True for a status (Reconnecting, Lobby, Calling): it is announced. Who speaks is not, or every change would be. */
+  captionIsStatus?: boolean | undefined;
   /** Lobby, calling and reconnecting show only Leave (or Cancel). */
   controls: boolean;
   mic: Toggle;
@@ -50,19 +52,17 @@ function StageButton(props: {
   off?: boolean | undefined;
   on?: boolean | undefined;
   disabled?: boolean | undefined;
-  /** True when the label already says what pressing does ("Mute" / "Unmute"). */
-  pressed?: boolean | undefined;
 }) {
   return (
     <button
       type="button"
       aria-label={props.label}
       title={props.label}
-      aria-pressed={props.pressed}
-      disabled={props.disabled}
-      onClick={props.onClick}
+      // Not disabled: an unavailable button stays reachable with Tab, so its reason (the label) can be heard.
+      aria-disabled={props.disabled || undefined}
+      onClick={props.disabled ? undefined : props.onClick}
       className={cx(
-        "grid size-9.5 cursor-pointer place-items-center rounded-full border-0 disabled:cursor-not-allowed disabled:opacity-50",
+        "grid size-9.5 cursor-pointer place-items-center rounded-full border-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
         props.on ? "bg-accent text-on-accent" : "bg-stage-tile hover:bg-stage-scrim",
         !props.on && (props.off ? "text-stage-danger" : "text-stage-ink"),
         FOCUS_RING,
@@ -88,7 +88,9 @@ function Header({ title, details, back }: Pick<MiniCallWindowProps, "title" | "d
   );
 }
 
-function Picture(props: Pick<MiniCallWindowProps, "video" | "speakerName" | "speakerPhoto" | "caption">) {
+function Picture(
+  props: Pick<MiniCallWindowProps, "video" | "speakerName" | "speakerPhoto" | "caption" | "captionIsStatus">,
+) {
   return (
     <div className="relative mx-2 grid h-37.5 place-items-center overflow-hidden rounded-md bg-stage-scrim">
       {props.video ? (
@@ -97,7 +99,7 @@ function Picture(props: Pick<MiniCallWindowProps, "video" | "speakerName" | "spe
         <Avatar name={props.speakerName} {...(props.speakerPhoto ? { src: props.speakerPhoto } : {})} size="lg" />
       )}
       <span
-        aria-live="polite"
+        aria-live={props.captionIsStatus ? "polite" : undefined}
         className="absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-full bg-stage-scrim px-2 py-0.5 text-[12px] font-semibold"
       >
         {props.caption}

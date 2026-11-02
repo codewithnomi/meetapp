@@ -74,6 +74,21 @@ describe("MiniCallWindow", () => {
     expect(mic.onClick).not.toHaveBeenCalled();
   });
 
+  it("TC-F16-48 [AC-F16-21] who speaks isn't announced; a status is; an unavailable button stays reachable", async () => {
+    const { rerender } = render(<MiniCallWindow {...props()} />);
+    expect(screen.getByText("Sara Malik is speaking")).not.toHaveAttribute("aria-live");
+    rerender(<MiniCallWindow {...props({ caption: "Reconnecting…", captionIsStatus: true, controls: false })} />);
+    expect(screen.getByText("Reconnecting…")).toHaveAttribute("aria-live", "polite");
+    const share = { label: "Only presenters can share", onClick: vi.fn(), disabled: true };
+    rerender(<MiniCallWindow {...props({ share })} />);
+    const button = screen.getByRole("button", { name: "Only presenters can share" });
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    button.focus();
+    expect(button).toHaveFocus();
+    await userEvent.click(button);
+    expect(share.onClick).not.toHaveBeenCalled();
+  });
+
   it("TC-F16-48 [AC-F16-21] Tab reaches every button in order; Space presses", async () => {
     const p = props();
     render(<MiniCallWindow {...p} />);

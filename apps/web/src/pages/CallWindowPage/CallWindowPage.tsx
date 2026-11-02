@@ -7,7 +7,7 @@ import { MiniCallWindow, RingWindow } from "@meetapp/ui";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { act, useFrameCanvas, useSmallWindowView } from "../../features/call-windows/index.ts";
-import { useElapsed } from "../../features/meetings/index.ts";
+import { shortcutText, useElapsed } from "../../features/meetings/index.ts";
 
 function Ring({ ring }: { ring: CallWindowsRing }) {
   const { t } = useTranslation();
@@ -78,28 +78,26 @@ function Mini({ call }: { call: CallWindowsCall }) {
       speakerPhoto={call.speaker.photo}
       video={live ? <LiveVideo /> : undefined}
       caption={caption(call, t)}
+      captionIsStatus={call.phase !== "in-call"}
       controls={inCall}
       controlsLabel={t("calls.windows.controls")}
       mic={{
-        label: t(
+        label:
           call.canUnmute || call.mic
-            ? call.mic
-              ? "calls.windows.mute"
-              : "calls.windows.unmute"
-            : "calls.windows.micLocked",
-        ),
+            ? t(call.mic ? "calls.windows.mute" : "calls.windows.unmute", { keys: shortcutText("M") })
+            : t("calls.windows.micLocked"),
         on: call.mic,
         disabled: !call.mic && !call.canUnmute,
         onClick: () => act({ name: "toggleMic" }),
       }}
       camera={{
-        label: t(call.camera ? "calls.windows.cameraOff" : "calls.windows.cameraOn"),
+        label: t(call.camera ? "calls.windows.cameraOff" : "calls.windows.cameraOn", { keys: shortcutText("O") }),
         on: call.camera,
         onClick: () => act({ name: "toggleCamera" }),
       }}
       share={{ label: t("calls.windows.share"), disabled: !call.canShare, onClick: () => act({ name: "share" }) }}
       hand={{
-        label: t(call.hand ? "calls.windows.lowerHand" : "calls.windows.raiseHand"),
+        label: t(call.hand ? "calls.windows.lowerHand" : "calls.windows.raiseHand", { keys: shortcutText("K") }),
         on: call.hand,
         onClick: () => act({ name: "toggleHand" }),
       }}

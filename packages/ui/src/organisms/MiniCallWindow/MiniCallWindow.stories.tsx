@@ -50,3 +50,8 @@ export const Calling: Story = {
     leave: { label: "Cancel", onClick: none },
   },
 };
+export const Muted: Story = { args: { mic: { label: "Unmute (⌘⇧M)", on: false, onClick: none } } };
+export const CameraOn: Story = {
+  args: { video: picture, camera: { label: "Turn camera off (⌘⇧O)", on: true, onClick: none } },
+};
+export const HandRaised: Story = { args: { hand: { label: "Lower your hand (⌘⇧K)", on: true, onClick: none } } };

@@ -35,6 +35,14 @@ describe("RingWindow", () => {
     expect(p.decline.onClick).not.toHaveBeenCalled();
   });
 
+  it("TC-F16-48 [AC-F16-21] announced when it appears; the description includes the busy line", () => {
+    render(<RingWindow {...props()} busyNote="You're in Release team. Accepting leaves it." />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Incoming video call from Sara Malik");
+    expect(screen.getByRole("alertdialog")).toHaveAccessibleDescription(
+      /Video call · Release team.*Accepting leaves it/,
+    );
+  });
+
   it("TC-F16-04 [AC-F16-02] a photo is shown when there is one", () => {
     render(<RingWindow {...props()} photoUrl="data:image/png;base64,AAAA" />);
     expect(document.querySelector('img[src^="data:image/png"]')).not.toBeNull();

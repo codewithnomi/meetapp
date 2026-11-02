@@ -9,5 +9,13 @@ export type RingWindowProps = Omit<IncomingCallProps, "takeFocus" | "standalone"
 };
 
 export function RingWindow(props: RingWindowProps) {
-  return <IncomingCall {...props} takeFocus={false} standalone />;
+  return (
+    <>
+      <IncomingCall {...props} takeFocus={false} standalone />
+      {/* It appears without taking focus, so it is announced here ("Incoming video call from …"). */}
+      <p role="alert" className="sr-only">
+        {props.label}
+      </p>
+    </>
+  );
 }
