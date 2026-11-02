@@ -78,6 +78,9 @@ Like the Teams **Chat** screen (owner, 2026-10-21, D062): a chat list on the lef
 - Settings: choose microphone, speaker and camera with a live preview; background blur and built-in background pictures (also in meetings); choose from 5 ringtones (owner, 2026-10-27)
 - **Depends on:** F02, F14 · **Size:** large
 
+### F16 Calls while MeetApp isn't in front
+As in Teams: an incoming call rings in a small window above every app; a Mac notification for missed calls (Call back); a mini call window during a call or meeting while another app is in front. Both windows can be dragged and remember their place. (D078)
+
 ### F04 Desktop app
 - Installable app for **Mac and Windows** (unsigned for now, D017)
 - Clicking a meeting link opens the desktop app (`meetapp://` links)

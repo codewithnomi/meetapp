@@ -503,3 +503,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** GitHub's free Linux computers are slower than the Mac. The Linux-only bugs found (share list missing the screen, sign-in key kept only in memory, sign-up limit, end-of-call timing) are fixed. What's left is timing, not broken features.
 - **Follow-up:** make the slow desktop tests wait smarter, one by one, until the GitHub check is green again (before F04's PR).
 - **Alternatives:** retry a failed desktop test once on GitHub; keep fixing before merging (several more 45-minute rounds).
+
+### D078: Ring window, missed-call notifications and mini call window are their own feature, F16 (owner, 2026-10-29)
+- **Date:** 2026-11-02 (agreed 2026-10-29). **Status:** accepted.
+- **Decision:** the incoming-call window above other apps, Mac notifications for missed calls and the mini call window move from F04 into a small feature, F16, built right after F15 and before F04. Ringing on a fully closed app stays in F04.
+- **Why:** the owner wants calls to work as in Teams as soon as calls exist. Waiting for all of F04 would leave missed calls for weeks.
+- **Alternatives:** keep it in F04 (later); do it as fix tasks of F15 (too big for fixes, needs its own ACs and security check).
