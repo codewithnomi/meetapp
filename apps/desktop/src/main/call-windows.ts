@@ -13,6 +13,8 @@ import type {
 } from "@meetapp/contracts";
 
 export type { CallInfo, CallWindowAction, CallWindowsState, MissedInfo, RingInfo };
+export type { Place, Places } from "./call-windows-checks.ts";
+import type { Place, Places } from "./call-windows-checks.ts";
 
 export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 /** Small window ↔ main: `state` (to show) and `act` (a button press). */
@@ -45,15 +47,6 @@ export interface Rect {
 export interface Display {
   id: number;
   workArea: Rect;
-}
-export interface Place {
-  x: number;
-  y: number;
-  displayId: number;
-}
-export interface Places {
-  ring?: Place;
-  mini?: Place;
 }
 
 export interface Merged {
@@ -154,10 +147,15 @@ export function layoutWindows(input: LayoutInput): { mini?: Rect; rings: Rect[] 
   const start = placeOrFallback(places.ring, displays, corner, RING_SIZE);
   // The remembered place is the bottom window's top at the usual height; the stack grows up from its bottom.
   let bottom = start.y + RING_SIZE.height;
-  if (mini && overlaps({ ...start, ...RING_SIZE }, mini)) bottom = Math.min(bottom, mini.y - GAP);
+  const total = input.rings.reduce((sum, height) => sum + height, 0) + GAP * Math.max(0, input.rings.length - 1);
+  // The whole stack, not just its first window, stays clear of the mini window (bug review).
+  if (mini && overlaps({ x: start.x, y: bottom - total, width: RING_SIZE.width, height: total }, mini))
+    bottom = Math.min(bottom, mini.y - GAP);
+  // Nothing goes above the top of the screen: with many rings the top ones overlap instead.
+  const top = (displays.find((d) => d.id === corner) ?? (displays[0] as Display)).workArea.y;
   const rings: Rect[] = [];
   for (const height of input.rings) {
-    rings.push({ x: start.x, y: bottom - height, width: RING_SIZE.width, height });
+    rings.push({ x: start.x, y: Math.max(top, bottom - height), width: RING_SIZE.width, height });
     bottom -= height + GAP;
   }
   return { ...(mini ? { mini } : {}), rings };
@@ -208,87 +206,8 @@ export function missedToNotify(missed: MissedInfo[], focus: FocusHistory, told: 
   return fresh.filter((m) => !focus.inFrontAt(m.endedAt));
 }
 
-const short = (v: unknown, max = 200) => typeof v === "string" && v.length <= max;
-const isPhoto = (v: unknown) => v === undefined || (short(v, 400_000) && (v as string).startsWith("data:image/"));
-const isPerson = (v: unknown) => {
-  const p = v as Record<string, unknown> | null;
-  return typeof p === "object" && p !== null && short(p["name"]) && short(p["initials"], 4) && isPhoto(p["photo"]);
-};
-const isKind = (v: unknown) => v === "video" || v === "audio";
-const optional = (v: unknown) => v === undefined || short(v);
-
-function isRing(v: unknown): boolean {
-  const r = v as Record<string, unknown>;
-  return (
-    typeof r === "object" &&
-    r !== null &&
-    short(r["callId"], 100) &&
-    isPerson(r["caller"]) &&
-    isKind(r["kind"]) &&
-    optional(r["chatName"]) &&
-    optional(r["busyIn"])
-  );
-}
-function isCall(v: unknown): boolean {
-  if (v === null) return true;
-  const c = v as Record<string, unknown>;
-  const speaker = c?.["speaker"] as Record<string, unknown> | undefined;
-  return (
-    typeof c === "object" &&
-    short(c["title"]) &&
-    Number.isFinite(c["joinedAt"]) &&
-    Number.isInteger(c["people"]) &&
-    ["lobby", "calling", "in-call", "reconnecting"].includes(c["phase"] as string) &&
-    isPerson(speaker) &&
-    typeof speaker?.["hasVideo"] === "boolean" &&
-    typeof speaker["sharing"] === "boolean" &&
-    ["mic", "camera", "hand", "canUnmute", "canShare"].every((k) => typeof c[k] === "boolean")
-  );
-}
-function isText(v: unknown): boolean {
-  const t = v as Record<string, unknown> | null;
-  return (
-    typeof t === "object" && t !== null && short(t["title"], 60) && short(t["body"], 200) && short(t["callBack"], 40)
-  );
-}
-function isMissed(v: unknown): boolean {
-  const m = v as Record<string, unknown>;
-  return (
-    typeof m === "object" &&
-    m !== null &&
-    short(m["callId"], 100) &&
-    short(m["from"]) &&
-    optional(m["chatName"]) &&
-    isKind(m["kind"]) &&
-    short(m["conversationId"], 100) &&
-    Number.isFinite(m["endedAt"]) &&
-    isText(m["text"])
-  );
-}
-
-/** Checks a main window's report before main uses it (design.md 3.1); at most 20 entries per list. */
-export function isCallWindowsState(value: unknown): value is CallWindowsState {
-  const s = value as Record<string, unknown>;
-  const list = (v: unknown, check: (x: unknown) => boolean) => Array.isArray(v) && v.length <= 20 && v.every(check);
-  return (
-    typeof s === "object" && s !== null && list(s["rings"], isRing) && isCall(s["call"]) && list(s["missed"], isMissed)
-  );
-}
-
 /** Only main's own small windows may press buttons on CALL_WINDOW_CHANNEL; only main windows may report. */
 export function senderAllowed(senderId: number, smallWindowIds: ReadonlySet<number>, channel: string): boolean {
   const small = smallWindowIds.has(senderId);
   return channel === CALL_WINDOW_CHANNEL ? small : !small;
-}
-
-/** The saved places, keeping only well-formed entries (the file may have been edited by hand). */
-export function validPlaces(value: unknown): Places {
-  const places: Places = {};
-  if (typeof value !== "object" || value === null) return places;
-  for (const kind of ["ring", "mini"] as const) {
-    const place = (value as Record<string, unknown>)[kind] as Record<string, unknown> | undefined;
-    const ok = place && ["x", "y", "displayId"].every((key) => Number.isFinite(place[key]));
-    if (ok) places[kind] = { x: Number(place["x"]), y: Number(place["y"]), displayId: Number(place["displayId"]) };
-  }
-  return places;
 }

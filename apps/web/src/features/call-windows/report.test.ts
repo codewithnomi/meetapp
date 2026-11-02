@@ -107,6 +107,8 @@ describe("TC-F16-20 [AC-F16-10, AC-F16-23] a missed call for the notification", 
     expect(one).toMatchObject({ callId: "c1", from: "Sara Malik", kind: "video", endedAt: 5 });
     expect(one.text).toEqual({ title: "Missed call", body: "from Sara Malik", callBack: "Call back" });
     expect(missedCall(ring("c2", "Release team"), 5, t).text.body).toBe("from Sara Malik in Release team");
+    // Long names are shortened so the text stays within 200 characters (bug review).
+    expect(missedCall(ring("c3", "G".repeat(300)), 5, t).text.body.length).toBeLessThanOrEqual(200);
   });
 });
 

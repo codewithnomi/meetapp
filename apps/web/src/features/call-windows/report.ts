@@ -40,8 +40,11 @@ export function buildReport({ rings, busyIn, call, missed, photos = new Map() }:
 }
 
 /** A ring that ended unanswered becomes a missed call, worded for the notification (AC-F16-10, 23). */
+/** Long names are shortened, so the notification's text always fits what the desktop app accepts. */
+const clip = (text: string, max = 60) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
+
 export function missedCall(ring: RingMessage, endedAt: number, t: TFunction): CallWindowsMissed {
-  const name = ring.from.name;
+  const name = clip(ring.from.name);
   return {
     callId: ring.callId,
     from: name,
@@ -52,7 +55,7 @@ export function missedCall(ring: RingMessage, endedAt: number, t: TFunction): Ca
     text: {
       title: t("calls.windows.missedTitle"),
       body: ring.groupName
-        ? t("calls.windows.missedFromIn", { name, chat: ring.groupName })
+        ? t("calls.windows.missedFromIn", { name, chat: clip(ring.groupName) })
         : t("calls.windows.missedFrom", { name }),
       callBack: t("calls.windows.callBack"),
     },

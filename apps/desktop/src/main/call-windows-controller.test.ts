@@ -72,7 +72,7 @@ describe("F16 small windows, put together", () => {
     expect(open()).toHaveLength(0);
     controller.focusChanged(undefined);
     expect(open()).toHaveLength(0);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     expect(open("ring")).toHaveLength(1);
     expect(open("ring")[0]?.shown).toBe(1);
     controller.focusChanged(1);
@@ -83,7 +83,7 @@ describe("F16 small windows, put together", () => {
     const { controller, deps, advance, open } = computer();
     controller.report(1, report({ rings: [ring("c1")] }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     const id = (open("ring")[0] as { id: number }).id;
     controller.act(id, { name: "hide", callId: "c1" });
     expect(open()).toHaveLength(0);
@@ -97,7 +97,7 @@ describe("F16 small windows, put together", () => {
     const { controller, deps, advance, open } = computer();
     controller.report(1, report({ rings: [ring("c1"), ring("c2")], call }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     const first = open("ring").find((w) => {
       const last = w.states.at(-1);
       return last?.kind === "ring" && last.ring.callId === "c1";
@@ -116,7 +116,7 @@ describe("F16 small windows, put together", () => {
     const { controller, advance, open } = computer();
     controller.report(1, report({ rings: [ring("new"), ring("old")] }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     const rings = open("ring");
     expect(rings.map((w) => (w.states.at(-1) as { ring: { callId: string } }).ring.callId)).toEqual(["old", "new"]);
   });
@@ -125,7 +125,7 @@ describe("F16 small windows, put together", () => {
     const { controller, advance, open, saved } = computer();
     controller.report(1, report({ rings: [ring("new"), ring("old")] }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     const upper = open("ring")[1] as { id: number };
     controller.moved(upper.id, 50, 100, 1);
     expect(saved.at(-1)).toEqual({ ring: { x: 50, y: 100 + RING_SIZE.height + GAP, displayId: 1 } });
@@ -135,21 +135,41 @@ describe("F16 small windows, put together", () => {
     const { controller, deps, advance, open } = computer();
     controller.report(1, report({ call }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     const mini = open("mini")[0] as { id: number };
     expect(deps.linkFrames).toHaveBeenCalledWith(mini.id, 1);
     controller.focusChanged(1);
     expect(deps.unlinkFrames).toHaveBeenCalledWith(1);
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     expect(deps.linkFrames).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-F16-61 [AC-F16-01] a timer that fires a moment early still shows the windows", () => {
+    const { controller, advance, open } = computer();
+    controller.report(1, report({ rings: [ring("c1")] }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS + 20);
+    expect(open("ring")).toHaveLength(1);
+  });
+
+  it("TC-F16-60 [AC-F16-06] a small window closed by the system is forgotten and opened again", () => {
+    const { controller, advance, open } = computer();
+    controller.report(1, report({ rings: [ring("c1")] }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS + 20);
+    const first = open("ring")[0] as { id: number; open: boolean };
+    first.open = false;
+    controller.smallClosed(first.id);
+    expect(open("ring")).toHaveLength(1);
+    expect((open("ring")[0] as { id: number }).id).not.toBe(first.id);
   });
 
   it("TC-F16-60 [AC-F16-06] a main window that crashes or reloads takes its small windows with it", () => {
     const { controller, advance, open } = computer();
     controller.report(1, report({ rings: [ring("c1")], call }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     expect(open()).toHaveLength(2);
     controller.dropReport(1);
     expect(open()).toHaveLength(0);
@@ -166,7 +186,7 @@ describe("F16 small windows, put together", () => {
       text: { title: "Missed call", body: "from Sara", callBack: "Call back" },
     };
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     controller.report(1, report({ rings: [ring("c1")], call, missed: [missed] }));
     controller.report(2, report({ rings: [ring("c1")], call, missed: [missed] }));
     expect(open("ring")).toHaveLength(1);
@@ -178,7 +198,7 @@ describe("F16 small windows, put together", () => {
     const { controller, advance, open, saved } = computer();
     controller.report(1, report({ call }));
     controller.focusChanged(undefined);
-    advance(FLICKER_MS);
+    advance(FLICKER_MS + 20);
     controller.moved((open("mini")[0] as { id: number }).id, 200, 300, 1);
     expect(saved.at(-1)).toEqual({ mini: { x: 200, y: 300, displayId: 1 } });
     controller.moved(999, 1, 1, 1);

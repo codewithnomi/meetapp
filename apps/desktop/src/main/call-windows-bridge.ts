@@ -24,9 +24,9 @@ import {
   MINI_SIZE,
   RING_SIZE,
   senderAllowed,
-  validPlaces,
   type Places,
 } from "./call-windows.ts";
+import { validPlaces } from "./call-windows-checks.ts";
 import { notifyMissed } from "./call-windows-notify.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
 import { CALL_WINDOW_PAGE, CALL_WINDOW_PARTITION, smallPageAllows, smallWindowSetup } from "./security.ts";
@@ -57,7 +57,12 @@ function writePlaces(file: string, places: Places): void {
   }
 }
 
-function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: (window: BrowserWindow) => void) {
+interface SmallWindowEvents {
+  onMoved: (window: BrowserWindow) => void;
+  onClosed: (id: number) => void;
+}
+
+function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, { onMoved, onClosed }: SmallWindowEvents) {
   const setup = smallWindowSetup(options.preloadPath, kind === "ring" ? RING_SIZE : MINI_SIZE);
   const window = new BrowserWindow(setup.options);
   window.setAlwaysOnTop(true, setup.alwaysOnTopLevel);
@@ -79,16 +84,26 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
       if (!window.isDestroyed()) onMoved(window);
     }, 300);
   });
+  const id = window.webContents.id;
+  let closing = false;
+  window.on("closed", () => {
+    if (!closing) onClosed(id);
+  });
+  // Placed only when the place changes, and never while the person drags it (no jumping back).
+  let placed = "";
   void window.loadURL(new URL(CALL_WINDOW_PAGE, options.appUrl).toString());
   const ready = new Promise<void>((resolve) => window.webContents.once("did-finish-load", () => resolve()));
   return {
-    id: window.webContents.id,
+    id,
     setBounds: (rect: { x: number; y: number; width: number; height: number }) => {
-      if (window.isDestroyed()) return;
+      const key = JSON.stringify(rect);
+      if (window.isDestroyed() || dragging || key === placed) return;
+      placed = key;
       window.setBounds(rect);
     },
     showInactive: () => void ready.then(() => !window.isDestroyed() && window.showInactive()),
     close: () => {
+      closing = true;
       if (!window.isDestroyed()) window.destroy();
     },
     send: (state: unknown) =>
@@ -106,9 +121,12 @@ function computerFor(
   const placesFile = join(app.getPath("userData"), "call-windows.json");
   return {
     open: (kind) =>
-      openSmallWindow(kind, options, (window) => {
-        const { x, y } = window.getBounds();
-        controller().moved(window.webContents.id, x, y, screen.getDisplayMatching(window.getBounds()).id);
+      openSmallWindow(kind, options, {
+        onMoved: (window) => {
+          const { x, y } = window.getBounds();
+          controller().moved(window.webContents.id, x, y, screen.getDisplayMatching(window.getBounds()).id);
+        },
+        onClosed: (id) => controller().smallClosed(id),
       }),
     displays: () => screen.getAllDisplays().map((d) => ({ id: d.id, workArea: d.workArea })),
     primaryDisplayId: () => screen.getPrimaryDisplay().id,
@@ -178,7 +196,10 @@ export function setUpCallWindows(options: CallWindowsOptions): { watch: (window:
       for (const change of ["focus", "blur", "minimize", "restore", "hide", "show"] as const)
         window.on(change as "focus", () => controller.focusChanged(focused()));
       window.webContents.on("render-process-gone", () => controller.dropReport(id));
-      window.webContents.on("did-start-loading", () => controller.dropReport(id));
+      // A real reload of the page (not an in-page change); the page reports again once it has loaded.
+      window.webContents.on("did-start-navigation", (details) => {
+        if (details.isMainFrame && !details.isSameDocument) controller.dropReport(id);
+      });
       window.on("closed", () => {
         mains.delete(id);
         controller.dropReport(id);

@@ -124,6 +124,34 @@ describe("TC-F16-02 TC-F16-16 TC-F16-18 [AC-F16-01, AC-F16-08, AC-F16-09] placem
     expect(top.y + top.height + GAP).toBe(bottom.y);
   });
 
+  it("TC-F16-16 [AC-F16-08] a stack that would grow up through the mini window starts above it", () => {
+    const places = {
+      ring: { x: 1100, y: 900 - EDGE - RING_SIZE.height, displayId: 1 },
+      mini: { x: 1100, y: 300, displayId: 1 },
+    };
+    const { rings, mini } = layoutWindows({
+      displays: [main],
+      primaryId: 1,
+      lastUsedDisplayId: 1,
+      places,
+      rings: [160, 160, 160, 160],
+      mini: true,
+    });
+    for (const ring of rings) expect(overlaps(ring, mini as Rect)).toBe(false);
+  });
+
+  it("TC-F16-16 [AC-F16-08] many rings never go above the top of the screen", () => {
+    const { rings } = layoutWindows({
+      displays: [main],
+      primaryId: 1,
+      lastUsedDisplayId: 1,
+      places: {},
+      rings: Array<number>(8).fill(RING_SIZE.height),
+      mini: false,
+    });
+    for (const ring of rings) expect(ring.y).toBeGreaterThanOrEqual(0);
+  });
+
   it("TC-F16-18 [AC-F16-09] when a ring ends the others close the gap", () => {
     const three = layoutWindows({
       displays: [main],

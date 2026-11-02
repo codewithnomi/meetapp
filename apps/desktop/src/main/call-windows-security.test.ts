@@ -1,14 +1,9 @@
 // F16's safety rules for the small windows (TC-F16-51, 52, 53, 55, 56, 59; AC-F16-22, 25), without
 // Electron. The desktop tests check the real windows (tests/e2e/desktop/call-windows.spec.ts).
 import { describe, expect, it, vi } from "vitest";
-import {
-  CALL_WINDOW_CHANNEL,
-  CALL_WINDOWS_CHANNEL,
-  isCallWindowAction,
-  isCallWindowsState,
-  senderAllowed,
-  validPlaces,
-} from "./call-windows.ts";
+import { CALL_WINDOW_CHANNEL, CALL_WINDOWS_CHANNEL, isCallWindowAction, senderAllowed } from "./call-windows.ts";
+import { validPlaces } from "./call-windows-checks.ts";
+import { cleanReport } from "./call-windows-checks.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
 import {
   CALL_WINDOW_PARTITION,
@@ -126,24 +121,38 @@ describe("TC-F16-55 [AC-F16-22, AC-F16-03, AC-F16-16] allow-list and sender chec
     expect(senderAllowed(7, small, CALL_WINDOWS_CHANNEL)).toBe(false);
   });
 
-  it("TC-F16-55 [AC-F16-22] a report must have the right shape and size", () => {
-    const ok = { rings: [], call: null, missed: [] };
-    expect(isCallWindowsState(ok)).toBe(true);
-    expect(isCallWindowsState({ ...ok, rings: Array.from({ length: 21 }, () => ({})) })).toBe(false);
+  it("TC-F16-55 [AC-F16-22] a report is checked entry by entry: bad entries are left out, never the whole report", () => {
+    const good = { callId: "c1", caller: { name: "Sara", initials: "SM" }, kind: "video" };
+    const evil = {
+      ...good,
+      callId: "c2",
+      caller: { name: "Sara", initials: "SM", photo: "https://evil.example/x.png" },
+    };
+    const missed = {
+      callId: "m1",
+      from: "Sara",
+      kind: "audio",
+      conversationId: "k1",
+      endedAt: 1,
+      text: { title: "t", body: "x".repeat(201), callBack: "c" },
+    };
+    const clean = cleanReport({
+      rings: [good, evil, ...Array.from({ length: 25 }, () => good)],
+      call: { title: "x" },
+      missed: [missed],
+    });
+    expect(clean?.rings[0]).toEqual(good);
+    expect(clean?.rings.some((r) => r.callId === "c2")).toBe(false);
+    expect(clean?.rings).toHaveLength(20);
+    expect(clean?.call).toBeNull();
+    expect(clean?.missed).toEqual([]);
+    expect(cleanReport("report")).toBeUndefined();
+    expect(cleanReport({ rings: [], call: null })).toBeUndefined();
+    // A photo of the largest size photos.ts allows still passes.
+    const big = `data:image/jpeg;base64,${"A".repeat(400_000)}`;
     expect(
-      isCallWindowsState({
-        ...ok,
-        rings: [
-          {
-            callId: "c1",
-            caller: { name: "Sara", initials: "SM", photo: "https://evil.example/x.png" },
-            kind: "video",
-          },
-        ],
-      }),
-    ).toBe(false);
-    expect(isCallWindowsState({ ...ok, call: { title: "x" } })).toBe(false);
-    expect(isCallWindowsState("report")).toBe(false);
+      cleanReport({ rings: [{ ...good, caller: { ...good.caller, photo: big } }], call: null, missed: [] })?.rings,
+    ).toHaveLength(1);
   });
 });
 

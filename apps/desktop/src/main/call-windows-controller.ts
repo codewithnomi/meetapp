@@ -10,7 +10,6 @@ import {
   ringHeight,
   createFocusHistory,
   isCallWindowAction,
-  isCallWindowsState,
   layoutWindows,
   mergeReports,
   missedToNotify,
@@ -23,6 +22,7 @@ import {
   type Rect,
   type RingInfo,
 } from "./call-windows.ts";
+import { cleanReport } from "./call-windows-checks.ts";
 
 export type SmallKind = "ring" | "mini";
 /** What a small window is told to show. */
@@ -86,8 +86,9 @@ export class CallWindowsController {
   }
 
   /** A main window's report (design.md 3.1); a wrong shape is ignored. */
-  report(mainWindowId: number, state: unknown): void {
-    if (!isCallWindowsState(state)) return;
+  report(mainWindowId: number, value: unknown): void {
+    const state = cleanReport(value);
+    if (!state) return;
     this.reports.set(mainWindowId, state);
     if (!this.usedLast.includes(mainWindowId)) this.usedLast.push(mainWindowId);
     this.render();
@@ -108,7 +109,8 @@ export class CallWindowsController {
       this.usedLast.unshift(mainWindowId);
     }
     this.render();
-    this.deps.later(FLICKER_MS, () => this.render());
+    // A margin: timers may fire a moment early, and the windows must not miss their turn (bug review).
+    this.deps.later(FLICKER_MS + 20, () => this.render());
   }
 
   /** A small window's button press (design.md 3.2). Only main's own small windows may send. */
@@ -148,6 +150,13 @@ export class CallWindowsController {
 
   /** A screen was added, removed or resized: places are checked again (AC-F16-20). */
   screensChanged(): void {
+    this.render();
+  }
+
+  /** A small window closed by itself (crash, the system): forget it, so it can be opened again. */
+  smallClosed(id: number): void {
+    if (this.mini?.id === id) this.mini = undefined;
+    for (const [callId, window] of this.rings) if (window.id === id) this.rings.delete(callId);
     this.render();
   }
 

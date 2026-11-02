@@ -4,13 +4,16 @@
 import type { CallWindowsMissed, CallWindowsNotificationAction } from "@meetapp/contracts";
 
 interface NotificationLike {
-  on(event: "click" | "action" | "failed", listener: () => void): unknown;
+  on(event: "click" | "action" | "failed" | "close", listener: () => void): unknown;
   show(): void;
 }
 export interface NotificationKind {
   isSupported(): boolean;
   new (options: { title: string; body: string; actions: { type: "button"; text: string }[] }): NotificationLike;
 }
+
+/** Shown notifications are kept until used, or their Call back click could be lost (bug review). */
+const shown = new Set<NotificationLike>();
 
 export function notifyMissed(
   missed: CallWindowsMissed,
@@ -20,10 +23,18 @@ export function notifyMissed(
   if (!Kind.isSupported()) return;
   const { title, body, callBack } = missed.text;
   const notification = new Kind({ title, body, actions: [{ type: "button", text: callBack }] });
-  notification.on("click", () => onAction({ name: "openChat", conversationId: missed.conversationId }));
-  notification.on("action", () =>
-    onAction({ name: "callBack", conversationId: missed.conversationId, video: missed.kind === "video" }),
-  );
-  notification.on("failed", () => undefined);
+  shown.add(notification);
+  const done = () => shown.delete(notification);
+  notification.on("click", () => {
+    done();
+    onAction({ name: "openChat", conversationId: missed.conversationId });
+  });
+  notification.on("action", () => {
+    done();
+    onAction({ name: "callBack", conversationId: missed.conversationId, video: missed.kind === "video" });
+  });
+  // Refused by the Mac (unsigned app, notifications off, D080): nothing else happens.
+  notification.on("failed", done);
+  notification.on("close", done);
   notification.show();
 }

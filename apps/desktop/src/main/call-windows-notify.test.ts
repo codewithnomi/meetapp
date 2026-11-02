@@ -51,6 +51,7 @@ describe("TC-F16-20 TC-F16-23 TC-F16-25 TC-F16-26 TC-F16-58 the missed-call noti
     notifyMissed(missed, Kind, onAction);
     made[0]?.handlers["action"]?.();
     made[0]?.handlers["click"]?.();
+    expect(made[0]?.handlers["close"]).toBeDefined();
     expect(onAction.mock.calls).toEqual([
       [{ name: "callBack", conversationId: "k1", video: false }],
       [{ name: "openChat", conversationId: "k1" }],
