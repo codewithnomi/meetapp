@@ -43,13 +43,20 @@ function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, onMoved: 
   window.setAlwaysOnTop(true, setup.alwaysOnTopLevel);
   window.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: setup.visibleOnFullScreen });
   window.setContentProtection(setup.contentProtection);
-  window.on("moved", () => onMoved(window));
+  // macOS also reports the app's own moves; only a drag by the person counts (AC-F16-19).
+  let placed = { x: Number.NaN, y: Number.NaN };
+  window.on("moved", () => {
+    const { x, y } = window.getBounds();
+    if (x !== placed.x || y !== placed.y) onMoved(window);
+  });
   void window.loadURL(new URL(CALL_WINDOW_PAGE, options.appUrl).toString());
   const ready = new Promise<void>((resolve) => window.webContents.once("did-finish-load", () => resolve()));
   return {
     id: window.webContents.id,
     setBounds: (rect: { x: number; y: number; width: number; height: number }) => {
-      if (!window.isDestroyed()) window.setBounds(rect);
+      if (window.isDestroyed()) return;
+      placed = { x: rect.x, y: rect.y };
+      window.setBounds(rect);
     },
     showInactive: () => void ready.then(() => !window.isDestroyed() && window.showInactive()),
     close: () => {

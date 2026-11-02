@@ -2,7 +2,7 @@
 // controller's part of TC-F16-01, 04, 41, 44 and 55. Real windows: tests/e2e/desktop/call-windows.spec.ts.
 import { describe, expect, it, vi } from "vitest";
 import { CallWindowsController, type SmallKind, type SmallState } from "./call-windows-controller.ts";
-import { FLICKER_MS, type CallWindowsState, type Places } from "./call-windows.ts";
+import { FLICKER_MS, GAP, RING_SIZE, type CallWindowsState, type Places } from "./call-windows.ts";
 
 const ring = (callId: string) => ({ callId, caller: { name: "Sara", initials: "SM" }, kind: "video" as const });
 const call = {
@@ -96,7 +96,10 @@ describe("F16 small windows, put together", () => {
     controller.report(1, report({ rings: [ring("c1"), ring("c2")], call }));
     controller.focusChanged(undefined);
     advance(FLICKER_MS);
-    const first = open("ring")[0] as { id: number };
+    const first = open("ring").find((w) => {
+      const last = w.states.at(-1);
+      return last?.kind === "ring" && last.ring.callId === "c1";
+    }) as { id: number };
     controller.act(first.id, { name: "decline", callId: "c2" });
     controller.act(first.id, { name: "toggleMic" });
     controller.act(1, { name: "decline", callId: "c1" });
@@ -105,6 +108,25 @@ describe("F16 small windows, put together", () => {
     controller.act(first.id, { name: "accept", callId: "c1", video: false });
     expect(deps.focusMain).toHaveBeenCalledWith(1);
     expect(deps.toMain).toHaveBeenCalledWith(1, { name: "accept", callId: "c1", video: false });
+  });
+
+  it("TC-F16-16 [AC-F16-08] the newest ring sits on top of the stack", () => {
+    const { controller, advance, open } = computer();
+    controller.report(1, report({ rings: [ring("new"), ring("old")] }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS);
+    const rings = open("ring");
+    expect(rings.map((w) => (w.states.at(-1) as { ring: { callId: string } }).ring.callId)).toEqual(["old", "new"]);
+  });
+
+  it("TC-F16-41 [AC-F16-19] dragging the upper of two rings saves the bottom place it stands for", () => {
+    const { controller, advance, open, saved } = computer();
+    controller.report(1, report({ rings: [ring("new"), ring("old")] }));
+    controller.focusChanged(undefined);
+    advance(FLICKER_MS);
+    const upper = open("ring")[1] as { id: number };
+    controller.moved(upper.id, 50, 100, 1);
+    expect(saved.at(-1)).toEqual({ ring: { x: 50, y: 100 + RING_SIZE.height + GAP, displayId: 1 } });
   });
 
   it("TC-F16-60 [AC-F16-06] a main window that crashes or reloads takes its small windows with it", () => {

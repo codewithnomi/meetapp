@@ -38,7 +38,7 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
   - The action handler, running the same code as the screen buttons; Call back with the chat button's messages.
   - One tone for several rings, and the quieter tone when busy.
   - Covers: AC-F16-03, 07, 08, 11, 12, 16. Tests: TC-F16-06, 15, 17, 24, 32, 35.
-- [ ] **T8 (milestone): Ring windows working end to end.**
+- [x] **T8 (milestone): Ring windows working end to end.**
   - Call while another window is in front: the ring window shows unfocused.
   - Video, Audio, Decline and ×; it closes when MeetApp comes forward (tone goes on), when the ring ends or the caller cancels.
   - Two callers stack; two MeetApp windows show one ring window; keyboard and Escape.

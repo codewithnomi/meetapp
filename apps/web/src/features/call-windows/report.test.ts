@@ -42,12 +42,21 @@ const t = i18n.t.bind(i18n);
 
 describe("TC-F16-15 TC-F16-17 [AC-F16-07, AC-F16-08] rings in the report", () => {
   it("TC-F16-15 [AC-F16-07] a ring during a meeting says what accepting leaves; without one it doesn't", () => {
-    expect(buildReport([ring("c1")], "Release team", null, []).rings[0]?.busyIn).toBe("Release team");
-    expect(buildReport([ring("c1")], undefined, null, []).rings[0]).not.toHaveProperty("busyIn");
+    expect(buildReport({ rings: [ring("c1")], busyIn: "Release team", call: null, missed: [] }).rings[0]?.busyIn).toBe(
+      "Release team",
+    );
+    expect(buildReport({ rings: [ring("c1")], busyIn: undefined, call: null, missed: [] }).rings[0]).not.toHaveProperty(
+      "busyIn",
+    );
   });
 
   it("TC-F16-17 [AC-F16-08] two rings are two entries, with the group's name and initials", () => {
-    const report = buildReport([ring("c2", "Design"), ring("c1")], undefined, null, []);
+    const report = buildReport({
+      rings: [ring("c2", "Design"), ring("c1")],
+      busyIn: undefined,
+      call: null,
+      missed: [],
+    });
     expect(report.rings.map((r) => r.callId)).toEqual(["c2", "c1"]);
     expect(report.rings[0]).toMatchObject({ chatName: "Design", caller: { name: "Sara Malik", initials: "SM" } });
     expect(report.rings[1]).not.toHaveProperty("chatName");
@@ -88,7 +97,7 @@ describe("TC-F16-32 [AC-F16-15, AC-F16-18] the call in the report", () => {
   });
 
   it("TC-F16-32 [AC-F16-14] no call gives call: null", () => {
-    expect(buildReport([], undefined, null, []).call).toBeNull();
+    expect(buildReport({ rings: [], busyIn: undefined, call: null, missed: [] }).call).toBeNull();
   });
 });
 
@@ -98,5 +107,18 @@ describe("TC-F16-20 [AC-F16-10, AC-F16-23] a missed call for the notification", 
     expect(one).toMatchObject({ callId: "c1", from: "Sara Malik", kind: "video", endedAt: 5 });
     expect(one.text).toEqual({ title: "Missed call", body: "from Sara Malik", callBack: "Call back" });
     expect(missedCall(ring("c2", "Release team"), 5, t).text.body).toBe("from Sara Malik in Release team");
+  });
+});
+
+describe("TC-F16-04 [AC-F16-02] the caller's photo", () => {
+  it("TC-F16-04 [AC-F16-02] a photo read by the main window goes along as a data: picture", () => {
+    const withPhoto = { ...ring("c1"), from: { ...ring("c1").from, photoUrl: "http://127.0.0.1:3000/p.png" } };
+    const photos = new Map([["http://127.0.0.1:3000/p.png", "data:image/png;base64,AAAA"]]);
+    expect(
+      buildReport({ rings: [withPhoto], busyIn: undefined, call: null, missed: [], photos }).rings[0]?.caller.photo,
+    ).toBe("data:image/png;base64,AAAA");
+    expect(
+      buildReport({ rings: [withPhoto], busyIn: undefined, call: null, missed: [] }).rings[0]?.caller,
+    ).not.toHaveProperty("photo");
   });
 });

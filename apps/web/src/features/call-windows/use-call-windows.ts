@@ -8,6 +8,7 @@ import { useAnswer, useChatCall, useEnterCall, useIncomingCalls, startCall } fro
 import { useLiveLine } from "../chats/index.ts";
 import { useVisit } from "../meetings/index.ts";
 import { useCallScreen } from "./call-screen.ts";
+import { usePhotos } from "./photos.ts";
 import { buildReport, missedCall } from "./report.ts";
 
 interface MainBridge {
@@ -51,19 +52,22 @@ function useMissedCalls(rings: RingMessage[]) {
 function useReport(bridge: MainBridge | undefined, rings: RingMessage[], missed: ReturnType<typeof useMissedCalls>) {
   const busyIn = useVisit((state) => state.visit?.title);
   const call = useCallScreen((state) => state.call);
+  const photos = usePhotos(rings.map((ring) => ring.from.photoUrl));
   const lastRings = useRef<RingMessage[]>(rings);
+  const lastPhotos = useRef(photos);
   useEffect(() => {
     if (!bridge) return;
     const send = () => {
-      bridge.report(buildReport(rings, busyIn, call, missed.missed));
+      bridge.report(buildReport({ rings, busyIn, call, missed: missed.missed, photos }));
       if (missed.missed.length > 0) missed.reported();
     };
-    const ringsChanged = lastRings.current !== rings || missed.missed.length > 0;
+    const ringsChanged = lastRings.current !== rings || missed.missed.length > 0 || photos !== lastPhotos.current;
+    lastPhotos.current = photos;
     lastRings.current = rings;
     if (ringsChanged) return send();
     const timer = setTimeout(send, REPORT_EVERY_MS);
     return () => clearTimeout(timer);
-  }, [bridge, rings, busyIn, call, missed]);
+  }, [bridge, rings, busyIn, call, missed, photos]);
 }
 
 /** Call back from a notification: as the chat's call button; if it can't start, the chat opens. */

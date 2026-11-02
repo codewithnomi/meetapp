@@ -5,6 +5,8 @@
 import type { CallWindowView, CallWindowsNotificationAction } from "@meetapp/contracts";
 import {
   FLICKER_MS,
+  GAP,
+  RING_SIZE,
   createFocusHistory,
   isCallWindowAction,
   isCallWindowsState,
@@ -61,6 +63,8 @@ export class CallWindowsController {
   /** Rings the person hid with ×: they don't come back for this call (AC-F16-04). */
   private readonly hidden = new Set<string>();
   private readonly told = new Set<string>();
+  /** The ring windows from the bottom of the stack up (the newest on top, AC-F16-08). */
+  private ringOrder: string[] = [];
   private mini: SmallWindow | undefined;
   private places: Places;
 
@@ -126,7 +130,10 @@ export class CallWindowsController {
   moved(senderId: number, x: number, y: number, displayId: number): void {
     const from = this.kindOf(senderId);
     if (!from) return;
-    this.places = { ...this.places, [from.kind]: { x, y, displayId } };
+    // A ring higher in the stack stands for the bottom place it was stacked from.
+    const above = from.callId ? Math.max(0, this.ringOrder.indexOf(from.callId)) : 0;
+    const bottomY = y + above * (RING_SIZE.height + GAP);
+    this.places = { ...this.places, [from.kind]: { x, y: bottomY, displayId } };
     this.deps.savePlaces(this.places);
     this.render();
   }
@@ -166,13 +173,15 @@ export class CallWindowsController {
       mini: call !== null,
     });
     if (call) this.mini = this.place(this.mini, "mini", layout.mini as Rect, { kind: "mini", call });
-    wantedRings.forEach((ring, index) => {
+    const stack = [...wantedRings].reverse();
+    stack.forEach((ring, index) => {
       const shown = this.place(this.rings.get(ring.callId), "ring", layout.rings[index] as Rect, {
         kind: "ring",
         ring,
       });
       this.rings.set(ring.callId, shown);
     });
+    this.ringOrder = stack.map((ring) => ring.callId);
     for (const missed of missedToNotify(merged.missed, this.focus, this.told)) this.deps.notify(missed);
   }
 

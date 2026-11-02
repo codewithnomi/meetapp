@@ -11,21 +11,29 @@ export const initialsOf = (name: string) =>
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
 
+export interface ReportInput {
+  rings: RingMessage[];
+  /** The current call's or meeting's name, while in one. */
+  busyIn: string | undefined;
+  call: CallWindowsCall | null;
+  missed: CallWindowsMissed[];
+  /** Photos the main window has read, by address (photos.ts). */
+  photos?: ReadonlyMap<string, string>;
+}
+
 /** The rings (newest first), each saying which call or meeting accepting would leave (AC-F16-07). */
-export function buildReport(
-  rings: RingMessage[],
-  busyIn: string | undefined,
-  call: CallWindowsCall | null,
-  missed: CallWindowsMissed[],
-): CallWindowsState {
+export function buildReport({ rings, busyIn, call, missed, photos = new Map() }: ReportInput): CallWindowsState {
   return {
-    rings: rings.map((ring) => ({
-      callId: ring.callId,
-      caller: { name: ring.from.name, initials: initialsOf(ring.from.name) },
-      kind: ring.media,
-      ...(ring.groupName ? { chatName: ring.groupName } : {}),
-      ...(busyIn ? { busyIn } : {}),
-    })),
+    rings: rings.map((ring) => {
+      const photo = ring.from.photoUrl ? photos.get(ring.from.photoUrl) : undefined;
+      return {
+        callId: ring.callId,
+        caller: { name: ring.from.name, initials: initialsOf(ring.from.name), ...(photo ? { photo } : {}) },
+        kind: ring.media,
+        ...(ring.groupName ? { chatName: ring.groupName } : {}),
+        ...(busyIn ? { busyIn } : {}),
+      };
+    }),
     call,
     missed,
   };
