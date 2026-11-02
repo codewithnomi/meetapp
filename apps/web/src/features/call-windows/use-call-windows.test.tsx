@@ -159,6 +159,31 @@ describe("the main window and the small windows", () => {
     expect(controls.toggleMic).toHaveBeenCalledOnce();
   });
 
+  it("TC-F16-32 [AC-F16-16] a call screen that redraws all the time still gets fresh reports out", async () => {
+    const controls = { toggleMic: vi.fn(), toggleCamera: vi.fn(), share: vi.fn(), toggleHand: vi.fn(), leave: vi.fn() };
+    const call = (mic: boolean) => ({
+      title: "Release team",
+      joinedAt: 0,
+      people: 2,
+      phase: "in-call" as const,
+      speaker: { name: "Sara", initials: "S", hasVideo: false, sharing: false },
+      mic,
+      camera: false,
+      hand: false,
+      canUnmute: true,
+      canShare: true,
+    });
+    show();
+    let mic = false;
+    for (let i = 0; i < 14; i += 1) {
+      mic = !mic;
+      act(() => useCallScreen.getState().publish(call(mic), controls));
+      await new Promise((done) => setTimeout(done, 50));
+    }
+    await waitFor(() => expect(report.mock.calls.at(-1)?.[0].call?.mic).toBe(mic));
+    expect(report.mock.calls.filter(([r]) => r.call !== null).length).toBeGreaterThanOrEqual(3);
+  });
+
   it("TC-F16-20 [AC-F16-10, AC-F16-12] TC-F16-22 an unanswered ring is reported as missed once; answered, declined or cancelled ones aren't", async () => {
     show();
     await hear(RING);

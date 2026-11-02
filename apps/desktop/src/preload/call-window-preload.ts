@@ -11,18 +11,25 @@ ipcRenderer.on(FRAMES_CHANNEL, (event) => {
   const [port] = event.ports;
   if (!port) return;
   port.onmessage = (message: MessageEvent) => {
-    if (message.data instanceof ArrayBuffer) frameListener?.(message.data);
+    // At most 200 KB a picture, as the sender promises (security review).
+    if (message.data instanceof ArrayBuffer && message.data.byteLength <= 200_000) frameListener?.(message.data);
   };
+});
+
+// The first state can arrive before the page listens: it is kept and handed over when the page does.
+let lastState: unknown;
+let stateListener: Listener | undefined;
+ipcRenderer.on(CALL_WINDOW_CHANNEL, (_event, state: unknown) => {
+  lastState = state;
+  stateListener?.(state);
 });
 
 contextBridge.exposeInMainWorld("meetappCallWindow", {
   onState: (listener: Listener) => {
-    const handler = (_event: unknown, state: unknown) => {
-      listener(state);
-    };
-    ipcRenderer.on(CALL_WINDOW_CHANNEL, handler);
+    stateListener = listener;
+    if (lastState !== undefined) listener(lastState);
     return () => {
-      ipcRenderer.removeListener(CALL_WINDOW_CHANNEL, handler);
+      stateListener = undefined;
     };
   },
   act: (action: unknown) => {

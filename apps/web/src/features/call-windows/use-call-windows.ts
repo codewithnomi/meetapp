@@ -48,26 +48,39 @@ function useMissedCalls(rings: RingMessage[]) {
   return { missed, byChat: byChat.current, reported: () => setMissed([]) };
 }
 
-/** Sends the report when anything changes: rings at once, call changes at most every 200 ms. */
+/**
+ * Sends the report: ring and missed-call changes at once; call changes at most every 200 ms, always with
+ * the latest state (a throttle, so a call screen that redraws all the time can't hold reports back).
+ */
 function useReport(bridge: MainBridge | undefined, rings: RingMessage[], missed: ReturnType<typeof useMissedCalls>) {
   const busyIn = useVisit((state) => state.visit?.title);
   const call = useCallScreen((state) => state.call);
   const photos = usePhotos(rings.map((ring) => ring.from.photoUrl));
-  const lastRings = useRef<RingMessage[]>(rings);
-  const lastPhotos = useRef(photos);
+  const latest = useRef({ rings, busyIn, call, missed, photos });
+  latest.current = { rings, busyIn, call, missed, photos };
+  const sent = useRef({ rings, photos });
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const send = useCallback(() => {
+    clearTimeout(timer.current);
+    timer.current = undefined;
+    const now = latest.current;
+    bridge?.report(buildReport({ ...now, missed: now.missed.missed }));
+    sent.current = { rings: now.rings, photos: now.photos };
+    if (now.missed.missed.length > 0) now.missed.reported();
+  }, [bridge]);
   useEffect(() => {
     if (!bridge) return;
-    const send = () => {
-      bridge.report(buildReport({ rings, busyIn, call, missed: missed.missed, photos }));
-      if (missed.missed.length > 0) missed.reported();
-    };
-    const ringsChanged = lastRings.current !== rings || missed.missed.length > 0 || photos !== lastPhotos.current;
-    lastPhotos.current = photos;
-    lastRings.current = rings;
-    if (ringsChanged) return send();
-    const timer = setTimeout(send, REPORT_EVERY_MS);
-    return () => clearTimeout(timer);
-  }, [bridge, rings, busyIn, call, missed, photos]);
+    const urgent = sent.current.rings !== rings || sent.current.photos !== photos || missed.missed.length > 0;
+    if (urgent) send();
+    else timer.current ??= setTimeout(send, REPORT_EVERY_MS);
+  }, [bridge, send, rings, busyIn, call, missed.missed, photos]);
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      timer.current = undefined;
+    },
+    [],
+  );
 }
 
 /** Call back from a notification: as the chat's call button; if it can't start, the chat opens. */

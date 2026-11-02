@@ -78,7 +78,8 @@
 - **F16 T11 done** (2026-11-02): place kept after restart (TC-F16-42). Hand checks TC-F16-47 and TC-F16-57 skipped by the owner, still pending; TC-F16-28 waits for signing (D080).
 - **F16 T12 done** (2026-11-02): security S17, overview, privacy, operations, desktop/web/contracts/ui READMEs, project structure; `pnpm check` green. **All 12 F16 steps done.**
 - **F16 first verification FAIL** (2026-11-02): 2298 unit + integration pass; desktop 84/122 (the Mac ran out of memory mid-run: owner saw 10+ GB "Electron" = many test copies at once, plus VS Code 10 GB, Docker 8.5 GB, browsers 12 GB); one MeetApp copy measured at about 620 MB, but the mini window grows about 23 MB/min. Reviews: security no High (1 Medium), UI and code no Must fix, bug-finder 1 High and several Medium.
-- **Next step:** `/spec-implement F16` for T-fix-1 onwards. For the next full run: close browsers and Teams, give Docker a memory limit. Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
+- **F16 T-fix-1 done** (2026-11-02): main window not throttled (`backgroundThrottling: false`); the report is now a real throttle (fixed a StrictMode clean-up bug that stopped reports); the small window's preload keeps the first state until the page listens and caps frames at 200 KB. Tests: live pictures keep coming with MeetApp minimized (≥10 different in 2 s), fresh reports under constant redraws; call-windows.spec 11/11.
+- **Next step:** F16 T-fix-2 (memory). Follow-up (D077): make the slow GitHub desktop tests green before F04's PR.
 
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?

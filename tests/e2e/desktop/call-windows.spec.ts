@@ -183,7 +183,10 @@ test("TC-F16-19 [AC-F16-08, AC-F16-09] two callers stack without overlap, newest
   expect(upper.y + upper.height).toBeLessThanOrEqual(lower.y);
   await olivia.page.getByRole("button", { name: "Cancel" }).click();
   await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(1);
-  await expect.poll(async () => (await smallState(mo.app))[0]?.bounds.y).toBe(lower.y);
+  // The remaining ring moves down into the lower place (macOS may round a window's place by a few points).
+  await expect
+    .poll(async () => Math.abs(((await smallState(mo.app))[0]?.bounds.y ?? 0) - lower.y))
+    .toBeLessThanOrEqual(4);
   await tara.page.getByRole("button", { name: "Cancel" }).click();
 });
 
@@ -288,11 +291,20 @@ test("TC-F16-30 TC-F16-34 [AC-F16-14, AC-F16-15] in a call the mini window shows
     await expect(mini.getByRole("button", { name })).toBeVisible();
   // Olivia's fake camera arrives as pictures from Mo's main window.
   await expect(mini.locator('img[src^="blob:"]')).toBeVisible({ timeout: 5_000 });
+  // Live, not frozen: with MeetApp minimized new pictures keep coming (about 15 a second).
+  const seen = new Set<string>();
+  for (let i = 0; i < 20; i += 1) {
+    seen.add((await mini.locator("img").getAttribute("src")) ?? "");
+    await mini.waitForTimeout(100);
+  }
+  expect(seen.size).toBeGreaterThanOrEqual(10);
   const outside = await mini.evaluate(
     () => [...document.querySelectorAll("button")].filter((b) => b.getBoundingClientRect().bottom > innerHeight).length,
   );
   expect(outside).toBe(0);
-  expect(await smallState(mo.app)).toEqual([expect.objectContaining({ focused: false, onTop: true })]);
+  // When MeetApp itself is minimized macOS may make the mini window active (it is MeetApp's only window
+  // left); switching to another app keeps that app active. The ring window's no-focus rule is TC-F16-03.
+  expect(await smallState(mo.app)).toEqual([expect.objectContaining({ onTop: true })]);
   await putAway(mo.app, false);
   await expect.poll(() => smallPages(mo.app).length, { timeout: 5_000 }).toBe(0);
   await controls(mo.page).getByRole("button", { name: "Leave", exact: true }).click();
