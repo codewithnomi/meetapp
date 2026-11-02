@@ -53,6 +53,8 @@ export interface CallWindowsDeps {
   linkFrames: (miniWindowId: number, mainWindowId: number) => void;
   /** Closes it: the main window stops sending pictures. */
   unlinkFrames: (mainWindowId: number) => void;
+  /** A main window keeps full speed behind other apps only while it has a call (design.md 3.5). */
+  fullSpeed: (mainWindowId: number, on: boolean) => void;
 }
 
 export class CallWindowsController {
@@ -73,6 +75,8 @@ export class CallWindowsController {
   /** The main window sending the mini window its pictures, and that mini window. */
   private framesFrom: number | undefined;
   private framesTo: number | undefined;
+  /** Main windows with a call, kept at full speed. */
+  private readonly inCall = new Set<number>();
   private places: Places;
 
   private readonly deps: CallWindowsDeps;
@@ -88,6 +92,7 @@ export class CallWindowsController {
     const state = cleanReport(value);
     if (!state) return;
     this.reports.set(mainWindowId, state);
+    this.setFullSpeed(mainWindowId, state.call !== null);
     if (!this.usedLast.includes(mainWindowId)) this.usedLast.push(mainWindowId);
     this.render();
   }
@@ -174,7 +179,16 @@ export class CallWindowsController {
     return mergeReports(this.reports, this.usedLast);
   }
 
+  private setFullSpeed(mainWindowId: number, on: boolean): void {
+    if (on === this.inCall.has(mainWindowId)) return;
+    if (on) this.inCall.add(mainWindowId);
+    else this.inCall.delete(mainWindowId);
+    this.deps.fullSpeed(mainWindowId, on);
+  }
+
   private forget(mainWindowId: number): void {
+    // Gone or reloading: it reports again once loaded, and a call then switches full speed back on.
+    this.inCall.delete(mainWindowId);
     const index = this.usedLast.indexOf(mainWindowId);
     if (index >= 0) this.usedLast.splice(index, 1);
   }

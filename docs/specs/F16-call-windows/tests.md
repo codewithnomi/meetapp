@@ -512,4 +512,5 @@ Test names must include the TC and AC IDs, e.g. `TC-F16-07 [AC-F16-03] Video acc
 | TC-F16-66 | Reports checked entry by entry; long names shortened | call-windows-security.test.ts, report.test.ts (T-fix-4) |
 | TC-F16-68 | Caller hangs up before anyone answers: the ring stop is marked as a missed call and gives a notification; removal while ringing isn't marked and gives none (AC-F16-10, 12; D081) | use-call-windows.test.tsx, ring.integration.test.ts, call-security.integration.test.ts (T-fix-8) |
 | TC-F16-69 | Many rings never overlap (a second column); a drag always ends; only PNG, JPEG or WebP photos | call-windows.test.ts, call-windows-security.test.ts (T-fix-9) |
+| TC-F16-70 | A main window keeps full speed behind other apps only while it has a call (battery); live pictures still flow (TC-F16-62) | call-windows-controller.test.ts, call-windows.spec.ts (T-fix-10) |
 | TC-F16-67 | Notifications kept until used; a closed small window is reopened; timer margin; stack clear of the mini window | call-windows-notify.test.ts, call-windows-controller.test.ts, call-windows.test.ts (T-fix-4) |

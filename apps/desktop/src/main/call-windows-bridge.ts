@@ -157,6 +157,13 @@ function computerFor(
     notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
     now: () => Date.now(),
     later: (ms, run) => void setTimeout(run, ms),
+    ...mainWindowLines(mains),
+  };
+}
+
+/** The live-video line and full speed of the main windows (design.md 3.5). */
+function mainWindowLines(mains: MainWindows): Pick<CallWindowsDeps, "linkFrames" | "unlinkFrames" | "fullSpeed"> {
+  return {
     linkFrames: (miniId, mainId) => {
       const mini = webContents.fromId(miniId);
       const main = mains.get(mainId);
@@ -166,6 +173,10 @@ function computerFor(
       const give = () => mini.postMessage(FRAMES_CHANNEL, null, [port2]);
       if (mini.isLoading()) mini.once("did-finish-load", give);
       else give();
+    },
+    fullSpeed: (mainId, on) => {
+      const window = mains.get(mainId);
+      if (window && !window.isDestroyed()) window.webContents.setBackgroundThrottling(!on);
     },
     unlinkFrames: (mainId) => {
       const main = mains.get(mainId);

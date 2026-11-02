@@ -72,9 +72,8 @@ function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
     minHeight: 600,
     title: "MeetApp",
     show: false,
-    // F16: the call keeps full speed while MeetApp is behind other apps, so the mini window's live video
-    // and state stay current (design.md 3.5).
-    webPreferences: { ...webPreferences(settings.preloadPath), backgroundThrottling: false },
+    // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
+    webPreferences: webPreferences(settings.preloadPath),
   });
   window.once("ready-to-show", () => window.show());
   forwardLockChanges(window);

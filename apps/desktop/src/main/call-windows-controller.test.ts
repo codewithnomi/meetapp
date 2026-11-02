@@ -55,6 +55,7 @@ function computer() {
     later: (ms: number, run: () => void) => void timers.push({ at: clock + ms, run }),
     linkFrames: vi.fn(),
     unlinkFrames: vi.fn(),
+    fullSpeed: vi.fn(),
   };
   const controller = new CallWindowsController(deps);
   const advance = (ms: number) => {
@@ -144,6 +145,23 @@ describe("F16 small windows, put together", () => {
     controller.focusChanged(undefined);
     advance(FLICKER_MS + 20);
     expect(deps.linkFrames).toHaveBeenCalledTimes(2);
+  });
+
+  it("TC-F16-70 [AC-F16-15] a main window keeps full speed only while it has a call (battery)", () => {
+    const { controller, deps } = computer();
+    controller.report(1, report({ rings: [ring("a")] }));
+    expect(deps.fullSpeed).not.toHaveBeenCalled();
+    controller.report(1, report({ call }));
+    controller.report(1, report({ call }));
+    expect(deps.fullSpeed).toHaveBeenCalledTimes(1);
+    expect(deps.fullSpeed).toHaveBeenLastCalledWith(1, true);
+    controller.report(1, report({}));
+    expect(deps.fullSpeed).toHaveBeenLastCalledWith(1, false);
+    controller.report(1, report({ call }));
+    controller.dropReport(1);
+    controller.report(1, report({ call }));
+    expect(deps.fullSpeed).toHaveBeenLastCalledWith(1, true);
+    expect(deps.fullSpeed).toHaveBeenCalledTimes(4);
   });
 
   it("TC-F16-61 [AC-F16-01] a timer that fires a moment early still shows the windows", () => {
