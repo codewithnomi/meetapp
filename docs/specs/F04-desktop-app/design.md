@@ -1,7 +1,7 @@
 ---
 feature: F04
 title: Desktop app
-status: draft
+status: approved
 updated: 2026-11-03
 ---
 
@@ -49,6 +49,8 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `PUT /api/v1/me/status`: set a status for a time, or reset it.
 - `GET` and `PUT /api/v1/me/notification-settings`.
 - The presence logic of F14 (3.8) first checks a status set by hand that hasn't run out.
+
+**The name "MeetApp" is temporary** (owner, 2026-11-03). The app's name, app id (`app.meetapp.desktop`), link scheme (`meetapp://`), icons and installer names are kept in one place (`apps/desktop/app-identity.ts`, read by electron-builder and the app), so the final name means changing one file and the icons.
 
 ## 2. Screens / user flow
 1. **Install.** Open the `.dmg`, drag MeetApp to Applications, and open it. The Mac warns that the app is unsigned; the getting-started guide shows how to allow it once. On Windows, "Windows protected your PC" appears: More info, then Run anyway.

@@ -544,13 +544,18 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Alternatives:** wait for signing and use only the Mac's notifications; keep the status automatic until later.
 
 ### D084: electron-builder for installers, electron-updater (switched off) for updates (F04)
-- **Date:** 2026-11-03. **Status:** proposed (with the F04 design).
+- **Date:** 2026-11-03. **Status:** accepted (F04 design approved by the owner, 2026-11-03).
 - **Decision:** installers come from electron-builder: a Mac `dmg` (universal) and a Windows `nsis` installer, unsigned (`identity: null`) until certificates exist. They register the `meetapp://` link scheme. Updates use electron-updater with GitHub Releases, switched off by a build setting.
 - **Why:** both are free, widely used and maintained, and they work together; signing and updates turn on with settings only (AC-F04-03, 50).
 - **Alternatives:** Electron Forge (also good, but its update path is Squirrel, which needs a server for Mac); building by hand.
 
 ### D085: Closing hides the window; notifications are MeetApp corner cards (F04)
-- **Date:** 2026-11-03. **Status:** proposed (with the F04 design).
+- **Date:** 2026-11-03. **Status:** accepted (F04 design approved by the owner, 2026-11-03).
 - **Decision:** closing the last window hides it (its page keeps the live line, F16 and notices running), and the menu-bar or tray icon stays. Message, mention and lobby notifications are a third small-window kind in F16's controller, with the same S17 lock-down, stacked with the ring windows.
 - **Why:** this works without signing (D080), reuses tested code, and is how Teams keeps running.
 - **Alternatives:** keep a hidden extra window only for the live line (more code, double connections); OS notifications (need signing).
+
+### D087: "MeetApp" is a working name (owner, 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted.
+- **Decision:** "MeetApp" is temporary. The final name will be chosen later. Until then, code and installers use MeetApp, but the name, app id, link scheme and icons are kept in one place, so renaming is a small change.
+- **Why:** the owner hasn't settled the brand yet.
