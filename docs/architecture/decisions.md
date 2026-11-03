@@ -542,3 +542,15 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** unsigned for now, ready to sign later. Closing the window keeps MeetApp in the menu bar or tray; Quit stops it. It starts at login, hidden, with a switch to turn that off. Notifications follow Teams (messages with a preview, mentions, lobby with Admit) as MeetApp's own corner cards while the app is unsigned; the Mac's notification centre becomes a choice once it is signed. Missed calls keep F16's Mac notification, which shows nothing until signing (D080). People can set their status by hand (Available, Busy, Do not disturb, Be right back, Appear away, for a chosen time). Do not disturb silences F04's notifications, but calls still ring.
 - **Why:** Teams parity at no cost (D017). Corner cards work without paid signing.
 - **Alternatives:** wait for signing and use only the Mac's notifications; keep the status automatic until later.
+
+### D084: electron-builder for installers, electron-updater (switched off) for updates (F04)
+- **Date:** 2026-11-03. **Status:** proposed (with the F04 design).
+- **Decision:** installers come from electron-builder: a Mac `dmg` (universal) and a Windows `nsis` installer, unsigned (`identity: null`) until certificates exist. They register the `meetapp://` link scheme. Updates use electron-updater with GitHub Releases, switched off by a build setting.
+- **Why:** both are free, widely used and maintained, and they work together; signing and updates turn on with settings only (AC-F04-03, 50).
+- **Alternatives:** Electron Forge (also good, but its update path is Squirrel, which needs a server for Mac); building by hand.
+
+### D085: Closing hides the window; notifications are MeetApp corner cards (F04)
+- **Date:** 2026-11-03. **Status:** proposed (with the F04 design).
+- **Decision:** closing the last window hides it (its page keeps the live line, F16 and notices running), and the menu-bar or tray icon stays. Message, mention and lobby notifications are a third small-window kind in F16's controller, with the same S17 lock-down, stacked with the ring windows.
+- **Why:** this works without signing (D080), reuses tested code, and is how Teams keeps running.
+- **Alternatives:** keep a hidden extra window only for the live line (more code, double connections); OS notifications (need signing).
