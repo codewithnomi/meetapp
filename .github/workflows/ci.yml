@@ -57,9 +57,18 @@ jobs:
           electron: "true"
       # Ubuntu 24.04 blocks the user namespaces Electron's sandbox needs; the sandbox itself stays on.
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - run: sudo apt-get update && sudo apt-get install -y xvfb libnss3 libgbm1 libasound2t64
+      # fluxbox: a small window manager, so focus, "in front" and always-on-top work as on a real desktop
+      # (F16's call windows depend on them; a bare virtual screen has no window manager, D082).
+      - run: sudo apt-get update && sudo apt-get install -y xvfb fluxbox libnss3 libgbm1 libasound2t64
       - run: pnpm build
-      - run: xvfb-run --auto-servernum node tools/test.ts --only desktop
+      - name: Desktop tests on a virtual screen with a window manager
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 &
+          export DISPLAY=:99
+          timeout 10 sh -c 'until xdpyinfo >/dev/null 2>&1 || [ -e /tmp/.X11-unix/X99 ]; do sleep 0.2; done'
+          fluxbox >/dev/null 2>&1 &
+          sleep 1
+          node tools/test.ts --only desktop
       - if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
