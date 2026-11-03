@@ -178,7 +178,7 @@ function columnBottom(x: number, bottom: number, heights: number[], mini: Rect |
 }
 
 /** A drag has ended once the window has been still this long (macOS sends "moved" all along a drag). */
-export const DRAG_SETTLE_MS = 300;
+const DRAG_SETTLE_MS = 300;
 
 /**
  * Follows a person's drag (AC-F16-19): `willMove` fires only for their drags, `moved` while it goes on.
