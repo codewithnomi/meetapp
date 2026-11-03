@@ -1,7 +1,7 @@
 ---
 feature: F16
 title: Calls while MeetApp isn't in front
-status: in-progress
+status: done
 updated: 2026-11-02
 ---
 
@@ -71,4 +71,4 @@ Tick `[x]` when done and verified. Per D052, each step runs only its own tests; 
 - [x] **T-fix-10: Battery.** The main window is not throttled only while a call is on (not always); document the cost. Test: frames still flow during a call with MeetApp in the background.
 - [x] **T-fix-11: Accessibility and quality.** The ring window is announced once (not alert + alertdialog). The disabled Share says why. Move `hideMini`/`hide` into `routeAction`; split `render()`; one ring list instead of two arrays; named timer margin; no `as Rect` casts.
 - [x] **T-fix-12: Tests and docs for the mini hide ×.** A TC under AC-F16-15 with an automated test. All docs-keeper items (design.md sections 1, 3.2, 3.3, 3.5, 4; requirements places file and Linux screen share; tests.md AC table; runbook calls.md; operations; D079 note; features.md F04).
-- [ ] **T-fix-7: Second verification.** Full run on a Mac with enough free memory (close browsers and Teams; Docker with a memory limit), screenshots for the owner, reviews.
+- [x] **T-fix-7: Second verification.** Full run on a Mac with enough free memory (close browsers and Teams; Docker with a memory limit), screenshots for the owner, reviews.

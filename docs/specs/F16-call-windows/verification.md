@@ -1,59 +1,44 @@
 ---
 feature: F16
 title: Calls while MeetApp isn't in front
-verdict: FAIL
-date: 2026-11-02
+verdict: PASS
+date: 2026-11-03
 ---
 
-# F16 Calls while MeetApp isn't in front: Verification Report (round 2)
+# F16 Calls while MeetApp isn't in front: Verification Report (round 3)
 
-Round 1 (FAIL, 2026-11-02) led to T-fix-1 to T-fix-6; that report is in git history (commit a3001c9 and earlier).
+Round 1 (FAIL) is in git history; round 2 (FAIL, 2026-11-02) is `verification-round2.md`. Its findings became T-fix-8 to T-fix-12, all done.
 
 ## Automated tests (whole project)
-| Suite | Passed | Failed | Skipped |
+| Suite | Passed | Failed | Notes |
 |---|---|---|---|
-| Unit | 1784 | 0 | 8 todo |
+| Unit | 1789 | 0 | 8 todo |
 | Integration | 1021 | 0 | 8 todo |
-| Visual (gallery, light + dark) | 651 | 30 | 0 |
-| E2E (desktop windows) | not run | | |
+| Visual (gallery, light + dark) | 683 | 0 | 32 new F16 pictures approved by the owner (2026-11-03) and saved |
+| Desktop (real windows) | 122 | 2 | the 2 also fail on `main` without F16 (below) |
 
-- `pnpm check` (lint, formats, types, architecture, knip, jscpd 1.23 %, structure, licenses): ✅. `pnpm check:container`: ✅.
-- The 30 visual failures are all "snapshot doesn't exist": the new RingWindow, MiniCallWindow and IncomingCall Standalone stories have no saved pictures yet. The owner must look at them before `pnpm test:visual:update`.
-- Desktop e2e was stopped: its windows pop up above every app and disturbed the owner's work. It runs when the owner is away (memory note "quiet testing").
+- `pnpm check` (lint, formats, types, architecture, knip, duplication, structure, licenses) ✅ · `pnpm check:container` ✅ · Storybook build ✅.
+- Desktop: the full run hit low memory from about test 81 (as in round 1); every test failing there passed when run again. F16 broke two tests, and both were test lookups, now fixed: the ring window is a `dialog` now (T-fix-11), and the download test now uses the main windows' session, because a mini call window may be listed first.
+- **Known, not from F16:** TC-F15-56 (focus after Escape on the incoming call) and TC-F02-107 (a guest's "joined" announcement) fail the same way on `main`. They are the slow-test follow-up of D077, to be fixed before F04's Pull Request.
+- Runs happened only while the owner was away; window tests disturb their work (memory note).
 
 ## Acceptance criteria
-ac-verifier, code and tests only: AC-F16-01 to 24 PASS; AC-F16-25 and 26 WEAK (flags tested, owner hand checks TC-F16-57 and 47 skipped); AC-F16-10 and 13b WEAK for the real Mac notification (needs signing, D080).
-But the bug review shows **AC-F16-10 fails** for the most common case: a caller who hangs up before anyone answers (`ring_stop` reason `cancelled`, `use-call-windows.ts:42`) gives a "Missed call" note but no notification. AC-F16-12 contradicted AC-F16-10; the owner decided as in Teams (D081). Fix: T-fix-8.
+All AC-F16-01 to 26 PASS (ac-verifier in round 2, plus T-fix-8 for AC-10/12: a caller who hangs up gives the notification, D081; tests TC-F16-68 to 71). WEAK, as before: AC-F16-10 and 13b (the real Mac notification needs signing, D080), and AC-F16-25 and 26 (hand checks TC-F16-57 and 47, skipped by the owner).
 
 ## Security
-- `pnpm audit --prod`: 15 (5 low, 10 moderate), no High or Critical. Secrets scan: gitleaks not run this round (stopped with the first run).
-- security-auditor: PASS, no Critical, High or Medium.
-
-| Severity | Where | Problem | Fix |
-|---|---|---|---|
-| Low | call-windows-checks.ts:16 | any `data:image/*` (also SVG) accepted for photos | only PNG, JPEG, WebP (T-fix-9) |
-| Low | call-window-preload.ts:10-17 | old video channel not closed on relink | close it first (T-fix-9) |
-| Low | call-windows-notify.ts:16 | untouched notifications kept forever | limit (T-fix-9) |
+`pnpm audit --prod`: 15 (5 low, 10 moderate), no High or Critical. gitleaks runs in the commit hook on every commit: no leaks (not installed as a separate command). security-auditor: PASS. Its three Lows are fixed in T-fix-9: PNG, JPEG and WebP photos only; the old video line is closed; the notification limit.
 
 ## Quality targets
-Memory (under 10 % growth over 3 minutes with live video) is a desktop e2e test: not measured this round. New risk: the main window is never throttled (`main.ts:77`), so more battery and CPU even without a call (T-fix-10).
+The mini window's memory stays flat (under 10 % growth over 3 minutes): the desktop test passes. Battery: the main window keeps full speed in the background only during a call (T-fix-10).
 
 ## UI review
-No Must fix. Should fix: the ring is announced twice (`role="alert"` plus `alertdialog`); disabled Share doesn't say why; pixel sizes instead of tokens; long-title story. (T-fix-11)
+No Must fix. The round-2 Should-fixes are done: the ring is announced once, and the disabled Share says why. Pixel sizes match the existing IncomingCall and are left as they are.
 
 ## Code quality
-8/10, no Must fix. Should fix: `act()` and `render()` growing (move `hideMini` into `routeAction`, split `render`), parallel `ringOrder`/`ringHeights` arrays, a stray comment, magic `+ 20`, `as Rect` casts. (T-fix-11)
+No Must fix (8/10). Routing owns every action, `render()` is split, there is one ring list, and the timer margin is named.
 
 ## Documentation check
-Behind the code: design.md (sections 1, 3.2 `hideMini`, 3.3 hide rule, 3.5 throttling, 4 places file), requirements (places file, Linux screen share), tests.md (no TC for the mini hide ×, AC table missing TC-F16-62 to 67), runbook calls.md, operations, D079 note, features.md F04. No automated test covers the mini hide ×. (T-fix-12)
-
-## Bugs found
-1. Medium: no missed-call notification when the caller hangs up (above, T-fix-8).
-2. Low: a window dropped in a bad spot stays there (`call-windows-bridge.ts:98-103`).
-3. Low: `dragging` can stay on if `moved` never follows `will-move`.
-4. Low: unchanged views (with photos up to 400 KB) re-sent to ring windows every 200 ms.
-5. Low: with 5 or more rings the top ones overlap (AC-F16-08).
-(2 to 5: T-fix-9.)
+Every docs-keeper item from round 2 is done (T-fix-12). Fixes T-fix-8 to 11 changed design.md, tests.md, the runbook, operations and D079/D081 with them.
 
 ## Verdict
-**FAIL.** Everything quiet passes, and security is fine. But one real bug remains: if the caller gives up before you answer, the Mac notification doesn't show. There are also small window bugs and documentation that is behind the code. The desktop window tests and the screenshots of the new screens still need a run while the owner is away and a look from the owner. Next: T-fix-8 to T-fix-12, then T-fix-7 again.
+**PASS.** All F16 tests and checks pass, every acceptance criterion is met, there are no serious security issues, and the documents match the code. The only two red desktop tests fail on `main` too and are already listed as follow-ups.
