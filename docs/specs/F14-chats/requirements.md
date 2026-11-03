@@ -102,7 +102,7 @@ People talk to each other every day in MeetApp, not only in meetings: one-to-one
 - Teams-style **teams and channels**: later (after F14).
 - Searching message text across chats: with **Ask AI** (F07).
 - AI writing help, reply suggestions ("Any time", "Cheers!") and translation: later AI ideas (features.md).
-- Setting a status by hand (Busy, Do not disturb, a status message): later; F14's status is automatic.
+- Setting a status by hand (Busy, Do not disturb…): comes with F04 (owner, 2026-11-03, D083); a status message stays later. F14's status is automatic.
 - SMS participants and phone numbers: not planned.
 - Chatting with people who have no MeetApp account (they are invited instead, AC-F14-08).
 - Admins reading or exporting members' chats (compliance tools): later, with F10's admin features.

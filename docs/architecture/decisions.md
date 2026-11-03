@@ -536,3 +536,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** PR #23 (F16) is merged although the GitHub "Desktop app tests" check failed: 106 passed, 12 failed. Six were F16 window tests and six were older ones (D077 timing, and TC-F15-56 and TC-F02-107, which also fail on `main`). The whole verification passed on the owner's Mac (verification.md, round 3).
 - **Why:** F16 depends on which window is in front. GitHub runs the tests on a Linux virtual screen with no window manager, so focus and always-on-top probably can't work there. The full logs could not be read without the owner's GitHub sign-in.
 - **Follow-up (before F04's PR):** add a small window manager to the CI desktop job (or skip only the focus-dependent F16 checks on Linux, with a reason), read the full logs, fix TC-F15-56 and TC-F02-107, and get the desktop check green.
+
+### D083: F04 Desktop app product choices (owner, 2026-11-02 and 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted (requirements approved by the owner).
+- **Decision:** unsigned for now, ready to sign later. Closing the window keeps MeetApp in the menu bar or tray; Quit stops it. It starts at login, hidden, with a switch to turn that off. Notifications follow Teams (messages with a preview, mentions, lobby with Admit) as MeetApp's own corner cards while the app is unsigned; the Mac's notification centre becomes a choice once it is signed. Missed calls keep F16's Mac notification, which shows nothing until signing (D080). People can set their status by hand (Available, Busy, Do not disturb, Be right back, Appear away, for a chosen time). Do not disturb silences F04's notifications, but calls still ring.
+- **Why:** Teams parity at no cost (D017). Corner cards work without paid signing.
+- **Alternatives:** wait for signing and use only the Mac's notifications; keep the status automatic until later.
