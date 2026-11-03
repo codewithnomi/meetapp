@@ -530,3 +530,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** when the caller hangs up before anyone answers, the person gets the missed-call Mac notification (AC-F16-12 changed). Only calls without a "Missed call" note, such as removal from a call, give none.
 - **Why:** it is the most common missed call; Teams notifies for it; AC-F16-10 already keyed on the "Missed call" note (AC-F15-09). The second verification found the code skipped it.
 - **Alternatives:** keep the old wording (no notification when the caller hangs up).
+
+### D082: F16 merged with the GitHub desktop check red (owner, 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted (owner chose "merge as is").
+- **Decision:** PR #23 (F16) is merged although the GitHub "Desktop app tests" check failed: 106 passed, 12 failed. Six were F16 window tests and six were older ones (D077 timing, and TC-F15-56 and TC-F02-107, which also fail on `main`). The whole verification passed on the owner's Mac (verification.md, round 3).
+- **Why:** F16 depends on which window is in front. GitHub runs the tests on a Linux virtual screen with no window manager, so focus and always-on-top probably can't work there. The full logs could not be read without the owner's GitHub sign-in.
+- **Follow-up (before F04's PR):** add a small window manager to the CI desktop job (or skip only the focus-dependent F16 checks on Linux, with a reason), read the full logs, fix TC-F15-56 and TC-F02-107, and get the desktop check green.
