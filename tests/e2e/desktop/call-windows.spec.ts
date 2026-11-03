@@ -20,7 +20,7 @@ test.afterEach(async () => {
 
 const SMALL = "call-window.html";
 const smallPages = (app: ElectronApplication) => app.windows().filter((page) => page.url().includes(SMALL));
-const ringWindow = (page: Page) => page.getByRole("alertdialog", { name: /^Incoming (video|audio) call from / });
+const ringWindow = (page: Page) => page.getByRole("dialog", { name: /^Incoming (video|audio) call from / });
 const incoming = (page: Page) => page.getByRole("alertdialog", { name: "Incoming call" });
 const ringtone = (page: Page) => page.evaluate(() => document.body.dataset["ringtone"]);
 
