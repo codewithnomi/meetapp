@@ -7,6 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { hasBackendServices, sql } from "./backend-control.ts";
 import { FAKE_MEDIA, closeApp, freshProfile, launch } from "./desktop.ts";
 import { admitAll, controls, findByLink, joinAsGuest, LINK, pace } from "./meeting-steps.ts";
+import { announcementsHeard, watchAnnouncements } from "./meeting-probes.ts";
 import { actOn, hostMeeting, joinWindow, openInfo, openPeople, rowOf, team, windowFor } from "./meeting-team.ts";
 
 test.describe.configure({ timeout: 240_000 });
@@ -52,6 +53,7 @@ test("TC-F02-107 [AC-F02-51] a title and a guest name that look like HTML stay p
   await expect(host.page.getByRole("region", { name: "Lobby", exact: true })).toContainText(GUEST_SHOWN, {
     timeout: 15_000,
   });
+  await watchAnnouncements(host.page);
   await admitAll(host.page, GUEST);
   await expect(controls(guest.page)).toBeVisible({ timeout: 20_000 });
 
@@ -59,7 +61,13 @@ test("TC-F02-107 [AC-F02-51] a title and a guest name that look like HTML stay p
   await openPeople(host.page);
   await expect(rowOf(host.page, GUEST_SHOWN)).toBeVisible();
   await expect(host.page.getByRole("figure", { name: new RegExp(`^${escapeRegExp(GUEST_SHOWN)}`) })).toBeVisible();
-  await expect(host.page.locator("[aria-live]", { hasText: `${GUEST} joined` }).first()).toBeAttached();
+  // Heard while it was said (announcements are brief), as plain text. The announcer says one thing every
+  // 2 s (AC-F02-21), and "left", "Mo joined" and "waiting in the lobby" come first, so allow for the queue.
+  await expect
+    .poll(async () => (await announcementsHeard(host.page)).some((t) => t.includes(`${GUEST} joined`)), {
+      timeout: 15_000,
+    })
+    .toBe(true);
   await openInfo(host.page);
   await expect(host.page.getByText(TITLE).first()).toBeVisible();
 
