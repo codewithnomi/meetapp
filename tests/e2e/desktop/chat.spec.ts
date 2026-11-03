@@ -249,9 +249,10 @@ test("TC-F03-53 TC-F03-55 TC-F03-61 [AC-F03-28] [AC-F03-29] [AC-F03-30] attach, 
   await expect(moLog.getByText("test plan.pdf")).toBeVisible({ timeout: 5_000 });
 
   // Download saves the file (Save as is answered by the test with a folder).
-  const saved = mo.app.evaluate(({ BrowserWindow }) => {
+  // The main windows' own session: the first window may be F16's mini call window, which has its own.
+  const saved = mo.app.evaluate(({ session }) => {
     return new Promise<string>((resolve) => {
-      BrowserWindow.getAllWindows()[0]?.webContents.session.once("will-download", (_event, item) => {
+      session.defaultSession.once("will-download", (_event, item) => {
         item.setSavePath(`${process.env["TMPDIR"] ?? "/tmp"}/meetapp-e2e-${String(Date.now())}.pdf`);
         item.once("done", (_e, state) => resolve(`${state}:${item.getFilename()}`));
       });
