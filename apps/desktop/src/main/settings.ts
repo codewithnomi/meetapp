@@ -9,6 +9,8 @@ export interface DesktopSettings {
   /** The built screens (apps/web/dist). */
   rendererDir: string;
   preloadPath: string;
+  /** F16: the small call windows' own preload (D079). */
+  callWindowPreloadPath: string;
   /** Tests start each run with a fresh profile folder; ignored in the packaged app. */
   userDataDir: string | undefined;
   sentryDsn: string | undefined;
@@ -75,6 +77,7 @@ export function readSettings(env: NodeJS.ProcessEnv, mainDir: string, packaged =
     apiUrl: packaged ? DEFAULT_API_URL : safeApiUrl(filled(env["VITE_API_URL"])),
     rendererDir: resolve(mainDir, "../../../web/dist"),
     preloadPath: resolve(mainDir, "../preload/preload.cjs"),
+    callWindowPreloadPath: resolve(mainDir, "../call-window-preload/call-window-preload.cjs"),
     userDataDir: packaged ? undefined : filled(env["MEETAPP_USER_DATA_DIR"]),
     sentryDsn: filled(env["SENTRY_DSN"]),
     callServerUrl: callServerUrl(env, packaged),

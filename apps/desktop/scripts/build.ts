@@ -26,6 +26,8 @@ async function buildEntry(entry: string, outDir: string, format: "es" | "cjs", f
 export async function buildDesktop(): Promise<void> {
   await buildEntry("src/main/main.ts", "out/main", "es", "main.js");
   await buildEntry("src/preload/preload.ts", "out/preload", "cjs", "preload.cjs");
+  // F16: the small call windows' own preload (D079).
+  await buildEntry("src/preload/call-window-preload.ts", "out/call-window-preload", "cjs", "call-window-preload.cjs");
 }
 
 if (import.meta.main) await buildDesktop();

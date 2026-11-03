@@ -78,11 +78,15 @@ Like the Teams **Chat** screen (owner, 2026-10-21, D062): a chat list on the lef
 - Settings: choose microphone, speaker and camera with a live preview; background blur and built-in background pictures (also in meetings); choose from 5 ringtones (owner, 2026-10-27)
 - **Depends on:** F02, F14 · **Size:** large
 
+### F16 Calls while MeetApp isn't in front
+As in Teams: an incoming call rings in a small window above every app; a Mac notification for missed calls (Call back); a mini call window during a call or meeting while another app is in front. Both windows can be dragged and remember their place. (D078)
+
 ### F04 Desktop app
 - Installable app for **Mac and Windows** (unsigned for now, D017)
 - Clicking a meeting link opens the desktop app (`meetapp://` links)
 - Desktop notifications (meeting starting, someone's waiting, mentions)
 - Remembers window size; runs smoothly in the background during calls
+- Ringing when MeetApp is fully closed (keeps running in the background; F16 rings only while it runs, D078)
 - Auto-update (ready, turned on when we go online)
 - **Depends on:** F02 · **Size:** medium
 
@@ -177,7 +181,7 @@ Noted by the owner during the F02 look check (2026-10-20), for after a first usa
 
 ## The build order at a glance
 ```
-F00 → F01 → F02 → F03 → F14 → F15 → F04 → F13      (Phase 1: working Teams-style app)
+F00 → F01 → F02 → F03 → F14 → F15 → F16 → F04 → F13      (Phase 1: working Teams-style app)
     → F05 → F06                        (Phase 2: AI notes)
     → F07 → F08 → F09                  (Phase 3: AI assistant)
     → F10 → F11 → F12                  (Phase 4: web, mobile, business, local AI)

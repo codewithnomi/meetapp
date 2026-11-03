@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@meetapp/config": "workspace:*",
+    "@meetapp/contracts": "workspace:*",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@^7.0.2",
     "electron": "^44.10.1",

@@ -3,6 +3,7 @@
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
+import { setUpCallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
@@ -14,7 +15,14 @@ import { guardContents, lockDownSession } from "./guards.ts";
 import { createMediaActions } from "./media-actions.ts";
 import { realMediaSystem, registerMediaBridge } from "./media-bridge.ts";
 import { createSharePicker } from "./media-permissions.ts";
-import { canOpenHandOffStart, contentSecurityPolicy, webPreferences, APP_ORIGIN } from "./security.ts";
+import {
+  canOpenHandOffStart,
+  callWindowPolicy,
+  contentSecurityPolicy,
+  policyFor,
+  webPreferences,
+  APP_ORIGIN,
+} from "./security.ts";
 import { startSentry } from "./sentry.ts";
 import { readSettings } from "./settings.ts";
 
@@ -26,6 +34,8 @@ const csp = contentSecurityPolicy({
   callServerUrl: settings.callServerUrl,
   gifApiUrl: settings.gifApiUrl,
 });
+
+const smallCsp = callWindowPolicy(settings.devServerUrl);
 
 if (settings.userDataDir) app.setPath("userData", settings.userDataDir);
 // Sandbox every page, including any created later, not only the main window.
@@ -54,7 +64,7 @@ function forwardLockChanges(window: BrowserWindow): void {
   });
 }
 
-function openWindow(): void {
+function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -62,10 +72,12 @@ function openWindow(): void {
     minHeight: 600,
     title: "MeetApp",
     show: false,
+    // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
     webPreferences: webPreferences(settings.preloadPath),
   });
   window.once("ready-to-show", () => window.show());
   forwardLockChanges(window);
+  callWindows.watch(window);
   void window.loadURL(appUrl);
 }
 
@@ -93,6 +105,14 @@ void app.whenReady().then(() => {
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
-  if (!settings.devServerUrl) serveScreens(settings.rendererDir, csp);
-  openWindow();
+  if (!settings.devServerUrl) serveScreens(settings.rendererDir, (url) => policyFor(url, csp, smallCsp));
+  openWindow(
+    setUpCallWindows({
+      preloadPath: settings.callWindowPreloadPath,
+      appUrl,
+      rendererDir: settings.rendererDir,
+      devServerUrl: settings.devServerUrl,
+      csp: smallCsp,
+    }),
+  );
 });

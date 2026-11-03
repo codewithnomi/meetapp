@@ -39,6 +39,7 @@ describe("readSettings", () => {
     const s = readSettings({ MEETAPP_USER_DATA_DIR: "/tmp/p" }, MAIN);
     expect(s.rendererDir).toBe(resolve(MAIN, "../../../web/dist"));
     expect(s.preloadPath).toBe(resolve(MAIN, "../preload/preload.cjs"));
+    expect(s.callWindowPreloadPath).toBe(resolve(MAIN, "../call-window-preload/call-window-preload.cjs"));
     expect(s.userDataDir).toBe("/tmp/p");
   });
 

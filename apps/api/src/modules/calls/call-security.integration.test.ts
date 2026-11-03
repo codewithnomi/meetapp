@@ -377,6 +377,7 @@ describe("leaving the chat ends one's place in the call", { timeout: 120_000 }, 
     expect(ring.state).toBe("cancelled");
     const stop = await until(() => m3Line.got.find((m): m is Stop => m.t === "ring_stop" && m.callId === callId));
     expect(stop.reason).toBe("cancelled");
+    expect(stop.missedCall).toBeUndefined(); // TC-F16-68: removal is no missed call (D081)
     await settle(300);
     expect((await notes(id)).filter((n) => n.event === "call_missed" && n.forUserId === m3.id)).toEqual([]);
     m3Line.ws.terminate();

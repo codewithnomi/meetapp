@@ -503,3 +503,30 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** GitHub's free Linux computers are slower than the Mac. The Linux-only bugs found (share list missing the screen, sign-in key kept only in memory, sign-up limit, end-of-call timing) are fixed. What's left is timing, not broken features.
 - **Follow-up:** make the slow desktop tests wait smarter, one by one, until the GitHub check is green again (before F04's PR).
 - **Alternatives:** retry a failed desktop test once on GitHub; keep fixing before merging (several more 45-minute rounds).
+
+### D078: Ring window, missed-call notifications and mini call window are their own feature, F16 (owner, 2026-10-29)
+- **Date:** 2026-11-02 (agreed 2026-10-29). **Status:** accepted.
+- **Decision:** the incoming-call window above other apps, Mac notifications for missed calls and the mini call window move from F04 into a small feature, F16, built right after F15 and before F04. Ringing on a fully closed app stays in F04.
+- **Why:** the owner wants calls to work as in Teams as soon as calls exist. Waiting for all of F04 would leave missed calls for weeks.
+- **Alternatives:** keep it in F04 (later); do it as fix tasks of F15 (too big for fixes, needs its own ACs and security check).
+
+### D079: Ring and mini call windows are small windows driven by the main window (F16)
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
+- **Decision:** the desktop main process opens small always-on-top windows (`call-window.html`). They show only a state the main MeetApp window reports, and they send button presses back to it. They have their own preload (`meetappCallWindow` only) and their own session with every permission refused, no network access and no sign-in. The mini window's live video arrives as small JPEG pictures (320×180, about 15 a second) over a MessagePort from the main window.
+- **Why:** one place keeps the call, the ringtone and the sign-in, so every rule from F02 and F15 applies unchanged. The small windows stay tiny and safe.
+- **Notes (2026-11-02):** in development only, the small page's policy also allows the dev server's live reload (its script nonce, inline styles, its `ws://` address), as the main window's does. The desktop app depends on `@meetapp/contracts` for these shapes, types only, so nothing is added to its bundles.
+- **Note (T-fix-1, 2026-11-02):** the main window runs with `backgroundThrottling: false`, or the computer slows it while it is behind other apps and the mini window's video and state freeze. Since T-fix-10 only while that window has a call; otherwise it is slowed as usual (battery and CPU).
+- **Alternatives:** have the small windows join the call themselves (needs a sign-in in each window, and a second connection to the call server); show only a picture (the owner chose live video).
+
+### D080: Missed-call notifications need a signed app (F16)
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
+- **Decision:** missed-call notifications use Electron's `Notification`. Since Electron 42 (macOS UNNotification), macOS shows them only for a code-signed app. T1 checks whether ad-hoc signing in development is enough. If not, the notification can be seen only after real signing (Apple Developer, $99 a year, F04), and until then the app behaves as AC-F16-13 says.
+- **Why:** that is how Mac notifications work. Other routes, such as AppleScript or a helper app, would also need signing or would be less safe.
+- **T1 result (2026-11-02):** on the owner's Mac (macOS 26), Electron 44.10.1 refuses the notification as "not allowed" (UNErrorDomain error 1), both as shipped (ad hoc, linker-signed) and as a fully ad-hoc-signed copy with its own bundle id (`com.meetapp.dev`) and alert style. The app never appears in System Settings → Notifications. So development builds can't show it. F16 builds and unit-tests the notification code, and the hand check TC-F16-28 waits for real signing (F04).
+- **Alternatives:** buy the Apple Developer account now (cost); show missed calls only inside the app until F04.
+
+### D081: A caller hanging up counts as a missed call for the notification (F16)
+- **Date:** 2026-11-02. **Status:** accepted (owner, 2026-11-02).
+- **Decision:** when the caller hangs up before anyone answers, the person gets the missed-call Mac notification (AC-F16-12 changed). Only calls without a "Missed call" note, such as removal from a call, give none.
+- **Why:** it is the most common missed call; Teams notifies for it; AC-F16-10 already keyed on the "Missed call" note (AC-F15-09). The second verification found the code skipped it.
+- **Alternatives:** keep the old wording (no notification when the caller hangs up).

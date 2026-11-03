@@ -6,6 +6,7 @@ import { Avatar, Button, CallingScreen, Notice } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { usePublishWaiting } from "../../features/call-windows/index.ts";
 import { Navigate } from "react-router";
 import { cancelRing, runningCall, useChatCall, useStartCall, type ChatCall } from "../../features/calls/index.ts";
 import { useLiveLine } from "../../features/chats/index.ts";
@@ -138,6 +139,7 @@ function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBac
     void cancelRing(call.callId).catch(() => undefined);
     leave();
   };
+  usePublishWaiting(ringing ? "calling" : undefined, name, cancel);
   const texts = callingTexts(t, call);
   return (
     <CallingScreen

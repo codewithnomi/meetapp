@@ -7,7 +7,8 @@ export type RingStopReason = "accepted" | "declined" | "cancelled" | "missed" | 
 
 export interface RingTarget {
   ring: (userId: string, ring: RingMessage) => Promise<void>;
-  stop: (userId: string, callId: string, reason: RingStopReason) => Promise<void>;
+  /** `missedCall`: the ring became a missed call (D081). */
+  stop: (userId: string, callId: string, reason: RingStopReason, missedCall?: boolean) => Promise<void>;
 }
 
 /** Every open window of the person, through F14's live line (D064). */
@@ -16,7 +17,8 @@ export function liveLineTarget(live: {
 }): RingTarget {
   return {
     ring: (userId, ring) => live.toPerson(userId, ring),
-    stop: (userId, callId, reason) => live.toPerson(userId, { t: "ring_stop", callId, reason }),
+    stop: (userId, callId, reason, missedCall) =>
+      live.toPerson(userId, { t: "ring_stop", callId, reason, ...(missedCall ? { missedCall: true as const } : {}) }),
   };
 }
 
@@ -26,8 +28,8 @@ export function allTargets(targets: RingTarget[]): RingTarget {
     ring: async (userId, ring) => {
       await Promise.allSettled(targets.map((target) => target.ring(userId, ring)));
     },
-    stop: async (userId, callId, reason) => {
-      await Promise.allSettled(targets.map((target) => target.stop(userId, callId, reason)));
+    stop: async (userId, callId, reason, missedCall) => {
+      await Promise.allSettled(targets.map((target) => target.stop(userId, callId, reason, missedCall)));
     },
   };
 }

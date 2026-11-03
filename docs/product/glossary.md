@@ -51,3 +51,8 @@ Words used in MeetApp's documents and code, in plain English.
 - **Seat:** one device's place in a call; a person may have up to 3 in one call.
 - **Ring target:** where a ring is delivered: today every open app window; later phone notifications.
 
+## Calls while MeetApp isn't in front (F16)
+- **Ring window:** the small window above every app for an incoming call, while no MeetApp window is in front.
+- **Mini call window:** the small window above every app during a call or meeting, with the speaker's live video and the main buttons.
+- **Missed-call notification:** the Mac's own notification for a call nobody answered while MeetApp wasn't in front (needs a signed app, D080).
+

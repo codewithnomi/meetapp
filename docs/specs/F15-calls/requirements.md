@@ -32,7 +32,7 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - **AC-F15-04:** WHEN a group chat has more than 20 accepted members, THEN starting a call rings no one; the call still starts, the chat shows the "started a call" note with **Join** (and the chat list shows it as the last line, without counting it as unread), and members join from there, as in Teams for large groups. The call still holds at most 20 people (AC-F15-14).
 
 ### Ringing
-- **AC-F15-05:** WHEN someone is called, THEN every open MeetApp window of theirs shows an incoming-call window within 2 seconds, with the caller's photo and name (and the group's name for a group call), a ringing sound, and **Accept with video**, **Accept with audio** and **Decline**. Ringing works while they are in another screen of the app or the app is behind other windows (a system notification when the app is in the background is part of F04).
+- **AC-F15-05:** WHEN someone is called, THEN every open MeetApp window of theirs shows an incoming-call window within 2 seconds, with the caller's photo and name (and the group's name for a group call), a ringing sound, and **Accept with video**, **Accept with audio** and **Decline**. Ringing works while they are in another screen of the app or the app is behind other windows (the ring window above other apps and missed-call notifications are F16, D078).
 - **AC-F15-06:** WHEN the called person accepts in one window, THEN they join the call within 3 seconds with the microphone on and the camera as chosen (on for Accept with video, off for Accept with audio), and ringing stops in all their other windows. Joining the same call again from another window adds that window as a second participant, as in F02 (AC-F02-13).
 - **AC-F15-07:** WHEN the called person declines, THEN ringing stops in all their windows; in a one-to-one call the caller sees "<name> declined" and the call ends; in a group call the others keep ringing.
 - **AC-F15-08:** WHEN nobody answers within 30 seconds, THEN ringing stops; in a one-to-one call the caller sees "No answer" and the call ends. In a group call, WHEN nobody has joined after 30 seconds, THEN the call ends; everyone called gets a missed call.
@@ -85,7 +85,7 @@ Let people call each other straight from a one-to-one or group chat, with audio 
 - Cost: none (the same call server and backend, D017). Load: the existing 25-person meeting load test covers a 20-person call.
 
 ## Out of scope
-- Desktop/system notifications for incoming calls when the app is hidden or minimised, and ringing on a closed app: **F04 Desktop app**.
+- Ringing above other apps and missed-call notifications: **F16** (D078). Ringing on a closed app: **F04 Desktop app**.
 - Uploading one's own background picture: later (the built-in pictures and blur come now).
 - Decline with a quick message ("I'm busy, will call back"): later.
 - Phone numbers, voicemail, call transfer, hold, call history page ("Calls" app): later, if wanted.

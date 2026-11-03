@@ -5,6 +5,7 @@
 import { Button, IconButton, Spinner, VideoTile } from "@meetapp/ui";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { usePublishWaiting } from "../../features/call-windows/index.ts";
 import { ActionErrorNotice } from "../../features/auth/index.ts";
 import {
   LocalVideo,
@@ -67,6 +68,7 @@ export function LobbyPage({ name, onAdmitted, onOutcome, onLeft }: LobbyPageProp
   const devices = usePreJoinDevices();
   const { prefs, camera } = devices;
   const leave = () => void leaveMeeting(visit).then(() => (end(), onLeft()));
+  usePublishWaiting(visit ? "lobby" : undefined, visit?.title ?? "", leave);
   return (
     <main className="flex min-h-screen flex-col gap-8 bg-bg px-6 py-8 text-ink sm:px-12">
       <header className="flex flex-wrap items-center justify-between gap-4">

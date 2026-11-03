@@ -7,9 +7,10 @@ function clock(ms: number): string {
   return parts.map((part) => String(part).padStart(2, "0")).join(":");
 }
 
-export function useElapsed(): string {
-  const [start] = useState(() => Date.now());
-  const [now, setNow] = useState(start);
+/** Counted from now, or from `since` (ms since 1970; F16's mini window counts from joining). */
+export function useElapsed(since?: number): string {
+  const [start] = useState(() => since ?? Date.now());
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);

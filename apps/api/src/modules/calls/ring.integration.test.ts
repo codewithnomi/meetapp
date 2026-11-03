@@ -268,6 +268,7 @@ describe("ringing", { timeout: 120_000 }, () => {
       expect(await until(() => l.got.find((m): m is Stop => m.t === "ring_stop" && m.callId === callId))).toMatchObject(
         {
           reason: "cancelled",
+          missedCall: true, // TC-F16-68: a missed call for the notification (D081)
         },
       );
     const notes = (await missedNotes(id)).filter((n) => n?.callId === callId);

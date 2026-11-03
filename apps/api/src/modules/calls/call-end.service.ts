@@ -26,7 +26,7 @@ export interface CallEndDeps {
 async function missedRings(deps: CallEndDeps, call: Call, rings: { userId: string }[], reason: RingStopReason) {
   const starter = await deps.chatCalls.starterOf(call.id);
   for (const ring of rings) {
-    await deps.targets.stop(ring.userId, call.id, reason);
+    await deps.targets.stop(ring.userId, call.id, reason, true);
     if (starter?.userId) await deps.missed(call, starter.userId, ring.userId);
   }
 }

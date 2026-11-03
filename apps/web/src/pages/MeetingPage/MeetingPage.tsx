@@ -19,7 +19,7 @@ import {
   useVisit,
   type Joined,
 } from "../../features/meetings/index.ts";
-import { CallControls, type Panel } from "./CallControls.tsx";
+import { CallControls } from "./CallControls.tsx";
 import { useAttachments } from "./chat-attachments.ts";
 import { ChatArea } from "./ChatArea.tsx";
 import { useFileDrop } from "./file-drop.ts";
@@ -31,10 +31,10 @@ import { Notices } from "./Notices.tsx";
 import { ShareDialog } from "./ShareDialog.tsx";
 import { AddPeoplePanel } from "./AddPeoplePanel.tsx";
 import { useCall, useCallConversation, type CallState, type MeetingPageProps } from "./use-call.ts";
+import { usePublishForMiniWindow } from "./mini-window.ts";
+import { useView, type Dialog } from "./view-state.ts";
 
 export type { MeetingPageProps };
-
-type Dialog = { kind: "share" } | { kind: "end" } | { kind: "options"; meetingId: string } | undefined;
 
 function LayoutSwitch({
   value,
@@ -87,29 +87,6 @@ function Overlays({ dialog, call, onClose }: { dialog: Dialog; call: CallState; 
   return null;
 }
 
-function useView() {
-  const [layout, setLayout] = useState<"gallery" | "speaker">("gallery");
-  const [page, setPage] = useState(0);
-  const [panel, setPanel] = useState<Panel>();
-  const [pinnedId, setPinnedId] = useState<string>();
-  const [dialog, setDialog] = useState<Dialog>();
-  const [failed, setFailed] = useState(false);
-  return {
-    layout,
-    setLayout,
-    page,
-    setPage,
-    panel,
-    setPanel,
-    pinnedId,
-    setPinnedId,
-    dialog,
-    setDialog,
-    failed,
-    setFailed,
-  };
-}
-
 /** Everything the screen shows, from the call and the view's own state. */
 function useScreen(props: MeetingPageProps & { visit: Joined }) {
   const { t } = useTranslation();
@@ -145,6 +122,7 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
     : undefined;
   // A call from a chat (F15): Add people instead of Participants, no Meeting info.
   const conversationId = useCallConversation(visit);
+  usePublishForMiniWindow(call, share);
   return { t, call, view, context, share, onOptions, files, dropping, userId: session.data?.id, conversationId };
 }
 
