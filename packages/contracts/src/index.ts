@@ -234,3 +234,4 @@ export type {
   CallWindowsRing,
   CallWindowsState,
 } from "./call-windows.ts";
+export { APP_LINK_SCHEME, appMeetingLink, asAppMeetingLink, isMeetingCode, readAppMeetingLink } from "./app-links.ts";

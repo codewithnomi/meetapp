@@ -32,7 +32,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   Covers: AC-F04-02, 04, 06, 07. Tests: TC-F04-06, 07, 08, 09, 14, 15, 17, 18.
 - [x] **T4: Menu-bar / tray icon and menu.** (done 2026-11-04; the menu is unit-tested; real tray clicks (TC-F04-12, 13) move to the T19 hand checks, because Playwright can't click a menu-bar menu; the status choice reaches the screens and is acted on in T8) Signed in and signed out; Mac template image; Windows left and right click. Covers: AC-F04-05. Tests: TC-F04-11, 12, 13.
 - [x] **T5: Start at login.** (done 2026-11-04; development and tests use a stand-in login item in the profile folder, never the computer's real one) The login item rules, set once at first start, a hidden start, and the Settings → General switch. Covers: AC-F04-08, 09. Tests: TC-F04-19, 20, 21, 22.
-- [ ] **T6: Meeting links.**
+- [x] **T6: Meeting links.** (done 2026-11-04; during a call the link waits for Meetings instead of a pre-join note: requirements updated)
   - Strict `links.ts`.
   - The link reaches the app through `second-instance`, `process.argv` or `open-url` (in `will-finish-launching`).
   - It is kept until sign-in, works during a call, and errors show F02's messages.

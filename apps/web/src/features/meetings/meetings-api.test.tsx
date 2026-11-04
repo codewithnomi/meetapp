@@ -72,3 +72,27 @@ describe("meeting details and options", () => {
     expect(client.getQueryData(["meeting", "m1"])).toMatchObject({ title: "New" });
   });
 });
+
+describe("the link to share in the desktop app (F04 T6)", () => {
+  afterEach(() => {
+    delete (window as { meetapp?: unknown }).meetapp;
+  });
+
+  it("TC-F04-33 [AC-F04-12] the desktop app gives meetapp://m/<code> with the shared link's code; a browser keeps the server's link", async () => {
+    const code = "AbCdEfGhIjKlMnOpQrSt_-";
+    const meeting = {
+      id: "m1",
+      link: `https://meet.example/m/${code}`,
+      meetingNumber: "284615903172",
+      passcode: "Ab3dE5",
+    };
+    fakeApi({ "/api/v1/meetings/m1": () => json(meeting) });
+    const inBrowser = renderHook(() => useMeeting("m1"), { wrapper });
+    await waitFor(() => expect(inBrowser.result.current.data?.link).toBe(meeting.link));
+    (window as { meetapp?: unknown }).meetapp = {};
+    client.clear();
+    const inDesktop = renderHook(() => useMeeting("m1"), { wrapper });
+    await waitFor(() => expect(inDesktop.result.current.data?.link).toBe(`meetapp://m/${code}`));
+    expect(inDesktop.result.current.data?.passcode).toBe("Ab3dE5");
+  });
+});

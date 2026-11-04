@@ -34,9 +34,16 @@ function askQuitDuringCall(window: BrowserWindow | undefined): boolean {
  * One copy per profile folder (AC-02): returns false when another copy already runs, which then comes
  * forward instead. Call before the app is ready, after the profile folder is set.
  */
-export function holdSingleCopy(mainWindow: () => BrowserWindow | undefined): boolean {
+export function holdSingleCopy(
+  mainWindow: () => BrowserWindow | undefined,
+  onSecondStart: (args: readonly string[]) => void,
+): boolean {
   if (!app.requestSingleInstanceLock()) return false;
-  app.on("second-instance", () => bringBack(mainWindow()));
+  app.on("second-instance", (_event, args) => {
+    bringBack(mainWindow());
+    // Windows: a clicked meeting link arrives as the second start's arguments (AC-F04-10).
+    onSecondStart(args);
+  });
   return true;
 }
 

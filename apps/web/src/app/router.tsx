@@ -14,7 +14,7 @@ import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
 import { useCallWindows } from "../features/call-windows/index.ts";
-import { useTrayCommands } from "../features/desktop-app/index.ts";
+import { useDesktopCommands } from "./desktop-commands.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
@@ -173,6 +173,8 @@ function EndedRoute({ home, join }: { home: string; join: string }) {
 function SignedOutRoutes() {
   const navigate = useNavigate();
   const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
+  // F04: signed out, a clicked meeting link opens Join a meeting as a guest (AC-F04-10).
+  useDesktopCommands({ openJoin: () => void navigate("/join-meeting") });
   return (
     <Routes>
       <Route
@@ -216,8 +218,7 @@ function SignedInScreens() {
   const settings = (screen: SettingsScreen) =>
     void navigate(screen === "profile" ? "/settings" : `/settings/${screen}`);
   const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
-  // F04: Settings from the menu-bar or tray menu (the status choice is handled from T8 on).
-  useTrayCommands({ onSettings: () => settings("profile") });
+  useDesktopCommands({ openSettings: () => settings("profile"), openJoin: () => go("meetings") });
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />

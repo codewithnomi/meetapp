@@ -226,7 +226,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 - **Level:** desktop e2e
 - **Given** M2 in a call
 - **When** a link to another meeting arrives
-- **Then** the pre-join screen says joining leaves the current call; the call goes on until M2 clicks Join
+- **Then** the call screen stays and the call goes on; opening Meetings shows that meeting's pre-join (requirements changed in T6)
 
 ### TC-F04-29: Wrong, unknown or expired link shows F02's messages
 - **Covers:** AC-F04-11

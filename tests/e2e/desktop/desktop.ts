@@ -131,7 +131,7 @@ export const BRIDGE = {
   meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows", "app"],
   files: ["save"],
   // F04: what the menu-bar or tray menu asks the screens to do.
-  app: ["loginItem", "onTrayCommand"],
+  app: ["onOpenMeeting", "loginItem", "onTrayCommand"],
   // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
   callWindows: ["report", "onAction", "onFramesWanted", "sendFrame"],
   // F14: the computer locked or unlocked (status shows Away).

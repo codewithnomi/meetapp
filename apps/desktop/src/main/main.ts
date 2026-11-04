@@ -6,6 +6,8 @@ import { appIdentity } from "../../app-identity.ts";
 import { bringBack, holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
 import { createTray } from "./tray.ts";
 import { hiddenStart, setUpLoginItem } from "./login-item-bridge.ts";
+import { linkInArgs } from "./links.ts";
+import { createMeetingLinks } from "./meeting-links.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { setUpCallWindows, type CallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
@@ -55,8 +57,22 @@ app.on("web-contents-created", (_event, contents) => {
 // F04: the main window, once opened (a second start, a Dock click and Quit's question use it).
 let mainWindow: BrowserWindow | undefined;
 // One copy per profile folder (AC-F04-02): a second start only brings the first one forward.
-const firstCopy = holdSingleCopy(() => mainWindow);
+// F04 AC-10: meeting links, kept until the screens listen.
+const links = createMeetingLinks(appUrl, () => (bringBack(mainWindow), mainWindow));
+const fromArgs = (args: readonly string[]) => {
+  const link = linkInArgs(args);
+  if (link) links.arrived(link);
+};
+const firstCopy = holdSingleCopy(() => mainWindow, fromArgs);
 if (!firstCopy) app.quit();
+// Mac: a clicked link (also one that starts MeetApp) comes as open-url, listened for this early.
+app.on("will-finish-launching", () => {
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    links.arrived(url);
+  });
+});
+fromArgs(process.argv);
 
 /** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`. */
 function forwardLockChanges(window: BrowserWindow): void {
@@ -89,6 +105,7 @@ function openWindow(callWindows: CallWindows, hidden: Promise<boolean>): void {
   forwardLockChanges(window);
   callWindows.watch(window);
   setUpAppLife({ inCall: callWindows.hasCall, mainWindow: () => mainWindow }).watch(window);
+  links.watch(window);
   mainWindow = window;
   void window.loadURL(appUrl);
 }
@@ -132,7 +149,7 @@ void app.whenReady().then(() => {
       devServerUrl: settings.devServerUrl,
       csp: smallCsp,
     }),
-    // A meeting link always shows the window (T6 passes whether one started the app).
-    hiddenStart(false),
+    // A meeting link always shows the window.
+    hiddenStart(links.waiting()),
   );
 });

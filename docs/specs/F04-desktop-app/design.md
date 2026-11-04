@@ -78,6 +78,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
   - `setLoginItemSettings({ openAtLogin, args: ["--hidden"] })` on Windows.
   - On Mac, `openAtLogin`. With the macOS 13+ login items, `args` and `wasOpenedAtLogin` may not work. T1 checks it. The fallback is that a start with no link and no window wanted, within 60 s after the person logged in, starts hidden. The login item only registers from the installed app in Applications.
   - It is turned on at the first start after install (a flag file). An update keeps the stored choice.
+- The screens listen through `window.meetapp.app.onOpenMeeting` (main keeps the link until they do). The link goes into F02's Join a meeting form and is looked up as if typed, so F02's messages show and nothing is joined. During a call or in a lobby the screen stays and the link waits for Meetings. The shared pieces live in `@meetapp/contracts/app-links` (a small entry, so the preload stays small).
 - Copy link in F02 gives `meetapp://m/<code>` while there is no website. F02's wording ("the link") still fits; only the link's form changes (AC-12; web unit test). When we go online, the https link opens a page with "Open in MeetApp" (later).
 
 ### 3.3 Status by hand (AC-20–23)

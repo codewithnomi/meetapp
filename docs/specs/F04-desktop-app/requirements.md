@@ -41,7 +41,7 @@ Everyone with the desktop app: members, organizers and presenters, guests joinin
 - **AC-F04-09:** WHEN the person turns off "Start MeetApp when I log in" in Settings → General, THEN it no longer starts at login; turning it on again brings it back.
 
 ### Meeting links
-- **AC-F04-10:** WHEN the person clicks a MeetApp meeting link (`meetapp://m/<meeting code>`, the same code as the meeting's shared link, F02) anywhere on their computer, THEN MeetApp opens or comes to the front at that meeting's pre-join screen within 3 s. Not signed in: the guest join screen with the meeting's title (AC-F02-08). Already in a call: the pre-join screen says joining leaves the current call (as F15).
+- **AC-F04-10:** WHEN the person clicks a MeetApp meeting link (`meetapp://m/<meeting code>`, the same code as the meeting's shared link, F02) anywhere on their computer, THEN MeetApp opens or comes to the front at that meeting's pre-join screen within 3 s. Not signed in: the guest join screen with the meeting's title (AC-F02-08). Already in a call or in a lobby: the call screen stays (leaving it would end the call) and MeetApp comes to the front; the link waits and opens that meeting's pre-join when the person opens Meetings (changed during T6, 2026-11-04: the call lives on its screen).
 - **AC-F04-11:** WHEN the link is wrong, unknown or expired, THEN MeetApp shows the same messages as typing it under Join a meeting (AC-F02-08). Any other `meetapp://` address, or anything extra in it, is ignored and MeetApp only comes to the front. A link never joins, sends or changes anything by itself.
 - **AC-F04-12:** WHEN the person copies a meeting link in MeetApp, THEN they get the link others can click to open MeetApp (AC-10), and the meeting ID and passcode as today.
 
