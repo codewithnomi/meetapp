@@ -190,7 +190,13 @@ export const myStatusBodySchema = z
   .refine((body) => body.status !== null || body.until === null, { path: ["until"] })
   .meta({ id: "MyStatus" });
 export const myStatusSchema = z
-  .object({ status: z.enum(STATUSES), until: z.iso.datetime({ offset: true }).nullable() })
+  .object({
+    /** What others see now. */
+    status: z.enum(STATUSES),
+    /** The status set by hand that hasn't run out, else null (automatic). */
+    chosen: z.enum(MANUAL_STATUSES).nullable(),
+    until: z.iso.datetime({ offset: true }).nullable(),
+  })
   .meta({ id: "MyStatusView" });
 
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });

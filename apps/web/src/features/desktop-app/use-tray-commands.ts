@@ -8,7 +8,7 @@ export type TrayCommand = { kind: "settings" } | { kind: "status"; status: TrayS
 type AppBridge = { app?: { onTrayCommand: (listener: (command: TrayCommand) => void) => () => void } };
 
 export interface TrayHandlers {
-  onSettings: () => void;
+  onSettings?: () => void;
   /** Sets the person's status "until changed" (F04 T8). */
   onStatus?: (status: TrayStatus) => void;
 }
@@ -19,7 +19,7 @@ export function useTrayCommands(handlers: TrayHandlers): void {
   useEffect(() => {
     const bridge = (window as { meetapp?: AppBridge }).meetapp;
     return bridge?.app?.onTrayCommand((command) => {
-      if (command.kind === "settings") latest.current.onSettings();
+      if (command.kind === "settings") latest.current.onSettings?.();
       else latest.current.onStatus?.(command.status);
     });
   }, []);

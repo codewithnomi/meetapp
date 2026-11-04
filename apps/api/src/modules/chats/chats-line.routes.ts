@@ -75,6 +75,17 @@ export const chatsLineRoutes: FastifyPluginAsyncZod<{
 
 /** F04: setting one's own status by hand (design 5); the person always comes from the sign-in. */
 export const myStatusRoutes: FastifyPluginAsyncZod<{ status: ChatsStatusService }> = async (app, { status }) => {
+  app.get(
+    "/api/v1/me/status",
+    {
+      schema: {
+        summary: "My status as others see it, the one I set by hand and when it ends (F04)",
+        tags: ["chats"],
+        response: { 200: myStatusSchema },
+      },
+    },
+    (request) => status.mine(signedInUser(request).id),
+  );
   app.put(
     "/api/v1/me/status",
     {

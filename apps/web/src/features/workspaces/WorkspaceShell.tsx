@@ -7,6 +7,7 @@ import { AppLayout, Notice, WorkspaceSwitcher, type AppNavItem, type IconName } 
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavFolded } from "../chats/nav-folded.ts";
+import { MyStatusMenu } from "../status/index.ts";
 import { useUnreadChats } from "../chats/use-chat-list.ts";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog.tsx";
 import { useCurrentWorkspace } from "./current-workspace.tsx";
@@ -118,6 +119,7 @@ export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellP
         switcher={<Switcher onCreate={() => setCreating(true)} onJoin={() => onNavigate("join")} />}
         navLabel={t("workspaces.nav.label")}
         items={items}
+        topBar={<MyStatusMenu onSettings={() => onNavigate("settings")} />}
         fold={{
           folded,
           onToggle: toggleFolded,

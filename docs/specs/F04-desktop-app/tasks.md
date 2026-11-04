@@ -46,7 +46,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - The new values on the live line, the rate limit, export and deletion.
   
   Covers: AC-F04-20, 21, 23. Tests: TC-F04-35, 36, 39, 40, 41, 42, 69, 92.
-- [ ] **T8: Status menu (screens).**
+- [x] **T8: Status menu (screens).** Done 2026-11-04: canvas board "Desktop app (F04)" approved; `StatusMenu` molecule on a new slim top bar (`AppLayout.topBar`); `features/status` (time maths, `GET`/`PUT /api/v1/me/status`, now also with `chosen`); the tray's status picks last until changed. Desktop tests `status.spec.ts` (TC-43, 44) run at spec-verify.
   - `StatusMenu` molecule, drawn on the canvas first (D029).
   - The picture menu with durations, and the tray (until changed).
   - The duration maths in local time.

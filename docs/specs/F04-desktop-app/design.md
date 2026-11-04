@@ -146,7 +146,8 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 ## 5. Backend endpoints / messages
 - `PUT /api/v1/me/status`
   - Body: `{ status: "available"|"busy"|"dnd"|"brb"|"away"|null, until: ISO time|null }`
-  - Answers 200 with `{ status, until }` (the effective status). A wrong value or `until` gives 400.
+  - Answers 200 with `{ status, chosen, until }`: the effective status, the hand-set one (or null) and its end. A wrong value or `until` gives 400.
+  - `GET /api/v1/me/status` gives the same, so the picture menu shows it (added during T8).
   - Being rate-limited (20 a minute) gives 429.
 - `GET /api/v1/me/notification-settings` returns the five switches. `PUT` saves them (partial update allowed; unknown keys give 400; 20 a minute).
 - Live line: `status` messages can carry the new values. Older apps ignore values they don't know.

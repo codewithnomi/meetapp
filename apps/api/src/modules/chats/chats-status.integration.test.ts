@@ -70,16 +70,17 @@ describe("status set by hand", { timeout: 60_000 }, () => {
     for (const status of ["busy", "dnd", "brb", "away", "available"] as const) {
       const answer = await setStatus(a, { status, until: null });
       expect(answer.statusCode).toBe(200);
-      expect(answer.json()).toEqual({ status, until: null });
+      expect(answer.json()).toEqual({ status, chosen: status, until: null });
+      expect((await call(a.token, "GET", "/api/v1/me/status")).json()).toEqual({ status, chosen: status, until: null });
       expect(await stored(a)).toEqual({ manual_status: status, manual_status_until: null });
       if (status !== "available") await sees(bLine.got, a.id, status);
       expect(await statusAs(b, a)).toBe(status);
     }
     const until = inMinutes(30);
-    expect((await setStatus(a, { status: "busy", until })).json()).toEqual({ status: "busy", until });
+    expect((await setStatus(a, { status: "busy", until })).json()).toEqual({ status: "busy", chosen: "busy", until });
     await sees(bLine.got, a.id, "busy");
     const reset = await setStatus(a, { status: null, until: null });
-    expect(reset.json()).toEqual({ status: "available", until: null });
+    expect(reset.json()).toEqual({ status: "available", chosen: null, until: null });
     expect(await stored(a)).toEqual({ manual_status: null, manual_status_until: null });
     await sees(bLine.got, a.id, "available");
     aLine.ws.terminate();

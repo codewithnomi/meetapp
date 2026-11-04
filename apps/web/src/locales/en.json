@@ -1289,5 +1289,23 @@
         "soft-shapes": "Soft shapes"
       }
     }
+  },
+  "status": {
+    "menu": "Your account",
+    "appearAway": "Appear away",
+    "forHowLong": "For how long",
+    "reset": "Reset status",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "until": "Until {{time}}",
+    "untilDay": "Until {{day}} {{time}}",
+    "for": {
+      "30m": "30 minutes",
+      "1h": "1 hour",
+      "2h": "2 hours",
+      "today": "Today",
+      "week": "This week",
+      "forever": "Until I change it"
+    }
   }
 }

@@ -72,8 +72,8 @@ async function choose(
 async function mine(deps: StatusDeps, userId: string) {
   const status = (await current(deps, [userId])).get(userId) ?? "offline";
   const manual = (await deps.manual.read([userId])).get(userId);
-  const live = manual && manualOf({ manual }, deps.now().getTime()) !== null;
-  return { status, until: live && manual.until ? manual.until.toISOString() : null };
+  const chosen = manual ? manualOf({ manual }, deps.now().getTime()) : null;
+  return { status, chosen, until: chosen && manual?.until ? manual.until.toISOString() : null };
 }
 
 export function createChatsStatusService(deps: StatusDeps) {
@@ -95,6 +95,7 @@ export function createChatsStatusService(deps: StatusDeps) {
     /** Works the person's status out again and announces it when it changed. */
     announce,
     choose: (userId: string, choice: StatusChoice) => choose(deps, announce, userId, choice),
+    mine: (userId: string) => mine(deps, userId),
     /** The expiry job: a status that ran out is cleared and the change announced (AC-F04-21). */
     runOut: async (userId: string) => {
       await deps.manual.clearIfOver(userId, deps.now());
