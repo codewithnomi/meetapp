@@ -3,5 +3,5 @@
 import { defineProject } from "vitest/config";
 
 export default defineProject({
-  test: { name: "desktop", environment: "node", include: ["src/**/*.test.ts", "scripts/**/*.test.ts"] },
+  test: { name: "desktop", environment: "node", include: ["src/**/*.test.ts", "scripts/**/*.test.ts", "*.test.ts"] },
 });

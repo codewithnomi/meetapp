@@ -24,7 +24,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 
 ## 1. What gets created
 **Desktop (apps/desktop):**
-- `electron-builder.yml`: the Mac `dmg` (universal) and Windows `nsis` (x64, arm64) installers; app id `app.meetapp.desktop`; the `meetapp` link scheme (`protocols`); `mac.identity: null` (unsigned) until `CSC_LINK` is set; `publish: github` for updates (AC-01, 03, 10, 50).
+- `electron-builder.config.ts`: the Mac `dmg` (universal) and Windows `nsis` (x64, arm64) installers; app id `app.meetapp.desktop`; the `meetapp` link scheme (`protocols`); `mac.identity: null` (unsigned) until `CSC_LINK` is set; `publish: github` for updates (AC-01, 03, 10, 50).
 - `src/main/app-life.ts` (rules, no Electron): what close, Quit, a second start, a link and login start mean. `app-life-bridge.ts` connects these rules to Electron: `requestSingleInstanceLock`, `second-instance`, `open-url`, `before-quit`, `window-all-closed`, `setLoginItemSettings` (AC-02, 04, 06, 08–10).
 - `src/main/tray.ts`: the menu-bar or tray icon and its menu: Open MeetApp, status, Settings, Quit; Sign in when signed out (AC-05). Mac: a template image (16 and 32 px), menu on click. Windows: left-click opens the window, right-click the menu (as Teams).
 - `src/main/links.ts` (no Electron): reads `meetapp://m/<code>` strictly. Anything else is ignored (AC-10, 11).
@@ -50,7 +50,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `GET` and `PUT /api/v1/me/notification-settings`.
 - The presence logic of F14 (3.8) first checks a status set by hand that hasn't run out.
 
-**The name "MeetApp" is temporary** (owner, 2026-11-03). The app's name, app id (`app.meetapp.desktop`), link scheme (`meetapp://`), icons and installer names are kept in one place (`apps/desktop/app-identity.ts`, read by electron-builder and the app), so the final name means changing one file and the icons.
+**The name "MeetApp" is temporary** (owner, 2026-11-03). The app's name, app id (`app.meetapp.desktop`), link scheme (`meetapp://`), icons and installer names are kept in one place (`apps/desktop/app-identity.ts`, read by `electron-builder.config.ts` and the app; a TypeScript config because a YAML file cannot import it), so the final name means changing one file and the icons.
 
 ## 2. Screens / user flow
 1. **Install.** Open the `.dmg`, drag MeetApp to Applications, and open it. The Mac warns that the app is unsigned; the getting-started guide shows how to allow it once. On Windows, "Windows protected your PC" appears: More info, then Run anyway.

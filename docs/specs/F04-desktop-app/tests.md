@@ -57,7 +57,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 - **Level:** integration
 - **Given** a throwaway certificate set through the signing environment variables (`CSC_LINK`, password)
 - **When** the CI test build runs with and without them
-- **Then** the build with them is signed (verified by the platform's check), the one without is unsigned, and `git diff` of app code between the two runs is empty; only `electron-builder.yml` reads the variables
+- **Then** the build with them is signed (verified by the platform's check), the one without is unsigned, and `git diff` of app code between the two runs is empty; only `electron-builder.config.ts` reads the variables
 
 ### One copy
 

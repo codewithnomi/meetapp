@@ -34,6 +34,7 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 - `pnpm dev` (project root) starts the services, the backend, the screens' dev server and this window. Closing the window stops the desktop part.
 - A second window with its own sign-in (to be two people in a meeting), while `pnpm dev` runs: `pnpm dev:window`.
 - Just the window, without the services: `pnpm desktop`. It builds the screens and the desktop app, then opens the window; feature flags count as off without the backend.
+- Installers: `pnpm desktop:dist` builds a universal Mac `.dmg` and a Windows `.exe` (x64 and arm64) into `release/`, unsigned until `CSC_LINK` is set (D084). The name, app id, link scheme and icon come from `app-identity.ts` (D087).
 
 ## Test it
 - Unit tests run in `pnpm test`.

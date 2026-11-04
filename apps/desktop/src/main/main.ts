@@ -2,6 +2,7 @@
 // Development: the Vite dev server (MEETAPP_RENDERER_URL). Otherwise: the built screens on app://meetapp.
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
+import { appIdentity } from "../../app-identity.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { setUpCallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
@@ -70,7 +71,7 @@ function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    title: "MeetApp",
+    title: appIdentity.productName,
     show: false,
     // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
     webPreferences: webPreferences(settings.preloadPath),

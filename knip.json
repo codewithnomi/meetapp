@@ -26,7 +26,13 @@
       "ignoreDependencies": ["tailwindcss", "emojibase-data"]
     },
     "apps/desktop": {
-      "entry": ["src/main/main.ts", "src/preload/preload.ts", "src/preload/call-window-preload.ts", "scripts/*.ts"]
+      "entry": [
+        "src/main/main.ts",
+        "src/preload/preload.ts",
+        "src/preload/call-window-preload.ts",
+        "scripts/*.ts",
+        "electron-builder.config.ts"
+      ]
     }
   },
   "ignoreBinaries": ["caffeinate"]

@@ -17,7 +17,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - Write D086. If no helper is reliable, ask the owner about AC-37.
   
   Covers: AC-F04-08, 37, 60. Tests: TC-F04-80, 81, 82.
-- [ ] **T2: App identity and installers.**
+- [x] **T2: App identity and installers.** (done 2026-11-04: `electron-builder.config.ts` instead of `.yml`, so it can read `app-identity.ts`; the CI installer build and the throwaway-certificate check move to T17 with the Windows job)
   - `app-identity.ts` (name, app id, scheme, icons: D087).
   - `electron-builder.yml`: dmg universal, nsis x64/arm64, the `meetapp` protocol, unsigned until a certificate is set, and a throwaway-certificate signing check.
   - The install guide in `docs/getting-started.md`.
@@ -85,6 +85,6 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - No secrets on disk.
   
   Covers: AC-F04-40, 41, 42. Tests: TC-F04-76, 77, 78, 79, 93.
-- [ ] **T17: Updates off, About, and Windows.** electron-updater switched off; the About page; words and keys per system; desktop tests in the nightly Windows job. Covers: AC-F04-50, 60, 61. Tests: TC-F04-83, 84, 85, 86.
+- [ ] **T17: Updates off, About, and Windows.** electron-updater switched off; the About page; words and keys per system; desktop tests in the nightly Windows job; the installer build in CI and the throwaway-certificate signing check (TC-F04-01, 05, moved from T2). Covers: AC-F04-50, 60, 61. Tests: TC-F04-83, 84, 85, 86.
 - [ ] **T18: Documentation.** Overview, security (cards under S17, links), the desktop and web READMEs, project structure, privacy (new columns, export), getting-started (install), the runbooks (tray, links, notifications), the decisions, and progress. Covers: all. Check: the docs-keeper finds nothing missing.
 - [ ] **T19: Hand checks with the owner** (milestone). The installers and their warnings on Mac and Windows, the Windows quit path, start at login, a link from Mail, real Focus / Do not disturb, and the tray and cards on Windows. Covers: AC-F04-01, 06, 08, 09, 10, 37, 60, 61. Tests: TC-F04-02, 03, 16, 23, 32, 72, 87.
