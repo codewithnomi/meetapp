@@ -48,7 +48,8 @@
       "appearance": "Appearance",
       "devices": "Devices",
       "calls": "Calls",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "general": "General"
     },
     "privacy": {
       "title": "Privacy",
@@ -90,6 +91,13 @@
         "classic": "A familiar phone ring",
         "gentle": "Quiet, for shared rooms"
       }
+    },
+    "general": {
+      "title": "General",
+      "loading": "Loading general settings",
+      "startAtLogin": "Start MeetApp when I log in",
+      "startAtLoginHint": "MeetApp starts in the menu bar, without a window, so calls and messages reach you.",
+      "failed": "This setting couldn't be changed. Try again."
     }
   },
   "auth": {

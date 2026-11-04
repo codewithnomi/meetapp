@@ -14,7 +14,7 @@ import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
 import { useCallWindows } from "../features/call-windows/index.ts";
-import { useTrayCommands } from "../features/tray/index.ts";
+import { useTrayCommands } from "../features/desktop-app/index.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";

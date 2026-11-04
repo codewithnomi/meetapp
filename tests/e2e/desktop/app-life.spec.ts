@@ -131,3 +131,12 @@ test("TC-F04-15 [AC-F04-06] Quit during a call asks; Cancel keeps the call, Quit
   expect(await quitAndWait(mo.app)).toBe(true);
   await afterCallEnds(olivia.page);
 });
+
+test("TC-F04-20 TC-F04-21 [AC-F04-08] a --hidden start shows no window, signed in or not; Open MeetApp shows it", async () => {
+  const signedOut = await launch(freshProfile(), {}, ["--hidden"]);
+  windows.push(signedOut);
+  await signedOut.page.waitForLoadState("load");
+  expect((await mainState(signedOut.app)).visible).toBe(false);
+  await signedOut.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await expect.poll(() => mainState(signedOut.app)).toMatchObject({ visible: true });
+});

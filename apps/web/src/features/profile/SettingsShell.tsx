@@ -4,12 +4,15 @@
 import { AppLayout, Button, type AppNavItem, type IconName } from "@meetapp/ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { canStartAtLogin } from "../desktop-app/index.ts";
 
-export type SettingsScreen = "profile" | "appearance" | "devices" | "calls" | "privacy";
+export type SettingsScreen = "profile" | "general" | "appearance" | "devices" | "calls" | "privacy";
 
 /** The settings pages in menu order, with their icons. */
 const SCREENS: [SettingsScreen, IconName][] = [
   ["profile", "users"],
+  // F04: only in the desktop app (start at login).
+  ["general", "monitor"],
   ["appearance", "sliders"],
   ["devices", "camera"],
   ["calls", "phone"],
@@ -25,7 +28,7 @@ export interface SettingsShellProps {
 
 export function SettingsShell({ screen, onNavigate, onBack, children }: SettingsShellProps) {
   const { t } = useTranslation();
-  const items: AppNavItem[] = SCREENS.map(([id, icon]) => ({
+  const items: AppNavItem[] = SCREENS.filter(([id]) => id !== "general" || canStartAtLogin()).map(([id, icon]) => ({
     id,
     label: t(`settings.nav.${id}`),
     icon,

@@ -3,6 +3,7 @@ import { Route } from "react-router";
 import type { SettingsScreen } from "../features/profile/index.ts";
 import { PrivacyPage } from "../pages/PrivacyPage/index.ts";
 import { CallsSettingsPage } from "../pages/CallsSettingsPage/index.ts";
+import { GeneralSettingsPage } from "../pages/GeneralSettingsPage/index.ts";
 import { DevicesSettingsPage } from "../pages/DevicesSettingsPage/index.ts";
 import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
@@ -11,6 +12,7 @@ export /** The Settings pages (F01, F14, F15). */
 function settingsRoutes(onNavigate: (screen: SettingsScreen) => void, onBack: () => void) {
   const pages = [
     ["/settings", ProfilePage],
+    ["/settings/general", GeneralSettingsPage],
     ["/settings/appearance", SettingsPage],
     ["/settings/devices", DevicesSettingsPage],
     ["/settings/calls", CallsSettingsPage],

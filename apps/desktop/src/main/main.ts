@@ -5,6 +5,7 @@ import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "e
 import { appIdentity } from "../../app-identity.ts";
 import { bringBack, holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
 import { createTray } from "./tray.ts";
+import { hiddenStart, setUpLoginItem } from "./login-item-bridge.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { setUpCallWindows, type CallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
@@ -72,7 +73,7 @@ function forwardLockChanges(window: BrowserWindow): void {
   });
 }
 
-function openWindow(callWindows: CallWindows): void {
+function openWindow(callWindows: CallWindows, hidden: Promise<boolean>): void {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -83,7 +84,8 @@ function openWindow(callWindows: CallWindows): void {
     // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
     webPreferences: webPreferences(settings.preloadPath),
   });
-  window.once("ready-to-show", () => window.show());
+  // F04 AC-08: a login start stays hidden in the menu bar; Open MeetApp shows it.
+  window.once("ready-to-show", () => void hidden.then((stay) => stay || window.show()));
   forwardLockChanges(window);
   callWindows.watch(window);
   setUpAppLife({ inCall: callWindows.hasCall, mainWindow: () => mainWindow }).watch(window);
@@ -115,6 +117,7 @@ void app.whenReady().then(() => {
     openInBrowser: async (url) => canOpenHandOffStart(url, app.isPackaged) && (await shell.openExternal(url), true),
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
+  setUpLoginItem(appUrl);
   createTray({
     signedIn: () => tokens.get() !== undefined,
     showWindow: () => (bringBack(mainWindow), mainWindow),
@@ -129,5 +132,7 @@ void app.whenReady().then(() => {
       devServerUrl: settings.devServerUrl,
       csp: smallCsp,
     }),
+    // A meeting link always shows the window (T6 passes whether one started the app).
+    hiddenStart(false),
   );
 });

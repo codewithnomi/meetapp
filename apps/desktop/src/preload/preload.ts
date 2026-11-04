@@ -4,6 +4,7 @@
 // section 5): camera/mic/screen access, the share picker's sources and choice, and this app's device key.
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
+import { LOGIN_ITEM_CHANNEL } from "../main/login-item.ts";
 import { APP_CHANNEL, isTrayCommand, type TrayCommand } from "../main/tray-menu.ts";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
 import { CALL_WINDOWS_CHANNEL, FRAMES_CHANNEL } from "../main/call-windows.ts";
@@ -78,6 +79,11 @@ const callWindows = {
 // F04: what the menu-bar or tray menu asks the screens to do (open Settings, set a status); only checked
 // commands get through. Returns "stop listening".
 const appCommands = {
+  // F04 AC-09: Settings → General "Start MeetApp when I log in"; answers the real state.
+  loginItem: {
+    get: () => ipcRenderer.invoke(LOGIN_ITEM_CHANNEL, "get"),
+    set: (on: boolean) => ipcRenderer.invoke(LOGIN_ITEM_CHANNEL, "set", on),
+  },
   onTrayCommand: (listener: (command: TrayCommand) => void) => {
     const handler = (_event: unknown, command: unknown) => {
       if (isTrayCommand(command)) listener(command);
