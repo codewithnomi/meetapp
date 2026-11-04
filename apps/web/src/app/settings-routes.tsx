@@ -4,6 +4,7 @@ import type { SettingsScreen } from "../features/profile/index.ts";
 import { PrivacyPage } from "../pages/PrivacyPage/index.ts";
 import { CallsSettingsPage } from "../pages/CallsSettingsPage/index.ts";
 import { GeneralSettingsPage } from "../pages/GeneralSettingsPage/index.ts";
+import { NotificationSettingsPage } from "../pages/NotificationSettingsPage/index.ts";
 import { DevicesSettingsPage } from "../pages/DevicesSettingsPage/index.ts";
 import { ProfilePage } from "../pages/ProfilePage/index.ts";
 import { SettingsPage } from "../pages/SettingsPage/index.ts";
@@ -13,6 +14,7 @@ function settingsRoutes(onNavigate: (screen: SettingsScreen) => void, onBack: ()
   const pages = [
     ["/settings", ProfilePage],
     ["/settings/general", GeneralSettingsPage],
+    ["/settings/notifications", NotificationSettingsPage],
     ["/settings/appearance", SettingsPage],
     ["/settings/devices", DevicesSettingsPage],
     ["/settings/calls", CallsSettingsPage],

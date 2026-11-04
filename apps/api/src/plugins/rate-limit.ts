@@ -58,6 +58,8 @@ export const RATE_RULES = {
   chatInvites: { name: "chat-invites", limit: 20, windowSeconds: 24 * 60 * 60 },
   /** F04: setting a status by hand, 20 a minute per person (design 5). */
   myStatus: { name: "my-status", limit: 20, windowSeconds: 60 },
+  /** F04: notification settings, 20 changes a minute per person (design 5). */
+  notificationSettings: { name: "notification-settings", limit: 20, windowSeconds: 60 },
   /** New chat requests to people outside the workspace: 20 a day per person (AC-F14-12). */
   chatRequests: { name: "chat-requests", limit: 20, windowSeconds: 24 * 60 * 60 },
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the

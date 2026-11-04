@@ -199,6 +199,24 @@ export const myStatusSchema = z
   })
   .meta({ id: "MyStatusView" });
 
+/** F04 AC-F04-36: which notifications show; all on by default. */
+export const notificationSettingsSchema = z
+  .object({
+    messages: z.boolean(),
+    mentions: z.boolean(),
+    lobby: z.boolean(),
+    sound: z.boolean(),
+    preview: z.boolean(),
+  })
+  .meta({ id: "NotificationSettings" });
+/** Any of them, at least one; unknown keys are refused. */
+export const notificationSettingsBodySchema = notificationSettingsSchema
+  .partial()
+  .strict()
+  .refine((body) => Object.keys(body).length > 0)
+  .meta({ id: "NotificationSettingsChange" });
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
 /** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */
 const chatRequestSchema = z

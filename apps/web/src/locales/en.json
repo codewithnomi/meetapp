@@ -49,7 +49,8 @@
       "devices": "Devices",
       "calls": "Calls",
       "privacy": "Privacy",
-      "general": "General"
+      "general": "General",
+      "notifications": "Notifications"
     },
     "privacy": {
       "title": "Privacy",
@@ -97,6 +98,20 @@
       "loading": "Loading general settings",
       "startAtLogin": "Start MeetApp when I log in",
       "startAtLoginHint": "MeetApp starts in the menu bar, without a window, so calls and messages reach you.",
+      "failed": "This setting couldn't be changed. Try again."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "messages": "Chat messages",
+      "messagesHint": "A card for each new message in a chat that isn't open.",
+      "mentions": "Mentions",
+      "mentionsHint": "When someone @mentions you, even in a muted chat.",
+      "lobby": "Someone waiting in the lobby",
+      "lobbyHint": "For meetings where you can let people in.",
+      "sound": "Sound",
+      "soundHint": "Play a sound with message cards.",
+      "preview": "Show message preview",
+      "previewHint": "Off: cards say \"New message\" instead of the text.",
       "failed": "This setting couldn't be changed. Try again."
     }
   },

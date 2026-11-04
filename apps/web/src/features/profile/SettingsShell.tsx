@@ -6,18 +6,22 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { canStartAtLogin } from "../desktop-app/index.ts";
 
-export type SettingsScreen = "profile" | "general" | "appearance" | "devices" | "calls" | "privacy";
+export type SettingsScreen = "profile" | "general" | "notifications" | "appearance" | "devices" | "calls" | "privacy";
 
 /** The settings pages in menu order, with their icons. */
 const SCREENS: [SettingsScreen, IconName][] = [
   ["profile", "users"],
-  // F04: only in the desktop app (start at login).
+  // F04: only in the desktop app (DESKTOP_ONLY).
   ["general", "monitor"],
+  ["notifications", "bell"],
   ["appearance", "sliders"],
   ["devices", "camera"],
   ["calls", "phone"],
   ["privacy", "lock"],
 ];
+
+/** F04: the desktop app's own pages (start at login, its notification cards). */
+const DESKTOP_ONLY: SettingsScreen[] = ["general", "notifications"];
 
 export interface SettingsShellProps {
   screen: SettingsScreen;
@@ -28,13 +32,15 @@ export interface SettingsShellProps {
 
 export function SettingsShell({ screen, onNavigate, onBack, children }: SettingsShellProps) {
   const { t } = useTranslation();
-  const items: AppNavItem[] = SCREENS.filter(([id]) => id !== "general" || canStartAtLogin()).map(([id, icon]) => ({
-    id,
-    label: t(`settings.nav.${id}`),
-    icon,
-    current: screen === id,
-    onSelect: () => onNavigate(id),
-  }));
+  const items: AppNavItem[] = SCREENS.filter(([id]) => !DESKTOP_ONLY.includes(id) || canStartAtLogin()).map(
+    ([id, icon]) => ({
+      id,
+      label: t(`settings.nav.${id}`),
+      icon,
+      current: screen === id,
+      onSelect: () => onNavigate(id),
+    }),
+  );
   return (
     <AppLayout
       switcher={

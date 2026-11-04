@@ -173,6 +173,8 @@ export {
   statusQuerySchema,
   statusesSchema,
   myStatusBodySchema,
+  notificationSettingsSchema,
+  notificationSettingsBodySchema,
   myStatusSchema,
   MANUAL_STATUSES,
   MANUAL_STATUS_MAX_MS,
@@ -210,6 +212,7 @@ export {
   type MemberState,
   type Status,
   type ManualStatus,
+  type NotificationSettings,
 } from "./chats.ts";
 export {
   CALL_MEDIA,

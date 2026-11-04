@@ -9,6 +9,8 @@ import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
 import { createCallEventsRepository } from "./modules/calls/call-events.repository.ts";
 import { createCallJobs, startCallJobs } from "./modules/calls/calls.jobs.ts";
+import { createNotificationSettingsRepository } from "./modules/notifications/notification-settings.repository.ts";
+import { createNotificationSettingsService } from "./modules/notifications/notification-settings.service.ts";
 import { startStatusExpiryJob } from "./modules/chats/status-expiry-job.ts";
 import { createCallsRepository } from "./modules/calls/calls.repository.ts";
 import { createControlsService, refreshCall } from "./modules/calls/controls.service.ts";
@@ -205,6 +207,14 @@ function chatPieces(wiring: MeetingWiring, calls: CallsDeps) {
   };
 }
 
+/** The desktop app's account settings (F04): Settings → Notifications. */
+const desktopPieces = (db: Database, limiter: RateLimiter) => ({
+  notificationSettings: createNotificationSettingsService({
+    settings: createNotificationSettingsRepository(db),
+    limiter,
+  }),
+});
+
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
   const shared = { ...callsDeps, repository: callsDeps.meetings };
@@ -229,6 +239,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     record: createRecordService(callsDeps.meetings, createRecordRepository(db)),
     webhooks: createWebhookService(callsDeps),
     ...chat,
+    ...desktopPieces(db, callsDeps.limiter),
     callJobs,
     /** The call services' shared pieces (tests build services with their own clock or call server). */
     callsDeps,

@@ -53,7 +53,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - "In a call" unless the status is set by hand.
   
   Covers: AC-F04-20, 21, 23. Tests: TC-F04-37, 38, 43, 44.
-- [ ] **T9: Notification settings.** `GET` and `PUT /api/v1/me/notification-settings` with checks and limits. Settings → Notifications (five switches). Defaults apply when loading fails. Covers: AC-F04-36. Tests: TC-F04-65, 66, 67, 68.
+- [x] **T9: Notification settings.** `GET` and `PUT /api/v1/me/notification-settings` with checks and limits. Settings → Notifications (five switches). Defaults apply when loading fails. Covers: AC-F04-36. Tests: TC-F04-65, 66, 67, 68. Done 2026-11-04: `modules/notifications`, Settings → Notifications (desktop only, like General), bell icon. TC-67 (each switch stops its card) is written with the cards, in T12.
 - [ ] **T10: Notice cards in main.**
   - A third small-window kind in F16's controller: stacking with rings, never over the mini window, at most 3, 8 s with a pause on hover, and ×.
   - S17 lock-down.
