@@ -30,6 +30,9 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | `SENTRY_DSN` | Optional crash reports, with every personal-data category switched off |
 | `LIVEKIT_PORT`, `LIVEKIT_PUBLIC_URL` | Where the call server is (ws://127.0.0.1:`LIVEKIT_PORT`, or the wss:// public address); allowed in the CSP `connect-src` (F02) |
 
+## How it runs (F04)
+- Closing the window hides it; MeetApp keeps running (live line, rings). Quit (⌘Q, the menu) ends it and asks first during a call; a shutdown or logout never asks. One copy runs per profile folder; a second start brings the window forward. Rules: `src/main/app-life.ts`.
+
 ## Run it
 - `pnpm dev` (project root) starts the services, the backend, the screens' dev server and this window. Closing the window stops the desktop part.
 - A second window with its own sign-in (to be two people in a meeting), while `pnpm dev` runs: `pnpm dev:window`.

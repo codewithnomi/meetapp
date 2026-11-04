@@ -201,7 +201,13 @@ function listen(controller: CallWindowsController, mains: MainWindows): void {
 }
 
 /** Sets up the small windows once the app is ready; `watch` is called for every main window. */
-export function setUpCallWindows(options: CallWindowsOptions): { watch: (window: BrowserWindow) => void } {
+export interface CallWindows {
+  watch: (window: BrowserWindow) => void;
+  /** A call or meeting runs in some main window (F04 AC-06). */
+  hasCall: () => boolean;
+}
+
+export function setUpCallWindows(options: CallWindowsOptions): CallWindows {
   const smallSession = session.fromPartition(CALL_WINDOW_PARTITION);
   lockDownCallWindowSession(smallSession, options.devServerUrl, options.csp);
   if (!options.devServerUrl)
@@ -211,6 +217,7 @@ export function setUpCallWindows(options: CallWindowsOptions): { watch: (window:
   listen(controller, mains);
   const focused = () => [...mains.entries()].find(([, w]) => !w.isDestroyed() && w.isFocused())?.[0];
   return {
+    hasCall: () => controller.hasCall(),
     watch(window) {
       const id = window.webContents.id;
       mains.set(id, window);

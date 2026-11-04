@@ -8,7 +8,8 @@ import { join } from "node:path";
 import { FAKE_MEDIA, closeApp, freshProfile, launchAs, launchNewAccount, type RunningApp } from "./desktop.ts";
 import { afterCallEnds, controls } from "./meeting-steps.ts";
 import { team, windowFor } from "./meeting-team.ts";
-import { acceptInvitation, inviteByEmail, openScreen, switcher, switchTo } from "./workspace-steps.ts";
+import { acceptInvitation, inviteByEmail } from "./workspace-steps.ts";
+import { SMALL, chatWith, firstSmall, inWorkspace, putAway, ringWindow, smallPages } from "./call-window-steps.ts";
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -18,30 +19,8 @@ test.afterEach(async () => {
   windows = [];
 });
 
-const SMALL = "call-window.html";
-const smallPages = (app: ElectronApplication) => app.windows().filter((page) => page.url().includes(SMALL));
-const ringWindow = (page: Page) => page.getByRole("dialog", { name: /^Incoming (video|audio) call from / });
 const incoming = (page: Page) => page.getByRole("alertdialog", { name: "Incoming call" });
 const ringtone = (page: Page) => page.evaluate(() => document.body.dataset["ringtone"]);
-
-/** Minimizes (true) or brings back (false) every main MeetApp window of this app. */
-async function putAway(app: ElectronApplication, away: boolean): Promise<void> {
-  await app.evaluate(
-    ({ BrowserWindow }, [page, hide]) => {
-      for (const window of BrowserWindow.getAllWindows()) {
-        if (window.webContents.getURL().includes(page as string)) continue;
-        if (hide) {
-          window.minimize();
-        } else {
-          window.restore();
-          window.show();
-          window.focus();
-        }
-      }
-    },
-    [SMALL, away] as const,
-  );
-}
 
 /** The small windows' state as Electron sees it: focused, on top, bounds. */
 function smallState(app: ElectronApplication) {
@@ -52,20 +31,6 @@ function smallState(app: ElectronApplication) {
         .map((w) => ({ focused: w.isFocused(), onTop: w.isAlwaysOnTop(), bounds: w.getBounds() })),
     SMALL,
   );
-}
-
-async function inWorkspace(page: Page, workspace: string) {
-  await expect(page.getByRole("button", { name: /^Switch workspace: / })).toBeVisible();
-  if (await switcher(page, workspace).isVisible()) return;
-  await switchTo(page, "Personal", workspace);
-}
-
-async function chatWith(page: Page, query: string, name: RegExp) {
-  await openScreen(page, "Chat");
-  await page.getByRole("button", { name: "New chat" }).first().click();
-  await page.getByRole("combobox", { name: "To:" }).fill(query);
-  await page.getByRole("option", { name }).click();
-  await page.getByRole("button", { name: "Start chat" }).click();
 }
 
 /** Olivia with the chat to Mo open; Mo's window (two when asked) minimized. */
@@ -81,13 +46,6 @@ async function setup(options: { second?: boolean } = {}) {
   await putAway(mo.app, true);
   if (mo2) await putAway(mo2.app, true);
   return { olivia, mo, mo2, owner, member, workspace };
-}
-
-async function firstSmall(app: ElectronApplication): Promise<Page> {
-  await expect.poll(() => smallPages(app).length, { timeout: 5_000 }).toBeGreaterThan(0);
-  const page = smallPages(app)[0] as Page;
-  await expect(ringWindow(page)).toBeVisible();
-  return page;
 }
 
 test("TC-F16-03 TC-F16-07 TC-F16-11 [AC-F16-01, AC-F16-02, AC-F16-03, AC-F16-05] a ring over other apps, unfocused; MeetApp in front hides it; Video opens the call", async () => {

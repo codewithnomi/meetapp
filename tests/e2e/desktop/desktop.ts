@@ -59,6 +59,12 @@ export async function closeApp(app: ElectronApplication): Promise<void> {
   const ended = () => child.exitCode !== null || child.signalCode !== null;
   if (ended()) return;
   const exited = new Promise<void>((done) => child.once("exit", () => done()));
+  // F04: Quit during a call asks first; a test's clean-up answers "Quit" so it never waits on the question.
+  await app
+    .evaluate(({ dialog }) => {
+      dialog.showMessageBoxSync = () => 0;
+    })
+    .catch(() => undefined);
   await Promise.race([app.close().catch(() => undefined), wait(CLOSE_MS)]);
   if (!ended()) child.kill("SIGKILL");
   await Promise.race([exited, wait(CLOSE_MS)]);

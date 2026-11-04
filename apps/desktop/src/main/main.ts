@@ -3,8 +3,9 @@
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
 import { appIdentity } from "../../app-identity.ts";
+import { holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
-import { setUpCallWindows } from "./call-windows-bridge.ts";
+import { setUpCallWindows, type CallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
@@ -48,7 +49,12 @@ app.on("web-contents-created", (_event, contents) => {
   guardContents(contents, appUrl, (url) => shell.openExternal(url));
   addSpellcheckMenu(contents);
 });
-app.on("window-all-closed", () => app.quit());
+
+// F04: the main window, once opened (a second start, a Dock click and Quit's question use it).
+let mainWindow: BrowserWindow | undefined;
+// One copy per profile folder (AC-F04-02): a second start only brings the first one forward.
+const firstCopy = holdSingleCopy(() => mainWindow);
+if (!firstCopy) app.quit();
 
 /** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`. */
 function forwardLockChanges(window: BrowserWindow): void {
@@ -65,7 +71,7 @@ function forwardLockChanges(window: BrowserWindow): void {
   });
 }
 
-function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
+function openWindow(callWindows: CallWindows): void {
   const window = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -79,11 +85,14 @@ function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
   window.once("ready-to-show", () => window.show());
   forwardLockChanges(window);
   callWindows.watch(window);
+  setUpAppLife({ inCall: callWindows.hasCall, mainWindow: () => mainWindow }).watch(window);
+  mainWindow = window;
   void window.loadURL(appUrl);
 }
 
 // Not awaited at the top level: Electron only becomes ready after this file has finished running.
 void app.whenReady().then(() => {
+  if (!firstCopy) return;
   const picker = createSharePicker();
   lockDownSession(session.defaultSession, {
     csp,

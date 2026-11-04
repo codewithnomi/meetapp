@@ -167,6 +167,11 @@ export class CallWindowsController {
     return new Set([...this.rings.values(), ...(this.mini ? [this.mini] : [])].map((w) => w.id));
   }
 
+  /** A call or meeting runs in some main window (F04: Quit asks first). */
+  hasCall(): boolean {
+    return this.inCall.size > 0;
+  }
+
   private merged() {
     return mergeReports(this.reports, this.usedLast);
   }

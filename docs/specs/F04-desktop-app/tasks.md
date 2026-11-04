@@ -23,7 +23,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - The install guide in `docs/getting-started.md`.
   
   Covers: AC-F04-01, 03, 60. Tests: TC-F04-01, 04, 05.
-- [ ] **T3: Close, Quit and one copy.**
+- [x] **T3: Close, Quit and one copy.** (done 2026-11-04; desktop tests in app-life.spec.ts run at spec-verify)
   - `app-life.ts` rules and the bridge: closing hides, the Dock icon stays.
   - Quit asks during a call; a shutdown or logout never asks.
   - One copy per profile.
