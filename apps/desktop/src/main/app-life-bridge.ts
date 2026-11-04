@@ -9,7 +9,8 @@ export interface AppLifeOptions {
   mainWindow: () => BrowserWindow | undefined;
 }
 
-function bringBack(window: BrowserWindow | undefined): void {
+/** Shows a hidden or minimized window and brings it to the front. */
+export function bringBack(window: BrowserWindow | undefined): void {
   if (!window || window.isDestroyed()) return;
   if (window.isMinimized()) window.restore();
   window.show();

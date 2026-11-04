@@ -107,14 +107,14 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 
 ### TC-F04-12: Tray menu items act
 - **Covers:** AC-F04-05
-- **Level:** desktop e2e
+- **Level:** manual (T19; Playwright can't click a menu-bar menu) + unit (menu and screen commands)
 - **Given** a signed-in app with the window hidden
 - **When** the tests click Open MeetApp, Settings, and a status choice in the tray menu
 - **Then** the window shows, opens Settings, and the status changes to the chosen one ("until changed")
 
 ### TC-F04-13: Sign in from the tray when signed out
 - **Covers:** AC-F04-05, AC-F04-08
-- **Level:** desktop e2e
+- **Level:** manual (T19; Playwright can't click a menu-bar menu) + unit (menu and screen commands)
 - **Given** a started app with no stored sign-in
 - **When** the tray's Sign in is chosen
 - **Then** the window shows the sign-in screen

@@ -11,7 +11,14 @@ export function builderConfig(env: NodeJS.ProcessEnv): Configuration {
     directories: { output: "release", buildResources: "build-resources" },
     // Sentry's build-time code parser (native, one chip per copy) is never used by the running app,
     // and would break the universal Mac build.
-    files: ["out/**", "package.json", "!**/node_modules/oxc-parser/**", "!**/node_modules/@oxc-parser/**"],
+    files: [
+      "out/**",
+      "package.json",
+      "build-resources/icon.png",
+      "build-resources/trayTemplate*.png",
+      "!**/node_modules/oxc-parser/**",
+      "!**/node_modules/@oxc-parser/**",
+    ],
     // The screens (apps/web/dist) sit next to the app, where settings.ts looks for them.
     extraResources: [{ from: "../web/dist", to: "web/dist" }],
     protocols: [{ name: `${appIdentity.productName} meeting link`, schemes: [appIdentity.linkScheme] }],

@@ -30,7 +30,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - A ring with the window hidden opens the call.
   
   Covers: AC-F04-02, 04, 06, 07. Tests: TC-F04-06, 07, 08, 09, 14, 15, 17, 18.
-- [ ] **T4: Menu-bar / tray icon and menu.** Signed in and signed out; Mac template image; Windows left and right click. Covers: AC-F04-05. Tests: TC-F04-11, 12, 13.
+- [x] **T4: Menu-bar / tray icon and menu.** (done 2026-11-04; the menu is unit-tested; real tray clicks (TC-F04-12, 13) move to the T19 hand checks, because Playwright can't click a menu-bar menu; the status choice reaches the screens and is acted on in T8) Signed in and signed out; Mac template image; Windows left and right click. Covers: AC-F04-05. Tests: TC-F04-11, 12, 13.
 - [ ] **T5: Start at login.** The login item rules, set once at first start, a hidden start, and the Settings → General switch. Covers: AC-F04-08, 09. Tests: TC-F04-19, 20, 21, 22.
 - [ ] **T6: Meeting links.**
   - Strict `links.ts`.
@@ -87,4 +87,4 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   Covers: AC-F04-40, 41, 42. Tests: TC-F04-76, 77, 78, 79, 93.
 - [ ] **T17: Updates off, About, and Windows.** electron-updater switched off; the About page; words and keys per system; desktop tests in the nightly Windows job; the installer build in CI and the throwaway-certificate signing check (TC-F04-01, 05, moved from T2). Covers: AC-F04-50, 60, 61. Tests: TC-F04-83, 84, 85, 86.
 - [ ] **T18: Documentation.** Overview, security (cards under S17, links), the desktop and web READMEs, project structure, privacy (new columns, export), getting-started (install), the runbooks (tray, links, notifications), the decisions, and progress. Covers: all. Check: the docs-keeper finds nothing missing.
-- [ ] **T19: Hand checks with the owner** (milestone). The installers and their warnings on Mac and Windows, the Windows quit path, start at login, a link from Mail, real Focus / Do not disturb, and the tray and cards on Windows. Covers: AC-F04-01, 06, 08, 09, 10, 37, 60, 61. Tests: TC-F04-02, 03, 16, 23, 32, 72, 87.
+- [ ] **T19: Hand checks with the owner** (milestone). The installers and their warnings on Mac and Windows, the Windows quit path, start at login, a link from Mail, real Focus / Do not disturb, and the tray and cards on Windows. Covers: AC-F04-01, 06, 08, 09, 10, 37, 60, 61. Tests: TC-F04-02, 03, 12, 13, 16, 23, 32, 72, 87.

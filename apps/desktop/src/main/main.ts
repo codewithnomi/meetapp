@@ -3,7 +3,8 @@
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
 import { appIdentity } from "../../app-identity.ts";
-import { holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
+import { bringBack, holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
+import { createTray } from "./tray.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
 import { setUpCallWindows, type CallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
@@ -114,6 +115,10 @@ void app.whenReady().then(() => {
     openInBrowser: async (url) => canOpenHandOffStart(url, app.isPackaged) && (await shell.openExternal(url), true),
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
+  createTray({
+    signedIn: () => tokens.get() !== undefined,
+    showWindow: () => (bringBack(mainWindow), mainWindow),
+  });
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
   if (!settings.devServerUrl) serveScreens(settings.rendererDir, (url) => policyFor(url, csp, smallCsp));
   openWindow(

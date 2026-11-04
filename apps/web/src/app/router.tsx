@@ -14,6 +14,7 @@ import { CodePage } from "../pages/CodePage/index.ts";
 import { CreateAccountPage } from "../pages/CreateAccountPage/index.ts";
 import { IncomingCalls, OtherDevice } from "../features/calls/index.ts";
 import { useCallWindows } from "../features/call-windows/index.ts";
+import { useTrayCommands } from "../features/tray/index.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
@@ -215,6 +216,8 @@ function SignedInScreens() {
   const settings = (screen: SettingsScreen) =>
     void navigate(screen === "profile" ? "/settings" : `/settings/${screen}`);
   const preJoin = (state: PreJoinState) => void navigate("/meeting/pre-join", { state });
+  // F04: Settings from the menu-bar or tray menu (the status choice is handled from T8 on).
+  useTrayCommands({ onSettings: () => settings("profile") });
   return (
     <Routes>
       <Route path="/" element={<HomePage onNavigate={go} />} />
