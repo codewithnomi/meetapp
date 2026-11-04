@@ -1,9 +1,9 @@
 // F16's small call window (design.md section 2; approved canvas board "Calls while MeetApp isn't in
 // front"): a RingWindow for an incoming call or a MiniCallWindow during a call, from what the desktop
 // app sends. Every press goes back to it; the main MeetApp window does the work.
-import type { CallWindowsCall, CallWindowsRing } from "@meetapp/contracts";
+import type { CallWindowsCall, CallWindowsRing, NoticeCard as Card } from "@meetapp/contracts";
 import type { TFunction } from "i18next";
-import { MiniCallWindow, RingWindow } from "@meetapp/ui";
+import { MiniCallWindow, NoticeCard, RingWindow } from "@meetapp/ui";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { act, useFrameCanvas, useSmallWindowView } from "../../features/call-windows/index.ts";
@@ -123,11 +123,32 @@ function Mini({ call }: { call: CallWindowsCall }) {
   );
 }
 
+/** F04: a notification card; its buttons go back to the window that sent it (AC-F04-30). */
+function Notice({ card }: { card: Card }) {
+  const { t } = useTranslation();
+  const choose = (choice: "open" | "admit" | "viewLobby" | "close") => () => act({ name: "notice", choice });
+  const opens = card.kind === "message" || card.kind === "mention";
+  return (
+    <NoticeCard
+      kind={card.kind}
+      title={card.title}
+      detail={card.detail}
+      text={card.text}
+      tag={card.tag}
+      person={card.person}
+      open={opens ? { label: t("notices.open", { name: card.title }), onClick: choose("open") } : undefined}
+      admit={card.admit ? { label: card.admit, onClick: choose("admit") } : undefined}
+      viewLobby={card.viewLobby ? { label: card.viewLobby, onClick: choose("viewLobby") } : undefined}
+      close={{ label: card.close, onClick: choose("close") }}
+      onHover={(on) => act({ name: "noticeHover", on })}
+    />
+  );
+}
+
 export function CallWindowPage() {
   const view = useSmallWindowView();
   if (!view) return null;
   if (view.kind === "ring") return <Ring ring={view.ring} />;
-  // F04's notification cards are drawn by the NoticeCard organism (T11).
-  if (view.kind === "notice") return null;
+  if (view.kind === "notice") return <Notice card={view.card} />;
   return <Mini call={view.call} />;
 }

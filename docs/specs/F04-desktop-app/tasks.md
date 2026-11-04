@@ -61,7 +61,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - Only main's own windows act.
   
   Covers: AC-F04-30. Tests: TC-F04-48, 49, 50, 88, 89, 90.
-- [ ] **T11: NoticeCard organism.** Message, mention, lobby and running variants, drawn on the canvas first, with stories and screenshots. Covers: AC-F04-30, 31, 33, 34. Tests: TC-F04-51.
+- [x] **T11: NoticeCard organism.** Done 2026-11-04 (drawn on the approved canvas board "Desktop app (F04)"); also drawn by the small window page. Screenshots are made at spec-verify. Message, mention, lobby and running variants, drawn on the canvas first, with stories and screenshots. Covers: AC-F04-30, 31, 33, 34. Tests: TC-F04-51.
 - [ ] **T12: Message and mention cards** (milestone: the owner can see cards).
   - `features/notices`: the skip rules, preview on or off, merging with one sound, mentions even in muted chats, and the 5-minute rule by the server's time.
   - The first-close "still running" card.

@@ -1322,5 +1322,8 @@
       "week": "This week",
       "forever": "Until I change it"
     }
+  },
+  "notices": {
+    "open": "Open the chat with {{name}}"
   }
 }
