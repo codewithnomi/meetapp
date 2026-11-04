@@ -568,3 +568,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
   - **Windows:** `windows-notification-state` (MIT, last release 2022, native) calls `SHQueryUserNotificationState`. It reliably sees full-screen apps and presentations, but not reliably the normal Focus assist / Do not disturb switch. It would also need native builds for x64 and arm64.
 - **Options for the owner:** (A) drop AC-37 for now: MeetApp's own Do not disturb (AC-22) silences cards, and once the app is signed, the Mac's notification centre respects Focus by itself. (B) keep AC-37 on Windows only, for full-screen and presentation quiet, using the native helper.
 - **Login start on macOS 13+:** `wasOpenedAtLogin` and `args` are not dependable with the new login items, so the design's 60-second fallback is used. The real check is TC-F04-82, by hand, at T19.
+
+### D088: Browsing during a call becomes its own feature, F17 (owner, 2026-11-04)
+- **Date:** 2026-11-04. **Status:** accepted (owner: "follow how Teams handles this", then "you know better, do the stuff").
+- **Decision:** Teams keeps a call running while the person opens other screens, in a small call view inside the app. A meeting link clicked during a call then shows that meeting's pre-join, and Join leaves the current call. MeetApp's call lives on its own screen today, so this needs the call to keep running above every screen. That is a new feature, F17 Browse during a call, built right after F04. Until then, AC-F04-10 keeps the safe behaviour from T6: a link clicked during a call never ends it; it waits until the person opens Meetings.
+- **Why:** it touches calls, meetings and chats, and is about the size of F16. Inside F04 it would delay the desktop app; on its own it gets proper requirements and Teams-style screens.
+- **Alternatives:** build it inside F04 now (bigger F04, later PR); leave a link during a call doing nothing (worse than waiting).
