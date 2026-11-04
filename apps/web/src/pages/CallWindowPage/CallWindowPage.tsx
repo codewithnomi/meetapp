@@ -126,5 +126,8 @@ function Mini({ call }: { call: CallWindowsCall }) {
 export function CallWindowPage() {
   const view = useSmallWindowView();
   if (!view) return null;
-  return view.kind === "ring" ? <Ring ring={view.ring} /> : <Mini call={view.call} />;
+  if (view.kind === "ring") return <Ring ring={view.ring} />;
+  // F04's notification cards are drawn by the NoticeCard organism (T11).
+  if (view.kind === "notice") return null;
+  return <Mini call={view.call} />;
 }

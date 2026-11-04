@@ -128,12 +128,14 @@ export function recordRequests(page: Page): string[] {
  * access with the share picker, the device key, and saving chat files (F03, design 6). Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows", "app"],
+  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows", "notices", "app"],
   files: ["save"],
   // F04: what the menu-bar or tray menu asks the screens to do.
   app: ["onOpenMeeting", "loginItem", "onTrayCommand"],
   // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
   callWindows: ["report", "onAction", "onFramesWanted", "sendFrame"],
+  // F04: MeetApp's own notification cards (main checks each one).
+  notices: ["show", "remove"],
   // F14: the computer locked or unlocked (status shows Away).
   power: ["onLockChange"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
@@ -155,12 +157,13 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.callWindows`, `.app`, `.media` and `.auth`. */
+/** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.callWindows`, `.notices`, `.app`, `.media` and `.auth`. */
 export function bridgeKeys(page: Page): Promise<{
   meetapp: string[];
   files: string[];
   power: string[];
   callWindows: string[];
+  notices: string[];
   app: string[];
   media: string[];
   auth: string[];
@@ -175,6 +178,7 @@ export function bridgeKeys(page: Page): Promise<{
             files?: object;
             power?: object;
             callWindows?: object;
+            notices?: object;
             app?: object;
           };
         }
@@ -184,6 +188,7 @@ export function bridgeKeys(page: Page): Promise<{
       files: Object.keys(bridge.files ?? {}),
       power: Object.keys(bridge.power ?? {}),
       callWindows: Object.keys(bridge.callWindows ?? {}),
+      notices: Object.keys(bridge.notices ?? {}),
       app: Object.keys(bridge.app ?? {}),
       media: Object.keys(bridge.media ?? {}),
       auth: Object.keys(bridge.auth ?? {}),

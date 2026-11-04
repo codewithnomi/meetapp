@@ -12,7 +12,8 @@
     "dist": "pnpm --filter @meetapp/web build && node scripts/build.ts && electron-builder --config electron-builder.config.ts"
   },
   "dependencies": {
-    "@sentry/electron": "^8.1.0"
+    "@sentry/electron": "^8.1.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@meetapp/config": "workspace:*",

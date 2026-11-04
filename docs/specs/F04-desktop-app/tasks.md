@@ -54,7 +54,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   
   Covers: AC-F04-20, 21, 23. Tests: TC-F04-37, 38, 43, 44.
 - [x] **T9: Notification settings.** `GET` and `PUT /api/v1/me/notification-settings` with checks and limits. Settings → Notifications (five switches). Defaults apply when loading fails. Covers: AC-F04-36. Tests: TC-F04-65, 66, 67, 68. Done 2026-11-04: `modules/notifications`, Settings → Notifications (desktop only, like General), bell icon. TC-67 (each switch stops its card) is written with the cards, in T12.
-- [ ] **T10: Notice cards in main.**
+- [x] **T10: Notice cards in main.** Done 2026-11-04: `notices.ts` (NoticeBoard: up to 3, 8 s with hover pause, ×, 10 a second, above F16's windows) and `notices-checks.ts` (Zod; zod added to apps/desktop at the workspace version); cards are a third view on F16's locked-down small page; `window.meetapp.notices.show/remove`; choices come back as `noticeChosen` on F16's line. Desktop tests `notices.spec.ts` (TC-50, 88, 90) run at spec-verify.
   - A third small-window kind in F16's controller: stacking with rings, never over the mini window, at most 3, 8 s with a pause on hover, and ×.
   - S17 lock-down.
   - The Zod card check and 10 a second.

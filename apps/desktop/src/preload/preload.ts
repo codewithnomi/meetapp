@@ -8,7 +8,7 @@ import { LOGIN_ITEM_CHANNEL } from "../main/login-item.ts";
 import { MEETING_LINK_CHANNEL, isMeetingCode } from "../main/links.ts";
 import { APP_CHANNEL, isTrayCommand, type TrayCommand } from "../main/tray-menu.ts";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
-import { CALL_WINDOWS_CHANNEL, FRAMES_CHANNEL } from "../main/call-windows.ts";
+import { CALL_WINDOWS_CHANNEL, FRAMES_CHANNEL, NOTICES_CHANNEL } from "../main/call-windows.ts";
 import { FILES_CHANNEL, POWER_CHANNEL } from "../main/chat-desktop.ts";
 import { MEDIA_ACTION_NAMES, MEDIA_CHANNEL } from "../main/media-actions.ts";
 
@@ -115,5 +115,14 @@ contextBridge.exposeInMainWorld("meetapp", {
   files,
   power,
   callWindows,
+  // F04: MeetApp's own notification cards; main checks each one, a choice comes back via callWindows.onAction.
+  notices: {
+    show: (card: unknown) => {
+      ipcRenderer.send(NOTICES_CHANNEL, { show: card });
+    },
+    remove: (cardId: unknown) => {
+      ipcRenderer.send(NOTICES_CHANNEL, { remove: cardId });
+    },
+  },
   app: appCommands,
 });

@@ -241,5 +241,7 @@ export type {
   CallWindowsPerson,
   CallWindowsRing,
   CallWindowsState,
+  NoticeCard,
+  NoticeChoice,
 } from "./call-windows.ts";
 export { APP_LINK_SCHEME, appMeetingLink, asAppMeetingLink, isMeetingCode, readAppMeetingLink } from "./app-links.ts";
