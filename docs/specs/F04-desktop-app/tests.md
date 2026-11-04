@@ -532,7 +532,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 - **When** it reports on, then off, then "unknown"
 - **Then** on: no message, mention or lobby cards; off: cards show; unknown (no helper, error): cards show and the error is logged once; the "still running" card is not a message card and is not silenced by it
 
-### TC-F04-71: System quiet, end to end with the fake
+### TC-F04-71: System quiet, end to end with the fake (deferred with AC-37, D086)
 - **Covers:** AC-F04-37, AC-F04-60
 - **Level:** desktop e2e
 - **Given** the test build with the fake system-quiet set to on
@@ -601,14 +601,14 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 
 ### T1 spike checks (by hand, before building)
 
-### TC-F04-80: System quiet helper works on Mac, universal build
+### TC-F04-80: System quiet helper works on Mac, universal build (done in T1: result in D086; AC-37 deferred)
 - **Covers:** AC-F04-37, AC-F04-60
 - **Level:** manual
 - **Given** the candidate helper package (vetted with `add-dependency`) in a universal Mac build (arm64 and x64) on the owner's Mac
 - **When** Focus / Do Not Disturb is toggled on and off several times, including a Focus with a schedule and a Focus with allowed apps
 - **Then** the helper reports the right state each time, loads in both architectures, and does not crash the app when it cannot read. The result is written into D086
 
-### TC-F04-81: System quiet helper works on Windows (x64 and arm64)
+### TC-F04-81: System quiet helper works on Windows (x64 and arm64) (done in T1: result in D086; AC-37 deferred)
 - **Covers:** AC-F04-37, AC-F04-60
 - **Level:** manual
 - **Given** the same helper in the Windows x64 and arm64 builds

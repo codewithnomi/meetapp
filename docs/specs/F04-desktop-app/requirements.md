@@ -59,7 +59,7 @@ Everyone with the desktop app: members, organizers and presenters, guests joinin
 - **AC-F04-34:** WHEN someone joins the lobby of a meeting where the person can admit (organizer or presenter, F02 rules; attendees never), and that meeting isn't the window in front, THEN a notification says "<name> is waiting in the lobby" (guests: the name they typed, marked "Guest") with **Admit** and **View lobby**. Admit lets them in without opening the meeting. With 3 or more waiting it becomes one notification "<n> people are waiting" with View lobby.
 - **AC-F04-35:** Missed calls keep F16's Mac notification (owner, 2026-11-03: Mac-only until signed, D080); F04 doesn't add a corner version.
 - **AC-F04-36:** WHEN the person opens Settings → Notifications, THEN they can turn on or off, each on its own: chat messages, mentions, lobby waiting, sound, and "Show message preview". All are on by default. Changes apply at once and are kept on their account, so they follow them to another computer.
-- **AC-F04-37:** WHEN the Mac's Focus / Do Not Disturb (or Windows' Do not disturb) is on, THEN no message, mention or lobby notification shows, as with AC-22.
+- **AC-F04-37 (deferred until signing, D086):** WHEN the Mac's Focus / Do Not Disturb (or Windows' Do not disturb) is on, THEN no message, mention or lobby notification shows, as with AC-22.
 - **AC-F04-38:** WHEN the computer wakes from sleep or the network comes back, THEN MeetApp reconnects within 10 s by itself. Unread counts and missed-call notes catch up; no notification shows for messages older than 5 minutes (the unread counts are enough).
 
 ### Window and running smoothly

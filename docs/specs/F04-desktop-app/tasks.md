@@ -1,7 +1,7 @@
 ---
 feature: F04
 title: Desktop app
-status: approved
+status: in-progress
 updated: 2026-11-03
 ---
 
@@ -11,7 +11,7 @@ Small steps, done in order. Each step should be finishable and testable in one s
 Tick `[x]` when done and verified. Per D052, each task runs only its own tests plus typecheck and lint; the full run happens at `/spec-verify`. Desktop window tests run only while the owner is away (memory note).
 
 - [ ] **T0: GitHub desktop check green** (D082/D077 follow-up). Add a small window manager to the CI desktop job and read why the F16 window tests fail on Linux. Fix TC-F15-56 and TC-F02-107 (also red on `main`). Check: the "Desktop app tests" check is green on this branch.
-- [ ] **T1: Spikes** (milestone: may need an owner decision).
+- [x] **T1: Spikes** (done 2026-11-04: D086, owner chose A; AC-37 deferred) (milestone: may need an owner decision).
   - A system-quiet helper (Mac Focus, Windows Do not disturb), vetted with `add-dependency`. It must work in the universal Mac build and on Windows x64 and arm64.
   - A hidden start at login on macOS 13+, with the 60-second fallback.
   - Write D086. If no helper is reliable, ask the owner about AC-37.
@@ -69,7 +69,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - No message text in logs.
   
   Covers: AC-F04-04, 31, 32, 33. Tests: TC-F04-10, 52 to 59, 91, 94, 95.
-- [ ] **T13: Quiet times.** Do not disturb (the server's value) silences cards; calls still ring and missed calls are still noted. `system-quiet.ts` uses the helper chosen in T1, or the owner's choice. Covers: AC-F04-22, 37. Tests: TC-F04-45, 46, 47, 70, 71.
+- [ ] **T13: Quiet times.** Do not disturb (the server's value) silences cards; calls still ring and missed calls are still noted. No system helper (D086). Covers: AC-F04-22. Tests: TC-F04-45, 46, 47, 70.
 - [ ] **T14: Lobby cards.**
   - Only for a meeting the person is in and can admit in.
   - "Guest" mark, and one card from 3 people.

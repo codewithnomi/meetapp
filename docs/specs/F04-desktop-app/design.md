@@ -30,7 +30,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `src/main/links.ts` (no Electron): reads `meetapp://m/<code>` strictly. Anything else is ignored (AC-10, 11).
 - `src/main/window-state.ts` (no Electron) and its file `userData/window-state.json`: the size and place, checked against the screens (AC-40).
 - `src/main/notices*.ts`: corner cards as a third small-window kind ("notice") in F16's controller. They have the same locked-down session, CSP and preload as the ring window, stack with rings, and never cover the mini window (AC-30).
-- `src/main/system-quiet.ts`: whether the Mac's Focus / Windows' Do not disturb is on, behind one small interface (T1 picks how; AC-37).
+- System quiet (AC-37) is deferred until signing (D086); no `system-quiet.ts`.
 - `src/main/updates.ts`: electron-updater, switched off by a setting (AC-50).
 - `src/preload`: `window.meetapp.app` gains `onOpenMeeting(listener)`, `setStatusFromTray`, `firstCloseSeen`, `loginItem.get/set`, `version`. `window.meetapp.notices.show(card)` is checked by main.
 
@@ -205,7 +205,7 @@ None. electron-builder and electron-updater are free and open source. Signing st
 | 30–34 | unit + e2e |
 | 35 | F16 tests unchanged |
 | 36 | integration + e2e |
-| 37 | unit with a fake system-quiet; by hand |
+| 37 | deferred (D086) |
 | 38 | e2e (simulated resume) |
 | 40–42 | unit + e2e (start-up time, hidden call) |
 | 50 | unit (updater off), e2e About |

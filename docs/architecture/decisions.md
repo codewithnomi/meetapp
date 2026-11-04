@@ -559,3 +559,12 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Date:** 2026-11-03. **Status:** accepted.
 - **Decision:** "MeetApp" is temporary. The final name will be chosen later. Until then, code and installers use MeetApp, but the name, app id, link scheme and icons are kept in one place, so renaming is a small change.
 - **Why:** the owner hasn't settled the brand yet.
+
+### D086: Reading the system's Focus / Do not disturb (F04 T1 spike)
+- **Date:** 2026-11-04. **Status:** accepted (owner chose A, 2026-11-04).
+- **Decision:** option A. AC-F04-37 is deferred until the app is signed; MeetApp's own Do not disturb (AC-22) silences cards. No helper is added and there is no `system-quiet.ts`.
+- **Spike result:**
+  - **Mac:** macOS 13+ has only one supported way, Apple's Focus Status API (`INFocusStatusCenter`). It needs a paid Apple developer certificate, a special permission and a provisioning profile, so an unsigned MeetApp can't use it. `macos-notification-state` (MIT, last release 2023) reads the old Do Not Disturb setting only up to macOS 12. `macos-focus-mode` needs a Shortcut the person installs by hand and runs shell commands. Both were rejected.
+  - **Windows:** `windows-notification-state` (MIT, last release 2022, native) calls `SHQueryUserNotificationState`. It reliably sees full-screen apps and presentations, but not reliably the normal Focus assist / Do not disturb switch. It would also need native builds for x64 and arm64.
+- **Options for the owner:** (A) drop AC-37 for now: MeetApp's own Do not disturb (AC-22) silences cards, and once the app is signed, the Mac's notification centre respects Focus by itself. (B) keep AC-37 on Windows only, for full-screen and presentation quiet, using the native helper.
+- **Login start on macOS 13+:** `wasOpenedAtLogin` and `args` are not dependable with the new login items, so the design's 60-second fallback is used. The real check is TC-F04-82, by hand, at T19.
