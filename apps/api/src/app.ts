@@ -20,7 +20,7 @@ import { callsRoutes } from "./modules/calls/calls.routes.ts";
 import { controlsRoutes } from "./modules/calls/controls.routes.ts";
 import { chatActionsRoutes } from "./modules/chat/chat-actions.routes.ts";
 import { chatAfterRoutes } from "./modules/chat/chat-after.routes.ts";
-import { chatsLineRoutes, registerWebSockets } from "./modules/chats/chats-line.routes.ts";
+import { chatsLineRoutes, myStatusRoutes, registerWebSockets } from "./modules/chats/chats-line.routes.ts";
 import { chatsExtrasRoutes } from "./modules/chats/chats-extras.routes.ts";
 import { chatsMessagesRoutes } from "./modules/chats/chats-messages.routes.ts";
 import { chatCallsRoutes } from "./modules/calls/chat-calls.routes.ts";
@@ -128,6 +128,7 @@ export async function buildApp(config: Config, options: BuildOptions = {}): Prom
       status: options.accounts.chatsStatus,
       allowedOrigins: ALLOWED_ORIGINS,
     });
+  if (options.accounts) await app.register(myStatusRoutes, { status: options.accounts.chatsStatus });
   if (config.NODE_ENV === "test") await app.register(testErrorRoutes);
   return app;
 }

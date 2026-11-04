@@ -39,7 +39,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - Copy link gives `meetapp://m/<code>`.
   
   Covers: AC-F04-10, 11, 12. Tests: TC-F04-24 to 31, 33, 34.
-- [ ] **T7: Status by hand (server).**
+- [x] **T7: Status by hand (server).** Done 2026-11-04: migration 0010 (columns only), `PUT /api/v1/me/status` (20 a minute), the rule order (Offline stays Offline, as in Teams), a `status-expiry` BullMQ job plus the read-time check, Busy/DND/BRB on the live line and on `StatusDot`. There is no account export yet (privacy feature later); deleting an account removes the row with these columns.
   - The migration: `manual_status*` and `notify_*` columns only (`db-migration` skill).
   - `PUT /api/v1/me/status` and the presence rule order.
   - The expiry job, plus a check when status is read.

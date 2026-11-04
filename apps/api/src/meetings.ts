@@ -9,6 +9,7 @@ import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
 import { createCallEventsRepository } from "./modules/calls/call-events.repository.ts";
 import { createCallJobs, startCallJobs } from "./modules/calls/calls.jobs.ts";
+import { startStatusExpiryJob } from "./modules/chats/status-expiry-job.ts";
 import { createCallsRepository } from "./modules/calls/calls.repository.ts";
 import { createControlsService, refreshCall } from "./modules/calls/controls.service.ts";
 import { createJoinService } from "./modules/calls/join.service.ts";
@@ -52,7 +53,8 @@ import type { Redis } from "ioredis";
 import type { Outbox } from "./emails/outbox.ts";
 import { createLivePublisher } from "./modules/chats/chats-live.ts";
 import { createPresenceStore } from "./modules/chats/chats-presence.ts";
-import { createChatsStatusService } from "./modules/chats/chats-status.service.ts";
+import { createChatsStatusService, type StatusDeps } from "./modules/chats/chats-status.service.ts";
+import { createManualStatusRepository } from "./modules/chats/chats-manual-status.repository.ts";
 import { chatCallsFor } from "./chat-calls.ts";
 
 interface MeetingWiring {
@@ -103,7 +105,14 @@ function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter"
     calls: { leftChat: () => Promise.resolve(), forgetPerson: () => Promise.resolve() } as RequestsDeps["calls"],
   };
   const presence = createPresenceStore(redis);
-  const status = createChatsStatusService({ ...requestsDeps, presence });
+  const statusExpiry: StatusDeps["expiry"] = { schedule: () => Promise.resolve() };
+  const status = createChatsStatusService({
+    ...requestsDeps,
+    presence,
+    manual: createManualStatusRepository(db),
+    // F04: replaced once the jobs start (server.ts); the read-time check covers a lost job.
+    expiry: statusExpiry,
+  });
   const messagesDeps = {
     ...requestsDeps,
     statuses: (viewer: string, ids: string[]) => status.visible(viewer, ids),
@@ -113,12 +122,12 @@ function chatsDepsFor({ wiring, calls, chatDeps }: Omit<ChatsWiring, "chatAfter"
     publish: (conversationId: string, event: ChatEvent) => requestsDeps.live.news(conversationId, event),
   };
   const groupsDeps = { ...requestsDeps, groups: createChatsGroupsRepository(db) };
-  return { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status };
+  return { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status, statusExpiry };
 }
 
 function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
   const { config, storage, outbox, redis } = wiring;
-  const { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status } = chatsDepsFor({
+  const { chatsRepository, requestsDeps, messagesDeps, groupsDeps, presence, status, statusExpiry } = chatsDepsFor({
     wiring,
     calls,
     chatDeps,
@@ -140,6 +149,7 @@ function chatsPieces({ wiring, calls, chatDeps, chatAfter }: ChatsWiring) {
     chatsExtras: createChatsExtrasService({ ...messagesDeps, storage }),
     /** What each server's live line needs (D064). */
     chatsStatus: status,
+    statusExpiry,
     chatsLine: {
       redis,
       live: requestsDeps.live,
@@ -226,9 +236,19 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
     startCallJobs: async () => {
       // F14 step 2 (D065): before serving, every meeting chat row gets its conversation; reads use it.
       await chat.chatUpkeep.fillConversations();
-      const started = await startCallJobs({ host: config.REDIS_HOST, port: config.REDIS_PORT }, callJobs);
+      const connection = { host: config.REDIS_HOST, port: config.REDIS_PORT };
+      const started = await startCallJobs(connection, callJobs);
       callsDeps.scheduler.schedule = started.schedule;
-      return started;
+      // F04: hand-set statuses end on time (AC-F04-21).
+      const statusJob = await startStatusExpiryJob(connection, chat.chatsStatus.runOut);
+      chat.statusExpiry.schedule = statusJob.schedule;
+      return {
+        ...started,
+        close: async () => {
+          await statusJob.close();
+          await started.close();
+        },
+      };
     },
   };
 }

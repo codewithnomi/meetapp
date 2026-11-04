@@ -56,6 +56,8 @@ export const RATE_RULES = {
   /** F14: exact-email lookups in New chat (D063) per person: 30 a minute; "Join me" emails: 20 a day. */
   chatEmailLookups: { name: "chat-email-lookups", limit: 30, windowSeconds: 60 },
   chatInvites: { name: "chat-invites", limit: 20, windowSeconds: 24 * 60 * 60 },
+  /** F04: setting a status by hand, 20 a minute per person (design 5). */
+  myStatus: { name: "my-status", limit: 20, windowSeconds: 60 },
   /** New chat requests to people outside the workspace: 20 a day per person (AC-F14-12). */
   chatRequests: { name: "chat-requests", limit: 20, windowSeconds: 24 * 60 * 60 },
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the

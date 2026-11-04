@@ -1,13 +1,14 @@
 // StatusDot (atom): a person's status as a small dot on the corner of their picture (approved canvas
-// "Chats (F14)", AC-F14-26): Available green, Away amber, In a call red, Offline an empty ring. The
-// colour is never the only sign: the dot carries the status word for screen readers.
+// "Chats (F14)", AC-F14-26): Available green, Away amber, In a call red, Offline an empty ring; set by
+// hand (F04 AC-F04-20, as in Teams): Busy red, Do not disturb red with a white bar, Be right back amber.
+// The colour is never the only sign: the dot carries the status word for screen readers.
 import { cx } from "../../lib/cx.ts";
 
-export type ChatStatus = "available" | "away" | "in_call" | "offline";
+export type ChatStatus = "available" | "away" | "in_call" | "offline" | "busy" | "dnd" | "brb";
 
 export interface StatusDotProps {
   status: ChatStatus;
-  /** Already translated: "Available", "Away", "In a call", "Offline". */
+  /** Already translated: "Available", "Away", "In a call", "Busy", "Do not disturb", … */
   label: string;
   /** Sits on the corner of an avatar (the avatar's wrapper is `relative`). */
   placed?: boolean;
@@ -19,6 +20,9 @@ const COLORS: Record<ChatStatus, string> = {
   away: "bg-warning",
   in_call: "bg-danger",
   offline: "bg-surface shadow-[inset_0_0_0_2px_var(--ink-subtle)]",
+  busy: "bg-danger",
+  dnd: "bg-danger",
+  brb: "bg-warning",
 };
 
 export function StatusDot({ status, label, placed = false, className }: StatusDotProps) {
@@ -28,11 +32,13 @@ export function StatusDot({ status, label, placed = false, className }: StatusDo
       aria-label={label}
       data-status={status}
       className={cx(
-        "box-border block size-3 rounded-full border-2 border-surface",
+        "box-border flex size-3 items-center justify-center rounded-full border-2 border-surface",
         COLORS[status],
         placed && "absolute -right-px -bottom-px",
         className,
       )}
-    />
+    >
+      {status === "dnd" && <span className="block h-0.5 w-1 rounded-full bg-surface" />}
+    </span>
   );
 }

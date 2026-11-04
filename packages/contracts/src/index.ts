@@ -172,6 +172,10 @@ export {
   seenSchema,
   statusQuerySchema,
   statusesSchema,
+  myStatusBodySchema,
+  myStatusSchema,
+  MANUAL_STATUSES,
+  MANUAL_STATUS_MAX_MS,
   conversationPollParamsSchema,
   conversationFileParamsSchema,
   myChatPrefsBodySchema,
@@ -205,6 +209,7 @@ export {
   type LineServerMessage,
   type MemberState,
   type Status,
+  type ManualStatus,
 } from "./chats.ts";
 export {
   CALL_MEDIA,

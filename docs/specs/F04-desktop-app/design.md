@@ -88,6 +88,8 @@ The window remembers its size and place. A self-updater from GitHub releases is 
   2. otherwise "In a call" during a call (AC-23);
   3. otherwise a hand-set Available that hasn't run out;
   4. otherwise the automatic status.
+
+  Someone with no open MeetApp (Offline) shows Offline whatever they set, as in Teams; the hand-set status shows again when they come back, if it hasn't run out (added during T7).
 - The app works out `until` in the person's own time zone (Today = 23:59:59 local; This week = Sunday 23:59:59 local) and sends it as an ISO time. The server refuses an `until` in the past or more than 8 days ahead (400). The tray's status menu sets "until changed" only; the picture menu offers the durations.
 - F16 requirements' note on Do not disturb is updated with AC-F04-22 (done with the requirements).
 - A BullMQ delayed job clears the status when it runs out and announces the change on the live line. Others see it within 5 s, as F14 does.

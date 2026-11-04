@@ -25,6 +25,16 @@ export const user = pgTable("user", {
   /** F15: the incoming-call ringtone (1–5) and its volume (0–100), kept with the account (AC-F15-32). */
   ringtone: integer("ringtone").notNull().default(1),
   ringVolume: integer("ring_volume").notNull().default(70),
+  /** F04: a status set by hand (available, busy, dnd, brb, away) and when it runs out; null = automatic,
+   * a null end = until changed (AC-F04-20, 21). */
+  manualStatus: text("manual_status"),
+  manualStatusUntil: moment("manual_status_until"),
+  /** F04: which notifications show (AC-F04-36); all on by default. */
+  notifyMessages: boolean("notify_messages").notNull().default(true),
+  notifyMentions: boolean("notify_mentions").notNull().default(true),
+  notifyLobby: boolean("notify_lobby").notNull().default(true),
+  notifySound: boolean("notify_sound").notNull().default(true),
+  notifyPreview: boolean("notify_preview").notNull().default(true),
   ...timestamps(),
 });
 

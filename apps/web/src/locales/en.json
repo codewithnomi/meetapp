@@ -1051,7 +1051,10 @@
       "available": "Available",
       "away": "Away",
       "in_call": "In a call",
-      "offline": "Offline"
+      "offline": "Offline",
+      "busy": "Busy",
+      "dnd": "Do not disturb",
+      "brb": "Be right back"
     },
     "people_one": "{{count}} person",
     "people_other": "{{count}} people",
