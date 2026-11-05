@@ -2,6 +2,7 @@
 // stage (gallery of 16 a page, or speaker view), the control bar with shortcuts, the side panels, and
 // announcements for screen readers. When the call drops or ends, the app asks the backend what
 // happened (removed, ended, …) and shows that message.
+import { useLobbyCards } from "../../features/notices/index.ts";
 import { useSession } from "../../features/auth/index.ts";
 import { MeetingLayout, Notice, SegmentedControl, type LobbyBar } from "@meetapp/ui";
 import { useBackgroundSlow } from "../../features/devices/index.ts";
@@ -103,6 +104,14 @@ function useScreen(props: MeetingPageProps & { visit: Joined }) {
     (dropped) => (view.setPanel("chat"), files.add(dropped)),
     () => view.setPanel("chat"),
   );
+  // F04: lobby cards while this meeting's window isn't in front (AC-F04-34); the waiting list is empty
+  // for those who can't let people in.
+  useLobbyCards({
+    waiting: call.lobby.waiting,
+    meeting: visit.title,
+    admit: (id) => call.lobby.decide("admit", { attendanceIds: [id] }),
+    viewLobby: () => view.setPanel("people"),
+  });
   // While the chat is open, nothing counts as unread (AC-F03-07).
   useEffect(() => setOpen(view.panel === "chat"), [setOpen, view.panel]);
   const context = {

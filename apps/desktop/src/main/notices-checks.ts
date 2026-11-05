@@ -26,7 +26,8 @@ const base = {
 };
 const cardSchema = z.discriminatedUnion("kind", [
   z.strictObject({ ...base, kind: z.enum(["message", "mention", "running"]) }),
-  z.strictObject({ ...base, kind: z.literal("lobby"), admit: cut(40), viewLobby: cut(40) }),
+  // Three or more waiting: one card with View lobby only (AC-F04-34).
+  z.strictObject({ ...base, kind: z.literal("lobby"), admit: cut(40).optional(), viewLobby: cut(40) }),
 ]);
 
 /** The card, checked and cut, or undefined when it is refused. */

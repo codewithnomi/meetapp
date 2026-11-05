@@ -109,6 +109,7 @@ export class NoticeBoard {
     if (action.name !== "notice") return;
     if (action.choice === "close") return this.drop(entry);
     if (!CHOICES[entry.card.kind].includes(action.choice)) return;
+    if (action.choice === "admit" && entry.card.admit === undefined) return;
     // Admit acts in place; opening a chat or the lobby brings the window forward.
     if (action.choice !== "admit") this.deps.focusMain(entry.owner);
     this.deps.toMain(entry.owner, { name: "noticeChosen", cardId: entry.card.id, choice: action.choice });

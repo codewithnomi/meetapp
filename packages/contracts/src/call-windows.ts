@@ -73,7 +73,7 @@ export interface NoticeCard {
   /** Marked next to the title: "mentioned you", "Guest". */
   tag?: string;
   person?: CallWindowsPerson;
-  /** Lobby: the buttons' words. */
+  /** Lobby: the buttons' words (no Admit on the "<n> people are waiting" card). */
   admit?: string;
   viewLobby?: string;
   /** The ×'s name for screen readers. */

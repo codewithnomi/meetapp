@@ -1334,6 +1334,14 @@
       "title": "MeetApp is still running",
       "menuBar": "You'll find it in the menu bar.",
       "tray": "You'll find it in the taskbar's notification area."
+    },
+    "lobby": {
+      "waiting": "is waiting in the lobby",
+      "many_one": "{{count}} person is waiting",
+      "many_other": "{{count}} people are waiting",
+      "guest": "Guest",
+      "admit": "Admit",
+      "view": "View lobby"
     }
   }
 }

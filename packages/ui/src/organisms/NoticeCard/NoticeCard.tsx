@@ -57,6 +57,22 @@ function Words({ kind, title, detail, text, tag }: NoticeCardProps) {
   );
 }
 
+function LobbyButtons({ admit, viewLobby }: Pick<NoticeCardProps, "admit" | "viewLobby">) {
+  if (!viewLobby) return null;
+  return (
+    <span className="flex gap-2 pl-12">
+      {admit && (
+        <Button size="sm" onClick={admit.onClick}>
+          {admit.label}
+        </Button>
+      )}
+      <Button size="sm" variant="secondary" onClick={viewLobby.onClick}>
+        {viewLobby.label}
+      </Button>
+    </span>
+  );
+}
+
 export function NoticeCard(props: NoticeCardProps) {
   const { open, admit, viewLobby, close, onHover } = props;
   const label = [props.title, props.tag, props.detail, props.text].filter(Boolean).join(", ");
@@ -86,16 +102,7 @@ export function NoticeCard(props: NoticeCardProps) {
             <Picture {...props} />
             <Words {...props} />
           </span>
-          {admit && viewLobby && (
-            <span className="flex gap-2 pl-12">
-              <Button size="sm" onClick={admit.onClick}>
-                {admit.label}
-              </Button>
-              <Button size="sm" variant="secondary" onClick={viewLobby.onClick}>
-                {viewLobby.label}
-              </Button>
-            </span>
-          )}
+          <LobbyButtons admit={admit} viewLobby={viewLobby} />
         </div>
       )}
       <IconButton icon="close" variant="ghost" size="sm" label={close.label} tooltip={false} onClick={close.onClick} />

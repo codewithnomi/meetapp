@@ -70,7 +70,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   
   Covers: AC-F04-04, 31, 32, 33. Tests: TC-F04-10, 52 to 59, 91, 94, 95.
 - [x] **T13: Quiet times.** Done 2026-11-05: `isQuiet` in the card rules reads the server's own status (the picture menu's query); a call still rings. TC-70 deferred with AC-37 (D086); the lobby part of TC-45 is checked with T14. Desktop tests TC-45, 46 in `notices-chat.spec.ts`. Do not disturb (the server's value) silences cards; calls still ring and missed calls are still noted. No system helper (D086). Covers: AC-F04-22. Tests: TC-F04-45, 46, 47, 70.
-- [ ] **T14: Lobby cards.**
+- [x] **T14: Lobby cards.** Done 2026-11-05: `lobby-cards.ts` started by the meeting screen (its lobby list is empty for those who can't admit); Admit uses F02's `decideLobby`, so the server checks the right (TC-63 rests on F02's admit tests); the "<n> people are waiting" card has View lobby only (Admit is optional on a lobby card in main's check). F16's missed-call tests pass unchanged (TC-64). Desktop tests `notices-lobby.spec.ts` (TC-62, TC-45 lobby part).
   - Only for a meeting the person is in and can admit in.
   - "Guest" mark, and one card from 3 people.
   - Admit uses F02's request (the server checks rights).
