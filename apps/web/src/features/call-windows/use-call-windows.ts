@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAnswer, useChatCall, useEnterCall, useIncomingCalls, startCall } from "../calls/index.ts";
 import { useLiveLine } from "../chats/index.ts";
+import { useNotices } from "../notices/index.ts";
 import { useVisit } from "../meetings/index.ts";
 import { useCallScreen } from "./call-screen.ts";
 import { usePhotos } from "./photos.ts";
@@ -120,6 +121,8 @@ const isScreenControl = (name: string): name is (typeof SCREEN_CONTROLS)[number]
   (SCREEN_CONTROLS as readonly string[]).includes(name);
 
 export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
+  // F04: MeetApp's own cards for new messages and mentions share the small windows' line.
+  useNotices({ toChat });
   const bridge = mainBridge();
   const rings = useIncomingCalls((state) => state.rings);
   const silence = useIncomingCalls((state) => state.silence);

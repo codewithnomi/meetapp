@@ -5,6 +5,7 @@ import type { TFunction } from "i18next";
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "../../features/auth/index.ts";
+import { useShownChat } from "../../features/notices/index.ts";
 import { useChatCall } from "../../features/calls/index.ts";
 import { useChatList, useChatRequests, type ChatFilter, type ChatItem } from "../../features/chats/index.ts";
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
@@ -141,6 +142,11 @@ function useOpenAfterCall() {
       if (id) setOpen(id);
     });
   }, []);
+  // F04: no card for the chat shown here while this window is in front.
+  useEffect(() => {
+    useShownChat.getState().set(open);
+    return () => useShownChat.getState().set(undefined);
+  }, [open]);
   return [open, setOpen] as const;
 }
 

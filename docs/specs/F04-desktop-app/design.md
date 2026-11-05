@@ -104,7 +104,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
     - the setting for that kind is off;
     - the status is Do not disturb;
     - system quiet is on;
-    - the message is more than 5 minutes old by the server's time (the live line's clock offset, not the computer's clock).
+    - the message is more than 5 minutes old by the server's time (the live line's clock offset, not the computer's clock: the server puts its time on each `pong`, and the app pings once as the line opens; added during T12).
   - A mention gives one "mentioned you" card, never a second plain one (AC-33).
   - Cards for the same chat are merged while showing: "<n> new messages", and the sound plays once (AC-32).
   - With preview off, the card says "New message" (AC-31).

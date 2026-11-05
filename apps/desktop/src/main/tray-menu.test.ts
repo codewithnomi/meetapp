@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clickOpensWindow, trayMenu, type TrayItem } from "./tray-menu.ts";
+import { clickOpensWindow, isTrayCommand, trayMenu, type TrayItem } from "./tray-menu.ts";
 
 const labels = (items: TrayItem[]) => items.filter((item) => item.type !== "separator").map((item) => item.label);
 
@@ -26,5 +26,14 @@ describe("tray menu (F04 T4)", () => {
     expect(clickOpensWindow("win32", "left")).toBe(true);
     expect(clickOpensWindow("win32", "right")).toBe(false);
     expect(clickOpensWindow("darwin", "left")).toBe(false);
+  });
+});
+
+describe("still running", () => {
+  it("TC-F04-10 [AC-F04-04] the first-close command passes only with its place", () => {
+    expect(isTrayCommand({ kind: "stillRunning", where: "menuBar" })).toBe(true);
+    expect(isTrayCommand({ kind: "stillRunning", where: "tray" })).toBe(true);
+    expect(isTrayCommand({ kind: "stillRunning", where: "dock" })).toBe(false);
+    expect(isTrayCommand({ kind: "stillRunning" })).toBe(false);
   });
 });

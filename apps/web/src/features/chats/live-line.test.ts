@@ -3,11 +3,12 @@
 import { describe, expect, it } from "vitest";
 import { LiveLine, type LineSocket } from "./live-line.ts";
 
-function setUp() {
+function setUp(more: { now?: () => number } = {}) {
   const sockets: (LineSocket & { sent: string[] })[] = [];
   const timers: { run: () => void; ms: number; cleared?: boolean }[] = [];
   const line = new LiveLine({
     url: "ws://127.0.0.1:3000/api/v1/realtime",
+    ...more,
     open: () => {
       const socket = {
         readyState: 0,
@@ -76,8 +77,21 @@ describe("the live line in the app", () => {
     must(sockets[0]).onmessage?.({ data: "{broken" });
     must(sockets[0]).onmessage?.({ data: JSON.stringify({ t: "unknown" }) });
     expect(heard).toEqual([{ t: "connected" }, { t: "pong" }]);
-    must(timers.find((timer) => timer.ms === 30_000)).run();
+    // F04: one ping on opening (it tells the server's time), then one every 30 seconds.
     expect(must(sockets[0]).sent).toEqual([JSON.stringify({ t: "ping" })]);
+    must(timers.find((timer) => timer.ms === 30_000)).run();
+    expect(must(sockets[0]).sent).toEqual([JSON.stringify({ t: "ping" }), JSON.stringify({ t: "ping" })]);
+  });
+
+  it("TC-F04-53 [AC-F04-31] a pong with the server's time gives the server's clock, whatever this computer's says", () => {
+    let clock = 1_000_000;
+    const { line, sockets } = setUp({ now: () => clock });
+    line.start();
+    opened(must(sockets[0]));
+    clock += 200;
+    // The server's clock is 10 minutes ahead; the answer took 200 ms there and back.
+    must(sockets[0]).onmessage?.({ data: JSON.stringify({ t: "pong", at: 1_000_100 + 600_000 }) });
+    expect(line.serverNow()).toBe(clock + 600_000);
   });
 
   it("TC-F14-41 [AC-F14-20] stays closed when replaced by a 6th window, refused, or signed out", () => {

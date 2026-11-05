@@ -1,7 +1,22 @@
 // Electron wiring for F04's close, quit and one-copy rules (design.md 3.1, 3.2). Thin on purpose: the
 // decisions live in app-life.ts.
 import { BrowserWindow, app, dialog, powerMonitor } from "electron";
+import { join } from "node:path";
 import { AppLife } from "./app-life.ts";
+import { readJson, writeJson } from "./login-item-bridge.ts";
+import { APP_CHANNEL } from "./tray-menu.ts";
+
+/** The first close on this computer: the screens show "MeetApp is still running" once (AC-04, TC-F04-10). */
+function firstClose(window: BrowserWindow): void {
+  const file = join(app.getPath("userData"), "app-state.json");
+  const state = readJson(file);
+  if (state["firstCloseSeen"] === true) return;
+  writeJson(file, { ...state, firstCloseSeen: true });
+  window.webContents.send(APP_CHANNEL, {
+    kind: "stillRunning",
+    where: process.platform === "win32" ? "tray" : "menuBar",
+  });
+}
 
 export interface AppLifeOptions {
   inCall: () => boolean;
@@ -70,6 +85,7 @@ export function setUpAppLife(options: AppLifeOptions): { watch: (window: Browser
         if (!life.closeHides()) return;
         event.preventDefault();
         window.hide();
+        firstClose(window);
       });
       // Windows: logging out or shutting down (query-session-end comes first and may be the only one).
       const systemQuit = () => {

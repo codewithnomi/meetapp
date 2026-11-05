@@ -16,7 +16,7 @@ import {
   type LoginSystem,
 } from "./login-item.ts";
 
-function readJson(file: string): Record<string, unknown> {
+export function readJson(file: string): Record<string, unknown> {
   try {
     const value: unknown = JSON.parse(readFileSync(file, "utf8"));
     return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
@@ -25,7 +25,7 @@ function readJson(file: string): Record<string, unknown> {
   }
 }
 
-function writeJson(file: string, value: object): void {
+export function writeJson(file: string, value: object): void {
   try {
     writeFileSync(file, JSON.stringify(value), { mode: 0o600 });
   } catch {

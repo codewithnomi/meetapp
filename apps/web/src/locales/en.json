@@ -1324,6 +1324,16 @@
     }
   },
   "notices": {
-    "open": "Open the chat with {{name}}"
+    "open": "Open the chat with {{name}}",
+    "newMessage": "New message",
+    "newMessages_one": "{{count}} new message",
+    "newMessages_other": "{{count}} new messages",
+    "mentioned": "mentioned you",
+    "close": "Close",
+    "running": {
+      "title": "MeetApp is still running",
+      "menuBar": "You'll find it in the menu bar.",
+      "tray": "You'll find it in the taskbar's notification area."
+    }
   }
 }

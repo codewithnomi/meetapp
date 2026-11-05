@@ -53,12 +53,20 @@ export function clickOpensWindow(platform: NodeJS.Platform, button: "left" | "ri
 /** Main → the main window: what the tray asked the screens to do (open Settings, set a status). */
 export const APP_CHANNEL = "meetapp:app";
 
-export type TrayCommand = { kind: "settings" } | { kind: "status"; status: TrayStatus };
+export type TrayCommand =
+  | { kind: "settings" }
+  | { kind: "status"; status: TrayStatus }
+  /** F04 AC-04: the window was closed for the first time on this computer; the screens show the card. */
+  | { kind: "stillRunning"; where: "menuBar" | "tray" };
 
 /** Only the commands above reach the screens' listener (the preload checks what main sends). */
 export function isTrayCommand(value: unknown): value is TrayCommand {
   if (typeof value !== "object" || value === null) return false;
   const command = value as { kind?: unknown; status?: unknown };
   if (command.kind === "settings") return true;
+  if (command.kind === "stillRunning") {
+    const where = (value as { where?: unknown }).where;
+    return where === "menuBar" || where === "tray";
+  }
   return command.kind === "status" && TRAY_STATUSES.some(([status]) => status === command.status);
 }

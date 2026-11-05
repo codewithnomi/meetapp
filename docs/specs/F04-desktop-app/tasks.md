@@ -62,7 +62,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   
   Covers: AC-F04-30. Tests: TC-F04-48, 49, 50, 88, 89, 90.
 - [x] **T11: NoticeCard organism.** Done 2026-11-04 (drawn on the approved canvas board "Desktop app (F04)"); also drawn by the small window page. Screenshots are made at spec-verify. Message, mention, lobby and running variants, drawn on the canvas first, with stories and screenshots. Covers: AC-F04-30, 31, 33, 34. Tests: TC-F04-51.
-- [ ] **T12: Message and mention cards** (milestone: the owner can see cards).
+- [x] **T12: Message and mention cards** (milestone: the owner can see cards). Done 2026-11-05: `features/notices` (rules, merging, chime, open on click, cards removed at sign-out), the server's time on `pong` (the app pings once on opening; two F14 tests now expect that ping), the first-close card via the `stillRunning` app command (`app-state.json` `firstCloseSeen`). Desktop tests `notices-chat.spec.ts` (TC-10, 54, 57, 67 switches, 95) run at spec-verify. Still to add there: TC-59 (mention in a muted chat, end to end; the rule is unit-tested in TC-58). TC-91 relies on the live line sending news only to members (F14 tests); TC-94: the notices code logs nothing.
   - `features/notices`: the skip rules, preview on or off, merging with one sound, mentions even in muted chats, and the 5-minute rule by the server's time.
   - The first-close "still running" card.
   - Sign-out stops cards.
