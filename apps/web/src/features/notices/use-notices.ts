@@ -14,7 +14,7 @@ import { useTrayCommands } from "../desktop-app/index.ts";
 import { useLiveLine } from "../chats/index.ts";
 import { useNotificationSettings } from "../notifications/index.ts";
 import { chime } from "./chime.ts";
-import { Merger, decide, type ChatInfo } from "./notice-rules.ts";
+import { Merger, decide, isQuiet, type ChatInfo } from "./notice-rules.ts";
 import { chatInFront } from "./shown-chat.ts";
 
 type NoticesBridge = { show: (card: NoticeCard) => void; remove: (cardId: string) => void };
@@ -78,6 +78,11 @@ async function show(news: News, now: Now, queries: QueryClient, merger: Merger):
     shownChat: chatInFront(),
     settings: now.settings,
     serverNow: now.serverNow(),
+    // The person's own status as the server gave it to the picture menu (read again every 15 seconds).
+    quiet: isQuiet(
+      queries.getQueryData<{ chosen: string | null; until: string | null }>(["me", "status"]),
+      now.serverNow(),
+    ),
   });
   if (!decision.show) return;
   const { t, settings } = now;

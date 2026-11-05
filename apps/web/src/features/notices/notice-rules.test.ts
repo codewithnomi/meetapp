@@ -1,7 +1,7 @@
 // The card rules (TC-F04-52, 53, 56, 58; AC-F04-31, 32, 33): what gives a card, what it says, merging.
 import type { ChatMessageView } from "@meetapp/contracts";
 import { describe, expect, it } from "vitest";
-import { MAX_AGE_MS, Merger, SHOWING_MS, decide, previewText, type Incoming } from "./notice-rules.ts";
+import { MAX_AGE_MS, Merger, SHOWING_MS, decide, isQuiet, previewText, type Incoming } from "./notice-rules.ts";
 
 const NOW = Date.parse("2026-11-05T10:00:00Z");
 const ME = "00000000-0000-4000-8000-000000000001";
@@ -28,6 +28,7 @@ const incoming = (more: Partial<Incoming> = {}): Incoming => ({
   shownChat: undefined,
   settings: ALL_ON,
   serverNow: NOW,
+  quiet: false,
   ...more,
 });
 
@@ -84,5 +85,18 @@ describe("notice rules", () => {
     const again = merger.add("q", 0);
     merger.closed(again.cardId);
     expect(merger.add("q", 1)).toMatchObject({ fresh: true });
+  });
+
+  it("TC-F04-47 [AC-F04-22] only an unexpired Do not disturb silences message and mention cards", () => {
+    const until = (ms: number) => new Date(NOW + ms).toISOString();
+    expect(isQuiet({ chosen: "dnd", until: null }, NOW)).toBe(true);
+    expect(isQuiet({ chosen: "dnd", until: until(60_000) }, NOW)).toBe(true);
+    expect(isQuiet({ chosen: "dnd", until: until(-1_000) }, NOW)).toBe(false);
+    for (const chosen of ["busy", "brb", "away", "available", null])
+      expect(isQuiet({ chosen, until: null }, NOW)).toBe(false);
+    expect(isQuiet(undefined, NOW)).toBe(false);
+    const mentioned = message({ body: paragraph({ type: "mention", userId: ME, text: "@Olivia" }) });
+    expect(decide(incoming({ quiet: true }))).toEqual({ show: false });
+    expect(decide(incoming({ quiet: true, message: mentioned }))).toEqual({ show: false });
   });
 });

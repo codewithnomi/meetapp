@@ -107,3 +107,34 @@ test("TC-F04-95 [AC-F04-30] signing out takes the cards away and no new ones com
   await mo.page.waitForTimeout(3_000);
   expect(cards(mo.app)).toHaveLength(0);
 });
+
+/** Mo sets Do not disturb from the picture menu, until changed. */
+async function moQuiet(mo: RunningApp) {
+  await mo.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await mo.page.getByRole("button", { name: /^Your account: / }).click();
+  await mo.page.getByRole("menuitem", { name: /Available|In a call/ }).click();
+  await mo.page.getByRole("menuitemradio", { name: "Do not disturb" }).click();
+  await expect(mo.page.getByRole("button", { name: /Do not disturb$/ })).toBeVisible();
+  await hide(mo.app);
+}
+
+test("TC-F04-45 [AC-F04-22] Do not disturb: no card for a message or a mention; unread still counts", async () => {
+  const { olivia, mo } = await oliviaWritesToMo();
+  await moQuiet(mo);
+  await send(olivia.page, "Quiet please");
+  await mo.page.waitForTimeout(3_000);
+  expect(cards(mo.app)).toHaveLength(0);
+  await mo.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await expect(mo.page.getByRole("button", { name: /^Chat, 1 unread/ })).toBeVisible({ timeout: 5_000 });
+});
+
+test("TC-F04-46 [AC-F04-22] Do not disturb: a call still rings, and the missed call is noted", async () => {
+  const { olivia, mo } = await oliviaWritesToMo();
+  await moQuiet(mo);
+  await olivia.page.getByRole("button", { name: "Audio call" }).click();
+  await expect.poll(() => cards(mo.app).length, { timeout: 10_000 }).toBe(1);
+  await expect((cards(mo.app)[0] as Page).getByRole("dialog", { name: /^Incoming audio call from / })).toBeVisible();
+  // Not answered: it stops after 30 seconds and the chat says so.
+  await expect.poll(() => cards(mo.app).length, { timeout: 45_000 }).toBe(0);
+  await expect(olivia.page.getByText(/Missed call|No answer/i).first()).toBeVisible({ timeout: 10_000 });
+});

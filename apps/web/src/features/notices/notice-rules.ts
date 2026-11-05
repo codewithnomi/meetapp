@@ -1,7 +1,7 @@
 // Which new chat messages give a notification card, and what it says (F04 design 3.4; AC-F04-31, 32, 33):
 // never one's own message, the chat shown in a window in front, a muted chat (unless it mentions the
 // person), a kind switched off, or a message over 5 minutes old by the server's clock. A mention gives one
-// "mentioned you" card, never a plain one too. With preview off the card says "New message". Messages of
+// "mentioned you" card, never a plain one too. Do not disturb silences them all. With preview off the card says "New message". Messages of
 // the same chat merge into one card while it shows. Pure, so it can be tested.
 import type { ChatMessageView as ChatMessage, NotificationSettings } from "@meetapp/contracts";
 
@@ -26,6 +26,14 @@ export interface Incoming {
   shownChat: string | undefined;
   settings: NotificationSettings;
   serverNow: number;
+  /** Do not disturb, as the server holds it (AC-F04-22). */
+  quiet: boolean;
+}
+
+/** Only a hand-set Do not disturb that hasn't run out silences cards (TC-F04-47); calls still ring. */
+export function isQuiet(mine: { chosen: string | null; until: string | null } | undefined, serverNow: number): boolean {
+  if (mine?.chosen !== "dnd") return false;
+  return mine.until === null || Date.parse(mine.until) > serverNow;
 }
 
 export type Decision = { show: false } | { show: true; mention: boolean; text: string | null };
@@ -55,6 +63,7 @@ export function previewText(message: ChatMessage): string | null {
 export function decide(incoming: Incoming): Decision {
   const { message, chat, me, settings } = incoming;
   const skip = { show: false } as const;
+  if (incoming.quiet) return skip;
   if (message.kind === "system" || message.sender.userId === me || message.deletedAt) return skip;
   if (incoming.shownChat === incoming.conversationId) return skip;
   if (incoming.serverNow - Date.parse(message.createdAt) > MAX_AGE_MS) return skip;

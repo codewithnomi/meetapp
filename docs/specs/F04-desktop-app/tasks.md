@@ -69,7 +69,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   - No message text in logs.
   
   Covers: AC-F04-04, 31, 32, 33. Tests: TC-F04-10, 52 to 59, 91, 94, 95.
-- [ ] **T13: Quiet times.** Do not disturb (the server's value) silences cards; calls still ring and missed calls are still noted. No system helper (D086). Covers: AC-F04-22. Tests: TC-F04-45, 46, 47, 70.
+- [x] **T13: Quiet times.** Done 2026-11-05: `isQuiet` in the card rules reads the server's own status (the picture menu's query); a call still rings. TC-70 deferred with AC-37 (D086); the lobby part of TC-45 is checked with T14. Desktop tests TC-45, 46 in `notices-chat.spec.ts`. Do not disturb (the server's value) silences cards; calls still ring and missed calls are still noted. No system helper (D086). Covers: AC-F04-22. Tests: TC-F04-45, 46, 47, 70.
 - [ ] **T14: Lobby cards.**
   - Only for a meeting the person is in and can admit in.
   - "Guest" mark, and one card from 3 people.
