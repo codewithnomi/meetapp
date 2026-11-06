@@ -15,6 +15,8 @@ import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
 import { addSpellcheckMenu, registerFilesBridge, setUpSpellcheck } from "./chat-bridge.ts";
 import { POWER_CHANNEL } from "./chat-desktop.ts";
+import { MIN_SIZE } from "./window-state.ts";
+import { rememberWindow, savedWindowState } from "./window-state-bridge.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
@@ -93,11 +95,15 @@ function forwardLockChanges(window: BrowserWindow): void {
 }
 
 function openWindow(callWindows: CallWindows, hidden: Promise<boolean>): void {
+  // F04 AC-40: the size and place it had last time, checked against today's screens.
+  const start = savedWindowState();
   const window = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
+    x: start.x,
+    y: start.y,
+    width: start.width,
+    height: start.height,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
     title: appIdentity.productName,
     show: false,
     // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
@@ -106,6 +112,7 @@ function openWindow(callWindows: CallWindows, hidden: Promise<boolean>): void {
   // F04 AC-08: a login start stays hidden in the menu bar; Open MeetApp shows it.
   window.once("ready-to-show", () => void hidden.then((stay) => stay || window.show()));
   forwardLockChanges(window);
+  rememberWindow(window, start);
   callWindows.watch(window);
   setUpAppLife({ inCall: callWindows.hasCall, mainWindow: () => mainWindow }).watch(window);
   links.watch(window);

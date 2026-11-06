@@ -78,7 +78,7 @@ Tick `[x]` when done and verified. Per D052, each task runs only its own tests p
   
   Covers: AC-F04-34, 35. Tests: TC-F04-60 to 64.
 - [x] **T15: Reconnect.** Done 2026-11-05: `LiveLine.reconnectNow()` on `resume` (sent to the screens as an unlock), unlock and the page's `online` event; `maxWaitMs` 8 s in the desktop app. Old messages: the 5-minute rule (T12), and news missed while offline isn't sent again. Desktop tests `reconnect.spec.ts` (TC-73, 74, 75; network drops with Playwright's offline mode; TC-75 checks the catch-up rather than messages from 10 minutes ago, which the unit test TC-53 covers). `resume` and `online` reconnect at once, the retry wait is capped at 8 s, and there are no cards for old messages. Covers: AC-F04-38. Tests: TC-F04-73, 74, 75.
-- [ ] **T16: Window, speed and calls in the background.**
+- [x] **T16: Window, speed and calls in the background.** Done 2026-11-06: `window-state.ts` (checked against the screens, saved 500 ms after it stops) and `window-state-bridge.ts`. Desktop tests `window.spec.ts`: TC-77, TC-78 (5 starts, measured from the process start to the signed-in screen; the packaged-build run is part of T19), TC-79 (9 minutes in three phases, frames keep rising), TC-93; all run at spec-verify.
   - `window-state.ts` and its file.
   - Start-up under 3 s.
   - A 10-minute call with the window hidden.
