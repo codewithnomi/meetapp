@@ -24,7 +24,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 
 ## 1. What gets created
 **Desktop (apps/desktop):**
-- `electron-builder.config.ts`: the Mac `dmg` (universal) and Windows `nsis` (x64, arm64) installers; app id `app.meetapp.desktop`; the `meetapp` link scheme (`protocols`); `mac.identity: null` (unsigned) until `CSC_LINK` is set; `publish: github` for updates (AC-01, 03, 10, 50).
+- `electron-builder.config.ts`: the Mac `dmg` (universal) and Windows `nsis` (x64, arm64) installers; app id `app.meetapp.desktop`; the `meetapp` link scheme (`protocols`); `mac.identity: null` (unsigned) until `CSC_LINK` is set; `publish: null` for now; the GitHub feed is added when updates are switched on (AC-01, 03, 10, 50).
 - `src/main/app-life.ts` (rules, no Electron): what close, Quit, a second start, a link and login start mean. `app-life-bridge.ts` connects these rules to Electron: `requestSingleInstanceLock`, `second-instance`, `open-url`, `before-quit`, `window-all-closed`, `setLoginItemSettings` (AC-02, 04, 06, 08–10).
 - `src/main/tray.ts`: the menu-bar or tray icon and its menu: Open MeetApp, status, Settings, Quit; Sign in when signed out (AC-05). Mac: a template image (16 and 32 px), menu on click. Windows: left-click opens the window, right-click the menu (as Teams).
 - `src/main/links.ts` (no Electron): reads `meetapp://m/<code>` strictly. Anything else is ignored (AC-10, 11).
@@ -32,11 +32,12 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `src/main/notices*.ts`: corner cards as a third small-window kind ("notice") in F16's controller. They have the same locked-down session, CSP and preload as the ring window, stack with rings, and never cover the mini window (AC-30).
 - System quiet (AC-37) is deferred until signing (D086); no `system-quiet.ts`.
 - `src/main/updates.ts`: electron-updater, switched off by a setting (AC-50).
-- `src/preload`: `window.meetapp.app` gains `onOpenMeeting(listener)`, `setStatusFromTray`, `firstCloseSeen`, `loginItem.get/set`, `version`. `window.meetapp.notices.show(card)` is checked by main.
+- `src/preload`: `window.meetapp.app` gains `onOpenMeeting(listener)`, `about()` (version, updates on or off), `loginItem.get/set` and `onTrayCommand` (Settings, a status, and the first-close "still running" command; main keeps the first-close flag in `app-state.json`). `window.meetapp.notices.show(card)` / `remove(id)` is checked by main (as built in T4–T17).
 
 **Screens (apps/web):**
 - `features/notices/`: decides from the live line (`news`), the meeting's lobby list and the settings whether a card shows (AC-31–38). It runs in the main window, hidden or not, and sends the card to main.
 - `features/status/`: the status menu (picture menu and tray) and "for how long" (AC-20, 21).
+- `features/notifications/`: Settings → Notifications' switches (AC-36). `features/desktop-app/`: tray commands, start at login, meeting links, About.
 - Pages:
   - Settings → **General**: start at login (AC-09).
   - Settings → **Notifications**: the five switches (AC-36).
@@ -103,7 +104,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
     - the chat is muted, unless the message mentions the person;
     - the setting for that kind is off;
     - the status is Do not disturb;
-    - system quiet is on;
+    - system quiet is on (deferred with AC-37, D086: not built);
     - the message is more than 5 minutes old by the server's time (the live line's clock offset, not the computer's clock: the server puts its time on each `pong`, and the app pings once as the line opens; added during T12).
   - A mention gives one "mentioned you" card, never a second plain one (AC-33).
   - Cards for the same chat are merged while showing: "<n> new messages", and the sound plays once (AC-32).
@@ -124,7 +125,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `window-state.json` keeps `{x, y, width, height, maximized, displayId}`. It is written 500 ms after a move or resize stops, and checked when read, as F16 does. If the screen is gone, the window opens centred on the main screen.
 - **Start-up under 3 s:** from the process start (`process.getCreationTime`) to the chat list's first paint, signed in, in a desktop test on the owner's Mac; a hidden login start doesn't count (AC-41).
 - **Calls in the background:** a hidden window is "not in front", so F16 keeps full speed during a call. Tested as F16 did, with the window hidden (AC-42).
-- **Updates:** `electron-updater` with the GitHub provider. `updates.enabled` is false (a build setting), so it never checks. Settings → About shows the version (AC-50).
+- **Updates:** `electron-updater` with the GitHub provider. `UPDATES_ENABLED` is `false` (a constant in `src/main/updates.ts`); while false the updater isn't even loaded, so it never checks. Settings → About shows the version (AC-50).
 
 ### 3.6 After sleep (AC-38)
 `powerMonitor` `resume` and the page's `online` event make the live line reconnect at once. While the desktop app runs, F14's wait between tries is capped at 8 s, so AC-38's 10 s holds after a network drop too. F14 already catches up on unread messages. The 5-minute rule keeps old messages from popping up.
@@ -177,6 +178,7 @@ None. electron-builder and electron-updater are free and open source. Signing st
 - **System quiet (AC-37).** macOS has no public way to read Focus state, and Windows offers `SHQueryUserNotificationState` only through a native helper.
   - T1 tries a small, maintained helper package (vetted with `add-dependency`) on the owner's Mac and on Windows; it must work in the universal Mac build (arm64 and x64) and both Windows builds (x64 and arm64).
   - If it isn't reliable, the owner decides: drop AC-37 and rely on MeetApp's own Do not disturb, or use the Mac's notification centre once the app is signed, which respects Focus by itself.
+  - **Outcome (D086, 2026-11-04):** no reliable helper; the owner chose to defer AC-37 until the app is signed.
 - **Login start on macOS 13+:** the hidden start is checked in T1.
 
 ## 10. Test approach

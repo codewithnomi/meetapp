@@ -18,7 +18,15 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | `src/main/auth-client.ts`, `auth-actions.ts` | The sign-in calls main makes for the screens, and the list of actions the screens may ask for (F01) |
 | `src/main/auth-bridge.ts` | Adds the token to the screens' requests to the backend, and cancels their requests to routes that hand out a token (F01) |
 | `src/main/provider-sign-in.ts` | Google/Microsoft: opens the browser and collects the result (F01) |
-| `src/preload/preload.ts` | The only bridge to the screens: `window.meetapp.platform`, `window.meetapp.auth` (sign-in actions; the token never reaches the screens), `window.meetapp.media` and `window.meetapp.deviceKey` (F02), `window.meetapp.power.onLockChange` (tells the screens when the computer locks or unlocks, from `powerMonitor` in `main.ts`, so status shows "Away", F14), and `window.meetapp.callWindows` (F16: report calls, carry out the small windows' presses, send the mini window's live-video pictures) |
+| `src/main/app-life.ts`, `app-life-bridge.ts` | F04: close hides, Quit asks during a call, a shutdown never asks; one copy per profile; the first-close card (`app-state.json`) |
+| `src/main/tray-menu.ts`, `tray.ts`, `platform-words.ts` | F04: the menu-bar / tray icon and its menu (`build-resources/trayTemplate*.png`); each system's words and keys |
+| `src/main/login-item.ts`, `login-item-bridge.ts` | F04: start at login, hidden (system login items when packaged, a stand-in file otherwise) |
+| `src/main/links.ts`, `meeting-links.ts` | F04: `meetapp://m/<code>` links (shapes in `@meetapp/contracts/app-links`); a link only opens Join a meeting |
+| `src/main/notices.ts`, `notices-checks.ts` | F04 (D085): notification cards, a third kind of F16 small window: at most 3, 8 s, above F16's windows; every card checked with Zod, 10 a second at most |
+| `src/main/window-state.ts`, `window-state-bridge.ts` | F04: the window's size and place (`window-state.json`), checked against the screens |
+| `src/main/updates.ts`, `updates-bridge.ts` | F04 (D084): electron-updater, switched off (`UPDATES_ENABLED = false`, never loaded while off); Settings → About |
+| `app-identity.ts`, `electron-builder.config.ts` | F04: name, app id, link scheme, icon (D087); the installers (D084) |
+| `src/preload/preload.ts` | The only bridge to the screens: `window.meetapp.platform`, `window.meetapp.auth` (sign-in actions; the token never reaches the screens), `window.meetapp.media` and `window.meetapp.deviceKey` (F02), `window.meetapp.power.onLockChange` (tells the screens when the computer locks or unlocks, from `powerMonitor` in `main.ts`, so status shows "Away", F14), `window.meetapp.callWindows` (F16: report calls, carry out the small windows' presses, send the mini window's live-video pictures), `window.meetapp.notices` (F04: `show`/`remove` a notification card) and `window.meetapp.app` (F04: `onOpenMeeting`, `about`, `loginItem.get/set`, `onTrayCommand`) |
 | `scripts/build.ts`, `scripts/dev.ts`, `scripts/electron.ts`, `scripts/second-window.ts` | Build with Vite (D039); development start-up; starting Electron (removes VS Code's ELECTRON_RUN_AS_NODE); `pnpm dev:window`, a second window with its own sign-in |
 
 **Settings (environment)**
@@ -34,7 +42,7 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 - Closing the window hides it; MeetApp keeps running (live line, rings). Quit (⌘Q, the menu) ends it and asks first during a call; a shutdown or logout never asks. One copy runs per profile folder; a second start brings the window forward. Rules: `src/main/app-life.ts`.
 
 ## Run it
-- `pnpm dev` (project root) starts the services, the backend, the screens' dev server and this window. Closing the window stops the desktop part.
+- `pnpm dev` (project root) starts the services, the backend, the screens' dev server and this window. Closing the window only hides it (F04); Quit (⌘Q) ends the desktop part.
 - A second window with its own sign-in (to be two people in a meeting), while `pnpm dev` runs: `pnpm dev:window`.
 - Just the window, without the services: `pnpm desktop`. It builds the screens and the desktop app, then opens the window; feature flags count as off without the backend.
 - Installers: `pnpm desktop:dist` builds a universal Mac `.dmg` and a Windows `.exe` (x64 and arm64) into `release/`, unsigned until `CSC_LINK` is set (D084). The name, app id, link scheme and icon come from `app-identity.ts` (D087).

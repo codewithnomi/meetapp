@@ -10,7 +10,7 @@ A meeting app like Microsoft Teams or Zoom (audio, video and screen sharing for 
 **Platforms:** desktop (Mac, Windows) first, then web, then mobile (Flutter).
 
 ## Status
-🏗️ **Foundation (F00) built:** local services, backend, desktop app shell with the design system, tests and GitHub checks, monitoring. **Accounts & workspaces (F01) being finished:** sign-in (email and code, Google/Microsoft), workspaces with roles, invitations, join link and code, profile and photo. Meetings and the AI features come next, each specified and approved before it's built.
+🏗️ **Built:** Foundation (F00), Accounts & workspaces (F01), Meetings & calling (F02), In-meeting chat (F03), Chats (F14), Calls from chat (F15), Calls while MeetApp isn't in front (F16). **Being built:** the Desktop app (F04: installers, menu-bar icon, meeting links, status by hand, MeetApp's own notification cards). Then browsing during a call (F17), scheduling, and the AI features, each specified and approved before it's built.
 See [docs/progress.md](docs/progress.md) for the current state.
 
 ## Run it
