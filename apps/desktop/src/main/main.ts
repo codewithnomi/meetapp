@@ -74,7 +74,8 @@ app.on("will-finish-launching", () => {
 });
 fromArgs(process.argv);
 
-/** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`. */
+/** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`.
+ * F04 AC-38: waking from sleep counts as unlocking, so the live line reconnects at once. */
 function forwardLockChanges(window: BrowserWindow): void {
   const send = (locked: boolean) => () => {
     if (!window.isDestroyed()) window.webContents.send(POWER_CHANNEL, locked);
@@ -83,9 +84,11 @@ function forwardLockChanges(window: BrowserWindow): void {
   const unlock = send(false);
   powerMonitor.on("lock-screen", lock);
   powerMonitor.on("unlock-screen", unlock);
+  powerMonitor.on("resume", unlock);
   window.once("closed", () => {
     powerMonitor.off("lock-screen", lock);
     powerMonitor.off("unlock-screen", unlock);
+    powerMonitor.off("resume", unlock);
   });
 }
 

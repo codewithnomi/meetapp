@@ -31,11 +31,17 @@ function useActivity(line: LiveLine) {
     const bridge = (window as { meetapp?: PowerBridge }).meetapp;
     const stop = bridge?.power?.onLockChange((locked) => {
       last = 0;
+      // Unlocked or awake again (F04 AC-38): a fresh line first; it reports activity once open.
+      if (!locked) line.reconnectNow();
       line.send({ t: "active", active: !locked });
     });
+    // The network is back: reconnect now rather than at the next try (F04 AC-38).
+    const online = () => line.reconnectNow();
+    window.addEventListener("online", online);
     return () => {
       window.removeEventListener("keydown", active);
       window.removeEventListener("pointerdown", active);
+      window.removeEventListener("online", online);
       stop?.();
     };
   }, [line]);
@@ -45,7 +51,13 @@ export function LiveLineProvider({ children }: { children: ReactNode }) {
   const queries = useQueryClient();
   const [polling, setPolling] = useState(false);
   const [line] = useState(
-    () => new LiveLine({ url: lineUrl(), open: (url) => new WebSocket(url) as unknown as LineSocket }),
+    () =>
+      new LiveLine({
+        url: lineUrl(),
+        open: (url) => new WebSocket(url) as unknown as LineSocket,
+        // F04 AC-38: in the desktop app, never more than 8 s between tries, so it is back within 10 s.
+        ...("meetapp" in window ? { maxWaitMs: 8_000 } : {}),
+      }),
   );
   useEffect(() => {
     line.start();

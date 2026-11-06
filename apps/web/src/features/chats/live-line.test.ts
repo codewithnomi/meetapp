@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { LiveLine, type LineSocket } from "./live-line.ts";
 
-function setUp(more: { now?: () => number } = {}) {
+function setUp(more: { now?: () => number; maxWaitMs?: number } = {}) {
   const sockets: (LineSocket & { sent: string[] })[] = [];
   const timers: { run: () => void; ms: number; cleared?: boolean }[] = [];
   const line = new LiveLine({
@@ -124,5 +124,35 @@ describe("the live line in the app", () => {
     // Opening twice still leaves one ping timer.
     opened(must(sockets[1]));
     expect(timers.filter((timer) => timer.ms === 30_000 && !timer.cleared)).toHaveLength(1);
+  });
+
+  it("TC-F04-74 [AC-F04-38] in the desktop app the wait between tries never passes 8 s", () => {
+    const { line, sockets, timers } = setUp({ maxWaitMs: 8_000 });
+    line.start();
+    for (let i = 0; i < 6; i++) {
+      must(sockets.at(-1)).onclose?.({ code: 1006 });
+      must(timers.at(-1)).run();
+    }
+    expect(timers.map((timer) => timer.ms)).toEqual([1_000, 2_000, 4_000, 8_000, 8_000, 8_000]);
+  });
+
+  it("TC-F04-73 TC-F04-74 [AC-F04-38] waking up or the network coming back opens a new line at once", () => {
+    const { line, sockets, timers } = setUp();
+    line.start();
+    opened(must(sockets[0]));
+    // The line looks open after sleep: it is replaced at once, and the old one's close changes nothing.
+    line.reconnectNow();
+    expect(sockets).toHaveLength(2);
+    must(sockets[0]).onclose?.({ code: 1006 });
+    expect(sockets).toHaveLength(2);
+    // A line waiting to try again (the wait has grown) doesn't wait.
+    must(sockets[1]).onclose?.({ code: 1006 });
+    const waiting = must(timers.at(-1));
+    line.reconnectNow();
+    expect(sockets).toHaveLength(3);
+    expect((waiting as { cleared?: boolean }).cleared).toBe(true);
+    line.stop();
+    line.reconnectNow();
+    expect(sockets).toHaveLength(3);
   });
 });

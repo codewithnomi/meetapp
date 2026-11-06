@@ -28,6 +28,8 @@ export interface LiveLineOptions {
   clearTimer?: (timer: unknown) => void;
   /** The computer's clock, replaceable in tests. */
   now?: () => number;
+  /** The longest wait between tries (30 s; the desktop app 8 s, F04 AC-38). */
+  maxWaitMs?: number;
 }
 
 export type LineListener = (message: LineServerMessage | { t: "connected" }) => void;
@@ -89,11 +91,28 @@ export class LiveLine {
       this.pinger = undefined;
       if (FINAL_CLOSES.has(event.code)) this.stopped = true;
       if (this.stopped) return;
-      // 1, 2, 4… seconds, at most 30.
-      const wait = Math.min(MAX_WAIT_MS, 1000 * 2 ** this.attempt);
+      // 1, 2, 4… seconds, at most 30 (8 in the desktop app).
+      const wait = Math.min(this.options.maxWaitMs ?? MAX_WAIT_MS, 1000 * 2 ** this.attempt);
       this.attempt += 1;
       this.retry = this.timer(() => this.connect(), wait);
     };
+  }
+
+  /**
+   * The computer woke up or the network came back (F04 AC-38): a new line at once, without waiting for the
+   * next try. A line that looks open after sleep may be dead, so it is replaced too.
+   */
+  reconnectNow() {
+    if (this.stopped) return;
+    this.clear(this.retry);
+    this.clear(this.pinger);
+    this.retry = undefined;
+    this.pinger = undefined;
+    this.attempt = 0;
+    const old = this.socket;
+    this.socket = undefined;
+    old?.close();
+    this.connect();
   }
 
   /** One ping timer at a time. */
