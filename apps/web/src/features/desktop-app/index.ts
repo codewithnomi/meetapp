@@ -2,3 +2,4 @@
 export { useTrayCommands } from "./use-tray-commands.ts";
 export { canStartAtLogin, useLoginItem } from "./use-login-item.ts";
 export { useMeetingLinks, useOpenedLink } from "./meeting-links.ts";
+export { useAbout } from "./use-about.ts";

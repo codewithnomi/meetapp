@@ -43,3 +43,32 @@ jobs:
         run: pnpm exec vitest run --project web --project ui --project desktop
       - if: steps.changes.outputs.run == 'true'
         run: pnpm --filter @meetapp/desktop build
+      # F04 (TC-F04-01, 05): the Windows installer builds, unsigned; then once more with a throwaway
+      # certificate, which must give a signed installer with no code change (signing is only settings).
+      - if: steps.changes.outputs.run == 'true'
+        name: Windows installer, unsigned
+        shell: pwsh
+        run: |
+          pnpm desktop:dist
+          $exe = Get-ChildItem apps/desktop/release -Filter *.exe | Select-Object -First 1
+          if (-not $exe) { throw "no installer was built" }
+          if ((Get-AuthenticodeSignature $exe.FullName).SignerCertificate) { throw "the unsigned build is signed" }
+      - if: steps.changes.outputs.run == 'true'
+        name: Windows installer, signed with a throwaway certificate
+        shell: pwsh
+        run: |
+          $cert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=MeetApp test" -CertStoreLocation Cert:\CurrentUser\My
+          $password = ConvertTo-SecureString -String "throwaway" -Force -AsPlainText
+          Export-PfxCertificate -Cert $cert -FilePath "$env:RUNNER_TEMP\test.pfx" -Password $password | Out-Null
+          Remove-Item apps/desktop/release -Recurse -Force
+          $env:CSC_LINK = "$env:RUNNER_TEMP\test.pfx"
+          $env:CSC_KEY_PASSWORD = "throwaway"
+          pnpm desktop:dist
+          $exe = Get-ChildItem apps/desktop/release -Filter *.exe | Select-Object -First 1
+          if (-not (Get-AuthenticodeSignature $exe.FullName).SignerCertificate) { throw "the signed build has no signature" }
+          if (git status --porcelain -- apps packages) { throw "signing changed the code" }
+      # F04 (TC-F04-86): the desktop window tests that need no backend (close/quit, one copy, hidden start,
+      # corner cards, window place). Those needing the backend are checked once by hand on Windows (T19).
+      - if: steps.changes.outputs.run == 'true'
+        name: Desktop window tests marked @windows
+        run: pnpm exec playwright test -c tests/e2e/playwright.config.ts --grep "@windows"

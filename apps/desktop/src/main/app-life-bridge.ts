@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { AppLife } from "./app-life.ts";
 import { readJson, writeJson } from "./login-item-bridge.ts";
 import { APP_CHANNEL } from "./tray-menu.ts";
+import { platformWords } from "./platform-words.ts";
 
 /** The first close on this computer: the screens show "MeetApp is still running" once (AC-04, TC-F04-10). */
 function firstClose(window: BrowserWindow): void {
@@ -14,7 +15,7 @@ function firstClose(window: BrowserWindow): void {
   writeJson(file, { ...state, firstCloseSeen: true });
   window.webContents.send(APP_CHANNEL, {
     kind: "stillRunning",
-    where: process.platform === "win32" ? "tray" : "menuBar",
+    where: platformWords(process.platform).where,
   });
 }
 

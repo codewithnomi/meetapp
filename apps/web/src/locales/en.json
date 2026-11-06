@@ -50,7 +50,8 @@
       "calls": "Calls",
       "privacy": "Privacy",
       "general": "General",
-      "notifications": "Notifications"
+      "notifications": "Notifications",
+      "about": "About"
     },
     "privacy": {
       "title": "Privacy",
@@ -113,6 +114,13 @@
       "preview": "Show message preview",
       "previewHint": "Off: cards say \"New message\" instead of the text.",
       "failed": "This setting couldn't be changed. Try again."
+    },
+    "about": {
+      "title": "About MeetApp",
+      "version": "Version {{version}}",
+      "updatesOff": "Updates are turned off",
+      "updatesOn": "Updates are turned on",
+      "loading": "Loading"
     }
   },
   "auth": {

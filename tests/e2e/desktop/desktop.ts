@@ -131,7 +131,7 @@ export const BRIDGE = {
   meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows", "notices", "app"],
   files: ["save"],
   // F04: what the menu-bar or tray menu asks the screens to do.
-  app: ["onOpenMeeting", "loginItem", "onTrayCommand"],
+  app: ["onOpenMeeting", "about", "loginItem", "onTrayCommand"],
   // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
   callWindows: ["report", "onAction", "onFramesWanted", "sendFrame"],
   // F04: MeetApp's own notification cards (main checks each one).

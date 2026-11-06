@@ -16,6 +16,7 @@ import { createAuthClient } from "./auth-client.ts";
 import { addSpellcheckMenu, registerFilesBridge, setUpSpellcheck } from "./chat-bridge.ts";
 import { POWER_CHANNEL } from "./chat-desktop.ts";
 import { MIN_SIZE } from "./window-state.ts";
+import { setUpUpdates } from "./updates-bridge.ts";
 import { rememberWindow, savedWindowState } from "./window-state-bridge.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
@@ -145,6 +146,7 @@ void app.whenReady().then(() => {
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
   setUpLoginItem(appUrl);
+  setUpUpdates(appUrl);
   createTray({
     signedIn: () => tokens.get() !== undefined,
     showWindow: () => (bringBack(mainWindow), mainWindow),

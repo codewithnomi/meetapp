@@ -16,7 +16,7 @@ test.afterEach(async () => {
 const bounds = (app: ElectronApplication) =>
   app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getBounds());
 
-test("TC-F04-77 [AC-F04-40] hidden and shown, then restarted: the same size and place", async () => {
+test("TC-F04-77 [AC-F04-40] hidden and shown, then restarted: the same size and place @windows", async () => {
   const profile = freshProfile();
   const first = await launch(profile);
   await first.app.evaluate(({ BrowserWindow }) =>
@@ -111,4 +111,15 @@ test("TC-F04-93 [AC-F04-40] the profile holds no passwords, tokens or message te
   }
   const state = JSON.parse(readFileSync(join(profile, "window-state.json"), "utf8")) as object;
   expect(Object.keys(state).sort()).toEqual(["displayId", "height", "maximized", "width", "x", "y"]);
+});
+
+test("TC-F04-84 [AC-F04-50] Settings → About shows the real version and that updates are off", async () => {
+  const mo = await launchAs((await team()).member.email);
+  windows.push(mo);
+  await mo.page.getByRole("button", { name: /^Your account: / }).click();
+  await mo.page.getByRole("menuitem", { name: "Settings" }).click();
+  await mo.page.getByRole("button", { name: "About" }).click();
+  const version = await mo.app.evaluate(({ app }) => app.getVersion());
+  await expect(mo.page.getByText(`Version ${version}`)).toBeVisible();
+  await expect(mo.page.getByText("Updates are turned off")).toBeVisible();
 });

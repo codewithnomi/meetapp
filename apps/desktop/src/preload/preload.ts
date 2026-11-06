@@ -5,6 +5,7 @@
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
 import { LOGIN_ITEM_CHANNEL } from "../main/login-item.ts";
+import { ABOUT_CHANNEL } from "../main/updates.ts";
 import { MEETING_LINK_CHANNEL, isMeetingCode } from "../main/links.ts";
 import { APP_CHANNEL, isTrayCommand, type TrayCommand } from "../main/tray-menu.ts";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
@@ -91,6 +92,8 @@ const appCommands = {
       ipcRenderer.removeListener(MEETING_LINK_CHANNEL, handler);
     };
   },
+  // F04 AC-50: Settings → About (the version, and whether updates are on).
+  about: () => ipcRenderer.invoke(ABOUT_CHANNEL),
   // F04 AC-09: Settings → General "Start MeetApp when I log in"; answers the real state.
   loginItem: {
     get: () => ipcRenderer.invoke(LOGIN_ITEM_CHANNEL, "get"),

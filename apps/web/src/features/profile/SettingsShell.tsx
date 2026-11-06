@@ -6,7 +6,8 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { canStartAtLogin } from "../desktop-app/index.ts";
 
-export type SettingsScreen = "profile" | "general" | "notifications" | "appearance" | "devices" | "calls" | "privacy";
+export type SettingsScreen =
+  "profile" | "general" | "notifications" | "about" | "appearance" | "devices" | "calls" | "privacy";
 
 /** The settings pages in menu order, with their icons. */
 const SCREENS: [SettingsScreen, IconName][] = [
@@ -18,10 +19,11 @@ const SCREENS: [SettingsScreen, IconName][] = [
   ["devices", "camera"],
   ["calls", "phone"],
   ["privacy", "lock"],
+  ["about", "info"],
 ];
 
 /** F04: the desktop app's own pages (start at login, its notification cards). */
-const DESKTOP_ONLY: SettingsScreen[] = ["general", "notifications"];
+const DESKTOP_ONLY: SettingsScreen[] = ["general", "notifications", "about"];
 
 export interface SettingsShellProps {
   screen: SettingsScreen;

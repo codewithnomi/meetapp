@@ -58,7 +58,7 @@ async function quitAndWait(app: ElectronApplication, ms = 10_000): Promise<boole
   return Promise.race([ended, new Promise<boolean>((done) => setTimeout(() => done(false), ms))]);
 }
 
-test("TC-F04-06 [AC-F04-02] a second start with the same profile brings the first window forward and ends", async () => {
+test("TC-F04-06 [AC-F04-02] a second start with the same profile brings the first window forward and ends @windows", async () => {
   const profile = freshProfile();
   const first = await launch(profile);
   windows.push(first);
@@ -71,7 +71,7 @@ test("TC-F04-06 [AC-F04-02] a second start with the same profile brings the firs
   await expect.poll(() => mainState(first.app)).toEqual({ visible: true, focused: true });
 });
 
-test("TC-F04-07 [AC-F04-02] copies with different profiles run side by side", async () => {
+test("TC-F04-07 [AC-F04-02] copies with different profiles run side by side @windows", async () => {
   const one = await launch(freshProfile());
   const two = await launch(freshProfile());
   windows.push(one, two);
@@ -79,7 +79,7 @@ test("TC-F04-07 [AC-F04-02] copies with different profiles run side by side", as
   expect((await mainState(two.app)).visible).toBe(true);
 });
 
-test("TC-F04-14 [AC-F04-06] closing hides MeetApp; Quit with no call ends it without a question", async () => {
+test("TC-F04-14 [AC-F04-06] closing hides MeetApp; Quit with no call ends it without a question @windows", async () => {
   const running = await launch();
   windows.push(running);
   await answerQuestions(running.app, 1);
@@ -132,7 +132,7 @@ test("TC-F04-15 [AC-F04-06] Quit during a call asks; Cancel keeps the call, Quit
   await afterCallEnds(olivia.page);
 });
 
-test("TC-F04-20 TC-F04-21 [AC-F04-08] a --hidden start shows no window, signed in or not; Open MeetApp shows it", async () => {
+test("TC-F04-20 TC-F04-21 [AC-F04-08] a --hidden start shows no window, signed in or not; Open MeetApp shows it @windows", async () => {
   const signedOut = await launch(freshProfile(), {}, ["--hidden"]);
   windows.push(signedOut);
   await signedOut.page.waitForLoadState("load");

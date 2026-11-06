@@ -21,7 +21,7 @@ const cardState = (app: ElectronApplication) =>
     SMALL,
   );
 
-test("TC-F04-50 TC-F04-88 [AC-F04-30] a card shows above other apps without the keyboard, in a locked-down window", async () => {
+test("TC-F04-50 TC-F04-88 [AC-F04-30] a card shows above other apps without the keyboard, in a locked-down window @windows", async () => {
   const running = await launch();
   windows.push(running);
   // Another window has the keyboard (the main window is hidden, as when another app is in front).
@@ -55,7 +55,7 @@ test("TC-F04-50 TC-F04-88 [AC-F04-30] a card shows above other apps without the 
   expect(small.url()).toContain(SMALL);
 });
 
-test("TC-F04-90 [AC-F04-30] a card's choice can't be faked by the main window; × closes it", async () => {
+test("TC-F04-90 [AC-F04-30] a card's choice can't be faked by the main window; × closes it @windows", async () => {
   const running = await launch();
   windows.push(running);
   await running.page.evaluate((value) => {

@@ -1,6 +1,7 @@
 // The Settings pages and their routes (F01, F14, F15): one route per page in the Settings menu.
 import { Route } from "react-router";
 import type { SettingsScreen } from "../features/profile/index.ts";
+import { AboutPage } from "../pages/AboutPage/index.ts";
 import { PrivacyPage } from "../pages/PrivacyPage/index.ts";
 import { CallsSettingsPage } from "../pages/CallsSettingsPage/index.ts";
 import { GeneralSettingsPage } from "../pages/GeneralSettingsPage/index.ts";
@@ -19,6 +20,7 @@ function settingsRoutes(onNavigate: (screen: SettingsScreen) => void, onBack: ()
     ["/settings/devices", DevicesSettingsPage],
     ["/settings/calls", CallsSettingsPage],
     ["/settings/privacy", PrivacyPage],
+    ["/settings/about", AboutPage],
   ] as const;
   return pages.map(([path, Page]) => (
     <Route key={path} path={path} element={<Page onNavigate={onNavigate} onBack={onBack} />} />
