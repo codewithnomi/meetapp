@@ -26,6 +26,10 @@ export interface LiveLineOptions {
   /** Timers, replaceable in tests. */
   setTimer?: (run: () => void, ms: number) => unknown;
   clearTimer?: (timer: unknown) => void;
+  /** The computer's clock, replaceable in tests. */
+  now?: () => number;
+  /** The longest wait between tries (30 s; the desktop app 8 s, F04 AC-38). */
+  maxWaitMs?: number;
 }
 
 export type LineListener = (message: LineServerMessage | { t: "connected" }) => void;
@@ -40,6 +44,9 @@ export class LiveLine {
   private pinger: unknown;
   private retry: unknown;
   private readonly options: LiveLineOptions;
+  /** How far the server's clock is ahead of this computer's (F04: the 5-minute rule), and when we asked. */
+  private offsetMs = 0;
+  private pingedAt = 0;
 
   constructor(options: LiveLineOptions) {
     this.options = options;
@@ -66,12 +73,17 @@ export class LiveLine {
       if (socket !== this.socket) return;
       this.attempt = 0;
       this.emit({ t: "connected" });
+      // A first ping at once tells the server's time.
+      this.ping();
       this.schedulePing();
     };
     socket.onmessage = (event) => {
       if (socket !== this.socket) return;
       const parsed = lineServerMessageSchema.safeParse(safeJson(event.data));
-      if (parsed.success) this.emit(parsed.data);
+      if (!parsed.success) return;
+      if (parsed.data.t === "pong" && parsed.data.at !== undefined)
+        this.offsetMs = parsed.data.at - (this.pingedAt + this.now()) / 2;
+      this.emit(parsed.data);
     };
     socket.onclose = (event) => {
       if (socket !== this.socket) return;
@@ -79,20 +91,51 @@ export class LiveLine {
       this.pinger = undefined;
       if (FINAL_CLOSES.has(event.code)) this.stopped = true;
       if (this.stopped) return;
-      // 1, 2, 4… seconds, at most 30.
-      const wait = Math.min(MAX_WAIT_MS, 1000 * 2 ** this.attempt);
+      // 1, 2, 4… seconds, at most 30 (8 in the desktop app).
+      const wait = Math.min(this.options.maxWaitMs ?? MAX_WAIT_MS, 1000 * 2 ** this.attempt);
       this.attempt += 1;
       this.retry = this.timer(() => this.connect(), wait);
     };
+  }
+
+  /**
+   * The computer woke up or the network came back (F04 AC-38): a new line at once, without waiting for the
+   * next try. A line that looks open after sleep may be dead, so it is replaced too.
+   */
+  reconnectNow() {
+    if (this.stopped) return;
+    this.clear(this.retry);
+    this.clear(this.pinger);
+    this.retry = undefined;
+    this.pinger = undefined;
+    this.attempt = 0;
+    const old = this.socket;
+    this.socket = undefined;
+    old?.close();
+    this.connect();
   }
 
   /** One ping timer at a time. */
   private schedulePing() {
     this.clear(this.pinger);
     this.pinger = this.timer(() => {
-      this.send({ t: "ping" });
+      this.ping();
       this.schedulePing();
     }, PING_MS);
+  }
+
+  private ping() {
+    this.pingedAt = this.now();
+    this.send({ t: "ping" });
+  }
+
+  private now() {
+    return (this.options.now ?? Date.now)();
+  }
+
+  /** The server's time now, by this computer's clock and the last pong (ms). */
+  serverNow(): number {
+    return this.now() + this.offsetMs;
   }
 
   private emit(message: LineServerMessage | { t: "connected" }) {

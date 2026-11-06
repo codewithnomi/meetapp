@@ -93,7 +93,7 @@ Anyone signed in to the **desktop app** (F02 meetings and F15 chat calls). The w
 - A missed-call notification shows only when MeetApp wasn't in front.
 - The mini call window has a hide × (it stays hidden until MeetApp is in front again; the call goes on).
 - A caller hanging up before anyone answers gives a missed-call notification, as in Teams (owner, 2026-11-02, second verification).
-- MeetApp's own "Do not disturb" status doesn't silence calls or notifications; only the Mac's settings do (blocking calls can come later with admin settings).
+- MeetApp's own "Do not disturb" status doesn't silence calls or missed-call notifications; only the Mac's settings do (blocking calls can come later with admin settings). F04 adds a hand-set Do not disturb that silences F04's message, mention and lobby notifications, not calls (D083).
 
 ## Open questions
 None.

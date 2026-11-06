@@ -51,17 +51,53 @@ export interface CallWindowsState {
 }
 
 /** What a small window is told to show. */
-export type CallWindowView = { kind: "ring"; ring: CallWindowsRing } | { kind: "mini"; call: CallWindowsCall };
+export type CallWindowView =
+  | { kind: "ring"; ring: CallWindowsRing }
+  | { kind: "mini"; call: CallWindowsCall }
+  | { kind: "notice"; card: NoticeCard };
+
+/**
+ * F04: a MeetApp notification card (design.md 3.4; AC-F04-30): sent by a main window, checked and cut by
+ * the desktop app, shown in a small window at the bottom right. All words are already translated.
+ */
+export interface NoticeCard {
+  /** The main window's own id for the card; a click comes back with it. */
+  id: string;
+  kind: "message" | "mention" | "lobby" | "running";
+  /** The sender, the person waiting, or "MeetApp is still running". */
+  title: string;
+  /** The chat or meeting, or "3 new messages". */
+  detail?: string;
+  /** The message's first 100 characters, "New message", or the running hint. */
+  text?: string;
+  /** Marked next to the title: "mentioned you", "Guest". */
+  tag?: string;
+  person?: CallWindowsPerson;
+  /** Lobby: the buttons' words (no Admit on the "<n> people are waiting" card). */
+  admit?: string;
+  viewLobby?: string;
+  /** The ×'s name for screen readers. */
+  close: string;
+}
+
+/** What a card's buttons ask: to its main window (open the chat, Admit, View lobby). */
+export type NoticeChoice = "open" | "admit" | "viewLobby";
 
 /** A small window's button press (design.md 3.2). */
 export type CallWindowAction =
   | { name: "accept"; callId: string; video: boolean }
   | { name: "decline" | "hide"; callId: string }
-  | { name: "toggleMic" | "toggleCamera" | "share" | "toggleHand" | "leave" | "backToCall" | "hideMini" };
+  | { name: "toggleMic" | "toggleCamera" | "share" | "toggleHand" | "leave" | "backToCall" | "hideMini" }
+  /** F04: a card's buttons, its ×, and the pointer coming onto it or leaving it. */
+  | { name: "notice"; choice: NoticeChoice | "close" }
+  | { name: "noticeHover"; on: boolean };
 
 /** Actions only the desktop app sends, from a missed-call notification (AC-F16-11). */
 export type CallWindowsNotificationAction =
-  { name: "openChat"; conversationId: string } | { name: "callBack"; conversationId: string; video: boolean };
+  | { name: "openChat"; conversationId: string }
+  | { name: "callBack"; conversationId: string; video: boolean }
+  /** F04: a card's choice, back to the main window that sent the card. */
+  | { name: "noticeChosen"; cardId: string; choice: NoticeChoice };
 
 /** Everything a main window may be asked to do. */
 export type CallWindowsMainAction = CallWindowAction | CallWindowsNotificationAction;

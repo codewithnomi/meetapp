@@ -81,6 +81,10 @@ Like the Teams **Chat** screen (owner, 2026-10-21, D062): a chat list on the lef
 ### F16 Calls while MeetApp isn't in front
 As in Teams: an incoming call rings in a small window above every app; a Mac notification for missed calls (Call back); a mini call window during a call or meeting while another app is in front. Both windows can be dragged and remember their place. (D078)
 
+### F17 Browse during a call
+As in Teams: during a call or meeting, the person can open Chat, Meetings, Settings and other screens while the call keeps running in a small call view inside MeetApp (click it to go back). A meeting link clicked during a call shows that meeting's pre-join; Join leaves the current call first (MeetApp has no hold). (D088)
+- **Depends on:** F02, F15, F16 · **Size:** medium
+
 ### F04 Desktop app
 - Installable app for **Mac and Windows** (unsigned for now, D017)
 - Clicking a meeting link opens the desktop app (`meetapp://` links)
@@ -181,7 +185,7 @@ Noted by the owner during the F02 look check (2026-10-20), for after a first usa
 
 ## The build order at a glance
 ```
-F00 → F01 → F02 → F03 → F14 → F15 → F16 → F04 → F13      (Phase 1: working Teams-style app)
+F00 → F01 → F02 → F03 → F14 → F15 → F16 → F04 → F17 → F13      (Phase 1: working Teams-style app)
     → F05 → F06                        (Phase 2: AI notes)
     → F07 → F08 → F09                  (Phase 3: AI assistant)
     → F10 → F11 → F12                  (Phase 4: web, mobile, business, local AI)

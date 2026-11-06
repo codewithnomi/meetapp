@@ -59,6 +59,12 @@ export async function closeApp(app: ElectronApplication): Promise<void> {
   const ended = () => child.exitCode !== null || child.signalCode !== null;
   if (ended()) return;
   const exited = new Promise<void>((done) => child.once("exit", () => done()));
+  // F04: Quit during a call asks first; a test's clean-up answers "Quit" so it never waits on the question.
+  await app
+    .evaluate(({ dialog }) => {
+      dialog.showMessageBoxSync = () => 0;
+    })
+    .catch(() => undefined);
   await Promise.race([app.close().catch(() => undefined), wait(CLOSE_MS)]);
   if (!ended()) child.kill("SIGKILL");
   await Promise.race([exited, wait(CLOSE_MS)]);
@@ -122,10 +128,14 @@ export function recordRequests(page: Page): string[] {
  * access with the share picker, the device key, and saving chat files (F03, design 6). Anything else is a leak.
  */
 export const BRIDGE = {
-  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows"],
+  meetapp: ["platform", "auth", "media", "deviceKey", "files", "power", "callWindows", "notices", "app"],
   files: ["save"],
+  // F04: what the menu-bar or tray menu asks the screens to do.
+  app: ["onOpenMeeting", "about", "loginItem", "onTrayCommand"],
   // F16 (D079): report calls for the small windows above other apps; carry out their button presses.
   callWindows: ["report", "onAction", "onFramesWanted", "sendFrame"],
+  // F04: MeetApp's own notification cards (main checks each one).
+  notices: ["show", "remove"],
   // F14: the computer locked or unlocked (status shows Away).
   power: ["onLockChange"],
   media: ["accessStatus", "requestAccess", "getShareSources", "chooseShareSource"],
@@ -147,12 +157,14 @@ export const BRIDGE = {
   ],
 };
 
-/** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.media` and `.auth`. */
+/** What the page sees on `window.meetapp`: its keys, and the keys of `.files`, `.power`, `.callWindows`, `.notices`, `.app`, `.media` and `.auth`. */
 export function bridgeKeys(page: Page): Promise<{
   meetapp: string[];
   files: string[];
   power: string[];
   callWindows: string[];
+  notices: string[];
+  app: string[];
   media: string[];
   auth: string[];
 }> {
@@ -160,7 +172,15 @@ export function bridgeKeys(page: Page): Promise<{
     const bridge =
       (
         window as {
-          meetapp?: { auth?: object; media?: object; files?: object; power?: object; callWindows?: object };
+          meetapp?: {
+            auth?: object;
+            media?: object;
+            files?: object;
+            power?: object;
+            callWindows?: object;
+            notices?: object;
+            app?: object;
+          };
         }
       ).meetapp ?? {};
     return {
@@ -168,6 +188,8 @@ export function bridgeKeys(page: Page): Promise<{
       files: Object.keys(bridge.files ?? {}),
       power: Object.keys(bridge.power ?? {}),
       callWindows: Object.keys(bridge.callWindows ?? {}),
+      notices: Object.keys(bridge.notices ?? {}),
+      app: Object.keys(bridge.app ?? {}),
       media: Object.keys(bridge.media ?? {}),
       auth: Object.keys(bridge.auth ?? {}),
     };

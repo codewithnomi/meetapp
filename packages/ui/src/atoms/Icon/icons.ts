@@ -1,5 +1,6 @@
 // The design system's icon names mapped to Lucide icons (same style: line icons on a 24px grid).
 import {
+  Bell,
   BellOff,
   Calendar,
   Mail,
@@ -132,6 +133,8 @@ export const ICONS = {
   muted: BellOff,
   // F15 calls from chats: a missed call note.
   "phone-missed": PhoneMissed,
+  // F04 desktop app: Settings → Notifications.
+  bell: Bell,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

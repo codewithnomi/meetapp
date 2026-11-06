@@ -56,3 +56,9 @@ Words used in MeetApp's documents and code, in plain English.
 - **Mini call window:** the small window above every app during a call or meeting, with the speaker's live video and the main buttons.
 - **Missed-call notification:** the Mac's own notification for a call nobody answered while MeetApp wasn't in front (needs a signed app, D080).
 
+## Desktop app (F04)
+- **Menu bar / tray icon:** MeetApp's icon in the Mac menu bar (Windows: the taskbar's notification area); its menu opens MeetApp, sets a status, opens Settings or quits. Closing the window keeps MeetApp running there.
+- **Notification card (notice card):** MeetApp's own small card at the bottom right of the screen for a new message, an @mention or someone waiting in the lobby; it goes after 8 seconds, at most 3 at once.
+- **Meeting link (`meetapp://m/<code>`):** a link that opens MeetApp at that meeting's Join a meeting form; it never joins by itself.
+- **Status set by hand:** Available, Busy, Do not disturb, Be right back or Appear away, chosen from your picture or the menu bar for a time; then it goes back to automatic.
+- **Do not disturb (MeetApp's own):** a status set by hand that silences notification cards; calls still ring. Not the same as the computer's Focus mode.

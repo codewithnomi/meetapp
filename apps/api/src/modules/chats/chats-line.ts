@@ -158,7 +158,7 @@ class LineHub {
       if (message.data.active) line.activeAt = this.now();
     }
     if (message.data.t !== "typing") this.track(this.reportPresence(line));
-    if (message.data.t === "ping") this.send(line, { t: "pong" });
+    if (message.data.t === "ping") this.send(line, { t: "pong", at: this.now() });
     if (message.data.t === "typing") this.typing(line, message.data.conversationId);
   }
 

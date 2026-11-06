@@ -22,6 +22,8 @@ import {
   CALL_WINDOWS_CHANNEL,
   FRAMES_CHANNEL,
   MINI_SIZE,
+  NOTICES_CHANNEL,
+  isCallWindowAction,
   RING_SIZE,
   senderAllowed,
   type Places,
@@ -29,6 +31,7 @@ import {
 } from "./call-windows.ts";
 import { validPlaces } from "./call-windows-checks.ts";
 import { notifyMissed } from "./call-windows-notify.ts";
+import { NOTICE_WIDTH, NoticeBoard, type NoticeDeps } from "./notices.ts";
 import { lockDownCallWindowSession } from "./guards.ts";
 import { CALL_WINDOW_PAGE, CALL_WINDOW_PARTITION, smallPageAllows, smallWindowSetup } from "./security.ts";
 
@@ -77,8 +80,14 @@ function followDrag(window: BrowserWindow, onSettled: () => void) {
   return drag;
 }
 
-function openSmallWindow(kind: SmallKind, options: CallWindowsOptions, { onMoved, onClosed }: SmallWindowEvents) {
-  const setup = smallWindowSetup(options.preloadPath, kind === "ring" ? RING_SIZE : MINI_SIZE);
+const SIZES = { ring: RING_SIZE, mini: MINI_SIZE, notice: { width: NOTICE_WIDTH, height: 96 } };
+
+function openSmallWindow(
+  kind: SmallKind | "notice",
+  options: CallWindowsOptions,
+  { onMoved, onClosed }: SmallWindowEvents,
+) {
+  const setup = smallWindowSetup(options.preloadPath, SIZES[kind]);
   const window = new BrowserWindow(setup.options);
   // Placed only when the place changes, and never while the person drags it (no jumping back).
   let placed = "";
@@ -127,6 +136,7 @@ function computerFor(
   options: CallWindowsOptions,
   mains: MainWindows,
   controller: () => CallWindowsController,
+  board: () => NoticeBoard,
 ): CallWindowsDeps {
   const placesFile = join(app.getPath("userData"), "call-windows.json");
   return {
@@ -157,7 +167,33 @@ function computerFor(
     notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
     now: () => Date.now(),
     later: (ms, run) => void setTimeout(run, ms),
+    laidOut: (rects) => board().avoid(rects),
     ...mainWindowLines(mains),
+  };
+}
+
+/** F04's notification cards (design.md 3.4): the corner of the screen holding the newest main window. */
+function noticesFor(options: CallWindowsOptions, mains: MainWindows, board: () => NoticeBoard): NoticeDeps {
+  return {
+    open: () => openSmallWindow("notice", options, { onMoved: () => undefined, onClosed: (id) => board().closed(id) }),
+    displays: () => screen.getAllDisplays().map((d) => ({ id: d.id, workArea: d.workArea })),
+    cornerDisplayId: () => {
+      const window = [...mains.values()].find((w) => !w.isDestroyed() && w.isVisible());
+      return window ? screen.getDisplayMatching(window.getBounds()).id : screen.getPrimaryDisplay().id;
+    },
+    toMain: (id, action) => mains.get(id)?.webContents.send(CALL_WINDOWS_CHANNEL, action),
+    focusMain: (id) => {
+      const window = mains.get(id);
+      if (!window || window.isDestroyed()) return;
+      if (window.isMinimized()) window.restore();
+      window.show();
+      window.focus();
+    },
+    now: () => Date.now(),
+    later: (ms, run) => {
+      const timer = setTimeout(run, ms);
+      return () => clearTimeout(timer);
+    },
   };
 }
 
@@ -185,32 +221,55 @@ function mainWindowLines(mains: MainWindows): Pick<CallWindowsDeps, "linkFrames"
   };
 }
 
-/** Only main windows report; only the small windows press buttons (TC-F16-55). */
-function listen(controller: CallWindowsController, mains: MainWindows): void {
+/** Only main windows report and send cards; only the small windows press buttons (TC-F16-55, TC-F04-90). */
+function listen(controller: CallWindowsController, board: NoticeBoard, mains: MainWindows): void {
+  const small = () => new Set([...controller.smallWindowIds(), ...board.windowIds()]);
   const allowed = (event: IpcMainEvent, channel: string) =>
-    senderAllowed(event.sender.id, controller.smallWindowIds(), channel) &&
-    (channel === CALL_WINDOW_CHANNEL || mains.has(event.sender.id));
+    senderAllowed(event.sender.id, small(), channel) && (channel === CALL_WINDOW_CHANNEL || mains.has(event.sender.id));
   ipcMain.on(CALL_WINDOWS_CHANNEL, (event, state: unknown) => {
     if (allowed(event, CALL_WINDOWS_CHANNEL)) controller.report(event.sender.id, state);
   });
+  ipcMain.on(NOTICES_CHANNEL, (event, message: unknown) => {
+    if (!allowed(event, NOTICES_CHANNEL) || typeof message !== "object" || message === null) return;
+    const { show, remove } = message as { show?: unknown; remove?: unknown };
+    if (show !== undefined) board.show(event.sender.id, show);
+    else if (typeof remove === "string") board.remove(event.sender.id, remove);
+  });
   ipcMain.on(CALL_WINDOW_CHANNEL, (event, action: unknown) => {
-    if (allowed(event, CALL_WINDOW_CHANNEL)) controller.act(event.sender.id, action);
+    if (!allowed(event, CALL_WINDOW_CHANNEL)) return;
+    if (!board.windowIds().has(event.sender.id)) return controller.act(event.sender.id, action);
+    if (isCallWindowAction(action)) board.act(event.sender.id, action);
   });
   for (const change of ["display-added", "display-removed", "display-metrics-changed"] as const)
     screen.on(change as "display-added", () => controller.screensChanged());
 }
 
 /** Sets up the small windows once the app is ready; `watch` is called for every main window. */
-export function setUpCallWindows(options: CallWindowsOptions): { watch: (window: BrowserWindow) => void } {
+export interface CallWindows {
+  watch: (window: BrowserWindow) => void;
+  /** A call or meeting runs in some main window (F04 AC-06). */
+  hasCall: () => boolean;
+}
+
+export function setUpCallWindows(options: CallWindowsOptions): CallWindows {
   const smallSession = session.fromPartition(CALL_WINDOW_PARTITION);
   lockDownCallWindowSession(smallSession, options.devServerUrl, options.csp);
   if (!options.devServerUrl)
     serveScreens(options.rendererDir, () => options.csp, smallSession.protocol, smallPageAllows);
   const mains: MainWindows = new Map();
-  const controller: CallWindowsController = new CallWindowsController(computerFor(options, mains, () => controller));
-  listen(controller, mains);
+  const board: NoticeBoard = new NoticeBoard(noticesFor(options, mains, () => board));
+  const controller: CallWindowsController = new CallWindowsController(
+    computerFor(
+      options,
+      mains,
+      () => controller,
+      () => board,
+    ),
+  );
+  listen(controller, board, mains);
   const focused = () => [...mains.entries()].find(([, w]) => !w.isDestroyed() && w.isFocused())?.[0];
   return {
+    hasCall: () => controller.hasCall(),
     watch(window) {
       const id = window.webContents.id;
       mains.set(id, window);
@@ -223,6 +282,7 @@ export function setUpCallWindows(options: CallWindowsOptions): { watch: (window:
       });
       window.on("closed", () => {
         mains.delete(id);
+        board.dropOwner(id);
         controller.dropReport(id);
         controller.focusChanged(focused());
       });

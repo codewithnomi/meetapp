@@ -11,8 +11,14 @@ export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
 export const MEMBER_STATES = ["accepted", "pending", "declined", "left", "removed"] as const;
 export type MemberState = (typeof MEMBER_STATES)[number];
 
-export const STATUSES = ["available", "away", "in_call", "offline"] as const;
+export const STATUSES = ["available", "away", "in_call", "offline", "busy", "dnd", "brb"] as const;
 export type Status = (typeof STATUSES)[number];
+
+/** Statuses a person can set by hand (F04 AC-F04-20); "Appear away" is `away`. */
+export const MANUAL_STATUSES = ["available", "busy", "dnd", "brb", "away"] as const;
+export type ManualStatus = (typeof MANUAL_STATUSES)[number];
+/** A hand-set status may last at most 8 days ("This week" from a Monday, F04 design 3.3). */
+export const MANUAL_STATUS_MAX_MS = 8 * 24 * 60 * 60 * 1000;
 
 /** Limits from the requirements (AC-F14-05, 12, 15, 16, 17) and design 3.4. */
 export const CHATS_LIMITS = {
@@ -177,6 +183,40 @@ export const statusesSchema = z
   .object({ statuses: z.array(z.object({ userId: z.uuid(), status: z.enum(STATUSES) })) })
   .meta({ id: "ChatStatuses" });
 
+/** Set a status by hand for a time (`until`, null = until changed), or reset it (`status: null`). */
+export const myStatusBodySchema = z
+  .object({ status: z.enum(MANUAL_STATUSES).nullable(), until: z.iso.datetime({ offset: true }).nullable() })
+  .strict()
+  .refine((body) => body.status !== null || body.until === null, { path: ["until"] })
+  .meta({ id: "MyStatus" });
+export const myStatusSchema = z
+  .object({
+    /** What others see now. */
+    status: z.enum(STATUSES),
+    /** The status set by hand that hasn't run out, else null (automatic). */
+    chosen: z.enum(MANUAL_STATUSES).nullable(),
+    until: z.iso.datetime({ offset: true }).nullable(),
+  })
+  .meta({ id: "MyStatusView" });
+
+/** F04 AC-F04-36: which notifications show; all on by default. */
+export const notificationSettingsSchema = z
+  .object({
+    messages: z.boolean(),
+    mentions: z.boolean(),
+    lobby: z.boolean(),
+    sound: z.boolean(),
+    preview: z.boolean(),
+  })
+  .meta({ id: "NotificationSettings" });
+/** Any of them, at least one; unknown keys are refused. */
+export const notificationSettingsBodySchema = notificationSettingsSchema
+  .partial()
+  .strict()
+  .refine((body) => Object.keys(body).length > 0)
+  .meta({ id: "NotificationSettingsChange" });
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
+
 export const readMarkBodySchema = z.object({ seq: z.number().int().min(0) }).meta({ id: "ChatReadMark" });
 /** A chat request waiting for this person (AC-F14-10): who sent it and a preview of its messages. */
 const chatRequestSchema = z
@@ -213,7 +253,8 @@ export const lineServerMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("read"), conversationId: z.uuid(), userId: z.uuid(), seq: z.number().int() }),
   z.object({ t: z.literal("status"), userId: z.uuid(), status: z.enum(STATUSES) }),
   z.object({ t: z.literal("list"), conversationId: z.uuid(), change: z.enum(["added", "changed", "removed"]) }),
-  z.object({ t: z.literal("pong") }),
+  /** `at`: the server's clock (ms), so the app knows how far its own clock is off (F04 design 3.4). */
+  z.object({ t: z.literal("pong"), at: z.number().optional() }),
   /** The server lost Redis (`on`), so news from other servers can't arrive: the app checks for itself
    * (open chat every 10 s, list every 30 s) until `on: false` (TC-F14-44). */
   z.object({ t: z.literal("polling"), on: z.boolean() }),

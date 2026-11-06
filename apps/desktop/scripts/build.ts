@@ -6,7 +6,7 @@ import { build } from "vite";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 // Electron, Node's own modules and installed packages are loaded at run time, never bundled.
-const external = ["electron", /^node:/, ...builtinModules, /^@sentry\//];
+const external = ["electron", /^node:/, ...builtinModules, /^@sentry\//, "electron-updater"];
 
 async function buildEntry(entry: string, outDir: string, format: "es" | "cjs", fileName: string): Promise<void> {
   await build({

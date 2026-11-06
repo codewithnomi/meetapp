@@ -5,6 +5,7 @@ import { Button, Icon, Input, SegmentedControl } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../auth/index.ts";
+import { useOpenedLink } from "../desktop-app/index.ts";
 import { idAddress, linkAddress } from "./meeting-address.ts";
 import { meetingErrorText } from "./meeting-errors.ts";
 import { useFindMeeting, type MeetingFound } from "./meetings-api.ts";
@@ -82,18 +83,29 @@ function Fields({ way, values, set, error }: { way: Way; values: Values; set: Se
   );
 }
 
-export function JoinMeetingForm({ onFound, note }: { onFound: (found: MeetingFound) => void; note?: string }) {
-  const { t } = useTranslation();
+/** The form's state and lookups; a clicked meeting link (F04 AC-10) fills it and is looked up as if typed. */
+function useJoinForm(onFound: (found: MeetingFound) => void) {
   const [way, setWay] = useState<Way>("id");
   const [values, setValues] = useState<Values>({ link: "", meetingNumber: "", passcode: "" });
   const find = useFindMeeting();
-  const error = useErrorText(find.error);
   const set: Set = (field) => (event) => setValues((old) => ({ ...old, [field]: event.target.value }));
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     const address = way === "link" ? linkAddress(values.link) : idAddress(values.meetingNumber, values.passcode);
     find.mutate(address, { onSuccess: onFound });
   };
+  useOpenedLink((link) => {
+    setWay("link");
+    setValues((old) => ({ ...old, link }));
+    find.mutate(linkAddress(link), { onSuccess: onFound });
+  });
+  return { way, setWay, values, set, find, submit };
+}
+
+export function JoinMeetingForm({ onFound, note }: { onFound: (found: MeetingFound) => void; note?: string }) {
+  const { t } = useTranslation();
+  const { way, setWay, values, set, find, submit } = useJoinForm(onFound);
+  const error = useErrorText(find.error);
   return (
     <section
       aria-labelledby="join-meeting-heading"

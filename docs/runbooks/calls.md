@@ -91,8 +91,8 @@ The 30-second job stops rings; the every-minute clean-up stops any ring older th
 
 
 ## Small call windows (F16)
-- **No ring window appears:** it shows only while no MeetApp window is in front (otherwise the call rings inside MeetApp), and only while MeetApp is running. Ringing with MeetApp fully closed comes with F04.
-- **No Mac notification for a missed call:** development builds are signed only ad hoc (no Apple Developer certificate), and macOS refuses their notifications (D080). The chat still has the "Missed call" note. It works once signing is set up (F04).
+- **No ring window appears:** it shows only while no MeetApp window is in front (otherwise the call rings inside MeetApp), and only while MeetApp is running. Closing the window keeps MeetApp running in the menu bar, so calls still ring (F04); only Quit stops them.
+- **No Mac notification for a missed call:** development builds are signed only ad hoc (no Apple Developer certificate), and macOS refuses their notifications (D080). The chat still has the "Missed call" note. It works once the app is signed (not yet: D083).
 - **The mini window is gone during a call:** if its × was pressed, it stays hidden until MeetApp has been in front once (the call goes on).
 - **The mini window's video stops or its buttons look out of date:** check the call itself in MeetApp. Bring MeetApp to the front with "Back to the call"; the mini window comes back when you switch away again.
 - **A small window is somewhere odd:** drag it where you want it; it remembers the place. If a screen was unplugged it moves to the bottom-right corner of the main screen by itself.

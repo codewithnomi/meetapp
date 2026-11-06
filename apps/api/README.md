@@ -19,7 +19,7 @@ Since F15 it also handles calls from chats (`docs/specs/F15-calls/design.md`): s
 
 Every route except a short public list needs a session (checked by `src/plugins/route-sweep.integration.test.ts`); every `:workspaceId` route answers 404 to non-members (`src/plugins/workspace-access.ts`).
 
-- **Layout:** `src/config` (settings), `src/plugins` (logging, errors, docs, metrics, auth, session, rate limits, workspace access, idempotency), `src/emails` (templates and outbox), `src/modules/<area>/` (routes → service → repository; F02: `meetings/`, `calls/` (F15 adds chat calls there); F03: `chat/`; F14: `chats/`), `src/meetings.ts` (meeting wiring), `src/chat-calls.ts` (F15 chat-call wiring), `src/providers` (database, cache, call server, storage, email), `src/observability` (tracing, Sentry, shutdown), `src/app.ts` (assembly), `src/server.ts` (start).
+- **Layout:** `src/config` (settings), `src/plugins` (logging, errors, docs, metrics, auth, session, rate limits, workspace access, idempotency), `src/emails` (templates and outbox), `src/modules/<area>/` (routes → service → repository; F02: `meetings/`, `calls/` (F15 adds chat calls there); F03: `chat/`; F14: `chats/`; F04: `notifications/`), `src/meetings.ts` (meeting wiring), `src/chat-calls.ts` (F15 chat-call wiring), `src/providers` (database, cache, call server, storage, email), `src/observability` (tracing, Sentry, shutdown), `src/app.ts` (assembly), `src/server.ts` (start).
 - **API docs (development only):** http://127.0.0.1:3000/docs and the OpenAPI file at `/docs/json` (port = `API_PORT` in `.env`).
 
 ## Run it
@@ -29,3 +29,10 @@ Every route except a short public list needs a session (checked by `src/plugins/
 ## Test it
 - Unit tests (`src/**/*.test.ts`, using `app.inject`, no network) run in `pnpm test` and `pnpm test:unit`.
 - `*.integration.test.ts` need the local services: `pnpm test:integration` (also part of `pnpm test`).
+
+## Desktop app additions (F04)
+- `GET` and `PUT /api/v1/me/status` (`modules/chats`, `myStatusRoutes`): a status set by hand for a time (at most 8 days) or until changed; `status: null` resets. 20 changes a minute. The status rule: hand-set Busy, Do not disturb, Be right back or Away first, then In a call, then hand-set Available, then automatic (Offline stays Offline). A `status-expiry` BullMQ job (`modules/chats/status-expiry-job.ts`) ends it on time; reading also checks the end.
+- `GET` and `PUT /api/v1/me/notification-settings` (`modules/notifications/`): the five switches, partial changes, 20 a minute.
+- The live line's `pong` carries `at`, the server's clock, so the app can apply the 5-minute rule for notification cards.
+- Migration `0010_f04_status_and_notifications`: columns on `user` only.
+

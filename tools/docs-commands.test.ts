@@ -97,3 +97,12 @@ describe("docs commands", () => {
     expect(missing, `${file} lacks level-2 headings starting with: ${missing.join(", ")}`).toEqual([]);
   });
 });
+
+describe("install guide (F04 T2)", () => {
+  it("TC-F04-04 [AC-F04-01] getting-started explains installing and both unsigned warnings", () => {
+    const guide = read("docs/getting-started.md");
+    expect(guide).toContain("## Install the app");
+    expect(guide).toContain("Open Anyway");
+    expect(guide).toContain("Windows protected your PC");
+  });
+});

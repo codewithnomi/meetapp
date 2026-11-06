@@ -55,6 +55,8 @@ export interface CallWindowsDeps {
   unlinkFrames: (mainWindowId: number) => void;
   /** A main window keeps full speed behind other apps only while it has a call (design.md 3.5). */
   fullSpeed: (mainWindowId: number, on: boolean) => void;
+  /** F04: where the ring and mini windows now are, so notification cards keep clear of them. */
+  laidOut?: (rects: Rect[]) => void;
 }
 
 export class CallWindowsController {
@@ -167,6 +169,11 @@ export class CallWindowsController {
     return new Set([...this.rings.values(), ...(this.mini ? [this.mini] : [])].map((w) => w.id));
   }
 
+  /** A call or meeting runs in some main window (F04: Quit asks first). */
+  hasCall(): boolean {
+    return this.inCall.size > 0;
+  }
+
   private merged() {
     return mergeReports(this.reports, this.usedLast);
   }
@@ -232,6 +239,7 @@ export class CallWindowsController {
       this.rings.set(ring.callId, this.place(this.rings.get(ring.callId), "ring", rect, { kind: "ring", ring }));
     });
     this.stacked = stack.map((ring) => ({ callId: ring.callId, height: ringHeight(ring) }));
+    this.deps.laidOut?.([...(call && layout.mini ? [layout.mini] : []), ...layout.rings.slice(0, stack.length)]);
   }
 
   private linkFrames(mini: SmallWindow | undefined, from: number | undefined): void {

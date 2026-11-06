@@ -49,6 +49,11 @@
       "name": "@img/sharp-win32-x64",
       "license": "Apache-2.0 AND LGPL-3.0-or-later",
       "reason": "Image engine (libvips) inside sharp, which re-encodes profile photos on the backend (F01, D049). An unchanged, separate library file that runs only on our server and is never shipped to users. The LGPL only asks to share changes to libvips itself, never MeetApp's code. One entry per computer type."
+    },
+    {
+      "name": "truncate-utf8-bytes",
+      "license": "WTFPL",
+      "reason": "Tiny helper inside electron-builder (shortens file names), used only when building the installers; never shipped inside MeetApp. WTFPL lets anyone do anything with it."
     }
   ]
 }

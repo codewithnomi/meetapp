@@ -14,14 +14,23 @@ export interface AppLayoutProps {
   items: AppNavItem[];
   /** The main menu folds; Settings' menu doesn't. */
   fold?: NavFold | undefined;
+  /** The slim bar above the screen with the person's picture at the right (F04, as in Teams). */
+  topBar?: ReactNode;
   children: ReactNode;
 }
 
-export function AppLayout({ switcher, navLabel, items, fold, children }: AppLayoutProps) {
+export function AppLayout({ switcher, navLabel, items, fold, topBar, children }: AppLayoutProps) {
   return (
     <div className="flex min-h-screen flex-wrap bg-bg text-ink md:flex-nowrap">
       <NavRail label={navLabel} switcher={switcher} items={items} fold={fold} />
-      <div className="min-w-0 flex-[999_1_480px]">{children}</div>
+      <div className="min-w-0 flex-[999_1_480px]">
+        {topBar && (
+          <div className="flex h-12 items-center justify-end gap-3 border-b border-line bg-surface-raised px-4">
+            {topBar}
+          </div>
+        )}
+        {children}
+      </div>
     </div>
   );
 }
