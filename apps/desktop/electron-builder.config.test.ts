@@ -15,7 +15,9 @@ describe("installers (F04 T2)", () => {
   });
 
   it("TC-F04-05 [AC-F04-03] signing is only the CSC_LINK setting", () => {
-    expect(builderConfig({}).mac?.identity).toBeNull();
+    // No certificate: ad-hoc only (no Apple account), so macOS keeps its camera and microphone answers.
+    expect(builderConfig({}).mac?.identity).toBe("-");
+    expect(builderConfig({}).mac?.entitlements).toBe("build-resources/entitlements.mac.plist");
     expect(builderConfig({ CSC_LINK: "file:///cert.p12" }).mac?.identity).toBeUndefined();
   });
 });

@@ -27,8 +27,13 @@ export function builderConfig(env: NodeJS.ProcessEnv): Configuration {
     mac: {
       target: [{ target: "dmg", arch: "universal" }],
       category: "public.app-category.business",
-      // null skips signing; undefined lets electron-builder use the certificate from CSC_LINK.
-      ...(signed ? {} : { identity: null }),
+      // Without a certificate: an ad-hoc signature ("-", made on this Mac, no Apple account) under the app's
+      // own id, so macOS remembers camera and microphone answers (T19: with no signature it asked again and
+      // again). undefined lets electron-builder use the certificate from CSC_LINK.
+      ...(signed ? {} : { identity: "-" }),
+      // Under the hardened runtime the app must name the camera and microphone, or macOS refuses them.
+      entitlements: "build-resources/entitlements.mac.plist",
+      entitlementsInherit: "build-resources/entitlements.mac.plist",
       extendInfo: {
         NSCameraUsageDescription: `${appIdentity.productName} uses the camera in meetings.`,
         NSMicrophoneUsageDescription: `${appIdentity.productName} uses the microphone in meetings.`,

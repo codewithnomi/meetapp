@@ -9,7 +9,7 @@
     "dev": "node scripts/dev.ts",
     "start": "node scripts/electron.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "dist": "pnpm --filter @meetapp/web build && node scripts/build.ts && electron-builder --config electron-builder.config.ts"
+    "dist": "node scripts/dist.ts"
   },
   "dependencies": {
     "@sentry/electron": "^8.1.0",
