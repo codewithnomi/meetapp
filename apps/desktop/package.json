@@ -11,15 +11,15 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@sentry/electron": "^8.1.0"
+    "@sentry/electron": "^8.3.0"
   },
   "devDependencies": {
     "@meetapp/config": "workspace:*",
     "@meetapp/contracts": "workspace:*",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "electron": "^44.10.1",
-    "vite": "^8.3.4",
-    "vitest": "^5.0.3"
+    "electron": "^45.2.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.1.0"
   }
 }
