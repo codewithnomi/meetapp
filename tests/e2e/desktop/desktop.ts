@@ -35,9 +35,15 @@ export interface RunningApp {
 const CLOSE_MS = 10_000;
 const started = new Set<ElectronApplication>();
 
-/** A new, empty profile folder, inside this run's folder (deleted by global-teardown.ts). */
-export function freshProfile(): string {
-  return mkdtempSync(join(process.env["MEETAPP_E2E_PROFILES"] ?? tmpdir(), "meetapp-e2e-"));
+/**
+ * A new profile folder, inside this run's folder (deleted by global-teardown.ts). It starts as if the
+ * first close had happened, so F04's "still running" card doesn't show among a test's small windows;
+ * the test of that card (TC-F04-10) asks for a `firstClose` profile.
+ */
+export function freshProfile({ firstClose = false }: { firstClose?: boolean } = {}): string {
+  const profile = mkdtempSync(join(process.env["MEETAPP_E2E_PROFILES"] ?? tmpdir(), "meetapp-e2e-"));
+  if (!firstClose) writeFileSync(join(profile, "app-state.json"), JSON.stringify({ firstCloseSeen: true }));
+  return profile;
 }
 
 const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms).unref());

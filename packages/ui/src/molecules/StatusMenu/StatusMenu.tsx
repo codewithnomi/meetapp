@@ -4,6 +4,7 @@
 // the other actions (Settings, Sign out). Radix gives the keyboard behaviour. All words arrive as props.
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { Avatar } from "../../atoms/Avatar/index.ts";
+import { Icon } from "../../atoms/Icon/index.ts";
 import { StatusDot, type ChatStatus } from "../../atoms/StatusDot/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 import type { MenuAction } from "../../atoms/ActionMenu/index.ts";
@@ -40,15 +41,30 @@ const ITEM = cx(
 );
 const PANEL = "z-50 flex flex-col gap-0.5 rounded-md border border-line bg-surface-raised p-1.5 text-[14px] shadow-2";
 
+/** The check mark on the chosen item (Radix shows it only there). */
+function Tick() {
+  return (
+    <Menu.ItemIndicator className="flex-none text-accent-text">
+      <Icon name="check" size={16} />
+    </Menu.ItemIndicator>
+  );
+}
+
 function StatusChoices(props: StatusMenuProps) {
   const { statusLabels, durationLabels, chosen, duration, onChoose, words } = props;
   return (
-    <Menu.SubContent sideOffset={6} className={cx(PANEL, "min-w-56")}>
+    <Menu.SubContent
+      sideOffset={6}
+      collisionPadding={8}
+      // In a small window the list scrolls rather than running off the bottom (desktop test).
+      className={cx(PANEL, "max-h-(--radix-dropdown-menu-content-available-height) min-w-56 overflow-y-auto")}
+    >
       <Menu.RadioGroup value={chosen ?? ""} onValueChange={(value) => onChoose(value as SettableStatus, duration)}>
         {SETTABLE.map((status) => (
-          <Menu.RadioItem key={status} value={status} className={cx(ITEM, chosen === status && "bg-accent-soft")}>
+          <Menu.RadioItem key={status} value={status} className={ITEM}>
             <StatusDot status={status} label="" className="flex-none" />
-            {statusLabels[status]}
+            <span className="flex-1">{statusLabels[status]}</span>
+            <Tick />
           </Menu.RadioItem>
         ))}
       </Menu.RadioGroup>
@@ -59,8 +75,9 @@ function StatusChoices(props: StatusMenuProps) {
         onValueChange={(value) => onChoose(chosen ?? "available", value as StatusDuration)}
       >
         {DURATIONS.map((each) => (
-          <Menu.RadioItem key={each} value={each} className={cx(ITEM, duration === each && "bg-accent-soft")}>
-            {durationLabels[each]}
+          <Menu.RadioItem key={each} value={each} className={ITEM}>
+            <span className="flex-1">{durationLabels[each]}</span>
+            <Tick />
           </Menu.RadioItem>
         ))}
       </Menu.RadioGroup>
@@ -93,7 +110,7 @@ export function StatusMenu(props: StatusMenuProps) {
             </span>
           </div>
           <Menu.Sub>
-            <Menu.SubTrigger className={cx(ITEM, "bg-accent-soft")}>
+            <Menu.SubTrigger className={cx(ITEM, "data-[state=open]:bg-surface-sunken")}>
               <StatusDot status={status} label="" className="flex-none" />
               <span className="flex flex-1 flex-col">
                 {statusLabels[status]}

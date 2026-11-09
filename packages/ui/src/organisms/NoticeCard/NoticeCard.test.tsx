@@ -23,13 +23,22 @@ describe("NoticeCard", () => {
         onHover={onHover}
       />,
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Omar Farooq, Hello");
+    expect(screen.getByRole("status", { name: "Omar Farooq, Hello" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Admit" })).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "Open the chat with Omar Farooq" }));
     expect(open.onClick).toHaveBeenCalledTimes(1);
     await userEvent.click(screen.getByRole("button", { name: "Close" }));
     expect(x.onClick).toHaveBeenCalledTimes(1);
     expect(onHover).toHaveBeenCalledWith(true);
+    // Keyboard focus pauses it too, and leaving the card lets it go.
+    (document.activeElement as HTMLElement).blur();
+    onHover.mockClear();
+    await userEvent.tab();
+    expect(onHover).toHaveBeenLastCalledWith(true);
+    await userEvent.tab();
+    expect(onHover).not.toHaveBeenCalledWith(false);
+    await userEvent.tab();
+    expect(onHover).toHaveBeenLastCalledWith(false);
     expect(document.activeElement).not.toBe(document.body.firstChild);
   });
 

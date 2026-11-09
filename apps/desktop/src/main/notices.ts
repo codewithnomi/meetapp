@@ -25,7 +25,10 @@ export interface NoticeDeps {
   displays: () => Display[];
   /** The screen for the corner (the one holding the MeetApp window used last). */
   cornerDisplayId: () => number;
-  toMain: (mainWindowId: number, action: { name: "noticeChosen"; cardId: string; choice: NoticeChoice }) => void;
+  toMain: (
+    mainWindowId: number,
+    action: { name: "noticeChosen"; cardId: string; choice: NoticeChoice | "close" },
+  ) => void;
   focusMain: (mainWindowId: number) => void;
   now: () => number;
   /** Runs later; the answer cancels it. */
@@ -37,6 +40,8 @@ interface Shown {
   card: NoticeCard;
   window: NoticeWindow;
   cancel: (() => void) | undefined;
+  /** The pointer is on the card: it stays until 8 s after the pointer leaves. */
+  hovered: boolean;
 }
 
 /** Where cards go: up from the corner, above anything F16 shows in that column (TC-F04-48). */
@@ -76,7 +81,7 @@ export class NoticeBoard {
       return this.place();
     }
     while (this.shown.length >= MAX_CARDS) this.drop(this.shown[0] as Shown);
-    const entry: Shown = { owner, card, window: this.deps.open(), cancel: undefined };
+    const entry: Shown = { owner, card, window: this.deps.open(), cancel: undefined, hovered: false };
     this.shown.push(entry);
     entry.window.send({ kind: "notice", card });
     this.place();
@@ -100,6 +105,7 @@ export class NoticeBoard {
     const entry = this.shown.find((s) => s.window.id === senderId);
     if (!entry) return;
     if (action.name === "noticeHover") {
+      entry.hovered = action.on;
       if (action.on) {
         entry.cancel?.();
         entry.cancel = undefined;
@@ -107,7 +113,11 @@ export class NoticeBoard {
       return;
     }
     if (action.name !== "notice") return;
-    if (action.choice === "close") return this.drop(entry);
+    if (action.choice === "close") {
+      // The page hears of it too, so its next message makes a new card (bug review).
+      this.deps.toMain(entry.owner, { name: "noticeChosen", cardId: entry.card.id, choice: "close" });
+      return this.drop(entry);
+    }
     if (!CHOICES[entry.card.kind].includes(action.choice)) return;
     if (action.choice === "admit" && entry.card.admit === undefined) return;
     // Admit acts in place; opening a chat or the lobby brings the window forward.
@@ -145,6 +155,9 @@ export class NoticeBoard {
 
   private startTimer(entry: Shown): void {
     entry.cancel?.();
+    entry.cancel = undefined;
+    // New words in a card under the pointer don't start its timer (bug review).
+    if (entry.hovered) return;
     entry.cancel = this.deps.later(SHOW_MS, () => this.drop(entry));
   }
 

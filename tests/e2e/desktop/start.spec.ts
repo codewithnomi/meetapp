@@ -11,7 +11,13 @@ test("TC-F00-09 [AC-F00-03] the window opens within 5 s with the first screen (S
   const started = Date.now();
   const { app, page } = await launch();
   await expect
-    .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible()))
+    .poll(() =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .sort((a, b) => a.id - b.id)[0]
+          ?.isVisible(),
+      ),
+    )
     .toBe(true);
   expect(Date.now() - started).toBeLessThan(5000);
 

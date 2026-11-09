@@ -16,17 +16,17 @@ export function savedWindowState(): WindowState {
 /** Keeps the window's place; the normal (not maximized) size is the one saved. */
 export function rememberWindow(window: BrowserWindow, start: WindowState): void {
   if (start.maximized) window.once("ready-to-show", () => window.maximize());
-  const save = saveLater(
-    (run, ms) => {
-      const timer = setTimeout(run, ms);
-      return () => clearTimeout(timer);
-    },
-    () => {
-      if (window.isDestroyed()) return;
-      const bounds = window.getNormalBounds();
-      const displayId = screen.getDisplayMatching(bounds).id;
-      writeJson(file(), { ...bounds, maximized: window.isMaximized(), displayId });
-    },
-  );
+  const write = () => {
+    if (window.isDestroyed()) return;
+    const bounds = window.getNormalBounds();
+    const displayId = screen.getDisplayMatching(bounds).id;
+    writeJson(file(), { ...bounds, maximized: window.isMaximized(), displayId });
+  };
+  const save = saveLater((run, ms) => {
+    const timer = setTimeout(run, ms);
+    return () => clearTimeout(timer);
+  }, write);
   for (const change of ["move", "resize", "maximize", "unmaximize"] as const) window.on(change as "move", save);
+  // Closed (or quit) within the 500 ms wait: the last place is written at once (bug review).
+  window.on("close", write);
 }

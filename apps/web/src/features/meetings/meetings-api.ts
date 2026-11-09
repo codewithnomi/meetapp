@@ -22,7 +22,7 @@ const meetingKey = (meetingId: string) => ["meeting", meetingId] as const;
 
 /** F04 AC-12: the desktop app gives the link others click to open MeetApp (meetapp://m/<code>), while
  * there is no website; the server finds a meeting by either form. */
-function shareable<T extends { link: string }>(meeting: T): T {
+export function shareable<T extends { link: string }>(meeting: T): T {
   return "meetapp" in window ? { ...meeting, link: asAppMeetingLink(meeting.link) } : meeting;
 }
 

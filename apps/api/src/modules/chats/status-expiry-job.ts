@@ -2,12 +2,15 @@
 // delayed job with a fixed id per person and end time, so setting it again doesn't stack runs; a job
 // for a status changed meanwhile clears nothing (the status rule also ignores a run-out status on read).
 import { Queue, Worker, type ConnectionOptions } from "bullmq";
+import { z } from "zod";
 
 const QUEUE = "status-expiry";
+/** What a job carries, checked before use (code review). */
+const jobData = z.object({ userId: z.uuid() });
 
 export async function startStatusExpiryJob(connection: ConnectionOptions, runOut: (userId: string) => Promise<void>) {
   const queue = new Queue(QUEUE, { connection });
-  const worker = new Worker(QUEUE, async (job) => runOut((job.data as { userId: string }).userId), { connection });
+  const worker = new Worker(QUEUE, async (job) => runOut(jobData.parse(job.data).userId), { connection });
   await queue.waitUntilReady();
   return {
     schedule: async (userId: string, at: Date): Promise<void> => {

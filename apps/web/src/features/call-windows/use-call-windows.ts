@@ -150,8 +150,9 @@ export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
   useEffect(
     () =>
       bridge?.onAction((action) => {
-        // F04's card choices are handled by the notices (T12).
-        if (!(action as { name: string }).name.startsWith("notice")) run.current(action as CallWindowsMainAction);
+        // F04's card choices and "window in front" are handled by the notices (T12).
+        const { name } = action as { name: string };
+        if (!name.startsWith("notice") && name !== "windowFront") run.current(action as CallWindowsMainAction);
       }),
     [bridge],
   );

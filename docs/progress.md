@@ -206,6 +206,11 @@
 
 ## Session log
 
+### 2026-11-06: F04 T19 hand checks on the Mac
+- With the owner: install from the dmg, close to the menu bar, the menu, Quit during a call, start at login switched on, a `meetapp://` link from Chrome. All worked.
+- Two bugs found and fixed (D089): the installed screens used the developer's backend address (`scripts/dist.ts`); an unsigned build made macOS ask for the microphone again and again (ad-hoc signature with camera and microphone entitlements).
+- Accepted: one keychain prompt after each new build. Still open: Windows by hand (no PC), Do not disturb with a second person, the installed copy's start-up time, the quiet start after a real log-out, the downloaded-copy warning.
+
 ### 2026-11-04 to 2026-11-06: F04 Desktop app, T1–T18
 - T1 spike: system Focus can't be read unsigned; owner chose to defer AC-37 (D086).
 - T2 installers (electron-builder, `pnpm desktop:dist`); T3 close hides, Quit asks during a call, one copy per profile; T4 menu-bar / tray icon; T5 start at login, hidden; T6 `meetapp://m/<code>` links (during a call the link waits; Teams' way is the new F17, D088).

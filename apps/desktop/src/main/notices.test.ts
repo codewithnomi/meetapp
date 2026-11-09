@@ -110,9 +110,20 @@ describe("notice cards", () => {
     computer.advance(1);
     expect(computer.open()).toHaveLength(0);
 
+    // New words in a card under the pointer don't start its timer.
+    board.show(1, card("m"));
+    const merged = computer.open()[0]?.id ?? 0;
+    board.act(merged, { name: "noticeHover", on: true });
+    board.show(1, card("m", { text: "Two" }));
+    computer.advance(SHOW_MS * 2);
+    expect(computer.open()).toHaveLength(1);
+    board.act(merged, { name: "notice", choice: "close" });
+
     board.show(1, card("c"));
     board.act(computer.open()[0]?.id ?? 0, { name: "notice", choice: "close" });
     expect(computer.open()).toHaveLength(0);
+    // × tells the page, so its next message makes a new card.
+    expect(computer.toMain.at(-1)).toEqual([1, { name: "noticeChosen", cardId: "c", choice: "close" }]);
   });
 
   it("TC-F04-89 [AC-F04-30, AC-F04-31] bad cards are refused, long words cut, 10 a second at most", () => {

@@ -43,7 +43,8 @@ test("TC-F14-76 [AC-F14-31] the live line to the backend carries the token; no l
   const { page } = running;
   const apiLine = `${(API_URL ?? "").replace(/^http/, "ws")}/api/v1/realtime`;
   // Signed in through main's token (the page itself never holds it): the server answers the ping.
-  expect(await openLine(page, apiLine)).toBe(JSON.stringify({ t: "pong" }));
+  // F04: the pong also carries the server clock (`at`).
+  expect(JSON.parse(await openLine(page, apiLine))).toEqual({ t: "pong", at: expect.any(Number) });
   // Another host (or another port on this computer) is refused by the security policy.
   expect(["blocked", "error"]).toContain(await openLine(page, "ws://127.0.0.1:9/api/v1/realtime"));
   expect(["blocked", "error"]).toContain(await openLine(page, "wss://example.com/api/v1/realtime"));

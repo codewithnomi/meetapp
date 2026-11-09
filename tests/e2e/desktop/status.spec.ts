@@ -5,6 +5,7 @@ import { closeApp, type RunningApp } from "./desktop.ts";
 import { controls, meetNow } from "./meeting-steps.ts";
 import { team, windowFor } from "./meeting-team.ts";
 import { chatWith, inWorkspace } from "./call-window-steps.ts";
+import { pickStatus, statusFromMenuBar } from "./status-steps.ts";
 
 test.describe.configure({ timeout: 180_000 });
 
@@ -14,17 +15,7 @@ test.afterEach(async () => {
   windows = [];
 });
 
-/** Picks a status (and for how long) from the picture menu at the top right. */
-async function pick(page: Page, status: string | null, duration?: string) {
-  await page.getByRole("button", { name: /^Your account: / }).click();
-  await page.getByRole("menuitem", { name: /Available|Busy|Do not disturb|Be right back|Away|In a call/ }).click();
-  // A duration is chosen first (it closes the menu), then the status, which keeps it.
-  if (duration) {
-    await page.getByRole("menuitemradio", { name: duration }).click();
-    await pick(page, status);
-  } else if (status) await page.getByRole("menuitemradio", { name: status }).click();
-  else await page.getByRole("menuitem", { name: "Reset status" }).click();
-}
+const CALL_CHECK_MS = 40_000;
 
 const header = (page: Page) => page.getByRole("banner").or(page.locator("header")).first();
 
@@ -40,9 +31,9 @@ async function oliviaWatchingMo() {
 
 test("TC-F04-44 [AC-F04-20, AC-F04-21] Do not disturb for 30 minutes, then Reset, both seen within 5 s", async () => {
   const { olivia, mo } = await oliviaWatchingMo();
-  await pick(mo.page, "Do not disturb", "30 minutes");
+  await pickStatus(mo.page, "Do not disturb", "30 minutes");
   await expect(header(olivia.page).getByRole("img", { name: "Do not disturb" })).toBeVisible({ timeout: 5_000 });
-  await pick(mo.page, null);
+  await pickStatus(mo.page, null);
   await expect(header(olivia.page).getByRole("img", { name: "Available" })).toBeVisible({ timeout: 5_000 });
 });
 
@@ -50,10 +41,12 @@ test("TC-F04-43 [AC-F04-23] in a call Mo shows In a call, unless Mo set Busy", a
   const { olivia, mo } = await oliviaWatchingMo();
   await meetNow(mo.page);
   await expect(controls(mo.page)).toBeVisible();
-  await expect(header(olivia.page).getByRole("img", { name: "In a call" })).toBeVisible({ timeout: 10_000 });
-  await pick(mo.page, "Busy");
+  // Calls are noticed by the server's status check every 30 seconds (F14 design).
+  await expect(header(olivia.page).getByRole("img", { name: "In a call" })).toBeVisible({ timeout: CALL_CHECK_MS });
+  // The meeting fills the screen, so the status is set from the menu-bar menu (AC-F04-05), as main sends it.
+  await statusFromMenuBar(mo, "busy");
   await expect(header(olivia.page).getByRole("img", { name: "Busy" })).toBeVisible({ timeout: 5_000 });
-  await pick(mo.page, null);
+  await statusFromMenuBar(mo, "available");
   await controls(mo.page).getByRole("button", { name: "Leave", exact: true }).click();
-  await expect(header(olivia.page).getByRole("img", { name: "Available" })).toBeVisible({ timeout: 10_000 });
+  await expect(header(olivia.page).getByRole("img", { name: "Available" })).toBeVisible({ timeout: CALL_CHECK_MS });
 });

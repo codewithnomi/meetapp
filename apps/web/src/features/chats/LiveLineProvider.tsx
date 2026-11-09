@@ -29,11 +29,17 @@ function useActivity(line: LiveLine) {
     window.addEventListener("keydown", active);
     window.addEventListener("pointerdown", active);
     const bridge = (window as { meetapp?: PowerBridge }).meetapp;
-    const stop = bridge?.power?.onLockChange((locked) => {
+    let locked = false;
+    // A new line counts as active, so a line opened while the computer is locked says Away again (bug review).
+    const unlisten = line.listen((message) => {
+      if (message.t === "connected" && locked) line.send({ t: "active", active: false });
+    });
+    const stop = bridge?.power?.onLockChange((now) => {
+      locked = now;
       last = 0;
       // Unlocked or awake again (F04 AC-38): a fresh line first; it reports activity once open.
-      if (!locked) line.reconnectNow();
-      line.send({ t: "active", active: !locked });
+      if (!now) line.reconnectNow();
+      line.send({ t: "active", active: !now });
     });
     // The network is back: reconnect now rather than at the next try (F04 AC-38).
     const online = () => line.reconnectNow();
@@ -42,6 +48,7 @@ function useActivity(line: LiveLine) {
       window.removeEventListener("keydown", active);
       window.removeEventListener("pointerdown", active);
       window.removeEventListener("online", online);
+      unlisten();
       stop?.();
     };
   }, [line]);

@@ -14,7 +14,11 @@ test.afterEach(async () => {
 });
 
 const hide = (app: ElectronApplication) =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
+  app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.hide(),
+  );
 
 async function send(page: Page, text: string) {
   const box = page.getByRole("textbox", { name: "Message Mo Member" });
@@ -65,6 +69,10 @@ test("TC-F04-75 [AC-F04-31] messages sent while away give no cards when MeetApp 
   await mo.page.waitForTimeout(10_000);
   // News missed while offline isn't sent again on the new line: no cards, and never more than 3.
   expect(smallPages(mo.app).length).toBeLessThanOrEqual(3);
-  await mo.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await mo.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.show(),
+  );
   await expect(mo.page.getByRole("button", { name: /^Chat, 1 unread/ })).toBeVisible({ timeout: 10_000 });
 });

@@ -719,6 +719,13 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 - **When** the person signs out, and M1 then sends a message
 - **Then** the cards close, no new card shows, and the tray shows Sign in
 
+### TC-F04-96: The installed app can't be run as Node.js or debugged from outside, security
+- **Covers:** AC-F04-40
+- **Level:** unit (installer settings) + by hand (installed copy opens)
+- **Given** the installer settings (added at verification, security review)
+- **When** they are read
+- **Then** Electron's fuses switch off running as Node.js, `NODE_OPTIONS` and the debugger switches, and turn on the checked app archive; the installed copy still opens
+
 ## Coverage
 
 | Acceptance criterion | Test cases |
@@ -748,7 +755,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F04-12 [AC-F04-02] a second 
 | AC-F04-36 | TC-F04-55, 65, 66, 67, 68, 69, 92 |
 | AC-F04-37 | TC-F04-70, 71, 72, 80, 81 |
 | AC-F04-38 | TC-F04-73, 74, 75 |
-| AC-F04-40 | TC-F04-76, 77, 93 |
+| AC-F04-40 | TC-F04-76, 77, 93, 96 |
 | AC-F04-41 | TC-F04-78 |
 | AC-F04-42 | TC-F04-79 |
 | AC-F04-50 | TC-F04-83, 84 |

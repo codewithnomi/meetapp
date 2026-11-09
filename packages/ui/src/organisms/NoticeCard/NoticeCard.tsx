@@ -24,7 +24,7 @@ export interface NoticeCardProps {
   admit?: { label: string; onClick: () => void } | undefined;
   viewLobby?: { label: string; onClick: () => void } | undefined;
   close: { label: string; onClick: () => void };
-  /** The pointer came onto the card or left it (the card stays while it is on it). */
+  /** The pointer or keyboard focus came onto the card or left it (the card stays while it is on it). */
   onHover?: (on: boolean) => void;
 }
 
@@ -77,10 +77,16 @@ export function NoticeCard(props: NoticeCardProps) {
   const { open, admit, viewLobby, close, onHover } = props;
   const label = [props.title, props.tag, props.detail, props.text].filter(Boolean).join(", ");
   return (
+    // It appears without taking focus, so the card itself is announced (once, as a status).
     <section
+      role="status"
       aria-label={label}
       onPointerEnter={() => onHover?.(true)}
       onPointerLeave={() => onHover?.(false)}
+      onFocus={() => onHover?.(true)}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) onHover?.(false);
+      }}
       className="relative box-border flex h-full w-full gap-3 rounded-xl border border-line bg-surface p-3.5 text-ink shadow-2"
     >
       {open ? (
@@ -106,10 +112,6 @@ export function NoticeCard(props: NoticeCardProps) {
         </div>
       )}
       <IconButton icon="close" variant="ghost" size="sm" label={close.label} tooltip={false} onClick={close.onClick} />
-      {/* It appears without taking focus, so it is announced here. */}
-      <p role="status" className="sr-only">
-        {label}
-      </p>
     </section>
   );
 }

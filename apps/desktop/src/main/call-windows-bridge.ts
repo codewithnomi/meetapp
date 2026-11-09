@@ -155,13 +155,7 @@ function computerFor(
       return window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()).id : undefined;
     },
     toMain: (id, action) => mains.get(id)?.webContents.send(CALL_WINDOWS_CHANNEL, action),
-    focusMain: (id) => {
-      const window = mains.get(id);
-      if (!window || window.isDestroyed()) return;
-      if (window.isMinimized()) window.restore();
-      window.show();
-      window.focus();
-    },
+    focusMain: (id) => focusMain(mains, id),
     loadPlaces: () => readPlaces(placesFile),
     savePlaces: (places) => writePlaces(placesFile, places),
     notify: (missed) => notifyMissed(missed, Notification, (action) => controller().fromNotification(action)),
@@ -170,6 +164,15 @@ function computerFor(
     laidOut: (rects) => board().avoid(rects),
     ...mainWindowLines(mains),
   };
+}
+
+/** Brings a main window to the front (a small window's or a card's choice). */
+function focusMain(mains: MainWindows, id: number): void {
+  const window = mains.get(id);
+  if (!window || window.isDestroyed()) return;
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
 }
 
 /** F04's notification cards (design.md 3.4): the corner of the screen holding the newest main window. */
@@ -182,13 +185,7 @@ function noticesFor(options: CallWindowsOptions, mains: MainWindows, board: () =
       return window ? screen.getDisplayMatching(window.getBounds()).id : screen.getPrimaryDisplay().id;
     },
     toMain: (id, action) => mains.get(id)?.webContents.send(CALL_WINDOWS_CHANNEL, action),
-    focusMain: (id) => {
-      const window = mains.get(id);
-      if (!window || window.isDestroyed()) return;
-      if (window.isMinimized()) window.restore();
-      window.show();
-      window.focus();
-    },
+    focusMain: (id) => focusMain(mains, id),
     now: () => Date.now(),
     later: (ms, run) => {
       const timer = setTimeout(run, ms);
@@ -273,8 +270,18 @@ export function setUpCallWindows(options: CallWindowsOptions): CallWindows {
     watch(window) {
       const id = window.webContents.id;
       mains.set(id, window);
+      // F04: the page is told whether it is in front (its own signals say "visible" during a call).
+      const tellFront = () => {
+        if (window.isDestroyed()) return;
+        const on = window.isVisible() && window.isFocused() && !window.isMinimized();
+        window.webContents.send(CALL_WINDOWS_CHANNEL, { name: "windowFront", on });
+      };
       for (const change of ["focus", "blur", "minimize", "restore", "hide", "show"] as const)
-        window.on(change as "focus", () => controller.focusChanged(focused()));
+        window.on(change as "focus", () => {
+          controller.focusChanged(focused());
+          tellFront();
+        });
+      window.webContents.on("did-finish-load", tellFront);
       window.webContents.on("render-process-gone", () => controller.dropReport(id));
       // A real reload of the page (not an in-page change); the page reports again once it has loaded.
       window.webContents.on("did-start-navigation", (details) => {

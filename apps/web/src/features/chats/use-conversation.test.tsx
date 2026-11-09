@@ -171,5 +171,8 @@ describe("the line's provider", () => {
     });
     act(() => lock?.(true));
     expect(socket().sent).toEqual([{ t: "ping" }, { t: "active", active: true }, { t: "active", active: false }]);
+    // A line opened again while still locked (network back) says Away again, not Available.
+    open();
+    expect(socket().sent.slice(-2)).toEqual([{ t: "active", active: false }, { t: "ping" }]);
   });
 });

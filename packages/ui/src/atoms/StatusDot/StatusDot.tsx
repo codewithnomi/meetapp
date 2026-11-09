@@ -8,7 +8,8 @@ export type ChatStatus = "available" | "away" | "in_call" | "offline" | "busy" |
 
 export interface StatusDotProps {
   status: ChatStatus;
-  /** Already translated: "Available", "Away", "In a call", "Busy", "Do not disturb", … */
+  /** Already translated: "Available", "Away", "In a call", "Busy", "Do not disturb", …; empty when the
+   * word is already written next to the dot (the dot is then hidden from screen readers). */
   label: string;
   /** Sits on the corner of an avatar (the avatar's wrapper is `relative`). */
   placed?: boolean;
@@ -28,8 +29,9 @@ const COLORS: Record<ChatStatus, string> = {
 export function StatusDot({ status, label, placed = false, className }: StatusDotProps) {
   return (
     <span
-      role="img"
-      aria-label={label}
+      role={label ? "img" : undefined}
+      aria-label={label || undefined}
+      aria-hidden={label ? undefined : true}
       data-status={status}
       className={cx(
         "box-border flex size-3 items-center justify-center rounded-full border-2 border-surface",

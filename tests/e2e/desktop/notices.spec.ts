@@ -25,7 +25,11 @@ test("TC-F04-50 TC-F04-88 [AC-F04-30] a card shows above other apps without the 
   const running = await launch();
   windows.push(running);
   // Another window has the keyboard (the main window is hidden, as when another app is in front).
-  await running.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
+  await running.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.hide(),
+  );
   await running.page.evaluate((value) => {
     (window as unknown as { meetapp: { notices: { show: (c: unknown) => void } } }).meetapp.notices.show(value);
   }, card);
@@ -64,7 +68,7 @@ test("TC-F04-90 [AC-F04-30] a card's choice can't be faked by the main window; Ã
   await expect.poll(() => smallPages(running.app).length).toBe(1);
   // The main window pressing a card's button (on the small windows' channel) is ignored.
   await running.app.evaluate(({ ipcMain, BrowserWindow }) => {
-    const main = BrowserWindow.getAllWindows()[0];
+    const main = BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)[0];
     ipcMain.emit("meetapp:call-window", { sender: main?.webContents }, { name: "notice", choice: "close" });
   });
   await running.page.waitForTimeout(300);

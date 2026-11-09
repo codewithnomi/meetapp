@@ -1,9 +1,9 @@
 // F04 T16: the window comes back where it was, start-up is quick, a call runs on hidden, and nothing
 // secret is written to disk (TC-F04-77, 78, 79, 93).
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync, lstatSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test, type ElectronApplication } from "@playwright/test";
-import { closeApp, freshProfile, launch, launchAs, type RunningApp } from "./desktop.ts";
+import { API_URL, closeApp, freshProfile, launch, launchAs, type RunningApp } from "./desktop.ts";
 import { controls } from "./meeting-steps.ts";
 import { hostMeeting, joinWindow, team } from "./meeting-team.ts";
 
@@ -14,17 +14,23 @@ test.afterEach(async () => {
 });
 
 const bounds = (app: ElectronApplication) =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.getBounds());
+  app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.getBounds(),
+  );
 
 test("TC-F04-77 [AC-F04-40] hidden and shown, then restarted: the same size and place @windows", async () => {
   const profile = freshProfile();
   const first = await launch(profile);
   await first.app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()[0]?.setBounds({ x: 60, y: 80, width: 1000, height: 700 }),
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.setBounds({ x: 60, y: 80, width: 1000, height: 700 }),
   );
   const placed = await bounds(first.app);
   await first.app.evaluate(({ BrowserWindow }) => {
-    const window = BrowserWindow.getAllWindows()[0];
+    const window = BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)[0];
     window?.hide();
     window?.show();
   });
@@ -43,7 +49,7 @@ test("TC-F04-78 [AC-F04-41] a signed-in start shows the app within 3 s, five tim
   await closeApp((await launchAs(member.email, profile)).app);
   const times: number[] = [];
   for (let run = 0; run < 5; run++) {
-    const running = await launch(profile);
+    const running = await launch(profile, { VITE_API_URL: API_URL ?? "" });
     await expect(running.page.getByRole("button", { name: /^Your account: / })).toBeVisible({ timeout: 10_000 });
     const took = await running.app.evaluate(() => Date.now() - (process.getCreationTime() ?? Date.now()));
     times.push(took);
@@ -66,9 +72,24 @@ test("TC-F04-79 [AC-F04-42] a call runs on for 10 minutes with the window behind
       [...document.querySelectorAll("video")].reduce((sum, v) => sum + v.getVideoPlaybackQuality().totalVideoFrames, 0),
     );
   const phases = [
-    (app: ElectronApplication) => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.blur()),
-    (app: ElectronApplication) => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.minimize()),
-    (app: ElectronApplication) => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide()),
+    (app: ElectronApplication) =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .sort((a, b) => a.id - b.id)[0]
+          ?.blur(),
+      ),
+    (app: ElectronApplication) =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .sort((a, b) => a.id - b.id)[0]
+          ?.minimize(),
+      ),
+    (app: ElectronApplication) =>
+      app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows()
+          .sort((a, b) => a.id - b.id)[0]
+          ?.hide(),
+      ),
   ];
   let last = await frames();
   for (const phase of phases) {
@@ -87,7 +108,9 @@ test("TC-F04-79 [AC-F04-42] a call runs on for 10 minutes with the window behind
 function filesOf(folder: string): { path: string; text: string }[] {
   return readdirSync(folder).flatMap((name) => {
     const path = join(folder, name);
-    const stat = statSync(path);
+    // Chromium's Singleton* entries are links to files that may already be gone.
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink()) return [];
     if (stat.isDirectory()) return /Cache|GPUCache|Code Cache|blob_storage/.test(name) ? [] : filesOf(path);
     return stat.size < 5_000_000 ? [{ path, text: readFileSync(path).toString("latin1") }] : [];
   });
@@ -99,7 +122,9 @@ test("TC-F04-93 [AC-F04-40] the profile holds no passwords, tokens or message te
   const mo = await launchAs(member.email, profile);
   windows.push(mo);
   await mo.app.evaluate(({ BrowserWindow }) =>
-    BrowserWindow.getAllWindows()[0]?.setBounds({ x: 40, y: 60, width: 900, height: 700 }),
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.setBounds({ x: 40, y: 60, width: 900, height: 700 }),
   );
   await mo.page.waitForTimeout(1_000);
   const token = await mo.app.evaluate(() => process.env["MEETAPP_E2E_PASSWORD"] ?? "");

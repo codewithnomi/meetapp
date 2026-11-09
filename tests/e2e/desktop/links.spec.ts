@@ -24,9 +24,18 @@ const deliver = (app: ElectronApplication, link: string, how: "mac" | "windows")
   );
 
 const hide = (app: ElectronApplication) =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.hide());
+  app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.hide(),
+  );
 const visible = (app: ElectronApplication) =>
-  app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? false);
+  app.evaluate(
+    ({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()
+        .sort((a, b) => a.id - b.id)[0]
+        ?.isVisible() ?? false,
+  );
 
 test("TC-F04-25 TC-F04-34 [AC-F04-10, AC-F04-12] a copied link opens the pre-join on the hidden app within 3 s, both ways, joining nothing", async () => {
   const people = await team();
@@ -42,7 +51,7 @@ test("TC-F04-25 TC-F04-34 [AC-F04-10, AC-F04-12] a copied link opens the pre-joi
     await expect(member.page.getByRole("button", { name: "Join now" })).toBeVisible({ timeout: 3_000 });
     expect(Date.now() - sent).toBeLessThan(3_000);
     expect(await visible(member.app)).toBe(true);
-    await member.page.getByRole("button", { name: "Meetings" }).click();
+    await member.page.getByRole("button", { name: "Cancel" }).click();
   }
   // Nothing was joined: the organizer is still alone.
   await expect(host.page.getByRole("figure")).toHaveCount(1);

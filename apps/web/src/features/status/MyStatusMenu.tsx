@@ -5,7 +5,6 @@ import type { Status } from "@meetapp/contracts";
 import { useTranslation } from "react-i18next";
 import { apiFileUrl } from "../api/index.ts";
 import { useSession, useSignOut } from "../auth/index.ts";
-import { useTrayCommands } from "../desktop-app/index.ts";
 import { useMyStatus } from "./use-my-status.ts";
 
 const STATUSES: Status[] = ["available", "busy", "dnd", "brb", "away", "in_call", "offline"];
@@ -28,8 +27,6 @@ export function MyStatusMenu({ onSettings }: { onSettings: () => void }) {
   const { data: me } = useSession();
   const signOut = useSignOut();
   const { mine, duration, choose, reset } = useMyStatus();
-  // Settings from the tray is handled by the app's desktop commands; status here.
-  useTrayCommands({ onStatus: (status) => choose(status, "forever") });
   if (!me) return null;
   const statusLabels = Object.fromEntries(
     STATUSES.map((status) => [status, t(status === "away" ? "status.appearAway" : `chats.status.${status}`)]),

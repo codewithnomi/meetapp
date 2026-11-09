@@ -8,7 +8,7 @@ updated: 2026-11-03
 # F04 Desktop app: Design (HOW)
 
 ## Summary (plain English)
-MeetApp gets real installers, made with **electron-builder**, a common free tool: a `.dmg` for Mac and an `.exe` for Windows. They are unsigned for now, but the signing settings are already in place, waiting for a certificate.
+MeetApp gets real installers, made with **electron-builder**, a common free tool: a `.dmg` for Mac and an `.exe` for Windows. They have no paid certificate yet: the Mac build gets an ad-hoc signature made on the building Mac, with camera and microphone entitlements (D089), and the signing settings are in place, waiting for a certificate.
 
 Closing the window doesn't end MeetApp. The window is only hidden, and a small icon stays in the menu bar (Windows: the taskbar's notification area). Everything keeps running behind it: the live line for messages, ringing, and the F16 call windows. **Quit** really stops it.
 
@@ -54,7 +54,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 **The name "MeetApp" is temporary** (owner, 2026-11-03). The app's name, app id (`app.meetapp.desktop`), link scheme (`meetapp://`), icons and installer names are kept in one place (`apps/desktop/app-identity.ts`, read by `electron-builder.config.ts` and the app; a TypeScript config because a YAML file cannot import it), so the final name means changing one file and the icons.
 
 ## 2. Screens / user flow
-1. **Install.** Open the `.dmg`, drag MeetApp to Applications, and open it. The Mac warns that the app is unsigned; the getting-started guide shows how to allow it once. On Windows, "Windows protected your PC" appears: More info, then Run anyway.
+1. **Install.** Open the `.dmg`, drag MeetApp to Applications, and open it. A copy downloaded from elsewhere makes the Mac warn once (no certificate); the getting-started guide shows how to allow it. A copy built on the same Mac opens without a warning (T19). On Windows, "Windows protected your PC" appears: More info, then Run anyway.
 2. **Close the window.** It hides. The first time, a corner card says it is still running. The menu-bar icon stays.
 3. **Menu-bar icon.** Open MeetApp, a status submenu, Settings, Quit MeetApp.
 4. **Quit during a call.** "Quit MeetApp? You'll leave the call." with Quit and Cancel.
@@ -100,7 +100,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - **In the main window** (`features/notices`), for each live-line `news` message:
   - Skip it if any of these is true:
     - it is the person's own message;
-    - that chat is the one shown in a window in front (F16 already knows focus);
+    - that chat is the one shown in a window in front (F16 already knows focus); main tells each window when it comes to the front or leaves it (`windowFront` on the call-windows line), because during a call the page runs at full speed and its own signals say "visible" even when hidden (found at verification, 2026-11-09);
     - the chat is muted, unless the message mentions the person;
     - the setting for that kind is off;
     - the status is Do not disturb;

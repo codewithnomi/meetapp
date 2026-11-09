@@ -3,6 +3,19 @@
 import type { Configuration } from "electron-builder";
 import { appIdentity } from "./app-identity.ts";
 
+// Electron's switches turned off in the installed app (security review): another program can't run
+// MeetApp as plain Node.js, or open a debugger in it, to borrow its camera and microphone permission;
+// only the app's own checked archive is loaded. Set before signing, so the signature covers them.
+const FUSES: NonNullable<Configuration["electronFuses"]> = {
+  runAsNode: false,
+  enableNodeOptionsEnvironmentVariable: false,
+  enableNodeCliInspectArguments: false,
+  enableCookieEncryption: true,
+  enableEmbeddedAsarIntegrityValidation: true,
+  onlyLoadAppFromAsar: true,
+  grantFileProtocolExtraPrivileges: false,
+};
+
 export function builderConfig(env: NodeJS.ProcessEnv): Configuration {
   const signed = Boolean(env["CSC_LINK"]);
   return {
@@ -24,6 +37,7 @@ export function builderConfig(env: NodeJS.ProcessEnv): Configuration {
     protocols: [{ name: `${appIdentity.productName} meeting link`, schemes: [appIdentity.linkScheme] }],
     icon: appIdentity.icon,
     publish: null,
+    electronFuses: FUSES,
     mac: {
       target: [{ target: "dmg", arch: "universal" }],
       category: "public.app-category.business",

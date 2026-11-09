@@ -20,4 +20,14 @@ describe("installers (F04 T2)", () => {
     expect(builderConfig({}).mac?.entitlements).toBe("build-resources/entitlements.mac.plist");
     expect(builderConfig({ CSC_LINK: "file:///cert.p12" }).mac?.identity).toBeUndefined();
   });
+
+  it("TC-F04-96 [AC-F04-40] the installed app can't be run as Node.js or debugged from outside", () => {
+    expect(builderConfig({}).electronFuses).toMatchObject({
+      runAsNode: false,
+      enableNodeOptionsEnvironmentVariable: false,
+      enableNodeCliInspectArguments: false,
+      enableEmbeddedAsarIntegrityValidation: true,
+      onlyLoadAppFromAsar: true,
+    });
+  });
 });

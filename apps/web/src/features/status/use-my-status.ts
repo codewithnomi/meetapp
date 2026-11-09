@@ -32,3 +32,14 @@ export function useMyStatus() {
     },
   };
 }
+
+/** The menu-bar or tray's status choice, until changed (AC-F04-05). Kept by the signed-in app, not the
+ * picture menu, so it works while a meeting fills the screen. */
+export function useStatusFromTray(): (status: ManualStatus) => void {
+  const queryClient = useQueryClient();
+  const change = useMutation({
+    mutationFn: (status: ManualStatus) => setMyStatus(status, untilFor("forever", new Date())),
+    onSuccess: (mine) => queryClient.setQueryData(KEY, mine),
+  });
+  return (status) => change.mutate(status);
+}

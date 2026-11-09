@@ -63,8 +63,9 @@ async function choose(
   const now = deps.now();
   const until = choice.status === null ? null : endOf(choice.until, now);
   await deps.manual.set(userId, choice.status === null ? null : { status: choice.status, until });
-  if (until) await deps.expiry.schedule(userId, until);
+  // Announced first: the saved choice reaches others even if the end-of-status job can't be queued.
   await announce(userId);
+  if (until) await deps.expiry.schedule(userId, until);
   return mine(deps, userId);
 }
 

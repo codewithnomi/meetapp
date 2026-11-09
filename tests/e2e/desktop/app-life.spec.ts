@@ -62,7 +62,11 @@ test("TC-F04-06 [AC-F04-02] a second start with the same profile brings the firs
   const profile = freshProfile();
   const first = await launch(profile);
   windows.push(first);
-  await first.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.minimize());
+  await first.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.minimize(),
+  );
   const env: Record<string, string> = { ...(process.env as Record<string, string>), MEETAPP_USER_DATA_DIR: profile };
   delete env["ELECTRON_RUN_AS_NODE"];
   const second = spawn(electronBinary, [DESKTOP], { cwd: DESKTOP, env, stdio: "ignore" });
@@ -137,6 +141,10 @@ test("TC-F04-20 TC-F04-21 [AC-F04-08] a --hidden start shows no window, signed i
   windows.push(signedOut);
   await signedOut.page.waitForLoadState("load");
   expect((await mainState(signedOut.app)).visible).toBe(false);
-  await signedOut.app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.show());
+  await signedOut.app.evaluate(({ BrowserWindow }) =>
+    BrowserWindow.getAllWindows()
+      .sort((a, b) => a.id - b.id)[0]
+      ?.show(),
+  );
   await expect.poll(() => mainState(signedOut.app)).toMatchObject({ visible: true });
 });

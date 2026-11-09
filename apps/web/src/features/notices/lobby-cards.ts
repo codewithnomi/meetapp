@@ -8,6 +8,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useNotificationSettings } from "../notifications/index.ts";
+import { windowInFront } from "./front.ts";
 import { isQuiet } from "./notice-rules.ts";
 
 export interface LobbyPerson {
@@ -60,7 +61,6 @@ type Bridge = {
   callWindows?: { onAction: (listener: (action: unknown) => void) => () => void };
 };
 const bridge = () => (window as { meetapp?: Bridge }).meetapp;
-const inFront = () => document.visibilityState === "visible" && document.hasFocus();
 
 export interface LobbyCardsOptions {
   waiting: LobbyPerson[];
@@ -78,7 +78,7 @@ export function useLobbyCards({ waiting, meeting, admit, viewLobby }: LobbyCards
   const actions = useRef({ admit, viewLobby });
   actions.current = { admit, viewLobby };
   const quiet = isQuiet(queries.getQueryData(["me", "status"]), Date.now());
-  const wanted = settings.lobby && !quiet && !inFront() ? waiting : [];
+  const wanted = settings.lobby && !quiet && !windowInFront() ? waiting : [];
   const cards = lobbyCards(wanted, meeting, {
     waiting: t("notices.lobby.waiting"),
     many: (count) => t("notices.lobby.many", { count }),
