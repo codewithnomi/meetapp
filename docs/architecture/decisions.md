@@ -580,3 +580,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** without a certificate, the Mac build gets an ad-hoc signature (`mac.identity: "-"`, made on the building Mac, no Apple account, no cost) under `app.meetapp.desktop`, with entitlements for the camera and microphone (`build-resources/entitlements.mac.plist`). `pnpm desktop:dist` (`scripts/dist.ts`) builds the screens with the packaged backend address (`DEFAULT_API_URL`, `http://127.0.0.1:3000`), never the developer's `.env` address. This refines D084's "unsigned (`identity: null`)".
 - **Why:** with no signature macOS couldn't keep the microphone answer and asked again and again; under the hardened runtime the camera and microphone need entitlements or macOS refuses them. The screens of the first installer called the developer's port while the app's core called 3000, so nothing loaded.
 - **Cost accepted:** each newly built copy makes macOS ask once for the "MeetApp Safe Storage" keychain key; it ends with real signing (D083).
+
+### D090: F04's Windows hand checks are waived; the nightly Windows job stands in (owner, 2026-11-10)
+- **Date:** 2026-11-10. **Status:** accepted (owner: "skip windows").
+- **Decision:** F04 is verified without the T19 hand checks on a Windows PC (installer, tray, notification area words, start at login, link from a browser). The nightly Windows job (`nightly-windows.yml`) builds the installer, unsigned and with a throwaway certificate, and runs the `@windows` desktop tests on a real Windows runner. The hand checks are done when a Windows PC is available, before the first public Windows release.
+- **Why:** the owner has no Windows PC; free first (D017) rules out a paid Windows machine. The nightly job covers the build and the window behaviour that doesn't need a person.
+- **Risk accepted:** Windows-only look and feel (tray menu, SmartScreen warning, start-up after a real log-in) isn't seen by a person until then.
