@@ -6,7 +6,9 @@
 // (e.g. `-- meeting-roles.spec.ts` runs one file).
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
+import { openSync } from "node:fs";
 import { createServer, type AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ROOT, fail } from "./cli.ts";
 import { DOCKER_MESSAGES, addMissingSettings, checkDocker, ensureEnvFile, readEnv } from "./dev-checks.ts";
@@ -22,12 +24,22 @@ function run(command: string, args: string[], env: NodeJS.ProcessEnv = {}): bool
   return spawnSync(command, args, { cwd: ROOT, stdio: "inherit", env: { ...process.env, ...env } }).status === 0;
 }
 
-/** The real backend with the local settings, as `pnpm dev` runs it (without reloading). */
+/**
+ * The real backend with the local settings, as `pnpm dev` runs it (without reloading). Its output goes
+ * to meetapp-test-api.log in the temp folder (outside the test results, which each run empties), so a
+ * backend that stops mid-run can be explained.
+ */
+const API_LOG = join(tmpdir(), "meetapp-test-api.log");
 function startApi(extraEnv: Record<string, string>): ChildProcess {
+  const log = openSync(API_LOG, "w");
   return spawn(
     process.execPath,
     ["--env-file-if-exists=../../.env", "--import", "./src/instrumentation.ts", "src/server.ts"],
-    { cwd: join(ROOT, "apps/api"), stdio: "ignore", env: { ...process.env, ...extraEnv, NODE_ENV: "test" } },
+    {
+      cwd: join(ROOT, "apps/api"),
+      stdio: ["ignore", log, log],
+      env: { ...process.env, ...extraEnv, NODE_ENV: "test" },
+    },
   );
 }
 
