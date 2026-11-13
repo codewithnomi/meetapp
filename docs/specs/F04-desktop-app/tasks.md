@@ -1,7 +1,7 @@
 ---
 feature: F04
 title: Desktop app
-status: in-progress
+status: done
 updated: 2026-11-03
 ---
 

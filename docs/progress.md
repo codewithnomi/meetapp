@@ -6,7 +6,7 @@
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
 - **Done and merged:** F00 Foundation (PR #3), F01 Accounts & workspaces (PR #8), F02 Meetings & calling (PR #11), F03 In-meeting chat (PR #15).
-- **Now:** **F04 Desktop app** on branch `feat/F04-desktop-app`, in `/spec-verify`. Verification fixes committed (8aff6e6: lobby cards, menu-bar status in calls, Meeting info link, Electron fuses, review fixes, TC-59/96). Windows hand checks waived (D090). Next: the full `pnpm test` on mains power (last two runs were spoiled by battery sleep and by stopping for a meeting), then screenshots, container check, audit, gitleaks, verification.md, PR. Still open from T0: the GitHub desktop check (TC-F15-56, TC-F02-107). After F04: F17 Browse during a call (D088).
+- **Now:** **F04 Desktop app** verified PASS (2026-11-13); Pull Request open on `feat/F04-desktop-app`, waiting for the owner to merge. Next: F17 Browse during a call (screen designs drawn on the canvas, board "Browse during a call (F17)"). Still open from T0: the GitHub desktop check (TC-F15-56, TC-F02-107). Follow-ups: library updates (15 low/moderate audit items, /deps-update); Playwright "worker teardown timeout" after the last desktop test; fake-microphone tests TC-F02-19/44 fail after other tests (also on main).
 - **After F14 and F15:** first a small follow-up (owner, 2026-10-29, "as you recommend"; screens drawn on the canvas, board "Calls while MeetApp isn't in front", **approved by the owner 2026-10-29**): as in Teams, an incoming call rings in **a small window above every app** (bottom right, with Video, Audio, Decline and a hide ×) when MeetApp isn't in front; **Mac notifications only for missed calls** (Call back), later also for messages with a "Teams built-in or Mac" choice; and, during a call or meeting, a **mini call window** that shows by itself when MeetApp isn't in front and hides when it is (speaker, timer, people count; mute, camera, share screen, raise hand, Leave, back to the call). Both small windows can be dragged and remember their place. Several calls at once: one window each, stacked upwards from the corner (newest on top), never covering each other or the mini call window; one ringtone; a test with two callers at once. Later with admin settings (F10): "Busy on Busy". Hold: not planned (accepting leaves the current call, as decided in F15). Needs its own short spec (new ACs, design note on the extra desktop window, security S17). Then F04 (D062).
 - **Design system (D029, approved):** https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Process (owner, 2026-10-13, D052):** while building, run only each task's own tests and checks; the full suite, desktop tests and screenshots run once, at verification. Run long tests with the Mac's lid open or on power (it sleeps on battery).
@@ -205,6 +205,11 @@
 - **Next step:** continue F15 T-fix-9 with the Mac on power: find why chat-call desktop tests flip (and the caller not seeing "No answer"), then the full run, screenshots for the owner, load test, reviews.
 
 ## Session log
+
+### 2026-11-13: F04 spec-verify PASS
+- Found and fixed a backend crash: a dropped database connection during the live line's sign-in check stopped the whole server (1c23a19). Desktop test clean-up no longer waits on a stuck app (48c94d9).
+- Full desktop run 147 passed; the 8 failures all passed on re-run (two fake-microphone tests also fail on main after other tests). Screenshots: F04 baselines saved; icon picture updated for the bell. Container check, audit (no high/critical) and gitleaks clean.
+- F17 screens drawn on the canvas (board "Browse during a call (F17)").
 
 ### 2026-11-06: F04 T19 hand checks on the Mac
 - With the owner: install from the dmg, close to the menu bar, the menu, Quit during a call, start at login switched on, a `meetapp://` link from Chrome. All worked.
