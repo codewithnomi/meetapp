@@ -12,19 +12,19 @@
     "dist": "node scripts/dist.ts"
   },
   "dependencies": {
-    "@sentry/electron": "^8.1.0",
+    "@sentry/electron": "^8.4.0",
     "electron-updater": "6.8.11",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@meetapp/config": "workspace:*",
     "@meetapp/contracts": "workspace:*",
-    "@types/node": "^26.6.5",
+    "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
-    "electron": "^44.10.1",
+    "electron": "^45.2.3",
     "electron-builder": "26.18.0",
-    "vite": "^8.3.4",
-    "vitest": "^5.0.3"
+    "vite": "^8.3.7",
+    "vitest": "^5.1.0"
   },
   "productName": "MeetApp"
 }
