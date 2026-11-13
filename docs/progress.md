@@ -6,7 +6,7 @@
 ## Current state
 - **Coding go-ahead:** yes (given by the owner on 2026-10-09, together with F00 requirements approval)
 - **Done and merged:** F00 Foundation (PR #3), F01 Accounts & workspaces (PR #8), F02 Meetings & calling (PR #11), F03 In-meeting chat (PR #15).
-- **Now:** **F16 Calls while MeetApp isn't in front** verified PASS (2026-11-03, round 3) on branch `feat/F16-call-windows`; Pull Request open, waiting for the owner to merge. Next: F04 Desktop app; its requirements draft (owner choices included) is in the session scratchpad and the memory note, to move into `docs/specs/F04-desktop-app/` after the merge. Before F04's PR: fix TC-F15-56 and TC-F02-107 (red on main too, D077 follow-up).
+- **Now:** **F04 Desktop app** verified PASS (2026-11-13); Pull Request open on `feat/F04-desktop-app`, waiting for the owner to merge. Next: F17 Browse during a call (screen designs drawn on the canvas, board "Browse during a call (F17)"). Still open from T0: the GitHub desktop check (TC-F15-56, TC-F02-107). Follow-ups: library updates (15 low/moderate audit items, /deps-update); Playwright "worker teardown timeout" after the last desktop test; fake-microphone tests TC-F02-19/44 fail after other tests (also on main).
 - **After F14 and F15:** first a small follow-up (owner, 2026-10-29, "as you recommend"; screens drawn on the canvas, board "Calls while MeetApp isn't in front", **approved by the owner 2026-10-29**): as in Teams, an incoming call rings in **a small window above every app** (bottom right, with Video, Audio, Decline and a hide ×) when MeetApp isn't in front; **Mac notifications only for missed calls** (Call back), later also for messages with a "Teams built-in or Mac" choice; and, during a call or meeting, a **mini call window** that shows by itself when MeetApp isn't in front and hides when it is (speaker, timer, people count; mute, camera, share screen, raise hand, Leave, back to the call). Both small windows can be dragged and remember their place. Several calls at once: one window each, stacked upwards from the corner (newest on top), never covering each other or the mini call window; one ringtone; a test with two callers at once. Later with admin settings (F10): "Busy on Busy". Hold: not planned (accepting leaves the current call, as decided in F15). Needs its own short spec (new ACs, design note on the extra desktop window, security S17). Then F04 (D062).
 - **Design system (D029, approved):** https://claude.ai/artifact/K9GV7yg9Y4QkNJ7VgAb3PJ. Screen designs: https://claude.ai/artifact/7Arjr3rCB8iTMM5KA3XXDJ
 - **Process (owner, 2026-10-13, D052):** while building, run only each task's own tests and checks; the full suite, desktop tests and screenshots run once, at verification. Run long tests with the Mac's lid open or on power (it sleeps on battery).
@@ -93,7 +93,7 @@
 ## Open questions (need the owner's answer)
 0c. **IconButton "off" state (optional, design system):** a muted microphone button says "Unmute" and is also marked "pressed", so screen readers say "Unmute, toggle button, pressed". In F02 the meeting controls now use only the label (the F02 UI review called it a must fix; `IconButton labelIsAction`). Should the design system say so for every such button (recommended: yes)?
 0d. **Theme switch: chosen option is faint (optional, design system):** in the Light / Dark / Same-as-computer switch, the chosen option differs only by a slightly lighter background and a soft shadow. It may be hard to see for people with low vision. Keep it as designed, or make the chosen option stronger in the design system (recommended: stronger)?
-1. **App name:** is "MeetApp" final, or a working name?
+1. ~~**App name:** is "MeetApp" final, or a working name?~~ Answered: a working name (D087).
 2. **Pricing:** free plan limits (e.g. 40-minute meetings? number of participants?) and paid plan price?
 3. **Recording:** should meetings be recorded (video files)? It costs storage. Or only transcripts?
 4. **AI on/off:** should AI transcription be on for every meeting, or only when the host turns it on?
@@ -205,6 +205,24 @@
 - **Next step:** continue F15 T-fix-9 with the Mac on power: find why chat-call desktop tests flip (and the caller not seeing "No answer"), then the full run, screenshots for the owner, load test, reviews.
 
 ## Session log
+
+### 2026-11-13: F04 spec-verify PASS
+- Found and fixed a backend crash: a dropped database connection during the live line's sign-in check stopped the whole server (1c23a19). Desktop test clean-up no longer waits on a stuck app (48c94d9).
+- Full desktop run 147 passed; the 8 failures all passed on re-run (two fake-microphone tests also fail on main after other tests). Screenshots: F04 baselines saved; icon picture updated for the bell. Container check, audit (no high/critical) and gitleaks clean.
+- F17 screens drawn on the canvas (board "Browse during a call (F17)").
+
+### 2026-11-06: F04 T19 hand checks on the Mac
+- With the owner: install from the dmg, close to the menu bar, the menu, Quit during a call, start at login switched on, a `meetapp://` link from Chrome. All worked.
+- Two bugs found and fixed (D089): the installed screens used the developer's backend address (`scripts/dist.ts`); an unsigned build made macOS ask for the microphone again and again (ad-hoc signature with camera and microphone entitlements).
+- Accepted: one keychain prompt after each new build. Still open: Windows by hand (no PC), Do not disturb with a second person, the installed copy's start-up time, the quiet start after a real log-out, the downloaded-copy warning.
+
+### 2026-11-04 to 2026-11-06: F04 Desktop app, T1–T18
+- T1 spike: system Focus can't be read unsigned; owner chose to defer AC-37 (D086).
+- T2 installers (electron-builder, `pnpm desktop:dist`); T3 close hides, Quit asks during a call, one copy per profile; T4 menu-bar / tray icon; T5 start at login, hidden; T6 `meetapp://m/<code>` links (during a call the link waits; Teams' way is the new F17, D088).
+- T7 status set by hand on the server (migration 0010, `PUT /me/status`, expiry job); T8 the status menu on the person's picture (canvas board "Desktop app (F04)" approved by the owner 2026-11-04); T9 Settings → Notifications.
+- T10 notification cards in main (a third F16 small-window kind, Zod checks); T11 NoticeCard; T12 message and mention cards, the first-close card, the server's clock on `pong`; T13 Do not disturb silences cards; T14 lobby cards with Admit; T15 reconnect at once after sleep or network return; T16 window size and place; T17 updates switched off, Settings → About, Windows nightly builds the installer and runs `@windows` desktop tests.
+- T18: documentation brought up to date (docs-keeper list: READMEs, security S17, privacy, operations, glossary, new runbook `desktop-app.md`, design corrections).
+- Desktop window tests for F04 are written but run only at spec-verify (owner away, D052).
 
 ### 2026-10-16 to 2026-10-20: Session 5 (F02 fixes, final runs, second verification)
 - T-fix-3 to T-fix-8 done: connection, place, Rejoin and device bugs; meeting-screen accessibility; app unit tests (coverage over 80%); the postponed desktop tests (they found real bugs: Copy refused by the desktop rules, focus lost after dialogs, unplugged speakers and cameras); documentation.

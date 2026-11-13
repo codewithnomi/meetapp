@@ -48,7 +48,10 @@
       "appearance": "Appearance",
       "devices": "Devices",
       "calls": "Calls",
-      "privacy": "Privacy"
+      "privacy": "Privacy",
+      "general": "General",
+      "notifications": "Notifications",
+      "about": "About"
     },
     "privacy": {
       "title": "Privacy",
@@ -90,6 +93,34 @@
         "classic": "A familiar phone ring",
         "gentle": "Quiet, for shared rooms"
       }
+    },
+    "general": {
+      "title": "General",
+      "loading": "Loading general settings",
+      "startAtLogin": "Start MeetApp when I log in",
+      "startAtLoginHint": "MeetApp starts in the menu bar, without a window, so calls and messages reach you.",
+      "failed": "This setting couldn't be changed. Try again."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "messages": "Chat messages",
+      "messagesHint": "A card for each new message in a chat that isn't open.",
+      "mentions": "Mentions",
+      "mentionsHint": "When someone @mentions you, even in a muted chat.",
+      "lobby": "Someone waiting in the lobby",
+      "lobbyHint": "For meetings where you can let people in.",
+      "sound": "Sound",
+      "soundHint": "Play a sound with message cards.",
+      "preview": "Show message preview",
+      "previewHint": "Off: cards say \"New message\" instead of the text.",
+      "failed": "This setting couldn't be changed. Try again."
+    },
+    "about": {
+      "title": "About MeetApp",
+      "version": "Version {{version}}",
+      "updatesOff": "Updates are turned off",
+      "updatesOn": "Updates are turned on",
+      "loading": "Loading"
     }
   },
   "auth": {
@@ -1043,7 +1074,10 @@
       "available": "Available",
       "away": "Away",
       "in_call": "In a call",
-      "offline": "Offline"
+      "offline": "Offline",
+      "busy": "Busy",
+      "dnd": "Do not disturb",
+      "brb": "Be right back"
     },
     "people_one": "{{count}} person",
     "people_other": "{{count}} people",
@@ -1277,6 +1311,45 @@
         "calm-waves": "Calm waves",
         "soft-shapes": "Soft shapes"
       }
+    }
+  },
+  "status": {
+    "menu": "Your account",
+    "appearAway": "Appear away",
+    "forHowLong": "For how long",
+    "reset": "Reset status",
+    "settings": "Settings",
+    "signOut": "Sign out",
+    "until": "Until {{time}}",
+    "untilDay": "Until {{day}} {{time}}",
+    "for": {
+      "30m": "30 minutes",
+      "1h": "1 hour",
+      "2h": "2 hours",
+      "today": "Today",
+      "week": "This week",
+      "forever": "Until I change it"
+    }
+  },
+  "notices": {
+    "open": "Open the chat with {{name}}",
+    "newMessage": "New message",
+    "newMessages_one": "{{count}} new message",
+    "newMessages_other": "{{count}} new messages",
+    "mentioned": "mentioned you",
+    "close": "Close",
+    "running": {
+      "title": "MeetApp is still running",
+      "menuBar": "You'll find it in the menu bar.",
+      "tray": "You'll find it in the taskbar's notification area."
+    },
+    "lobby": {
+      "waiting": "is waiting in the lobby",
+      "many_one": "{{count}} person is waiting",
+      "many_other": "{{count}} people are waiting",
+      "guest": "Guest",
+      "admit": "Admit",
+      "view": "View lobby"
     }
   }
 }

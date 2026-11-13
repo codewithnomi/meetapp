@@ -4,8 +4,12 @@
 // section 5): camera/mic/screen access, the share picker's sources and choice, and this app's device key.
 // Built as CommonJS, as sandboxed preloads require.
 import { contextBridge, ipcRenderer } from "electron";
+import { LOGIN_ITEM_CHANNEL } from "../main/login-item.ts";
+import { ABOUT_CHANNEL } from "../main/updates.ts";
+import { MEETING_LINK_CHANNEL, isMeetingCode } from "../main/links.ts";
+import { APP_CHANNEL, isTrayCommand, type TrayCommand } from "../main/tray-menu.ts";
 import { AUTH_ACTION_NAMES, AUTH_CHANNEL } from "../main/auth-actions.ts";
-import { CALL_WINDOWS_CHANNEL, FRAMES_CHANNEL } from "../main/call-windows.ts";
+import { CALL_WINDOWS_CHANNEL, FRAMES_CHANNEL, NOTICES_CHANNEL } from "../main/call-windows.ts";
 import { FILES_CHANNEL, POWER_CHANNEL } from "../main/chat-desktop.ts";
 import { MEDIA_ACTION_NAMES, MEDIA_CHANNEL } from "../main/media-actions.ts";
 
@@ -74,6 +78,38 @@ const callWindows = {
   },
 };
 
+// F04: what the menu-bar or tray menu asks the screens to do (open Settings, set a status); only checked
+// commands get through. Returns "stop listening".
+const appCommands = {
+  // F04 AC-10: a clicked meeting link, as a checked meeting code; tells main the screens now listen.
+  onOpenMeeting: (listener: (code: string) => void) => {
+    const handler = (_event: unknown, code: unknown) => {
+      if (isMeetingCode(code)) listener(code);
+    };
+    ipcRenderer.on(MEETING_LINK_CHANNEL, handler);
+    ipcRenderer.send(MEETING_LINK_CHANNEL, "listening");
+    return () => {
+      ipcRenderer.removeListener(MEETING_LINK_CHANNEL, handler);
+    };
+  },
+  // F04 AC-50: Settings → About (the version, and whether updates are on).
+  about: () => ipcRenderer.invoke(ABOUT_CHANNEL),
+  // F04 AC-09: Settings → General "Start MeetApp when I log in"; answers the real state.
+  loginItem: {
+    get: () => ipcRenderer.invoke(LOGIN_ITEM_CHANNEL, "get"),
+    set: (on: boolean) => ipcRenderer.invoke(LOGIN_ITEM_CHANNEL, "set", on),
+  },
+  onTrayCommand: (listener: (command: TrayCommand) => void) => {
+    const handler = (_event: unknown, command: unknown) => {
+      if (isTrayCommand(command)) listener(command);
+    };
+    ipcRenderer.on(APP_CHANNEL, handler);
+    return () => {
+      ipcRenderer.removeListener(APP_CHANNEL, handler);
+    };
+  },
+};
+
 contextBridge.exposeInMainWorld("meetapp", {
   platform: process.platform,
   auth,
@@ -82,4 +118,14 @@ contextBridge.exposeInMainWorld("meetapp", {
   files,
   power,
   callWindows,
+  // F04: MeetApp's own notification cards; main checks each one, a choice comes back via callWindows.onAction.
+  notices: {
+    show: (card: unknown) => {
+      ipcRenderer.send(NOTICES_CHANNEL, { show: card });
+    },
+    remove: (cardId: unknown) => {
+      ipcRenderer.send(NOTICES_CHANNEL, { remove: cardId });
+    },
+  },
+  app: appCommands,
 });

@@ -3,7 +3,13 @@
 // close the line. Each server has its own hub of open lines. A page from another site can't open one: a
 // browser always names the page's origin on an upgrade, and only the app's own are accepted (security S5).
 import websocket from "@fastify/websocket";
-import { CHATS_LIMITS, statusQuerySchema, statusesSchema } from "@meetapp/contracts";
+import {
+  CHATS_LIMITS,
+  myStatusBodySchema,
+  myStatusSchema,
+  statusQuerySchema,
+  statusesSchema,
+} from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import type { FastifyInstance } from "fastify";
 import { signedInUser, type SessionReader } from "../../plugins/session.ts";
@@ -64,5 +70,34 @@ export const chatsLineRoutes: FastifyPluginAsyncZod<{
       const { id } = signedInUser(request);
       await hub.open(socket, id, async () => (await sessions.read(request))?.id === id);
     },
+  );
+};
+
+/** F04: setting one's own status by hand (design 5); the person always comes from the sign-in. */
+export const myStatusRoutes: FastifyPluginAsyncZod<{ status: ChatsStatusService }> = async (app, { status }) => {
+  app.get(
+    "/api/v1/me/status",
+    {
+      schema: {
+        summary: "My status as others see it, the one I set by hand and when it ends (F04)",
+        tags: ["chats"],
+        response: { 200: myStatusSchema },
+      },
+    },
+    (request) => status.mine(signedInUser(request).id),
+  );
+  app.put(
+    "/api/v1/me/status",
+    {
+      schema: {
+        summary: "Set my status by hand for a time, or reset it to automatic (F04)",
+        description:
+          "Available, Busy, Do not disturb, Be right back or Appear away, until a time (at most 8 days ahead) or until changed (`until: null`). `status: null` resets. Others see it within 5 seconds. 20 changes a minute.",
+        tags: ["chats"],
+        body: myStatusBodySchema,
+        response: { 200: myStatusSchema },
+      },
+    },
+    (request) => status.choose(signedInUser(request).id, request.body),
   );
 };

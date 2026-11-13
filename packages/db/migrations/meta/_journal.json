@@ -71,6 +71,13 @@
       "when": 1793097524567,
       "tag": "0009_chat_calls",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793795778978,
+      "tag": "0010_f04_status_and_notifications",
+      "breakpoints": true
     }
   ]
 }

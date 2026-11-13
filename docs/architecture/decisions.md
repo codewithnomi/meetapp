@@ -530,3 +530,59 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** when the caller hangs up before anyone answers, the person gets the missed-call Mac notification (AC-F16-12 changed). Only calls without a "Missed call" note, such as removal from a call, give none.
 - **Why:** it is the most common missed call; Teams notifies for it; AC-F16-10 already keyed on the "Missed call" note (AC-F15-09). The second verification found the code skipped it.
 - **Alternatives:** keep the old wording (no notification when the caller hangs up).
+
+### D082: F16 merged with the GitHub desktop check red (owner, 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted (owner chose "merge as is").
+- **Decision:** PR #23 (F16) is merged although the GitHub "Desktop app tests" check failed: 106 passed, 12 failed. Six were F16 window tests and six were older ones (D077 timing, and TC-F15-56 and TC-F02-107, which also fail on `main`). The whole verification passed on the owner's Mac (verification.md, round 3).
+- **Why:** F16 depends on which window is in front. GitHub runs the tests on a Linux virtual screen with no window manager, so focus and always-on-top probably can't work there. The full logs could not be read without the owner's GitHub sign-in.
+- **Follow-up (before F04's PR):** add a small window manager to the CI desktop job (or skip only the focus-dependent F16 checks on Linux, with a reason), read the full logs, fix TC-F15-56 and TC-F02-107, and get the desktop check green.
+
+### D083: F04 Desktop app product choices (owner, 2026-11-02 and 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted (requirements approved by the owner).
+- **Decision:** unsigned for now, ready to sign later. Closing the window keeps MeetApp in the menu bar or tray; Quit stops it. It starts at login, hidden, with a switch to turn that off. Notifications follow Teams (messages with a preview, mentions, lobby with Admit) as MeetApp's own corner cards while the app is unsigned; the Mac's notification centre becomes a choice once it is signed. Missed calls keep F16's Mac notification, which shows nothing until signing (D080). People can set their status by hand (Available, Busy, Do not disturb, Be right back, Appear away, for a chosen time). Do not disturb silences F04's notifications, but calls still ring.
+- **Why:** Teams parity at no cost (D017). Corner cards work without paid signing.
+- **Alternatives:** wait for signing and use only the Mac's notifications; keep the status automatic until later.
+
+### D084: electron-builder for installers, electron-updater (switched off) for updates (F04)
+- **Date:** 2026-11-03. **Status:** accepted (F04 design approved by the owner, 2026-11-03).
+- **Decision:** installers come from electron-builder: a Mac `dmg` (universal) and a Windows `nsis` installer, unsigned (`identity: null`) until certificates exist. They register the `meetapp://` link scheme. Updates use electron-updater with GitHub Releases, switched off by a build setting.
+- **Why:** both are free, widely used and maintained, and they work together; signing and updates turn on with settings only (AC-F04-03, 50).
+- **Alternatives:** Electron Forge (also good, but its update path is Squirrel, which needs a server for Mac); building by hand.
+
+### D085: Closing hides the window; notifications are MeetApp corner cards (F04)
+- **Date:** 2026-11-03. **Status:** accepted (F04 design approved by the owner, 2026-11-03).
+- **Decision:** closing the last window hides it (its page keeps the live line, F16 and notices running), and the menu-bar or tray icon stays. Message, mention and lobby notifications are a third small-window kind in F16's controller, with the same S17 lock-down, stacked with the ring windows.
+- **Why:** this works without signing (D080), reuses tested code, and is how Teams keeps running.
+- **Alternatives:** keep a hidden extra window only for the live line (more code, double connections); OS notifications (need signing).
+
+### D087: "MeetApp" is a working name (owner, 2026-11-03)
+- **Date:** 2026-11-03. **Status:** accepted.
+- **Decision:** "MeetApp" is temporary. The final name will be chosen later. Until then, code and installers use MeetApp, but the name, app id, link scheme and icons are kept in one place, so renaming is a small change.
+- **Why:** the owner hasn't settled the brand yet.
+
+### D086: Reading the system's Focus / Do not disturb (F04 T1 spike)
+- **Date:** 2026-11-04. **Status:** accepted (owner chose A, 2026-11-04).
+- **Decision:** option A. AC-F04-37 is deferred until the app is signed; MeetApp's own Do not disturb (AC-22) silences cards. No helper is added and there is no `system-quiet.ts`.
+- **Spike result:**
+  - **Mac:** macOS 13+ has only one supported way, Apple's Focus Status API (`INFocusStatusCenter`). It needs a paid Apple developer certificate, a special permission and a provisioning profile, so an unsigned MeetApp can't use it. `macos-notification-state` (MIT, last release 2023) reads the old Do Not Disturb setting only up to macOS 12. `macos-focus-mode` needs a Shortcut the person installs by hand and runs shell commands. Both were rejected.
+  - **Windows:** `windows-notification-state` (MIT, last release 2022, native) calls `SHQueryUserNotificationState`. It reliably sees full-screen apps and presentations, but not reliably the normal Focus assist / Do not disturb switch. It would also need native builds for x64 and arm64.
+- **Options for the owner:** (A) drop AC-37 for now: MeetApp's own Do not disturb (AC-22) silences cards, and once the app is signed, the Mac's notification centre respects Focus by itself. (B) keep AC-37 on Windows only, for full-screen and presentation quiet, using the native helper.
+- **Login start on macOS 13+:** `wasOpenedAtLogin` and `args` are not dependable with the new login items, so the design's 60-second fallback is used. The real check is TC-F04-82, by hand, at T19.
+
+### D088: Browsing during a call becomes its own feature, F17 (owner, 2026-11-04)
+- **Date:** 2026-11-04. **Status:** accepted (owner: "follow how Teams handles this", then "you know better, do the stuff").
+- **Decision:** Teams keeps a call running while the person opens other screens, in a small call view inside the app. A meeting link clicked during a call then shows that meeting's pre-join, and Join leaves the current call. MeetApp's call lives on its own screen today, so this needs the call to keep running above every screen. That is a new feature, F17 Browse during a call, built right after F04. Until then, AC-F04-10 keeps the safe behaviour from T6: a link clicked during a call never ends it; it waits until the person opens Meetings.
+- **Why:** it touches calls, meetings and chats, and is about the size of F16. Inside F04 it would delay the desktop app; on its own it gets proper requirements and Teams-style screens.
+- **Alternatives:** build it inside F04 now (bigger F04, later PR); leave a link during a call doing nothing (worse than waiting).
+
+### D089: Mac builds are signed ad hoc, and installers use the packaged backend address (F04 T19)
+- **Date:** 2026-11-06. **Status:** accepted (found in the owner's hand checks; owner: "it's not an issue" about the keychain prompt).
+- **Decision:** without a certificate, the Mac build gets an ad-hoc signature (`mac.identity: "-"`, made on the building Mac, no Apple account, no cost) under `app.meetapp.desktop`, with entitlements for the camera and microphone (`build-resources/entitlements.mac.plist`). `pnpm desktop:dist` (`scripts/dist.ts`) builds the screens with the packaged backend address (`DEFAULT_API_URL`, `http://127.0.0.1:3000`), never the developer's `.env` address. This refines D084's "unsigned (`identity: null`)".
+- **Why:** with no signature macOS couldn't keep the microphone answer and asked again and again; under the hardened runtime the camera and microphone need entitlements or macOS refuses them. The screens of the first installer called the developer's port while the app's core called 3000, so nothing loaded.
+- **Cost accepted:** each newly built copy makes macOS ask once for the "MeetApp Safe Storage" keychain key; it ends with real signing (D083).
+
+### D090: F04's Windows hand checks are waived; the nightly Windows job stands in (owner, 2026-11-10)
+- **Date:** 2026-11-10. **Status:** accepted (owner: "skip windows").
+- **Decision:** F04 is verified without the T19 hand checks on a Windows PC (installer, tray, notification area words, start at login, link from a browser). The nightly Windows job (`nightly-windows.yml`) builds the installer, unsigned and with a throwaway certificate, and runs the `@windows` desktop tests on a real Windows runner. The hand checks are done when a Windows PC is available, before the first public Windows release.
+- **Why:** the owner has no Windows PC; free first (D017) rules out a paid Windows machine. The nightly job covers the build and the window behaviour that doesn't need a person.
+- **Risk accepted:** Windows-only look and feel (tray menu, SmartScreen warning, start-up after a real log-in) isn't seen by a person until then.

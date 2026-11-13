@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAnswer, useChatCall, useEnterCall, useIncomingCalls, startCall } from "../calls/index.ts";
 import { useLiveLine } from "../chats/index.ts";
+import { useNotices } from "../notices/index.ts";
 import { useVisit } from "../meetings/index.ts";
 import { useCallScreen } from "./call-screen.ts";
 import { usePhotos } from "./photos.ts";
@@ -114,7 +115,14 @@ export interface CallWindowsRoutes {
 }
 
 /** Mounted once in the signed-in app, next to the in-app incoming calls. */
+const SCREEN_CONTROLS = ["leave", "share", "toggleCamera", "toggleHand"] as const;
+/** The mini window's buttons the call screen carries out as they are. */
+const isScreenControl = (name: string): name is (typeof SCREEN_CONTROLS)[number] =>
+  (SCREEN_CONTROLS as readonly string[]).includes(name);
+
 export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
+  // F04: MeetApp's own cards for new messages and mentions share the small windows' line.
+  useNotices({ toChat });
   const bridge = mainBridge();
   const rings = useIncomingCalls((state) => state.rings);
   const silence = useIncomingCalls((state) => state.silence);
@@ -137,13 +145,15 @@ export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
       callBack(action.conversationId, action.video, last?.chatName ?? last?.from ?? "", !last?.chatName);
     } else if (action.name === "toggleMic" && screen.call && (screen.call.mic || screen.call.canUnmute))
       screen.controls?.toggleMic();
-    else if (
-      action.name !== "toggleMic" &&
-      action.name !== "backToCall" &&
-      action.name !== "hideMini" &&
-      !("callId" in action)
-    )
-      screen.controls?.[action.name]();
+    else if (isScreenControl(action.name)) screen.controls?.[action.name]();
   };
-  useEffect(() => bridge?.onAction((action) => run.current(action as CallWindowsMainAction)), [bridge]);
+  useEffect(
+    () =>
+      bridge?.onAction((action) => {
+        // F04's card choices and "window in front" are handled by the notices (T12).
+        const { name } = action as { name: string };
+        if (!name.startsWith("notice") && name !== "windowFront") run.current(action as CallWindowsMainAction);
+      }),
+    [bridge],
+  );
 }

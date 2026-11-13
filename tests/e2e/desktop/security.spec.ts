@@ -32,7 +32,7 @@ test("TC-F00-58 [AC-F00-24] sandbox, context isolation and no Node.js in the pag
   const { app, page } = running;
   // Playwright's bundled Electron types predate getLastWebPreferences, so it is reached by name.
   const prefs = await app.evaluate(({ BrowserWindow }) => {
-    const contents = BrowserWindow.getAllWindows()[0]?.webContents as unknown as {
+    const contents = BrowserWindow.getAllWindows().sort((a, b) => a.id - b.id)[0]?.webContents as unknown as {
       getLastWebPreferences: () => object;
     };
     return contents.getLastWebPreferences();

@@ -158,7 +158,7 @@ class LineHub {
       if (message.data.active) line.activeAt = this.now();
     }
     if (message.data.t !== "typing") this.track(this.reportPresence(line));
-    if (message.data.t === "ping") this.send(line, { t: "pong" });
+    if (message.data.t === "ping") this.send(line, { t: "pong", at: this.now() });
     if (message.data.t === "typing") this.typing(line, message.data.conversationId);
   }
 
@@ -219,7 +219,16 @@ class LineHub {
     await this.sweepStatus();
     for (const line of [...this.lines.values()]) {
       if (this.now() - line.lastPing > IDLE_MS) this.closeLine(line, CLOSE.idle);
-      else if (!(await line.stillSignedIn())) this.closeLine(line, CLOSE.signedOut);
+      else if (!(await this.signedIn(line))) this.closeLine(line, CLOSE.signedOut);
+    }
+  }
+
+  /** A check that fails (the database dropped a connection) keeps the line: the next second asks again. */
+  private async signedIn(line: Line) {
+    try {
+      return await line.stillSignedIn();
+    } catch {
+      return true;
     }
   }
 
@@ -270,7 +279,7 @@ class LineHub {
     for (const ring of (await this.deps.ringsFor?.(userId)) ?? []) this.send(line, ring);
     await this.reportPresence(line);
     if (this.polling) this.send(line, { t: "polling", on: true });
-    this.timer ??= setInterval(() => void this.check(), CHECK_MS);
+    this.timer ??= setInterval(() => void this.check().catch(() => undefined), CHECK_MS);
   }
 
   async close() {

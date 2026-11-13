@@ -61,6 +61,11 @@ pnpm test
 ```
 It runs every automated test (about 5 minutes) and ends with "All tests passed." MeetApp windows open and close by themselves during the desktop tests; leave them alone.
 
+## Install the app
+Build the installers with `pnpm desktop:dist` (about 3 minutes). They land in `apps/desktop/release/`: a `.dmg` for Mac and `.exe` files for Windows (x64 and arm64). MeetApp isn't signed yet (D083), so each system warns once:
+- **Mac:** open the `.dmg` and drag MeetApp to Applications. The first time, the Mac says it can't check the app. Open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** next to MeetApp.
+- **Windows:** run the `.exe`. When "Windows protected your PC" appears, click **More info**, then **Run anyway**.
+
 ## Useful commands
 | Command | What it does |
 |---|---|
@@ -68,6 +73,7 @@ It runs every automated test (about 5 minutes) and ends with "All tests passed."
 | `pnpm dev:stop` | Stops the services (data kept) |
 | `pnpm desktop` | Opens only the app window, without the services |
 | `pnpm dev:window` | One more app window with its own sign-in, to be two people in a meeting (while `pnpm dev` runs; see [runbooks/calls.md](runbooks/calls.md)) |
+| `pnpm desktop:dist` | Builds the Mac and Windows installers (see "Install the app") |
 | `pnpm test` | Every test |
 | `pnpm check` | Code-quality checks |
 | `pnpm test:load` | A 100-person meeting with simulated people, measuring speed and memory (about 15 minutes; close `pnpm dev`, leave the Mac idle; see [runbooks/calls.md](runbooks/calls.md)) |

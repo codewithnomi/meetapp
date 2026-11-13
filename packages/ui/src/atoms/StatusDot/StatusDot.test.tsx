@@ -9,6 +9,9 @@ describe("StatusDot", () => {
     ["away", "Away"],
     ["in_call", "In a call"],
     ["offline", "Offline"],
+    ["busy", "Busy"],
+    ["dnd", "Do not disturb"],
+    ["brb", "Be right back"],
   ])("TC-F14-79 [AC-F14-26] %s is named %s", (status, label) => {
     render(<StatusDot status={status} label={label} />);
     expect(screen.getByRole("img", { name: label })).toHaveAttribute("data-status", status);

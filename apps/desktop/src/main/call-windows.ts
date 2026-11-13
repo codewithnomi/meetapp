@@ -19,6 +19,8 @@ import type { Place, Places } from "./call-windows-checks.ts";
 export const CALL_WINDOWS_CHANNEL = "meetapp:call-windows";
 /** Small window ↔ main: `state` (to show) and `act` (a button press). */
 export const CALL_WINDOW_CHANNEL = "meetapp:call-window";
+/** F04: a main window → main: `{ show: card }` or `{ remove: cardId }` (design.md 3.4). */
+export const NOTICES_CHANNEL = "meetapp:notices";
 /** Main → a main window and the mini window: the two ends of the live-video line, or "stop" (design.md 3.5). */
 export const FRAMES_CHANNEL = "meetapp:call-window:frames";
 
@@ -215,11 +217,16 @@ const CALL_ACTIONS = new Set(["toggleMic", "toggleCamera", "share", "toggleHand"
 /** These open something in the main window, so it comes to the front first (AC-F16-03, 17). */
 const BRING_FORWARD = new Set(["accept", "share", "backToCall"]);
 
+const NOTICE_CHOICES = new Set(["open", "admit", "viewLobby", "close"]);
+
 /** Checks a small window's button press; true shape and names only (design.md 3.2). */
 export function isCallWindowAction(value: unknown): value is CallWindowAction {
   if (typeof value !== "object" || value === null) return false;
   const action = value as Record<string, unknown>;
   const keys = Object.keys(action).sort().join(",");
+  // F04: a card's buttons and the pointer on it.
+  if (action["name"] === "notice") return keys === "choice,name" && NOTICE_CHOICES.has(action["choice"] as string);
+  if (action["name"] === "noticeHover") return keys === "name,on" && typeof action["on"] === "boolean";
   const id = typeof action["callId"] === "string" && action["callId"].length > 0 && action["callId"].length <= 100;
   if (action["name"] === "accept") return keys === "callId,name,video" && id && typeof action["video"] === "boolean";
   if (RING_ACTIONS.has(action["name"] as string)) return keys === "callId,name" && id;

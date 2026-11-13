@@ -238,6 +238,24 @@ describe("opening and closing", { timeout: 60_000 }, () => {
     expect(socket.closedWith).toBe(CLOSE.idle);
     await hub.close();
   });
+
+  it("TC-F14-73 [AC-F14-20] a failed sign-in check keeps the line and the server; the next one still closes it", async () => {
+    const crashes: unknown[] = [];
+    const crash = (reason: unknown) => crashes.push(reason);
+    process.on("unhandledRejection", crash);
+    const hub = createLineHub(t.accounts.chatsLine);
+    const socket = fakeSocket();
+    const { people } = await team("l73d", 1);
+    let asked = 0;
+    await hub.open(socket as unknown as WebSocket, (people[0] as Person).id, () =>
+      ++asked === 1 ? Promise.reject(new Error("Connection terminated unexpectedly")) : Promise.resolve(false),
+    );
+    await until(() => socket.closedWith, 4000);
+    process.off("unhandledRejection", crash);
+    expect(crashes).toEqual([]);
+    expect(socket.closedWith).toBe(CLOSE.signedOut);
+    await hub.close();
+  });
 });
 
 describe("what a line receives", { timeout: 60_000 }, () => {

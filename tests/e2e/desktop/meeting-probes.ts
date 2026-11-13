@@ -88,3 +88,24 @@ export function largestTile(page: Page): Promise<string> {
     return sizes.sort((a, b) => b.area - a.area)[0]?.label ?? "";
   });
 }
+
+/**
+ * Remembers every text the page's live regions say from now on. Announcements are brief (spaced and then
+ * cleared), so a test that looks later can miss one; it asks `announcementsHeard` instead.
+ */
+export async function watchAnnouncements(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as unknown as { heard: string[] };
+    w.heard = [];
+    const note = () => {
+      for (const region of document.querySelectorAll("[aria-live]")) {
+        const text = region.textContent?.trim() ?? "";
+        if (text && !w.heard.includes(text)) w.heard.push(text);
+      }
+    };
+    new MutationObserver(note).observe(document.body, { subtree: true, childList: true, characterData: true });
+  });
+}
+
+export const announcementsHeard = (page: Page): Promise<string[]> =>
+  page.evaluate(() => (window as unknown as { heard?: string[] }).heard ?? []);

@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 const MAX_BYTES = 300_000;
 
-async function asDataUrl(url: string): Promise<string | undefined> {
+export async function asDataUrl(url: string): Promise<string | undefined> {
   const response = await fetch(url);
   if (!response.ok) return undefined;
   const blob = await response.blob();

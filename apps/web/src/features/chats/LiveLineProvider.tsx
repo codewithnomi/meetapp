@@ -29,13 +29,26 @@ function useActivity(line: LiveLine) {
     window.addEventListener("keydown", active);
     window.addEventListener("pointerdown", active);
     const bridge = (window as { meetapp?: PowerBridge }).meetapp;
-    const stop = bridge?.power?.onLockChange((locked) => {
-      last = 0;
-      line.send({ t: "active", active: !locked });
+    let locked = false;
+    // A new line counts as active, so a line opened while the computer is locked says Away again (bug review).
+    const unlisten = line.listen((message) => {
+      if (message.t === "connected" && locked) line.send({ t: "active", active: false });
     });
+    const stop = bridge?.power?.onLockChange((now) => {
+      locked = now;
+      last = 0;
+      // Unlocked or awake again (F04 AC-38): a fresh line first; it reports activity once open.
+      if (!now) line.reconnectNow();
+      line.send({ t: "active", active: !now });
+    });
+    // The network is back: reconnect now rather than at the next try (F04 AC-38).
+    const online = () => line.reconnectNow();
+    window.addEventListener("online", online);
     return () => {
       window.removeEventListener("keydown", active);
       window.removeEventListener("pointerdown", active);
+      window.removeEventListener("online", online);
+      unlisten();
       stop?.();
     };
   }, [line]);
@@ -45,7 +58,13 @@ export function LiveLineProvider({ children }: { children: ReactNode }) {
   const queries = useQueryClient();
   const [polling, setPolling] = useState(false);
   const [line] = useState(
-    () => new LiveLine({ url: lineUrl(), open: (url) => new WebSocket(url) as unknown as LineSocket }),
+    () =>
+      new LiveLine({
+        url: lineUrl(),
+        open: (url) => new WebSocket(url) as unknown as LineSocket,
+        // F04 AC-38: in the desktop app, never more than 8 s between tries, so it is back within 10 s.
+        ...("meetapp" in window ? { maxWaitMs: 8_000 } : {}),
+      }),
   );
   useEffect(() => {
     line.start();

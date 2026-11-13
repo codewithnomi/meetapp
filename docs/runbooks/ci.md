@@ -27,3 +27,6 @@ lines just before its error. The full logs are under the PR's **Checks** tab.
 
 ## "Docker isn't running" on GitHub (T20)
 Right after a runner starts, `docker info` sometimes took longer than 3 s, so `pnpm test` gave up although Docker was there. The check now asks a second time after a timeout (at most 6 s in all); a clear "not running" still fails at once.
+
+## Nightly Windows (F04)
+`.github/workflows/nightly-windows.yml` runs at 02:30 UTC when `main` changed in the last 24 hours (or by hand, "Run workflow"). It builds and runs the app's unit tests on Windows, then builds the Windows installer twice (unsigned, and signed with a throwaway certificate, which must give a signature with no code change), and runs the desktop window tests tagged `@windows` (those needing no backend). The desktop tests needing the backend run only in the Linux job (`ci.yml`, a virtual screen with the fluxbox window manager, D082) and once by hand on Windows.

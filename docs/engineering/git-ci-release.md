@@ -44,7 +44,8 @@ Each environment has its own secrets, databases and API keys. Secrets are stored
 - **Version numbers:** Semantic Versioning `MAJOR.MINOR.PATCH` (e.g. 1.4.2). Changelog generated from commits.
 - **Backend:** deployed automatically to staging; deployed to production with one click after checks.
 - **Desktop app:** built by CI for Mac and Windows.
-  - **Code signing is required**, otherwise Mac/Windows show "unknown developer" warnings and block the app. Needs an **Apple Developer account (~$99/year)** and a **Windows code-signing certificate** (e.g. Azure Trusted Signing, low monthly cost).
-  - Auto-update with two channels: **beta** (testers) and **stable** (everyone).
+  - **Code signing is needed before real users install it** (for now the installers are unsigned, D083; signing is only settings, `CSC_LINK`, D084), otherwise Mac/Windows show "unknown developer" warnings and block the app. Needs an **Apple Developer account (~$99/year)** and a **Windows code-signing certificate** (e.g. Azure Trusted Signing, low monthly cost).
+  - Auto-update with two channels: **beta** (testers) and **stable** (everyone). Built in but switched off until the owner decides to go online and signing exists (F04, D084, S18).
+  - CI: the nightly Windows job builds the Windows installer, unsigned and with a throwaway certificate, and runs the desktop tests tagged `@windows`; the Mac installer is built on the owner's Mac (macOS minutes count 10×).
 - **Mobile (later):** Apple App Store and Google Play developer accounts.
 - **Database changes** are applied automatically during deployment and must be backwards compatible for one version (older desktop apps keep working).

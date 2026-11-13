@@ -2,13 +2,22 @@
 // Development: the Vite dev server (MEETAPP_RENDERER_URL). Otherwise: the built screens on app://meetapp.
 import { join } from "node:path";
 import { BrowserWindow, app, powerMonitor, safeStorage, session, shell } from "electron";
+import { appIdentity } from "../../app-identity.ts";
+import { bringBack, holdSingleCopy, setUpAppLife } from "./app-life-bridge.ts";
+import { createTray } from "./tray.ts";
+import { hiddenStart, setUpLoginItem } from "./login-item-bridge.ts";
+import { linkInArgs } from "./links.ts";
+import { createMeetingLinks } from "./meeting-links.ts";
 import { registerAppScheme, serveScreens } from "./app-protocol.ts";
-import { setUpCallWindows } from "./call-windows-bridge.ts";
+import { setUpCallWindows, type CallWindows } from "./call-windows-bridge.ts";
 import { createAuthActions } from "./auth-actions.ts";
 import { applyApiAuth, registerAuthBridge } from "./auth-bridge.ts";
 import { createAuthClient } from "./auth-client.ts";
 import { addSpellcheckMenu, registerFilesBridge, setUpSpellcheck } from "./chat-bridge.ts";
 import { POWER_CHANNEL } from "./chat-desktop.ts";
+import { MIN_SIZE } from "./window-state.ts";
+import { setUpUpdates } from "./updates-bridge.ts";
+import { rememberWindow, savedWindowState } from "./window-state-bridge.ts";
 import { createTokenStore } from "./auth-token.ts";
 import { createProviderSignIn } from "./provider-sign-in.ts";
 import { guardContents, lockDownSession } from "./guards.ts";
@@ -47,9 +56,29 @@ app.on("web-contents-created", (_event, contents) => {
   guardContents(contents, appUrl, (url) => shell.openExternal(url));
   addSpellcheckMenu(contents);
 });
-app.on("window-all-closed", () => app.quit());
 
-/** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`. */
+// F04: the main window, once opened (a second start, a Dock click and Quit's question use it).
+let mainWindow: BrowserWindow | undefined;
+// One copy per profile folder (AC-F04-02): a second start only brings the first one forward.
+// F04 AC-10: meeting links, kept until the screens listen.
+const links = createMeetingLinks(appUrl, () => (bringBack(mainWindow), mainWindow));
+const fromArgs = (args: readonly string[]) => {
+  const link = linkInArgs(args);
+  if (link) links.arrived(link);
+};
+const firstCopy = holdSingleCopy(() => mainWindow, fromArgs);
+if (!firstCopy) app.quit();
+// Mac: a clicked link (also one that starts MeetApp) comes as open-url, listened for this early.
+app.on("will-finish-launching", () => {
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    links.arrived(url);
+  });
+});
+fromArgs(process.argv);
+
+/** F14 AC-F14-26: a locked computer shows as Away; the screens hear it through the bridge's `power`.
+ * F04 AC-38: waking from sleep counts as unlocking, so the live line reconnects at once. */
 function forwardLockChanges(window: BrowserWindow): void {
   const send = (locked: boolean) => () => {
     if (!window.isDestroyed()) window.webContents.send(POWER_CHANNEL, locked);
@@ -58,31 +87,43 @@ function forwardLockChanges(window: BrowserWindow): void {
   const unlock = send(false);
   powerMonitor.on("lock-screen", lock);
   powerMonitor.on("unlock-screen", unlock);
+  powerMonitor.on("resume", unlock);
   window.once("closed", () => {
     powerMonitor.off("lock-screen", lock);
     powerMonitor.off("unlock-screen", unlock);
+    powerMonitor.off("resume", unlock);
   });
 }
 
-function openWindow(callWindows: ReturnType<typeof setUpCallWindows>): void {
+function openWindow(callWindows: CallWindows, hidden: Promise<boolean>): void {
+  // F04 AC-40: the size and place it had last time, checked against today's screens.
+  const start = savedWindowState();
   const window = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
-    title: "MeetApp",
+    x: start.x,
+    y: start.y,
+    width: start.width,
+    height: start.height,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
+    title: appIdentity.productName,
     show: false,
     // F16: during a call the window keeps full speed behind other apps (call-windows-controller, design.md 3.5).
     webPreferences: webPreferences(settings.preloadPath),
   });
-  window.once("ready-to-show", () => window.show());
+  // F04 AC-08: a login start stays hidden in the menu bar; Open MeetApp shows it.
+  window.once("ready-to-show", () => void hidden.then((stay) => stay || window.show()));
   forwardLockChanges(window);
+  rememberWindow(window, start);
   callWindows.watch(window);
+  setUpAppLife({ inCall: callWindows.hasCall, mainWindow: () => mainWindow }).watch(window);
+  links.watch(window);
+  mainWindow = window;
   void window.loadURL(appUrl);
 }
 
 // Not awaited at the top level: Electron only becomes ready after this file has finished running.
 void app.whenReady().then(() => {
+  if (!firstCopy) return;
   const picker = createSharePicker();
   lockDownSession(session.defaultSession, {
     csp,
@@ -104,6 +145,12 @@ void app.whenReady().then(() => {
     openInBrowser: async (url) => canOpenHandOffStart(url, app.isPackaged) && (await shell.openExternal(url), true),
   });
   registerAuthBridge(createAuthActions(client, tokens, providers), appUrl);
+  setUpLoginItem(appUrl);
+  setUpUpdates(appUrl);
+  createTray({
+    signedIn: () => tokens.get() !== undefined,
+    showWindow: () => (bringBack(mainWindow), mainWindow),
+  });
   applyApiAuth(session.defaultSession, settings.apiUrl, tokens);
   if (!settings.devServerUrl) serveScreens(settings.rendererDir, (url) => policyFor(url, csp, smallCsp));
   openWindow(
@@ -114,5 +161,7 @@ void app.whenReady().then(() => {
       devServerUrl: settings.devServerUrl,
       csp: smallCsp,
     }),
+    // A meeting link always shows the window.
+    hiddenStart(links.waiting()),
   );
 });

@@ -20,7 +20,7 @@ export interface DesktopSettings {
   gifApiUrl: string;
 }
 
-const DEFAULT_API_URL = "http://127.0.0.1:3000";
+export const DEFAULT_API_URL = "http://127.0.0.1:3000";
 
 function filled(value: string | undefined): string | undefined {
   return value === undefined || value.trim() === "" ? undefined : value.trim();

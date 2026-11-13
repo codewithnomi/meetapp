@@ -108,7 +108,8 @@ describe("typing", () => {
       result.current.onTyping();
       result.current.onTyping();
     });
-    expect(socket().sent).toEqual([{ t: "typing", conversationId: C1 }]);
+    // F04: the line pings once on opening (the server's time).
+    expect(socket().sent).toEqual([{ t: "ping" }, { t: "typing", conversationId: C1 }]);
   });
 });
 
@@ -169,9 +170,9 @@ describe("the line's provider", () => {
       window.dispatchEvent(new KeyboardEvent("keydown"));
     });
     act(() => lock?.(true));
-    expect(socket().sent).toEqual([
-      { t: "active", active: true },
-      { t: "active", active: false },
-    ]);
+    expect(socket().sent).toEqual([{ t: "ping" }, { t: "active", active: true }, { t: "active", active: false }]);
+    // A line opened again while still locked (network back) says Away again, not Available.
+    open();
+    expect(socket().sent.slice(-2)).toEqual([{ t: "active", active: false }, { t: "ping" }]);
   });
 });

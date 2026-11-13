@@ -2,6 +2,7 @@
 // hand, end the meeting for everyone, and Meeting info.
 import type { MeetingDetails } from "@meetapp/contracts";
 import { apiRequest } from "../../api/index.ts";
+import { shareable } from "../meetings-api.ts";
 import type { Joined } from "../visit.ts";
 
 const call = (visit: Joined) => `/api/v1/calls/${visit.call?.callId ?? ""}`;
@@ -16,7 +17,7 @@ export function endMeeting(visit: Joined): Promise<undefined> {
 }
 
 export function meetingInfo(visit: Joined): Promise<MeetingDetails> {
-  return apiRequest(`${call(visit)}/meeting`, { headers: headers(visit) });
+  return apiRequest<MeetingDetails>(`${call(visit)}/meeting`, { headers: headers(visit) }).then(shareable);
 }
 
 export interface Waiting {
