@@ -74,9 +74,9 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 - **Covers:** AC-F17-02, AC-F17-21
 - **Level:** component
 - **File:** `packages/ui/src/templates/AppLayout/AppLayout.test.tsx`
-- **Given** `AppLayout` with `reserveCorner` on and the small view in the corner
+- **Given** `AppLayout` with the small view in its `corner` slot
 - **When** it renders
-- **Then** the view is fixed bottom right (300 px wide, 16 px from the edges), is not inside the left menu area, and the content area has bottom padding of the view's height + 16 px; with `reserveCorner` off there is no padding
+- **Then** the view is fixed bottom right (300 px wide, 16 px from the edges), is not inside the left menu area, and the content area has bottom padding of the view's height + 16 px; without it there is no padding
 
 ### TC-F17-08: The call page survives navigation
 - **Covers:** AC-F17-03
