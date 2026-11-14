@@ -13,7 +13,7 @@ Today the call lives inside the call screen: leaving that screen ends the call. 
 ## Screens / user flow
 Approved canvas board "Browse during a call (F17)" (2026-11-13).
 1. In a call (meeting, lobby, or chat call) the person clicks Chat in the left menu. The Chat screen opens; the call keeps running; the small call view appears at the bottom right.
-2. They click the small call view's video or **Go back**: the full call shows again. The full call fills the window as today (no left menu), so it looks exactly as before F17.
+2. They click the small call view's video or **Go back**: the full call shows again. The full call shows with the side menu beside it (as on the approved board and in Teams): the call fills the rest of the window as before, and any screen is one click away in the menu.
 3. On Meetings, the meeting they are in shows **Go back** instead of Join; Meet now asks "Starting this leaves it."
 4. A link to another meeting opens its pre-join with the note "Joining this meeting leaves it."; **Leave call and join** leaves, then joins; **Cancel** goes back.
 
@@ -27,6 +27,7 @@ Approved canvas board "Browse during a call (F17)" (2026-11-13).
 - Hidden, the call keeps its LiveKit room, sound, panels and layout (the components stay mounted). Adaptive stream stops downloading videos that aren't visible. The lobby's own camera preview is stopped while hidden (`LobbyPage` gets `previewOn={!hidden}`) so the camera light doesn't stay on for nothing; it restarts when shown.
 - Focus: `useFocusOnScreenChange` (router.tsx:54) uses `main:not([data-call-host] *) h1`, so moving between screens never sends focus into the hidden call.
 - Built (T3): the host lives in `app/CallHost.tsx`; the signed-in meeting paths are in `app/meeting-routes.tsx` (`CallPlace` sends a path without a call back to Meetings). All three call paths count as "full": when someone is let in while the lobby shows full, the host shows the call at once and moves the path to `/meeting/call` itself (the lobby page is gone before it could). The small call view and the outcome banner are drawn by the host; `features/call-corner` holds one switch ("the small view is up") that the app frames read for `reserveCorner`, so no frame depends on the calls. The focus rule lives in `app/focus.ts`.
+- The side menu beside the full call is `CallNavRail` (`features/workspaces`): the same items as every screen, none marked current, no workspace switcher (switching workspace mid-call would change every screen around the call). It sits in the same place in the page as the call, so showing or hiding it never rebuilds the call. Found while writing the desktop tests in T8: without it the full call offered no way to another screen.
 - Guests (signed out) keep today's routes, no host. Only the window that holds the call has a host (AC-F17-20).
 
 ### 3.2 Callbacks: who changes screens (AC-F17-05, 06, 07)

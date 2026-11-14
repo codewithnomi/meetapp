@@ -2,7 +2,7 @@
 // page while the person opens other screens; hidden, it is inert and its callbacks never change the screen;
 // a call that ends while hidden leaves a banner instead of the Ended screen. The pages are stand-ins.
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { useEffect, useState } from "react";
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from "react-router";
@@ -84,7 +84,7 @@ function app(at = "/meeting/call") {
           <Route path="*" element={null} />
         </Routes>
         <Where />
-        <CallHost userName="Mo" />
+        <CallHost userName="Mo" onNavigate={(screen) => go(`/${screen}`)} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -126,7 +126,11 @@ describe("CallHost", () => {
     inCall();
     app();
     await userEvent.click(screen.getByRole("button", { name: "Open people" }));
-    act(() => go("/chat"));
+    // Full, the side menu shows beside the call; Chat opens the Chat screen and the call keeps running.
+    await userEvent.click(
+      within(screen.getByRole("navigation", { name: "Main" })).getByRole("button", { name: "Chat" }),
+    );
+    expect(where()).toBe("/chat");
     expect(host()).toHaveAttribute("hidden");
     expect(host()).toHaveAttribute("inert");
     expect(screen.getByRole("region", { name: "Call: Design review" })).toBeInTheDocument();

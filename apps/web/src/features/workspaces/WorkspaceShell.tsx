@@ -3,7 +3,15 @@
 // invitations" (with the count of people asking to join, for the owner and admins). Creating a
 // workspace opens its dialog here and switches to the new one. A workspace notice ("You are no longer a
 // member of …") shows above the screen until dismissed.
-import { AppLayout, Notice, WorkspaceSwitcher, type AppNavItem, type IconName } from "@meetapp/ui";
+import {
+  AppLayout,
+  NavRail,
+  Notice,
+  WorkspaceSwitcher,
+  type AppNavItem,
+  type IconName,
+  type NavFold,
+} from "@meetapp/ui";
 import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavFolded } from "../chats/nav-folded.ts";
@@ -19,7 +27,8 @@ import { useWorkspaceName } from "./workspace-name.ts";
 export type AppScreen = "home" | "chat" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
 
 export interface WorkspaceShellProps {
-  screen: AppScreen;
+  /** None for the call shown beside the menu (F17): no item is the current one. */
+  screen: AppScreen | undefined;
   onNavigate: (screen: AppScreen) => void;
   children: ReactNode;
 }
@@ -106,15 +115,50 @@ function ShellNotice() {
   );
 }
 
+/** The menu folds to icons as in Teams (AC-F14-36); folded, the workspace's letter opens it again. */
+function useFold(): NavFold {
+  const { t } = useTranslation();
+  const { current } = useCurrentWorkspace();
+  const [folded, toggleFolded] = useNavFolded();
+  const nameOf = useWorkspaceName();
+  const name = current ? nameOf(current) : "";
+  return {
+    folded,
+    onToggle: toggleFolded,
+    foldLabel: t("workspaces.nav.fold"),
+    unfoldLabel: t("workspaces.nav.unfold"),
+    foldedSwitcher: (
+      <button
+        type="button"
+        aria-label={t("workspaces.nav.workspaceLetter", { name })}
+        onClick={toggleFolded}
+        className="grid size-9 place-items-center rounded-full bg-accent font-bold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+      >
+        {name.slice(0, 1).toUpperCase()}
+      </button>
+    ),
+  };
+}
+
+/**
+ * F17 (approved board "Browse during a call"): the side menu beside the full call, as in Teams, so the
+ * person can open any screen while the call keeps running. No item is current; no switcher (switching
+ * workspace mid-call would change every screen around the call).
+ */
+export function CallNavRail({ onNavigate }: { onNavigate: (screen: AppScreen) => void }) {
+  const { t } = useTranslation();
+  const { current } = useCurrentWorkspace();
+  const items = useNavItems(current, { screen: undefined, onNavigate });
+  return <NavRail label={t("workspaces.nav.label")} switcher={null} items={items} fold={useFold()} />;
+}
+
 export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellProps) {
   const { t } = useTranslation();
   const smallView = useCallCorner((state) => state.taken);
   const { current, switchTo } = useCurrentWorkspace();
   const [creating, setCreating] = useState(false);
   const items = useNavItems(current, { screen, onNavigate });
-  const [folded, toggleFolded] = useNavFolded();
-  const nameOf = useWorkspaceName();
-  const name = current ? nameOf(current) : "";
+  const fold = useFold();
   return (
     <>
       <AppLayout
@@ -123,23 +167,7 @@ export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellP
         navLabel={t("workspaces.nav.label")}
         items={items}
         topBar={<MyStatusMenu onSettings={() => onNavigate("settings")} />}
-        fold={{
-          folded,
-          onToggle: toggleFolded,
-          foldLabel: t("workspaces.nav.fold"),
-          unfoldLabel: t("workspaces.nav.unfold"),
-          // Folded: the workspace's first letter; choosing it opens the menu with the switcher (as in Teams).
-          foldedSwitcher: (
-            <button
-              type="button"
-              aria-label={t("workspaces.nav.workspaceLetter", { name })}
-              onClick={toggleFolded}
-              className="grid size-9 place-items-center rounded-full bg-accent font-bold text-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-            >
-              {name.slice(0, 1).toUpperCase()}
-            </button>
-          ),
-        }}
+        fold={fold}
       >
         <ShellNotice />
         {children}

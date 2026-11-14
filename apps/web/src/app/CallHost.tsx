@@ -12,6 +12,7 @@ import { SignOutFailedNotice } from "../features/auth/index.ts";
 import { LeaveFirstDialog, useCallScreen, useSmallCallView } from "../features/call-windows/index.ts";
 import { useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
 import { outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
+import { CallNavRail, type AppScreen } from "../features/workspaces/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { LobbyPage } from "../pages/LobbyPage/index.ts";
 import { MeetingPage } from "../pages/MeetingPage/index.ts";
@@ -85,7 +86,7 @@ function OutcomeBanner() {
   );
 }
 
-export function CallHost({ userName }: { userName: string }) {
+export function CallHost({ userName, onNavigate }: { userName: string; onNavigate: (screen: AppScreen) => void }) {
   const current = useCurrentCall();
   const { pathname } = useLocation();
   const navigate = useNavigate();
@@ -107,8 +108,13 @@ export function CallHost({ userName }: { userName: string }) {
     <>
       {current ? (
         // Hidden and inert while another screen shows: still running, out of the way of keyboard and clicks.
-        <div data-call-host="" hidden={!full} inert={!full}>
-          <Hosted full={full} userName={userName} />
+        // Full, the side menu shows beside the call, as in Teams (approved board): any screen is one click
+        // away. The call stays in the same place in the page either way, so it is never rebuilt.
+        <div data-call-host="" hidden={!full} inert={!full} className="flex">
+          {full ? <CallNavRail onNavigate={onNavigate} /> : null}
+          <div className="min-w-0 flex-1">
+            <Hosted full={full} userName={userName} />
+          </div>
         </div>
       ) : null}
       {shown ? (

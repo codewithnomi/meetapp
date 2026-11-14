@@ -143,7 +143,7 @@ function SignedInScreens() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       {/* F17: the call stays here while the person opens other screens (D091). */}
-      <CallHost userName={user?.name ?? t("meetings.preJoin.you")} />
+      <CallHost userName={user?.name ?? t("meetings.preJoin.you")} onNavigate={go} />
     </>
   );
 }
