@@ -586,3 +586,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** F04 is verified without the T19 hand checks on a Windows PC (installer, tray, notification area words, start at login, link from a browser). The nightly Windows job (`nightly-windows.yml`) builds the installer, unsigned and with a throwaway certificate, and runs the `@windows` desktop tests on a real Windows runner. The hand checks are done when a Windows PC is available, before the first public Windows release.
 - **Why:** the owner has no Windows PC; free first (D017) rules out a paid Windows machine. The nightly job covers the build and the window behaviour that doesn't need a person.
 - **Risk accepted:** Windows-only look and feel (tray menu, SmartScreen warning, start-up after a real log-in) isn't seen by a person until then.
+
+### D091: During a call the call screen stays mounted in a call host above the screens (F17)
+- **Date:** 2026-11-13. **Status:** proposed (F17 design).
+- **Decision:** a call host in the signed-in app keeps the lobby, meeting or chat-call screen mounted for as long as the person is in a call. On another screen it is hidden (not removed) and a small call view shows instead; the call routes only choose "full". The small view reads the call and its buttons from the existing `useCallScreen` store (F16).
+- **Why:** the call screen holds the LiveKit room and all its state (panels, layout, chat). Keeping it mounted keeps all of it with little change; moving the room into a separate store would mean rewriting much of the 3,400-line call screen. Downside: the hidden screen still runs its timers and its own listeners while browsing (small; videos not shown are not downloaded).
+- **Alternatives:** move the room and its state into an app-wide store (bigger change, more risk); keep the call on its own screen (what F17 replaces).
