@@ -1297,7 +1297,10 @@
       "goBack": "Go back",
       "back": "Go back to the {{title}} call",
       "leaveLabel": "Leave the {{title}} call",
-      "cancelLabel": "Cancel the call to {{title}}"
+      "cancelLabel": "Cancel the call to {{title}}",
+      "inProgress": "Call in progress",
+      "youreIn": "You're in {{title}}",
+      "youreInText": "Your call keeps going while you look around."
     }
   },
   "devices": {

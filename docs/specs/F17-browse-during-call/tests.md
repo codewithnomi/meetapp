@@ -195,10 +195,10 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-22: Marks in the chat list and Meetings
 - **Covers:** AC-F17-08
 - **Level:** component
-- **File:** `apps/web/src/features/calls/CallMarks.test.tsx`
+- **File:** `apps/web/src/pages/ChatsPage/chat-entries.test.ts`, `apps/web/src/pages/MeetingsPage/MeetingsPage.test.tsx`
 - **Given** the person is in a chat call, then in a meeting that has a chat
 - **When** the chat list and Meetings screen render
-- **Then** the call's chat row says "Call in progress", the Meetings row of that meeting shows Go back instead of Join (other meetings still show Join), and Go back navigates to `fullPath`
+- **Then** the call's chat row says "Call in progress"; Meetings shows "You're in <title>" with Go back (Meetings lists no upcoming meetings to mark yet, F13), and Go back navigates to `fullPath`
 
 ### TC-F17-23: Leave-first rule
 - **Covers:** AC-F17-09

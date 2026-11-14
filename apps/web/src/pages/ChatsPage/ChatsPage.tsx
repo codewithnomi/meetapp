@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "../../features/auth/index.ts";
 import { useShownChat } from "../../features/notices/index.ts";
-import { useChatCall } from "../../features/calls/index.ts";
+import { useChatCall, useCurrentCall } from "../../features/calls/index.ts";
 import { useChatList, useChatRequests, type ChatFilter, type ChatItem } from "../../features/chats/index.ts";
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
 import { entryOf } from "./chat-entries.ts";
@@ -161,9 +161,16 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
   const items = list.data?.conversations ?? [];
   // The same list the side menu's badge reads, so usually no extra request.
   const all = useChatList(current?.id, "all", "").data?.conversations;
+  const callChat = useCurrentCall()?.conversationId;
   const now = new Date();
   const entry = (item: ChatItem) =>
-    entryOf(t, item, { now, locale: i18n.language, current: item.id === open, onSelect: () => setOpen(item.id) });
+    entryOf(t, item, {
+      now,
+      locale: i18n.language,
+      current: item.id === open,
+      onSelect: () => setOpen(item.id),
+      inCall: item.id === callChat,
+    });
   const requestCount = useChatRequests().data?.requests.length ?? 0;
   // As in Teams: a chat just started or accepted opens with every chat listed again (AC-F14-30, TC-F14-60).
   const showNew = (id: string) => {

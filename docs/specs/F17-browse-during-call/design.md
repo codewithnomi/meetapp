@@ -46,7 +46,7 @@ The host gives the pages callbacks that change screens **only while the full cal
 
 ### 3.4 Marks in the app (AC-F17-08)
 - `useCurrentCall()` (new, `features/calls`): `{ kind: "meeting" | "chat", meetingId?, conversationId?, title, fullPath }` where `fullPath` is `/meeting/call`, `/meeting/lobby` or `/call`.
-- Chat list: the call's chat row says "Call in progress" (new key). Meetings: the matching meeting's Join becomes **Go back** (navigates to `fullPath`).
+- Chat list: the call's chat row says "Call in progress" (new key). Meetings lists no upcoming meetings yet (F13), so it shows a note at the top, "You're in <title>", with **Go back** (navigates to `fullPath`); F13's list will mark the meeting itself.
 
 ### 3.5 Starting something else during a call (AC-F17-09, 10, 11, 12, 13)
 - New `useLeaveFirst()` (`features/calls`): given the next action, it opens a `ConfirmDialog` ("You're in <title>. Starting this leaves it." / "Joining this meeting leaves it.") with **Leave call and start/join** and **Cancel**. Leave runs `controls.leave`, waits until the host is inactive (at most 5 s, then shows an error and does nothing), then runs the action. Its buttons are disabled while leaving.

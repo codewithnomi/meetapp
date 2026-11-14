@@ -21,11 +21,14 @@ import {
   type AppScreen,
 } from "../../features/workspaces/index.ts";
 import { GET_LINK_ID, LinkReadyDialog } from "./LinkReadyDialog.tsx";
+import { useCurrentCall } from "../../features/calls/index.ts";
 import { PastChat, RecentMeetings, type PastMeeting } from "./RecentMeetings.tsx";
 
 export interface MeetingsPageProps {
   onNavigate: (screen: AppScreen) => void;
   onPreJoin: (state: PreJoinState) => void;
+  /** F17: shows the call the person is in, full (its path). */
+  onBackToCall?: (path: string) => void;
 }
 
 const newKey = () => crypto.randomUUID();
@@ -143,14 +146,33 @@ function GetLinkCard({ workspaceId, onCreated }: { workspaceId: string; onCreate
   );
 }
 
+/** F17 (AC-F17-08): the call the person is in, with Go back, above everything else. */
+function CurrentCallNote({ onBackToCall }: Pick<MeetingsPageProps, "onBackToCall">) {
+  const { t } = useTranslation();
+  const call = useCurrentCall();
+  if (!call || !onBackToCall) return null;
+  return (
+    <Notice
+      tone="neutral"
+      icon="phone"
+      title={t("calls.small.youreIn", { title: call.title })}
+      action={{ label: t("calls.small.goBack"), onClick: () => onBackToCall(call.fullPath) }}
+    >
+      {t("calls.small.youreInText")}
+    </Notice>
+  );
+}
+
 /** The start cards, joining, and the recent meetings with Open chat. */
 function MeetingsMain({
   onPreJoin,
   onCreated,
   onOpenPast,
   failed,
+  onBackToCall,
 }: {
   onPreJoin: MeetingsPageProps["onPreJoin"];
+  onBackToCall: MeetingsPageProps["onBackToCall"];
   onCreated: (meeting: MeetingCreated) => void;
   onOpenPast: (meeting: PastMeeting) => void;
   failed: boolean;
@@ -166,6 +188,7 @@ function MeetingsMain({
         </h1>
         <p className="m-0 text-ink-muted">{t("meetings.subtitle", { workspace: current ? nameOf(current) : "" })}</p>
       </header>
+      <CurrentCallNote onBackToCall={onBackToCall} />
       {current ? (
         <section
           aria-label={t("meetings.start.label")}
@@ -182,7 +205,7 @@ function MeetingsMain({
   );
 }
 
-export function MeetingsPage({ onNavigate, onPreJoin }: MeetingsPageProps) {
+export function MeetingsPage({ onNavigate, onPreJoin, onBackToCall }: MeetingsPageProps) {
   const { current } = useCurrentWorkspace();
   const nameOf = useWorkspaceName();
   const [ready, setReady] = useState<MeetingCreated>();
@@ -194,6 +217,7 @@ export function MeetingsPage({ onNavigate, onPreJoin }: MeetingsPageProps) {
       <div className="flex min-h-0 flex-1">
         <MeetingsMain
           onPreJoin={onPreJoin}
+          onBackToCall={onBackToCall}
           onCreated={setReady}
           onOpenPast={(meeting) => (setFailed(false), setPast(meeting))}
           failed={failed}

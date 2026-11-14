@@ -116,7 +116,10 @@ function SignedInScreens() {
         <Route path="/" element={<HomePage onNavigate={go} />} />
         <Route path="/chat" element={<ChatsPage onNavigate={go} />} />
         <Route path="/call" element={<CallPlace />} />
-        <Route path="/meetings" element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} />} />
+        <Route
+          path="/meetings"
+          element={<MeetingsPage onNavigate={go} onPreJoin={preJoin} onBackToCall={(path) => void navigate(path)} />}
+        />
         {memberMeetingRoutes({ ...MEMBER_PLACES, userName: user?.name })}
         <Route
           path="/people"

@@ -5,6 +5,7 @@ import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { installFakeAuth, PAT, renderWithApp } from "../../features/auth/fake-auth.tsx";
 import { never } from "../../features/meetings/fake-visit.ts";
+import { useVisit } from "../../features/meetings/index.ts";
 import { CurrentWorkspaceProvider } from "../../features/workspaces/index.ts";
 import { fakeApi, IDS, refuse } from "../../features/workspaces/fake-api.ts";
 import { MeetingsPage } from "./MeetingsPage.tsx";
@@ -67,5 +68,36 @@ describe("TC-F02-90 Meetings page loading and error states", () => {
     expect(
       await screen.findByText("We couldn't find that meeting. Check the link, or the ID and passcode."),
     ).toBeInTheDocument();
+  });
+});
+
+describe("Meetings during a call (F17)", () => {
+  afterEach(() => useVisit.getState().end());
+
+  it("TC-F17-22 [AC-F17-08] says which call the person is in, and Go back shows it full", async () => {
+    fakeApi({});
+    useVisit.getState().start({
+      attendanceId: "00000000-0000-4000-8000-000000000001",
+      status: "admitted",
+      title: "Design review",
+      group: "member",
+      ticket: "t",
+    });
+    const onBackToCall = vi.fn();
+    renderWithApp(
+      <CurrentWorkspaceProvider>
+        <MeetingsPage onNavigate={vi.fn()} onPreJoin={vi.fn()} onBackToCall={onBackToCall} />
+      </CurrentWorkspaceProvider>,
+    );
+    expect(await screen.findByText("You're in Design review")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Go back" }));
+    expect(onBackToCall).toHaveBeenCalledWith("/meeting/call");
+  });
+
+  it("TC-F17-22 [AC-F17-08] without a call there is no such note", async () => {
+    fakeApi({});
+    open();
+    expect(await screen.findByRole("heading", { name: "Meetings" })).toBeInTheDocument();
+    expect(screen.queryByText(/You're in/)).toBeNull();
   });
 });
