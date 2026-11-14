@@ -8,7 +8,7 @@ import { ActionErrorNotice } from "../auth/index.ts";
 import { useOpenedLink } from "../desktop-app/index.ts";
 import { idAddress, linkAddress } from "./meeting-address.ts";
 import { meetingErrorText } from "./meeting-errors.ts";
-import { useFindMeeting, type MeetingFound } from "./meetings-api.ts";
+import { useFindMeeting, type PreJoinState } from "./meetings-api.ts";
 
 type Way = "id" | "link";
 
@@ -84,7 +84,7 @@ function Fields({ way, values, set, error }: { way: Way; values: Values; set: Se
 }
 
 /** The form's state and lookups; a clicked meeting link (F04 AC-10) fills it and is looked up as if typed. */
-function useJoinForm(onFound: (found: MeetingFound) => void) {
+function useJoinForm(onFound: (found: PreJoinState) => void) {
   const [way, setWay] = useState<Way>("id");
   const [values, setValues] = useState<Values>({ link: "", meetingNumber: "", passcode: "" });
   const find = useFindMeeting();
@@ -92,17 +92,18 @@ function useJoinForm(onFound: (found: MeetingFound) => void) {
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     const address = way === "link" ? linkAddress(values.link) : idAddress(values.meetingNumber, values.passcode);
-    find.mutate(address, { onSuccess: onFound });
+    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: JSON.stringify(address) }) });
   };
   useOpenedLink((link) => {
     setWay("link");
     setValues((old) => ({ ...old, link }));
-    find.mutate(linkAddress(link), { onSuccess: onFound });
+    const address = linkAddress(link);
+    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: JSON.stringify(address) }) });
   });
   return { way, setWay, values, set, find, submit };
 }
 
-export function JoinMeetingForm({ onFound, note }: { onFound: (found: MeetingFound) => void; note?: string }) {
+export function JoinMeetingForm({ onFound, note }: { onFound: (found: PreJoinState) => void; note?: string }) {
   const { t } = useTranslation();
   const { way, setWay, values, set, find, submit } = useJoinForm(onFound);
   const error = useErrorText(find.error);

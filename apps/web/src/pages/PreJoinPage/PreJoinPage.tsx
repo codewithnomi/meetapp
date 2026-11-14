@@ -12,6 +12,7 @@ import {
   type Joined,
   type PreJoinState,
 } from "../../features/meetings/index.ts";
+import { leaveCallThen } from "../../features/call-windows/index.ts";
 import { DevicesSection } from "./DevicesSection.tsx";
 
 export interface PreJoinPageProps {
@@ -20,6 +21,8 @@ export interface PreJoinPageProps {
   userName: string | undefined;
   onCancel: () => void;
   onJoined: (joined: Joined) => void;
+  /** F17: the call the person is in now; joining leaves it (AC-F17-11, 12). */
+  inCall?: string | undefined;
 }
 
 const MAX_NAME = 60;
@@ -38,17 +41,18 @@ function JoinError({ join, onRetry }: { join: ReturnType<typeof useJoinMeeting>;
   );
 }
 
-function JoinButtons({ pending, onCancel }: { pending: boolean; onCancel: () => void }) {
+function JoinButtons({ pending, onCancel, inCall }: { pending: boolean; onCancel: () => void; inCall: boolean }) {
   const { t } = useTranslation();
+  const join = t(inCall ? "calls.leaveFirst.leaveJoin" : "meetings.preJoin.join");
   return (
     <div className="flex flex-wrap gap-2.5">
       {pending ? (
         <Button type="submit" size="lg" loading loadingLabel={t("meetings.preJoin.joining")}>
-          {t("meetings.preJoin.join")}
+          {join}
         </Button>
       ) : (
         <Button type="submit" size="lg">
-          {t("meetings.preJoin.join")}
+          {join}
         </Button>
       )}
       <Button variant="ghost" size="lg" onClick={onCancel}>
@@ -58,9 +62,11 @@ function JoinButtons({ pending, onCancel }: { pending: boolean; onCancel: () => 
   );
 }
 
-function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps & { meeting: PreJoinState }) {
+/** Joining; during another call it leaves that one first (F17, AC-F17-12). */
+function useJoinSubmit({ meeting, userName, onJoined, inCall }: PreJoinPageProps & { meeting: PreJoinState }) {
   const { t } = useTranslation();
   const join = useJoinMeeting();
+  const [leaving, setLeaving] = useState<"no" | "yes" | "failed">("no");
   const [guestName, setGuestName] = useState("");
   const [nameError, setNameError] = useState<string>();
   const guest = userName === undefined;
@@ -71,8 +77,23 @@ function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps
     const name = guestName.trim();
     if (guest && (name.length < 1 || name.length > MAX_NAME)) return setNameError(t("meetings.preJoin.nameRule"));
     setNameError(undefined);
-    join.mutate({ lookupToken: meeting.lookupToken, ...(guest ? { guestName: name } : {}) }, { onSuccess: onJoined });
+    const joinNow = () =>
+      join.mutate(
+        { lookupToken: meeting.lookupToken, address: meeting.address, ...(guest ? { guestName: name } : {}) },
+        { onSuccess: onJoined },
+      );
+    if (!inCall) return joinNow();
+    // F17: leave the current call first, then join (AC-F17-12).
+    setLeaving("yes");
+    void leaveCallThen(joinNow).then((left) => setLeaving(left ? "no" : "failed"));
   };
+  return { join, leaving, guest, guestName, setGuestName, nameError, submit };
+}
+
+function JoinSection(props: PreJoinPageProps & { meeting: PreJoinState }) {
+  const { meeting, onCancel, inCall } = props;
+  const { t } = useTranslation();
+  const { join, leaving, guest, guestName, setGuestName, nameError, submit } = useJoinSubmit(props);
   return (
     <form
       noValidate
@@ -97,8 +118,14 @@ function JoinSection({ meeting, userName, onCancel, onJoined }: PreJoinPageProps
           {...(nameError ? { error: nameError } : {})}
         />
       ) : null}
+      {inCall ? (
+        <Notice tone="neutral" icon="phone">
+          {t("calls.leaveFirst.join", { title: inCall })}
+        </Notice>
+      ) : null}
+      {leaving === "failed" ? <Notice tone="danger">{t("calls.leaveFirst.failed")}</Notice> : null}
       <JoinError join={join} onRetry={() => void submit()} />
-      <JoinButtons pending={join.isPending} onCancel={onCancel} />
+      <JoinButtons pending={join.isPending || leaving === "yes"} onCancel={onCancel} inCall={inCall !== undefined} />
       {guest ? <p className="m-0 text-[13px] text-ink-muted">{t("meetings.preJoin.terms")}</p> : null}
     </form>
   );
@@ -118,7 +145,11 @@ export function PreJoinPage(props: PreJoinPageProps) {
       </header>
       {meeting ? (
         <div className="flex flex-1 flex-wrap items-center justify-center gap-12">
-          <DevicesSection devices={devices} name={userName ?? t("meetings.preJoin.you")} />
+          <DevicesSection
+            devices={devices}
+            name={userName ?? t("meetings.preJoin.you")}
+            inCall={props.inCall !== undefined}
+          />
           <JoinSection {...props} meeting={meeting} />
         </div>
       ) : (

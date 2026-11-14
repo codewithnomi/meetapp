@@ -253,7 +253,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-29: Links no longer wait for signed-in people
 - **Covers:** AC-F17-11
 - **Level:** unit
-- **File:** `apps/web/src/app/desktop-commands.test.ts`
+- **File:** `apps/web/src/app/desktop-commands.test.tsx`
 - **Given** signed-in people on `/meeting/call`, `/meeting/lobby` and `/call`
 - **When** a meeting link command arrives
 - **Then** Meetings opens with the code at once (not held back); the old "waits until Meetings" test for AC-F04-10 is replaced for signed-in people
@@ -285,7 +285,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-33: Link to the same meeting
 - **Covers:** AC-F17-13
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/PreJoinRoute.test.tsx`
+- **File:** `apps/web/src/app/meeting-routes.test.tsx`
 - **Given** the visit's meeting is X
 - **When** the pre-join route opens for X (and for Y in a second case)
 - **Then** X: navigates to `fullPath`, no pre-join shown; Y: pre-join shows with the note and "Leave call and join"
@@ -421,7 +421,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-49: Guests keep the old rule
 - **Covers:** AC-F17-11 (Security & privacy)
 - **Level:** unit
-- **File:** `apps/web/src/app/desktop-commands.test.ts`
+- **File:** `apps/web/src/app/desktop-commands.test.tsx`
 - **Given** a guest (signed out) on the call screen
 - **When** a meeting link arrives
 - **Then** the link waits (`BUSY_SCREENS`) as in AC-F04-10 and the call screen stays; the guest has no host and no small view

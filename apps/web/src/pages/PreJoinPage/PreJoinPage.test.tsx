@@ -96,3 +96,15 @@ describe("T-fix-3 pressing Enter twice while joining", () => {
     expect(api.callsTo("POST", "/api/v1/meetings/join")).toHaveLength(1);
   });
 });
+
+describe("pre-join during another call (F17)", () => {
+  it("TC-F17-27 [AC-F17-11, 12] says joining leaves the current call, and Join says so too", async () => {
+    fakeApi({});
+    renderWithApp(
+      <PreJoinPage meeting={MEETING} userName="Mo" inCall="Release team" onCancel={vi.fn()} onJoined={vi.fn()} />,
+    );
+    expect(await screen.findByText("You're in Release team. Joining this meeting leaves it.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Leave call and join" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Join now" })).toBeNull();
+  });
+});

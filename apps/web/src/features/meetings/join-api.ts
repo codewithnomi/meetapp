@@ -11,13 +11,13 @@ const ticketHeader = (ticket: string) => ({ "x-meeting-ticket": ticket });
 
 export function useJoinMeeting() {
   const start = useVisit((state) => state.start);
-  return useMutation<Joined, ApiError, { lookupToken: string; guestName?: string }>({
+  return useMutation<Joined, ApiError, { lookupToken: string; guestName?: string; address?: string | undefined }>({
     mutationFn: async ({ lookupToken, guestName }) =>
       apiRequest("/api/v1/meetings/join", {
         method: "POST",
         body: { lookupToken, deviceKey: await meetingDeviceKey(), ...(guestName === undefined ? {} : { guestName }) },
       }),
-    onSuccess: start,
+    onSuccess: (joined, { address }) => start(joined, address),
   });
 }
 
@@ -63,6 +63,6 @@ export function useRejoin() {
         method: "POST",
         headers: ticketHeader(old.ticket),
       }),
-    onSuccess: start,
+    onSuccess: (joined) => start(joined),
   });
 }

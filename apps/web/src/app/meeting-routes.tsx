@@ -70,12 +70,21 @@ function useAfterJoin() {
 function PreJoinRoute({ back, userName }: { back: string; userName: string | undefined }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const meeting = location.state as PreJoinState | undefined;
+  const current = useCurrentCall();
+  const address = useVisit((state) => state.address);
+  const afterJoin = useAfterJoin();
+  // F17: the meeting the person is already in shows full instead (AC-F17-13).
+  if (current && meeting?.address !== undefined && meeting.address === address)
+    return <Navigate to={current.fullPath} replace />;
   return (
     <PreJoinPage
-      meeting={location.state as PreJoinState | undefined}
+      meeting={meeting}
       userName={userName}
-      onCancel={() => void navigate(back)}
-      onJoined={useAfterJoin()}
+      inCall={current?.title}
+      // During a call Cancel goes back to where the person was; the call is untouched (AC-F17-12).
+      onCancel={() => void (current ? navigate(-1) : navigate(back))}
+      onJoined={afterJoin}
     />
   );
 }

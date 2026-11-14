@@ -43,15 +43,21 @@ export function useLeaveFirst(): (kind: Kind, then: () => void) => void {
   return (kind, then) => (inCallNow() ? open(kind, then) : then());
 }
 
+/** F17 pre-join (AC-F17-12): its own button says "Leave call and join", so it leaves without asking again.
+ * Resolves false when leaving didn't finish within 5 s; `then` runs only after the call is over. */
+export async function leaveCallThen(then: () => void): Promise<boolean> {
+  useCallScreen.getState().controls?.leave();
+  const over = await callOver();
+  if (over) then();
+  return over;
+}
+
 /** Leaves the current call, then runs the waiting action; says so if leaving doesn't finish in 5 s. */
 async function leaveThen(then: () => void): Promise<void> {
   const { close } = useLeaveFirstState.getState();
   useLeaveFirstState.setState({ leaving: true, failed: false });
-  useCallScreen.getState().controls?.leave();
-  if (await callOver()) {
-    close();
-    then();
-  } else useLeaveFirstState.setState({ leaving: false, failed: true });
+  const over = await leaveCallThen(() => (close(), then()));
+  if (!over) useLeaveFirstState.setState({ leaving: false, failed: true });
 }
 
 /** The question itself; drawn once by the app (the call host). */

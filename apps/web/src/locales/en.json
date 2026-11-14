@@ -1300,7 +1300,8 @@
       "cancelLabel": "Cancel the call to {{title}}",
       "inProgress": "Call in progress",
       "youreIn": "You're in {{title}}",
-      "youreInText": "Your call keeps going while you look around."
+      "youreInText": "Your call keeps going while you look around.",
+      "cameraInUse": "Camera in use by your current call. Your choice still applies when you join."
     },
     "leaveFirst": {
       "startTitle": "Start something new?",

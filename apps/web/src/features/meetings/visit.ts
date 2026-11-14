@@ -10,7 +10,10 @@ export type Attendance = z.infer<typeof attendanceSchema>;
 
 interface VisitState {
   visit: Joined | undefined;
-  start: (joined: Joined) => void;
+  /** F17: the link or ID the meeting was opened with, to know the same meeting again (AC-F17-13). */
+  address: string | undefined;
+  /** A rejoin passes no address and keeps the one it had. */
+  start: (joined: Joined, address?: string) => void;
   /** A newer status from the backend; the ticket stays. */
   update: (attendance: Attendance) => void;
   end: () => void;
@@ -18,7 +21,9 @@ interface VisitState {
 
 export const useVisit = create<VisitState>((set) => ({
   visit: undefined,
-  start: (joined) => set({ visit: joined }),
+  address: undefined,
+  start: (joined, address) =>
+    set((old) => ({ visit: joined, address: address ?? (old.visit ? old.address : undefined) })),
   update: (attendance) => set(({ visit }) => (visit ? { visit: { ...visit, ...attendance } } : {})),
-  end: () => set({ visit: undefined }),
+  end: () => set({ visit: undefined, address: undefined }),
 }));

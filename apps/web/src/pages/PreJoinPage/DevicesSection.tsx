@@ -13,14 +13,15 @@ import {
   type PreJoinDevices,
 } from "../../features/meetings/index.ts";
 
-function Problems({ devices }: { devices: PreJoinDevices }) {
+/** F17: during a call the camera may be busy with it; the choice still applies on joining (AC-F17-11). */
+function Problems({ devices, inCall }: { devices: PreJoinDevices; inCall: boolean }) {
   const { t } = useTranslation();
   const kinds: MediaKind[] = ["camera", "microphone"];
   return kinds.map((kind) => {
     const problem = devices[kind].problem;
     return problem ? (
       <Notice key={kind} tone="danger" icon={kind === "camera" ? "camera-off" : "mic-off"}>
-        {t(problemKey(kind, problem))}
+        {inCall && kind === "camera" ? t("calls.small.cameraInUse") : t(problemKey(kind, problem))}
       </Notice>
     ) : null;
   });
@@ -79,7 +80,15 @@ function Choices({ devices }: { devices: PreJoinDevices }) {
   );
 }
 
-export function DevicesSection({ devices, name }: { devices: PreJoinDevices; name: string }) {
+export function DevicesSection({
+  devices,
+  name,
+  inCall = false,
+}: {
+  devices: PreJoinDevices;
+  name: string;
+  inCall?: boolean;
+}) {
   const { t } = useTranslation();
   const { prefs, camera, level, change } = devices;
   const shown = useBackgroundPreview(camera.stream, prefs.background);
@@ -106,7 +115,7 @@ export function DevicesSection({ devices, name }: { devices: PreJoinDevices; nam
         </Button>
       </div>
       <BackgroundChoice value={prefs.background} onChange={(background) => change({ background })} />
-      <Problems devices={devices} />
+      <Problems devices={devices} inCall={inCall} />
       <p className="m-0 text-[13px] text-ink-muted">{t("meetings.devices.remembered")}</p>
     </section>
   );

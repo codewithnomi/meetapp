@@ -79,4 +79,6 @@ export interface PreJoinState {
   title: string;
   lookupToken: string;
   group: MeetingFound["group"];
+  /** F17: the link or ID it was found with, when known (a typed or clicked one; Meet now has none). */
+  address?: string | undefined;
 }
