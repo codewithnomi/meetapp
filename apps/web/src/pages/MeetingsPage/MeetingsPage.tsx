@@ -22,6 +22,7 @@ import {
 } from "../../features/workspaces/index.ts";
 import { GET_LINK_ID, LinkReadyDialog } from "./LinkReadyDialog.tsx";
 import { useCurrentCall } from "../../features/calls/index.ts";
+import { useLeaveFirst } from "../../features/call-windows/index.ts";
 import { PastChat, RecentMeetings, type PastMeeting } from "./RecentMeetings.tsx";
 
 export interface MeetingsPageProps {
@@ -74,15 +75,19 @@ function MeetNowCard({ workspaceId, onPreJoin }: { workspaceId: string; onPreJoi
   const { t } = useTranslation();
   const create = useCreateMeeting(workspaceId);
   const [key, setKey] = useState(newKey);
+  const leaveFirst = useLeaveFirst();
+  // F17: during a call, Meet now asks first (AC-F17-09).
   const start = () =>
-    create.mutate(
-      { kind: "meet_now", key },
-      {
-        onSuccess: (meeting) => {
-          setKey(newKey());
-          onPreJoin({ title: meeting.title, lookupToken: meeting.lookupToken, group: "member" });
+    leaveFirst("start", () =>
+      create.mutate(
+        { kind: "meet_now", key },
+        {
+          onSuccess: (meeting) => {
+            setKey(newKey());
+            onPreJoin({ title: meeting.title, lookupToken: meeting.lookupToken, group: "member" });
+          },
         },
-      },
+      ),
     );
   return (
     <div className="flex flex-col gap-4 rounded-lg bg-accent p-6 text-on-accent">

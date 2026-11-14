@@ -1301,6 +1301,16 @@
       "inProgress": "Call in progress",
       "youreIn": "You're in {{title}}",
       "youreInText": "Your call keeps going while you look around."
+    },
+    "leaveFirst": {
+      "startTitle": "Start something new?",
+      "joinTitle": "Join this meeting?",
+      "start": "You're in {{title}}. Starting this leaves it.",
+      "join": "You're in {{title}}. Joining this meeting leaves it.",
+      "leaveStart": "Leave call and start",
+      "leaveJoin": "Leave call and join",
+      "cancel": "Cancel",
+      "failed": "Couldn't leave the call. Try again."
     }
   },
   "devices": {

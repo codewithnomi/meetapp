@@ -17,6 +17,7 @@ import {
   type CallNoteActions,
   CALL_KEYS,
 } from "../../features/calls/index.ts";
+import { useLeaveFirst } from "../../features/call-windows/index.ts";
 import type { ChatItem } from "../../features/chats/index.ts";
 
 /** Why calls are off in this chat, or undefined when they may start. */
@@ -54,6 +55,22 @@ function Failure({ text, retry, onRetry }: { text: string; retry: string; onRetr
   );
 }
 
+/** Starting or joining the chat's call; during another call, both ask first (F17, AC-F17-09). */
+function useStartOrJoin(target: Parameters<typeof useStartCall>[0], enter: () => void) {
+  const start = useStartCall(target, enter);
+  const join = useJoinCall(target, enter);
+  const [media, setMedia] = useState<CallMedia>("video");
+  const leaveFirst = useLeaveFirst();
+  const go = (chosen: CallMedia) =>
+    leaveFirst("start", () => {
+      setMedia(chosen);
+      start.mutate(chosen);
+    });
+  const joinRunning = (callId: string, joinMedia: CallMedia) =>
+    leaveFirst("join", () => join.mutate({ callId, media: joinMedia }));
+  return { start, join, media, go, joinRunning };
+}
+
 export function useCallButtons(item: ChatItem): {
   calls: ConversationHeaderProps["calls"];
   notice: ReactNode;
@@ -63,16 +80,10 @@ export function useCallButtons(item: ChatItem): {
   const navigate = useNavigate();
   const target = { conversationId: item.id, title: item.title, oneToOne: item.kind === "direct" };
   const enter = () => void navigate("/call");
-  const start = useStartCall(target, enter);
-  const join = useJoinCall(target, enter);
-  const [media, setMedia] = useState<CallMedia>("video");
+  const { start, join, media, go, joinRunning } = useStartOrJoin(target, enter);
   const reason = offReason(t, item);
   const calling = item.kind !== "meeting" && reason === undefined;
   const running = useRunningCall(item.id, calling);
-  const go = (chosen: CallMedia) => {
-    setMedia(chosen);
-    start.mutate(chosen);
-  };
   const error = start.error ?? join.error;
   const calls: ConversationHeaderProps["calls"] = {
     videoLabel: t("calls.buttons.video"),
@@ -83,7 +94,7 @@ export function useCallButtons(item: ChatItem): {
     disabledReason: reason,
     pending: start.isPending || join.isPending,
     join: running
-      ? { label: t("calls.buttons.join"), onJoin: () => join.mutate({ callId: running.callId, media: running.media }) }
+      ? { label: t("calls.buttons.join"), onJoin: () => joinRunning(running.callId, running.media) }
       : undefined,
   };
   const retry = () =>
@@ -98,7 +109,7 @@ export function useCallButtons(item: ChatItem): {
   // Call notes in the chat: Join the running call, Call back after a missed one (AC-F15-15).
   const noteActions: CallNoteActions = {
     runningCallId: running?.callId,
-    join: (callId) => join.mutate({ callId, media: running?.media ?? "video" }),
+    join: (callId) => joinRunning(callId, running?.media ?? "video"),
     callBack: () => go("video"),
   };
   return { calls, notice, noteActions };

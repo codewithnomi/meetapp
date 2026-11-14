@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
-import { useSmallCallView } from "../features/call-windows/index.ts";
+import { LeaveFirstDialog, useSmallCallView } from "../features/call-windows/index.ts";
 import { useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
 import { outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
@@ -112,6 +112,7 @@ export function CallHost({ userName }: { userName: string }) {
         </div>
       ) : null}
       <OutcomeBanner />
+      <LeaveFirstDialog />
     </>
   );
 }

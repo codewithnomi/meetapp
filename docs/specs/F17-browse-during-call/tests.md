@@ -203,7 +203,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-23: Leave-first rule
 - **Covers:** AC-F17-09
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/useLeaveFirst.test.ts`
+- **File:** `apps/web/src/features/call-windows/leave-first.test.tsx`
 - **Given** an active call and a next action
 - **When** the person confirms, in other runs cancels, and in another the host never becomes inactive
 - **Then** confirm: leave runs, then the action runs after the host is inactive; cancel: nothing changes; no leave within 5 s: "Couldn't leave the call. Try again." shows and the action never runs; buttons are disabled while leaving; with no active call the action runs at once with no dialog

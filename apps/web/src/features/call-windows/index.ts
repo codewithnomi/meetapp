@@ -7,3 +7,4 @@ export { useFrameSender } from "./frames.ts";
 export { usePublishWaiting } from "./use-publish-waiting.ts";
 export { callCaption, micAndCamera } from "./labels.ts";
 export { useSmallCallView } from "./small-call-view.tsx";
+export { LeaveFirstDialog, useLeaveFirst } from "./leave-first.tsx";
