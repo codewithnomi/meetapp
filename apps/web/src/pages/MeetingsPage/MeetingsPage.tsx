@@ -28,7 +28,7 @@ export interface MeetingsPageProps {
   onNavigate: (screen: AppScreen) => void;
   onPreJoin: (state: PreJoinState) => void;
   /** F17: shows the call the person is in, full (its path). */
-  onBackToCall?: (path: string) => void;
+  onBackToCall?: ((path: string) => void) | undefined;
 }
 
 const newKey = () => crypto.randomUUID();
