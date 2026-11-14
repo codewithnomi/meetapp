@@ -63,4 +63,9 @@ describe("useSmallCallView", () => {
     publish({}, { phase: "calling" });
     expect(view()?.leave.text).toBe("Cancel");
   });
+
+  it("TC-F17-16 [AC-F17-06, 18] a dropped connection shows Reconnecting…, announced, with only Leave", () => {
+    publish({}, { phase: "reconnecting" });
+    expect(view()).toMatchObject({ caption: "Reconnecting…", captionIsStatus: true, controls: false });
+  });
 });

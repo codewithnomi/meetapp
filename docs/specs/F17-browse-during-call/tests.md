@@ -458,3 +458,12 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 | AC-F17-19 | TC-F17-36 |
 | AC-F17-20 | TC-F17-37 |
 | AC-F17-21 | TC-F17-07, 39 |
+
+## Where the automated tests ended up (T8)
+Paths above were planned before the code; the tests live here:
+- **Desktop windows:** `tests/e2e/desktop/browse.spec.ts` (TC-F17-01, 02, 06, 09, 10, 11, 14, 17, 18, 25, 34, 35, 36, 37, 39), `tests/e2e/desktop/switch.spec.ts` (TC-F17-24, 38), `tests/e2e/desktop/links.spec.ts` (TC-F17-27, 30, 31, 32, 48; it replaces TC-F04-28's "the link waits", AC-F04-10).
+- **Quick tests:** `packages/ui/src/organisms/SmallCallView/SmallCallView.test.tsx` (03, 04, 05, 19, 42), `packages/ui/src/templates/AppLayout/AppLayout.test.tsx` (07), `apps/web/src/features/call-windows/small-call-view.test.tsx` (12, 13, 16, 19), `apps/web/src/features/calls/current-call.test.ts` (21), `apps/web/src/pages/ChatsPage/chat-entries.test.ts` and `MeetingsPage.test.tsx` (22), `apps/web/src/features/call-windows/leave-first.test.tsx` (23), `apps/web/src/app/CallHost.test.tsx` (08, 15, 20, 45), `apps/web/src/app/focus.test.tsx` (44), `apps/web/src/app/desktop-commands.test.tsx` (29, 49), `apps/web/src/app/meeting-routes.test.tsx` (33), `PreJoinPage.test.tsx` (27's note and button), `apps/web/src/features/auth/sign-out-leaving.test.tsx` (46, 47).
+- **Translations (TC-F17-43):** `apps/web/src/locales/en.test.ts` checks every key the code uses exists.
+- **Screenshots (TC-F17-40, 41):** the SmallCallView stories (every state, light and dark) and the existing Notice stories, compared by `pnpm test:visual`.
+- **Nothing new to the server (TC-F17-50):** F17 changes no backend or contract file (checked against `main`).
+- **Not automated separately:** TC-F17-26 (a ring while browsing: the in-app incoming call and F16's ring window show on every screen, as F15/F16's own tests check; accepting leaves the current call as before) and TC-F17-28 (a link while waiting in a lobby or "Calling…": the same pre-join path as TC-F17-27, with the lobby or Calling's own Leave run by the same code).
