@@ -1,7 +1,7 @@
 ---
 feature: F17
 title: Browse during a call
-status: draft
+status: approved
 updated: 2026-11-14
 ---
 
