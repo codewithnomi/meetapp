@@ -75,7 +75,7 @@ describe("SmallCallView", () => {
     );
     const group = () => screen.getByRole("group", { name: "Call controls" });
     expect(group().querySelectorAll("button")).toHaveLength(1);
-    expect(screen.getByText("Waiting to be let in…")).toHaveAttribute("aria-live", "polite");
+    expect(screen.getByRole("status")).toHaveTextContent("Waiting to be let in…");
     rerender(
       <SmallCallView
         {...props({
@@ -89,8 +89,8 @@ describe("SmallCallView", () => {
     expect(screen.getByRole("button", { name: "Cancel the call" })).toHaveTextContent("Cancel");
     rerender(<SmallCallView {...props()} />);
     expect(group().querySelectorAll("button")).toHaveLength(3);
-    // Who is talking changes often, so it is not announced.
-    expect(screen.getByText("Sara Malik is talking")).not.toHaveAttribute("aria-live");
+    // Who is talking changes often, so it is not announced (a deliberate choice).
+    expect(screen.getByRole("status")).toHaveTextContent("");
   });
 
   it("TC-F17-42 [AC-F17-18] every button has a name and is reached with Tab and pressed with Enter and Space", async () => {

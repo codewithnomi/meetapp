@@ -138,8 +138,12 @@ export function SmallCallView(props: SmallCallViewProps) {
     >
       <div className="relative">
         <Picture {...props} />
+        {/* Always there, filled only for a status: a live region that appears with its text is often missed. */}
+        <span role="status" className="sr-only">
+          {props.captionIsStatus ? props.caption : ""}
+        </span>
         <span
-          aria-live={props.captionIsStatus ? "polite" : undefined}
+          aria-hidden="true"
           className="pointer-events-none absolute bottom-2 left-2 max-w-[calc(100%-16px)] truncate rounded-full bg-stage-scrim px-2 py-0.5 text-[12px]"
         >
           {props.caption}

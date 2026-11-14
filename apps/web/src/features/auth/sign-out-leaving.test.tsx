@@ -8,8 +8,14 @@ import { SignOutFailedNotice, useSignOutLeavingFirst } from "./sign-out-leaving.
 const signOut = vi.hoisted(() => vi.fn());
 vi.mock("./session.ts", () => ({ useSignOut: () => ({ mutate: signOut, isPending: false }) }));
 
+/** As the call host registers it: in a call until `end` runs. */
+function inCall(leave: (end: () => void) => void) {
+  let on = true;
+  useCallCorner.getState().register({ inCall: () => on, leave: () => leave(() => (on = false)) });
+}
+
 afterEach(() => {
-  useCallCorner.getState().setCall(false, undefined);
+  useCallCorner.getState().register(undefined);
   signOut.mockClear();
   vi.useRealTimers();
 });
@@ -22,8 +28,8 @@ describe("signing out during a call", () => {
   });
 
   it("TC-F17-46 [AC-F17-16] during a call it leaves first, then signs out", async () => {
-    const leave = vi.fn(() => setTimeout(() => useCallCorner.getState().setCall(false, undefined), 150));
-    useCallCorner.getState().setCall(true, leave);
+    const leave = vi.fn((end: () => void) => setTimeout(end, 150));
+    inCall(leave);
     const { result } = renderHook(() => useSignOutLeavingFirst());
     act(() => result.current.mutate());
     expect(leave).toHaveBeenCalledOnce();
@@ -34,7 +40,7 @@ describe("signing out during a call", () => {
 
   it("TC-F17-47 [AC-F17-16] when leaving doesn't finish within 5 s it stays signed in and says so", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    useCallCorner.getState().setCall(true, vi.fn());
+    inCall(() => undefined);
     render(<SignOutFailedNotice />);
     const { result } = renderHook(() => useSignOutLeavingFirst());
     act(() => result.current.mutate());

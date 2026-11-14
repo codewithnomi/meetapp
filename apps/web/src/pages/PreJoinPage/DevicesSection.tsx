@@ -21,7 +21,9 @@ function Problems({ devices, inCall }: { devices: PreJoinDevices; inCall: boolea
     const problem = devices[kind].problem;
     return problem ? (
       <Notice key={kind} tone="danger" icon={kind === "camera" ? "camera-off" : "mic-off"}>
-        {inCall && kind === "camera" ? t("calls.small.cameraInUse") : t(problemKey(kind, problem))}
+        {inCall && kind === "camera" && problem === "busy"
+          ? t("calls.small.cameraInUse")
+          : t(problemKey(kind, problem))}
       </Notice>
     ) : null;
   });

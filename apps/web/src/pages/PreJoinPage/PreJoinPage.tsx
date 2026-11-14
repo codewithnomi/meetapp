@@ -12,7 +12,7 @@ import {
   type Joined,
   type PreJoinState,
 } from "../../features/meetings/index.ts";
-import { leaveCallThen } from "../../features/call-windows/index.ts";
+import { leaveCallAndRun } from "../../features/call-windows/index.ts";
 import { DevicesSection } from "./DevicesSection.tsx";
 
 export interface PreJoinPageProps {
@@ -85,7 +85,7 @@ function useJoinSubmit({ meeting, userName, onJoined, inCall }: PreJoinPageProps
     if (!inCall) return joinNow();
     // F17: leave the current call first, then join (AC-F17-12).
     setLeaving("yes");
-    void leaveCallThen(joinNow).then((left) => setLeaving(left ? "no" : "failed"));
+    void leaveCallAndRun(joinNow).then((left) => setLeaving(left ? "no" : "failed"));
   };
   return { join, leaving, guest, guestName, setGuestName, nameError, submit };
 }

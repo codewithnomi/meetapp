@@ -4,11 +4,8 @@
 import { Button, Dialog, Notice } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
-import { inCallNow, useCurrentCall } from "../calls/index.ts";
-import { useCallScreen } from "./call-screen.ts";
-
-const LEAVE_WAIT_MS = 5_000;
-const CHECK_MS = 100;
+import { inCallNow, leaveAndWait } from "../call-corner/index.ts";
+import { useCurrentCall } from "../calls/index.ts";
 
 type Kind = "start" | "join";
 
@@ -28,15 +25,6 @@ const useLeaveFirstState = create<LeaveFirstState>((set) => ({
   close: () => set({ ask: undefined, leaving: false, failed: false }),
 }));
 
-/** Resolves true once the call is over, false after 5 s. */
-async function callOver(): Promise<boolean> {
-  for (let waited = 0; waited < LEAVE_WAIT_MS; waited += CHECK_MS) {
-    if (!inCallNow()) return true;
-    await new Promise((done) => setTimeout(done, CHECK_MS));
-  }
-  return !inCallNow();
-}
-
 /** Runs `then` at once without a call; during one, asks first. */
 export function useLeaveFirst(): (kind: Kind, then: () => void) => void {
   const open = useLeaveFirstState((state) => state.open);
@@ -45,9 +33,8 @@ export function useLeaveFirst(): (kind: Kind, then: () => void) => void {
 
 /** F17 pre-join (AC-F17-12): its own button says "Leave call and join", so it leaves without asking again.
  * Resolves false when leaving didn't finish within 5 s; `then` runs only after the call is over. */
-export async function leaveCallThen(then: () => void): Promise<boolean> {
-  useCallScreen.getState().controls?.leave();
-  const over = await callOver();
+export async function leaveCallAndRun(then: () => void): Promise<boolean> {
+  const over = await leaveAndWait();
   if (over) then();
   return over;
 }
@@ -56,7 +43,10 @@ export async function leaveCallThen(then: () => void): Promise<boolean> {
 async function leaveThen(then: () => void): Promise<void> {
   const { close } = useLeaveFirstState.getState();
   useLeaveFirstState.setState({ leaving: true, failed: false });
-  const over = await leaveCallThen(() => (close(), then()));
+  const over = await leaveCallAndRun(() => {
+    close();
+    then();
+  });
   if (!over) useLeaveFirstState.setState({ leaving: false, failed: true });
 }
 

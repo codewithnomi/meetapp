@@ -4,7 +4,7 @@
 import { Notice } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
-import { leaveCurrentCall, useCallCorner } from "../call-corner/index.ts";
+import { inCallNow, leaveAndWait } from "../call-corner/index.ts";
 import { useSignOut } from "./session.ts";
 
 const useSignOutState = create<{ leaving: boolean; failed: boolean }>(() => ({ leaving: false, failed: false }));
@@ -14,9 +14,9 @@ export function useSignOutLeavingFirst() {
   const leaving = useSignOutState((state) => state.leaving);
   const mutate = () => {
     useSignOutState.setState({ failed: false });
-    if (!useCallCorner.getState().inCall) return signOut.mutate();
+    if (!inCallNow()) return signOut.mutate();
     useSignOutState.setState({ leaving: true });
-    void leaveCurrentCall().then((left) => {
+    void leaveAndWait().then((left) => {
       useSignOutState.setState({ leaving: false, failed: !left });
       if (left) signOut.mutate();
     });

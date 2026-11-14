@@ -4,6 +4,8 @@
 import { act, render, renderHook, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useCallCorner } from "../call-corner/index.ts";
+import { inCallNow } from "../calls/index.ts";
 import { useVisit, type Joined } from "../meetings/index.ts";
 import { useCallScreen } from "./call-screen.ts";
 import { LeaveFirstDialog, useLeaveFirst } from "./leave-first.tsx";
@@ -44,6 +46,8 @@ function ask(kind: "start" | "join", then: () => void) {
 
 beforeEach(() => {
   leave = vi.fn();
+  // As the call host registers it, from the calls' own stores.
+  useCallCorner.getState().register({ inCall: inCallNow, leave: () => useCallScreen.getState().controls?.leave() });
 });
 afterEach(() => {
   useVisit.getState().end();
