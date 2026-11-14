@@ -30,6 +30,8 @@ import { useLobby } from "./lobby.ts";
 export interface MeetingPageProps {
   onLeft: () => void;
   onOutcome: (outcome: Attendance) => void;
+  /** F17: inside the call host, which moves between screens itself (design.md 3.1). */
+  hosted?: boolean;
 }
 
 /**

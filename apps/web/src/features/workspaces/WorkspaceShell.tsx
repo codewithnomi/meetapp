@@ -12,6 +12,7 @@ import { useUnreadChats } from "../chats/use-chat-list.ts";
 import { CreateWorkspaceDialog } from "./CreateWorkspaceDialog.tsx";
 import { useCurrentWorkspace } from "./current-workspace.tsx";
 import type { MyWorkspace } from "./me.ts";
+import { useCallCorner } from "../call-corner/index.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
@@ -107,6 +108,7 @@ function ShellNotice() {
 
 export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellProps) {
   const { t } = useTranslation();
+  const smallView = useCallCorner((state) => state.taken);
   const { current, switchTo } = useCurrentWorkspace();
   const [creating, setCreating] = useState(false);
   const items = useNavItems(current, { screen, onNavigate });
@@ -116,6 +118,7 @@ export function WorkspaceShell({ screen, onNavigate, children }: WorkspaceShellP
   return (
     <>
       <AppLayout
+        reserveCorner={smallView}
         switcher={<Switcher onCreate={() => setCreating(true)} onJoin={() => onNavigate("join")} />}
         navLabel={t("workspaces.nav.label")}
         items={items}

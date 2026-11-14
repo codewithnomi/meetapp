@@ -4,6 +4,7 @@
 import { AppLayout, Button, type AppNavItem, type IconName } from "@meetapp/ui";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useCallCorner } from "../call-corner/index.ts";
 import { canStartAtLogin } from "../desktop-app/index.ts";
 
 export type SettingsScreen =
@@ -34,6 +35,7 @@ export interface SettingsShellProps {
 
 export function SettingsShell({ screen, onNavigate, onBack, children }: SettingsShellProps) {
   const { t } = useTranslation();
+  const smallView = useCallCorner((state) => state.taken);
   const items: AppNavItem[] = SCREENS.filter(([id]) => !DESKTOP_ONLY.includes(id) || canStartAtLogin()).map(
     ([id, icon]) => ({
       id,
@@ -45,6 +47,7 @@ export function SettingsShell({ screen, onNavigate, onBack, children }: Settings
   );
   return (
     <AppLayout
+      reserveCorner={smallView}
       switcher={
         <Button variant="ghost" className="self-start" onClick={onBack}>
           {t("settings.back")}

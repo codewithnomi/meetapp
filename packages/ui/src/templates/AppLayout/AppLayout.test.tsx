@@ -1,7 +1,6 @@
 // AppLayout tests (TC-F01-41, AC-F01-16): the side menu is a named navigation with the switcher on top;
 // the current item is marked for screen readers, and items report a choice.
 import { render, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { AppLayout } from "./AppLayout.tsx";
@@ -46,19 +45,15 @@ describe("AppLayout", () => {
     expect(screen.getByRole("button", { name: "People" })).toBeInTheDocument();
   });
 
-  it("TC-F17-07 [AC-F17-02, AC-F17-21] the small call view sits fixed at the bottom right, outside the menu, with room kept below the content", () => {
-    const layout = (corner?: ReactNode) => (
-      <AppLayout navLabel="Main" switcher={null} items={[]} corner={corner}>
+  it("TC-F17-07 [AC-F17-21] while the small call view shows, the content keeps room below it", () => {
+    const layout = (reserveCorner: boolean) => (
+      <AppLayout navLabel="Main" switcher={null} items={[]} reserveCorner={reserveCorner}>
         <main>Content</main>
       </AppLayout>
     );
-    const { rerender } = render(layout(<section aria-label="Call: Release team" />));
-    const view = screen.getByRole("region", { name: "Call: Release team" });
-    expect(view.parentElement).toHaveClass("fixed", "right-4", "bottom-4");
-    expect(screen.getByRole("navigation", { name: "Main" })).not.toContainElement(view);
+    const { rerender } = render(layout(true));
     expect(screen.getByRole("main").parentElement).toHaveClass("pb-58");
-    rerender(layout());
-    expect(screen.queryByRole("region")).toBeNull();
+    rerender(layout(false));
     expect(screen.getByRole("main").parentElement).not.toHaveClass("pb-58");
   });
 });

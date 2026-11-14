@@ -30,3 +30,4 @@ export {
   type DevicePrefs,
   type MediaKind,
 } from "../devices/index.ts";
+export { outcomeOf, type Outcome } from "./outcome.ts";

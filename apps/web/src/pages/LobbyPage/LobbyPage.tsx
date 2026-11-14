@@ -23,6 +23,8 @@ export interface LobbyPageProps {
   onAdmitted: (visit: Joined) => void;
   onOutcome: (visit: Joined) => void;
   onLeft: () => void;
+  /** F17: off while the lobby is hidden behind another screen, so the camera isn't on for nothing. */
+  previewOn?: boolean;
 }
 
 /** Moves on as soon as the status is no longer "waiting". */
@@ -61,11 +63,11 @@ function Controls({ devices, onLeave }: { devices: PreJoinDevices; onLeave: () =
   );
 }
 
-export function LobbyPage({ name, onAdmitted, onOutcome, onLeft }: LobbyPageProps) {
+export function LobbyPage({ name, onAdmitted, onOutcome, onLeft, previewOn = true }: LobbyPageProps) {
   const { t } = useTranslation();
   const { visit, status } = useOutcome({ onAdmitted, onOutcome });
   const end = useVisit((state) => state.end);
-  const devices = usePreJoinDevices();
+  const devices = usePreJoinDevices(previewOn);
   const { prefs, camera } = devices;
   const leave = () => void leaveMeeting(visit).then(() => (end(), onLeft()));
   usePublishWaiting(visit ? "lobby" : undefined, visit?.title ?? "", leave);

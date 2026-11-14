@@ -165,13 +165,14 @@ function Calling({ call, visit, onBack }: { call: ChatCall; visit: Joined; onBac
   );
 }
 
-export function ChatCallPage({ onBackToChat, onOutcome }: ChatCallPageProps) {
+export function ChatCallPage({ onBackToChat, onOutcome, hosted = false }: ChatCallPageProps) {
   const call = useChatCall((state) => state.call);
   const end = useChatCall((state) => state.end);
   const visit = useVisit((state) => state.visit);
-  if (!call || !visit?.call) return <Navigate to="/chat" replace />;
+  // F17: inside the call host the two stores can disagree for a moment; the host moves on, not this page.
+  if (!call || !visit?.call) return hosted ? null : <Navigate to="/chat" replace />;
   // Leaving from inside the call goes back to its chat, and this window forgets the call.
   const left = () => (end(), onBackToChat(call.conversationId));
-  if (call.phase === "in_call") return <MeetingPage onLeft={left} onOutcome={onOutcome} />;
+  if (call.phase === "in_call") return <MeetingPage onLeft={left} onOutcome={onOutcome} hosted={hosted} />;
   return <Calling call={call} visit={visit} onBack={onBackToChat} />;
 }
