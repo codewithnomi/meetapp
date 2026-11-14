@@ -1,7 +1,7 @@
 ---
 feature: F17
 title: Browse during a call
-status: draft
+status: approved
 updated: 2026-11-14
 ---
 
@@ -103,4 +103,4 @@ None (no new services).
 | 21 | e2e at 800×600: the small view doesn't cover the Chat message box or Meetings' main button |
 
 ## Decisions made here
-- D091 (proposed): the call stays mounted in a call host above the routes and is hidden, not unmounted, while browsing.
+- D091 (accepted): the call stays mounted in a call host above the routes and is hidden, not unmounted, while browsing.
