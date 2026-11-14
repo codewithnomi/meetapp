@@ -5,3 +5,5 @@ export { useCallWindows } from "./use-call-windows.ts";
 export { callForWindows, speakerOf } from "./report.ts";
 export { useFrameSender } from "./frames.ts";
 export { usePublishWaiting } from "./use-publish-waiting.ts";
+export { callCaption, micAndCamera } from "./labels.ts";
+export { useSmallCallView } from "./small-call-view.tsx";

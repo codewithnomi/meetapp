@@ -1291,6 +1291,13 @@
       "join": "Join on this device",
       "transfer": "Transfer to this device",
       "moving": "Moving the call…"
+    },
+    "small": {
+      "sharing": "You're sharing",
+      "goBack": "Go back",
+      "back": "Go back to the {{title}} call",
+      "leaveLabel": "Leave the {{title}} call",
+      "cancelLabel": "Cancel the call to {{title}}"
     }
   },
   "devices": {

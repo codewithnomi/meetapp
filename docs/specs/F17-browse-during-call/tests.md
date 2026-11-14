@@ -113,18 +113,18 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-12: Leave for a member
 - **Covers:** AC-F17-05
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/useSmallCallView.test.ts`
+- **File:** `apps/web/src/features/call-windows/small-call-view.test.tsx`
 - **Given** `leaveChoices` is false
 - **When** Leave is pressed
-- **Then** `controls.leave` runs once and `openLeave` does not
+- **Then** `controls.leave` runs once and the full call is not shown
 
 ### TC-F17-13: Leave for an organizer
 - **Covers:** AC-F17-05
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/useSmallCallView.test.ts`
+- **File:** `apps/web/src/features/call-windows/small-call-view.test.tsx`
 - **Given** `leaveChoices` is true (organizer or co-organizer)
 - **When** Leave is pressed
-- **Then** `controls.openLeave` runs (full call with leave dialog) and `controls.leave` does not
+- **Then** the full call shows (where Leave has "End meeting for everyone") and `controls.leave` does not run
 
 ### TC-F17-14: Leave from Chat stays on Chat
 - **Covers:** AC-F17-05
@@ -187,7 +187,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-21: useCurrentCall
 - **Covers:** AC-F17-08
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/useCurrentCall.test.ts`
+- **File:** `apps/web/src/features/calls/current-call.test.ts`
 - **Given** a meeting visit, a lobby visit, a chat call, and no call
 - **When** the hook is read
 - **Then** it returns kind, ids, title and `fullPath` (`/meeting/call`, `/meeting/lobby`, `/call`), and nothing when there is no call

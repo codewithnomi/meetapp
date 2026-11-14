@@ -13,3 +13,4 @@ export { useIncomingCalls } from "./incoming-calls.ts";
 export { useAnswer } from "./incoming-call-hooks.ts";
 export { startCall } from "./calls-api.ts";
 export { useEnterCall } from "./enter-call.ts";
+export { useCallOutcome, useCurrentCall, type CurrentCall } from "./current-call.ts";

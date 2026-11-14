@@ -6,7 +6,13 @@ import type { TFunction } from "i18next";
 import { MiniCallWindow, NoticeCard, RingWindow } from "@meetapp/ui";
 import { useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { act, useFrameCanvas, useSmallWindowView } from "../../features/call-windows/index.ts";
+import {
+  act,
+  callCaption,
+  micAndCamera,
+  useFrameCanvas,
+  useSmallWindowView,
+} from "../../features/call-windows/index.ts";
 import { shortcutText, useElapsed } from "../../features/meetings/index.ts";
 
 function Ring({ ring }: { ring: CallWindowsRing }) {
@@ -47,13 +53,6 @@ function Ring({ ring }: { ring: CallWindowsRing }) {
   );
 }
 
-function caption(call: CallWindowsCall, t: TFunction): string {
-  if (call.phase === "reconnecting") return t("calls.windows.reconnecting");
-  if (call.phase === "lobby") return t("calls.windows.lobby");
-  if (call.phase === "calling") return t("calls.windows.calling", { name: call.title });
-  return t(call.speaker.sharing ? "calls.windows.sharing" : "calls.windows.speaking", { name: call.speaker.name });
-}
-
 /** The speaker's live video, drawn from the main window's pictures (named in the caption, so hidden here). */
 function LiveVideo() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -64,20 +63,7 @@ function LiveVideo() {
 /** The four toggles; a disabled one says why (AC-F16-16, 21). */
 function toggles(call: CallWindowsCall, t: TFunction) {
   return {
-    mic: {
-      label:
-        call.canUnmute || call.mic
-          ? t(call.mic ? "calls.windows.mute" : "calls.windows.unmute", { keys: shortcutText("M") })
-          : t("calls.windows.micLocked"),
-      on: call.mic,
-      disabled: !call.mic && !call.canUnmute,
-      onClick: () => act({ name: "toggleMic" }),
-    },
-    camera: {
-      label: t(call.camera ? "calls.windows.cameraOff" : "calls.windows.cameraOn", { keys: shortcutText("O") }),
-      on: call.camera,
-      onClick: () => act({ name: "toggleCamera" }),
-    },
+    ...micAndCamera(call, t, { mic: () => act({ name: "toggleMic" }), camera: () => act({ name: "toggleCamera" }) }),
     share: {
       // A disabled button says why (AC-F16-21).
       label: t(call.canShare ? "calls.windows.share" : "calls.windows.shareLocked"),
@@ -108,7 +94,7 @@ function Mini({ call }: { call: CallWindowsCall }) {
       speakerName={call.speaker.name}
       speakerPhoto={call.speaker.photo}
       video={live ? <LiveVideo /> : undefined}
-      caption={caption(call, t)}
+      caption={callCaption(call, t)}
       captionIsStatus={call.phase !== "in-call"}
       controls={inCall}
       controlsLabel={t("calls.windows.controls")}
