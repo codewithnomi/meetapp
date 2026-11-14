@@ -405,7 +405,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-47: Sign out when leaving is slow
 - **Covers:** AC-F17-16
 - **Level:** security
-- **File:** `apps/web/src/features/calls/useSignOutDuringCall.test.ts`
+- **File:** `apps/web/src/features/auth/sign-out-leaving.test.tsx`
 - **Given** `controls.leave` never finishes (fake clock)
 - **When** the person signs out
 - **Then** after 5 s "Couldn't leave the call. Try again." shows and the person is not signed out half-way (no open call without a session)

@@ -8,7 +8,8 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
-import { LeaveFirstDialog, useSmallCallView } from "../features/call-windows/index.ts";
+import { SignOutFailedNotice } from "../features/auth/index.ts";
+import { LeaveFirstDialog, useCallScreen, useSmallCallView } from "../features/call-windows/index.ts";
 import { useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
 import { outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
@@ -93,6 +94,10 @@ export function CallHost({ userName }: { userName: string }) {
   const shown = current !== undefined && !full && small !== undefined;
   const setCorner = useCallCorner((state) => state.set);
   useEffect(() => setCorner(shown), [setCorner, shown]);
+  // Signing out leaves the call first (AC-F17-16): the call's Leave, for code that can't know the calls.
+  const leave = useCallScreen((state) => state.controls?.leave);
+  const setCall = useCallCorner((state) => state.setCall);
+  useEffect(() => setCall(current !== undefined, leave), [setCall, current, leave]);
   // Let in while the lobby shows full: the host already shows the call, so its path follows.
   const fullPath = current?.fullPath;
   useEffect(() => {
@@ -113,6 +118,7 @@ export function CallHost({ userName }: { userName: string }) {
       ) : null}
       <OutcomeBanner />
       <LeaveFirstDialog />
+      <SignOutFailedNotice />
     </>
   );
 }

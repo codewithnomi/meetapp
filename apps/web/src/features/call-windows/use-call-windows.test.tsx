@@ -47,7 +47,7 @@ const report = vi.fn();
 
 /** As in the app (router.tsx Ringing): the in-app incoming calls keep the ring list, the watcher reports it. */
 function Watcher({ toCall, toChat }: { toCall: () => void; toChat: () => void }) {
-  useCallWindows({ toCall, toChat });
+  useCallWindows({ toCall, toChat, toPath: vi.fn() });
   return <IncomingCalls onAccepted={toCall} />;
 }
 

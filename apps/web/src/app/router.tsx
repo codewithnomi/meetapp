@@ -153,7 +153,7 @@ function Ringing() {
   const navigate = useNavigate();
   const toCall = () => void navigate("/call");
   // F16: rings and the call also show in small windows above other apps (desktop app only).
-  useCallWindows({ toCall, toChat: () => void navigate("/chat") });
+  useCallWindows({ toCall, toChat: () => void navigate("/chat"), toPath: (path) => void navigate(path) });
   return (
     <>
       <IncomingCalls onAccepted={toCall} />

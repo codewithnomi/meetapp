@@ -20,3 +20,4 @@ export { TEXT_LINK } from "./text-link.ts";
 export { useProviders } from "./providers.ts";
 export { ProviderButtons } from "./ProviderButtons.tsx";
 export { useBrowserSignIn } from "./browser-sign-in.ts";
+export { SignOutFailedNotice, useSignOutLeavingFirst } from "./sign-out-leaving.tsx";

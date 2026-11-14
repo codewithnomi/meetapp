@@ -57,8 +57,8 @@ The host gives the pages callbacks that change screens **only while the full cal
 
 ### 3.6 Window close, sign-out, F16 (AC-F17-14, 16, 19)
 - F04 hides the window on close and F16 shows the mini window when MeetApp isn't in front; the host keeps the call, so only tests are new.
-- Sign out during a call: first `controls.leave`, wait until the host is inactive (at most 5 s), then sign out.
-- F16's "back to the call" (`use-call-windows`, `toCall` from `router.tsx:264`) navigates to `useCurrentCall().fullPath` instead of always `/call`.
+- Sign out during a call: first the call's Leave, wait until the call is over (at most 5 s), then sign out; otherwise a banner says "Couldn't leave the call. Try again." and the person stays signed in. Built as `useSignOutLeavingFirst` in `features/auth`, reading `features/call-corner`, which the host keeps up to date with "in a call" and the call's Leave (so the sign-in code and the status menu need not depend on the calls).
+- F16's "back to the call" (`use-call-windows`) now also shows the current call full: it navigates to `useCurrentCall().fullPath` (new `toPath` route callback) as the desktop app brings the window forward.
 
 ## Data stored
 None new.
