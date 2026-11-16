@@ -61,3 +61,11 @@ export const LongNames: Story = {
     caption: "Maximilian Alexander Featherstonehaugh is talking",
   },
 };
+
+/** Camera on: the page passes the live video; a still stand-in here. */
+export const CameraOn: Story = {
+  args: {
+    video: <div aria-hidden="true" className="bg-accent-soft" />,
+    camera: { label: "Turn camera off (⌘⇧O)", on: true, onClick: none },
+  },
+};

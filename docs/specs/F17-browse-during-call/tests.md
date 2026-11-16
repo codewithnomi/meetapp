@@ -15,7 +15,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 **Set-up:**
 - Nothing new on the server, so there are no API tests. TC-F17-48 proves that.
 - Unit and component tests use fakes for the call store, the router, the clock and the desktop bridge. File locations: `apps/web/src/app/*.test.tsx`, `apps/web/src/features/calls/*.test.ts(x)`, `packages/ui/src/organisms/SmallCallView/*`.
-- Desktop e2e uses 2 or 3 Electron windows (F02/F15/F16 style), each with its own profile, fake camera and microphone. Files: `apps/desktop/e2e/f17-*.spec.ts`. "Not in front" = main window hidden, minimized or another app focused. Links are sent as in F04 tests (`second-instance`, `open-url`, `argv`).
+- Desktop e2e uses 2 or 3 Electron windows (F02/F15/F16 style), each with its own profile, fake camera and microphone. Files: `tests/e2e/desktop/`. "Not in front" = main window hidden, minimized or another app focused. Links are sent as in F04 tests (`second-instance`, `open-url`, `argv`).
 - The F02, F04, F15 and F16 suites must keep passing. The F04 test for AC-F04-10 is changed for signed-in people (TC-F17-29) and stays for guests.
 
 ## Test cases
@@ -170,7 +170,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 - **Covers:** AC-F17-07
 - **Level:** unit
 - **File:** `packages/ui/src/organisms/SmallCallView/SmallCallView.test.tsx`
-- **Given** each state `lobby`, `calling`, `connecting`, `in_call`
+- **Given** each state `lobby`, `calling`, `in_call`
 - **When** it renders
 - **Then** lobby shows Leave, calling shows Cancel, and in_call shows mute, camera and Leave
 
@@ -219,7 +219,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-25: Call button and "started a call" Join
 - **Covers:** AC-F17-09
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** A in a meeting, a chat with a call button, and a chat with a "started a call" note
 - **When** A presses the call button, then Join on the note, and confirms
 - **Then** each asks first (with "Leave call and start" and "Leave call and join"), leaves the current call, and then starts or joins
@@ -237,7 +237,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-27: Link during a call opens the pre-join
 - **Covers:** AC-F17-11
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `tests/e2e/desktop/links.spec.ts`
 - **Given** signed-in A in call X, MeetApp behind other apps
 - **When** a `meetapp://` link for meeting Y arrives
 - **Then** within 3 seconds MeetApp is in front and shows Y's pre-join with "You're in <X>. Joining this meeting leaves it."; the small view shows X and X's call continues
@@ -261,7 +261,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-30: Camera preview shares the camera
 - **Covers:** AC-F17-11
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `tests/e2e/desktop/links.spec.ts`
 - **Given** A in a call with camera on, then opens the pre-join of Y
 - **When** the preview starts, and in a second run the preview is made to fail
 - **Then** run 1: the preview shows and the call's video continues to the other window; run 2: "Camera in use by your current call" shows and the camera choice still applies on joining
@@ -269,7 +269,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-31: Leave call and join
 - **Covers:** AC-F17-12
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `tests/e2e/desktop/links.spec.ts`
 - **Given** the pre-join of Y during call X, camera off and microphone muted chosen
 - **When** A presses Leave call and join
 - **Then** A leaves X (the other window sees it), joins Y with camera off and microphone muted
@@ -277,7 +277,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-32: Cancel the pre-join
 - **Covers:** AC-F17-12
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `tests/e2e/desktop/links.spec.ts`
 - **Given** A on Chat, then opened the pre-join of Y during call X
 - **When** A presses Cancel
 - **Then** Chat shows again and X was never interrupted (the other window sees no leave or join)
@@ -295,7 +295,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-34: Mini window while MeetApp is behind
 - **Covers:** AC-F17-14
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/windows.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** A browsing on Chat during a call
 - **When** another app is brought to the front, then MeetApp is brought back
 - **Then** the mini call window shows while behind, hides when MeetApp returns, and A sees Chat with the small view
@@ -303,7 +303,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-35: Mini window "back to the call"
 - **Covers:** AC-F17-14
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/windows.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** A on Meetings, MeetApp behind, in a meeting and in a chat call (two runs)
 - **When** A presses "back to the call" in the mini window
 - **Then** the full call shows (`/meeting/call` or `/call` by `fullPath`)
@@ -311,7 +311,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-36: Window close keeps the call
 - **Covers:** AC-F17-19
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/windows.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** A browsing during a call
 - **When** A closes the MeetApp window
 - **Then** the call continues (the other window still sees and hears A), MeetApp stays in the menu bar, and the mini call window shows
@@ -319,7 +319,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-37: Several windows
 - **Covers:** AC-F17-20
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/windows.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** A has two MeetApp windows, one holding the call
 - **When** both are on Chat
 - **Then** only the window with the call shows the small view; the other shows only "Call in progress" and Go back, and Go back there does not start a second call
@@ -329,7 +329,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-38: 20 switches in a row
 - **Covers:** AC-F17-15
 - **Level:** performance
-- **File:** `tests/e2e/desktop/performance.spec.ts`
+- **File:** `tests/e2e/desktop/switch.spec.ts`
 - **Given** A and B in a call, B's received-audio counter (`totalSamplesReceived`) sampled every 100 ms
 - **When** A switches between the full call and Chat 20 times
 - **Then** each switch takes under 1 second, the call never drops, and the counter grows with no pause over 500 ms
@@ -337,7 +337,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-39: Small view at the smallest window
 - **Covers:** AC-F17-21
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/windows.spec.ts`
+- **File:** `tests/e2e/desktop/browse.spec.ts`
 - **Given** the window at 800x600, A in a call
 - **When** A opens Chat and Meetings (with many chats and meetings listed, scrolled to the end)
 - **Then** the small view does not overlap the message box or Meetings' main button (boxes measured)
@@ -371,7 +371,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-43: Translations
 - **Covers:** AC-F17-18
 - **Level:** unit
-- **File:** `apps/web/src/features/calls/i18n.test.ts`
+- **File:** `apps/web/src/locales/en.test.ts`
 - **Given** the translation file and the new components
 - **When** the lint and key check run, and components render with a test language
 - **Then** every new text ("Call in progress", Go back, "You're sharing", "Reconnecting…", "Camera in use by your current call", the leave-first texts, "Couldn't leave the call. Try again.") comes from a key that exists, none is hard-coded
@@ -397,7 +397,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-46: Sign out during a call, leaves first
 - **Covers:** AC-F17-16
 - **Level:** e2e
-- **File:** `tests/e2e/desktop/switch.spec.ts`
+- **File:** `apps/web/src/features/auth/sign-out-leaving.test.ts`
 - **Given** A browsing during a call, with the mini window available
 - **When** A signs out from the picture's menu
 - **Then** the other window sees A leave first, then A is signed out, and the small view and F16 windows are closed
@@ -413,7 +413,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-48: Bad link during a call changes nothing
 - **Covers:** AC-F17-11 (Security & privacy)
 - **Level:** security
-- **File:** `tests/e2e/desktop/security.spec.ts`
+- **File:** `tests/e2e/desktop/links.spec.ts`
 - **Given** A in a call and the F04 bad-link cases (wrong scheme, wrong host, bad code, over-long, script text)
 - **When** each is sent as a link
 - **Then** the same checks as AC-F04-11 refuse it, no pre-join opens, and the call and the small view are unchanged
@@ -429,7 +429,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 ### TC-F17-50: Nothing new to the server, nothing extra shown
 - **Covers:** AC-F17-02, AC-F17-04 (Security & privacy)
 - **Level:** integration
-- **File:** `apps/web/src/app/CallHost.integration.test.tsx`
+- **File:** `git diff origin/main...HEAD (no apps/api or packages/contracts file)`
 - **Given** a recorded list of network calls during a call
 - **When** the person browses, uses the small view buttons and goes back
 - **Then** only existing F02/F15 calls are made (no new endpoint), and the small view's texts and video are only those the full call shows (names, speaker video, title)

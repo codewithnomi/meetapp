@@ -37,7 +37,7 @@ Still open (test setup, not the app): Playwright sometimes reports "Worker teard
 | AC-F04-07 ring with no window | PASS | app-life.spec.ts TC-18 |
 | AC-F04-08 start at login, hidden | PASS | login-item.test.ts; app-life.spec.ts TC-20/21 |
 | AC-F04-09 login switch in Settings | PASS | GeneralSettingsPage.test.tsx; login-item.test.ts |
-| AC-F04-10 link opens pre-join | PASS | links.spec.ts TC-25/28/34 (in-call: waits for Meetings; Teams-style browsing is F17, D088) |
+| AC-F04-10 link opens pre-join | PASS | links.spec.ts TC-25/28/34 (in-call: waits for Meetings; Teams-style browsing is F17, D088) (in-call waiting superseded for signed-in people by F17, 2026-11-14; guests unchanged) |
 | AC-F04-11 bad links | PASS | links.test.ts; app-links.test.ts; links.spec.ts TC-31 |
 | AC-F04-12 copy link | PASS | meetings-api.test.tsx; links.spec.ts TC-34 |
 | AC-F04-20 pick status | PASS | status.spec.ts TC-44; StatusMenu.test.tsx; status integration tests |

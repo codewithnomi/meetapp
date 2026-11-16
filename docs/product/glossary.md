@@ -54,6 +54,8 @@ Words used in MeetApp's documents and code, in plain English.
 ## Calls while MeetApp isn't in front (F16)
 - **Ring window:** the small window above every app for an incoming call, while no MeetApp window is in front.
 - **Mini call window:** the small window above every app during a call or meeting, with the speaker's live video and the main buttons.
+- **Full call:** the call screen itself (F02, F15), with MeetApp's side menu beside it (F17).
+- **Small call view:** the small panel at the bottom right of the MeetApp window that shows the call while the person is on another screen (F17): who is talking, the time, mute, camera, Leave; one click shows the full call.
 - **Missed-call notification:** the Mac's own notification for a call nobody answered while MeetApp wasn't in front (needs a signed app, D080).
 
 ## Desktop app (F04)

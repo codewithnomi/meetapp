@@ -90,6 +90,12 @@ The 30-second job stops rings; the every-minute clean-up stops any ring older th
 - "Moving the call…" stays: the new device didn't connect within 30 seconds, so the old one stays in the call; try again.
 
 
+## Browse during a call (F17)
+- **Where is my call?** On another screen it runs in the small call view at the bottom right of MeetApp. Click its picture or Go back for the full call. The chat list says "Call in progress"; Meetings says "You're in …" with Go back.
+- **"Couldn't leave the call. Try again."** Leaving took more than 5 s (no connection to MeetApp). Nothing else happened; try again. Signing out never waits for this: it signs out anyway and the call is cleared.
+- **"Camera in use by your current call"** on a pre-join: the preview couldn't share the camera with the call. The camera choice still applies when joining.
+- **A link to another meeting during a call** opens its pre-join; Cancel goes back to the call, Leave call and join leaves first.
+
 ## Small call windows (F16)
 - **No ring window appears:** it shows only while no MeetApp window is in front (otherwise the call rings inside MeetApp), and only while MeetApp is running. Closing the window keeps MeetApp running in the menu bar, so calls still ring (F04); only Quit stops them.
 - **No Mac notification for a missed call:** development builds are signed only ad hoc (no Apple Developer certificate), and macOS refuses their notifications (D080). The chat still has the "Missed call" note. It works once the app is signed (not yet: D083).
