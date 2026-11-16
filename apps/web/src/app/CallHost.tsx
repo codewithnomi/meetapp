@@ -4,7 +4,7 @@
 // The pages' callbacks move between screens only while the call is full; a call that ends while hidden
 // leaves the person where they are, with a banner saying what happened (and Rejoin after a lost connection).
 import { Notice, SmallCallView } from "@meetapp/ui";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
@@ -17,6 +17,8 @@ import { LobbyPage } from "../pages/LobbyPage/index.ts";
 import { MeetingPage } from "../pages/MeetingPage/index.ts";
 
 const HOME = "/meetings";
+/** Statuses a lobby visit may move to without having ended. */
+const STILL_IN = new Set(["waiting", "admitted", "in_call"]);
 /** Where the call shows full. All of them: on being let in, the lobby's path still shows until it moves on. */
 const CALL_PATHS = new Set(["/meeting/lobby", "/meeting/call", "/call"]);
 
@@ -108,6 +110,24 @@ function useHostUpkeep(finished: boolean) {
   }, [finished]);
 }
 
+/**
+ * A lobby that ends (denied, timed out, removed) stops being the current call before the lobby page could
+ * report it, so the host reports it: the Ended screen if the lobby showed full, a banner otherwise (verify,
+ * bug H2).
+ */
+function useLobbyEnding() {
+  const { pathname } = useLocation();
+  const moves = useMoves(CALL_PATHS.has(pathname));
+  const status = useVisit((state) => state.visit?.status);
+  const was = useRef(status);
+  useEffect(() => {
+    const before = was.current;
+    was.current = status;
+    const visit = useVisit.getState().visit;
+    if (before === "waiting" && visit && !STILL_IN.has(visit.status)) moves.outcome(visit);
+  });
+}
+
 export function CallHost({ userName, onNavigate }: { userName: string; onNavigate: (screen: AppScreen) => void }) {
   const current = useCurrentCall();
   const { pathname } = useLocation();
@@ -118,6 +138,7 @@ export function CallHost({ userName, onNavigate }: { userName: string; onNavigat
   const setCorner = useCallCorner((state) => state.set);
   useEffect(() => setCorner(shown), [setCorner, shown]);
   useHostUpkeep(current !== undefined && !current.live && !full);
+  useLobbyEnding();
   // Let in while the lobby shows full: the host already shows the call, so its path follows.
   const fullPath = current?.fullPath;
   useEffect(() => {

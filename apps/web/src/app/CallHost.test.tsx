@@ -200,4 +200,17 @@ describe("CallHost", () => {
     expect(fake.preview).toContain(false);
     expect(fake.preview.at(-1)).toBe(true);
   });
+
+  it("TC-F17-15 [AC-F17-06, 07] a lobby that ends tells the person: Ended screen when full, banner when hidden (bug H2)", () => {
+    useVisit.getState().start(visit("waiting"));
+    app("/meeting/lobby");
+    act(() => useVisit.getState().update({ ...visit("denied") }));
+    expect(where()).toBe("/meeting/ended");
+    useVisit.getState().start(visit("waiting"));
+    act(() => go("/chat"));
+    act(() => useVisit.getState().update({ ...visit("timed_out") }));
+    expect(where()).toBe("/chat");
+    expect(useCallOutcome.getState().outcome?.status).toBe("timed_out");
+    expect(screen.getByRole("status")).toBeInTheDocument();
+  });
 });
