@@ -11,6 +11,8 @@ export interface CurrentCall {
   conversationId?: string;
   title: string;
   fullPath: "/meeting/call" | "/meeting/lobby" | "/call";
+  /** False for a chat call that was declined or not answered: its screen shows, but no call runs. */
+  live: boolean;
 }
 
 interface CallOutcomeState {
@@ -26,31 +28,37 @@ export const useCallOutcome = create<CallOutcomeState>((set) => ({
   clear: () => set({ outcome: undefined }),
 }));
 
-const IN = new Set(["admitted", "in_call"]);
+const IN_CALL_STATUSES = new Set(["admitted", "in_call"]);
 
 /** The current call from the stores' values (also read outside React, e.g. while waiting to leave). */
-export function currentCallOf(
+function currentCallOf(
   visit: Joined | undefined,
   chat: ChatCall | undefined,
-  ended: boolean,
+  outcome: Attendance | undefined,
 ): CurrentCall | undefined {
-  if (ended) return undefined;
-  if (chat && (chat.phase === "ringing" || chat.phase === "in_call"))
-    return { kind: "chat", conversationId: chat.conversationId, title: chat.title, fullPath: "/call" };
-  if (visit?.status === "waiting") return { kind: "meeting", title: visit.title, fullPath: "/meeting/lobby" };
-  if (visit && IN.has(visit.status)) return { kind: "meeting", title: visit.title, fullPath: "/meeting/call" };
+  // An ended call's outcome hides only that call, never a newer one (verify, bug H1).
+  if (outcome && visit && outcome.attendanceId === visit.attendanceId) return undefined;
+  if (chat) {
+    // Declined or unanswered: the Calling screen still shows, but the person is in no call (bug H3).
+    const live = chat.phase === "ringing" || chat.phase === "in_call";
+    return { kind: "chat", conversationId: chat.conversationId, title: chat.title, fullPath: "/call", live };
+  }
+  if (visit?.status === "waiting")
+    return { kind: "meeting", title: visit.title, fullPath: "/meeting/lobby", live: true };
+  if (visit && IN_CALL_STATUSES.has(visit.status))
+    return { kind: "meeting", title: visit.title, fullPath: "/meeting/call", live: true };
   return undefined;
 }
 
-/** True while this window is in a call, read now (outside React). */
+/** True while this window is really in a call (ringing, waiting or in it), read now (outside React). */
 export function inCallNow(): boolean {
-  const ended = useCallOutcome.getState().outcome !== undefined;
-  return currentCallOf(useVisit.getState().visit, useChatCall.getState().call, ended) !== undefined;
+  const call = currentCallOf(useVisit.getState().visit, useChatCall.getState().call, useCallOutcome.getState().outcome);
+  return call?.live ?? false;
 }
 
 export function useCurrentCall(): CurrentCall | undefined {
   const visit = useVisit((state) => state.visit);
   const chat = useChatCall((state) => state.call);
-  const ended = useCallOutcome((state) => state.outcome !== undefined);
-  return currentCallOf(visit, chat, ended);
+  const outcome = useCallOutcome((state) => state.outcome);
+  return currentCallOf(visit, chat, outcome);
 }

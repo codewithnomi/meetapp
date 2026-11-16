@@ -63,6 +63,7 @@ export function useRejoin() {
         method: "POST",
         headers: ticketHeader(old.ticket),
       }),
-    onSuccess: (joined) => start(joined),
+    // The same meeting again: it keeps the address it was opened with (verify, bug M2).
+    onSuccess: (joined) => start(joined, useVisit.getState().address),
   });
 }

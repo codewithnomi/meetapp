@@ -10,7 +10,7 @@ import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
 import { LeaveFirstDialog, useCallScreen, useSmallCallView } from "../features/call-windows/index.ts";
 import { inCallNow, useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
-import { outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
+import { leaveMeeting, outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
 import { CallNavRail, type AppScreen } from "../features/workspaces/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
 import { LobbyPage } from "../pages/LobbyPage/index.ts";
@@ -61,7 +61,11 @@ function OutcomeBanner() {
   const rejoin = useRejoin();
   if (!outcome) return null;
   const which = outcomeOf(outcome);
-  const dismiss = () => (clear(), end());
+  // Ends only the visit this outcome belongs to, never a newer call (verify, bug H1).
+  const dismiss = () => {
+    if (visit?.attendanceId === outcome.attendanceId) end();
+    clear();
+  };
   const again = () =>
     visit &&
     rejoin.mutate(visit, {
@@ -85,6 +89,25 @@ function OutcomeBanner() {
   );
 }
 
+/**
+ * What the host keeps up besides drawing: leave first and sign-out (AC-F17-09, 12, 16) ask the calls' own
+ * stores through one shared helper; a declined or unanswered chat call left behind on another screen
+ * closes, as its Close does (verify, bug H3).
+ */
+function useHostUpkeep(finished: boolean) {
+  const register = useCallCorner((state) => state.register);
+  useEffect(() => {
+    register({ inCall: inCallNow, leave: () => useCallScreen.getState().controls?.leave() });
+    return () => register(undefined);
+  }, [register]);
+  useEffect(() => {
+    if (!finished) return;
+    void leaveMeeting(useVisit.getState().visit);
+    useChatCall.getState().end();
+    useVisit.getState().end();
+  }, [finished]);
+}
+
 export function CallHost({ userName, onNavigate }: { userName: string; onNavigate: (screen: AppScreen) => void }) {
   const current = useCurrentCall();
   const { pathname } = useLocation();
@@ -94,12 +117,7 @@ export function CallHost({ userName, onNavigate }: { userName: string; onNavigat
   const shown = current !== undefined && !full && small !== undefined;
   const setCorner = useCallCorner((state) => state.set);
   useEffect(() => setCorner(shown), [setCorner, shown]);
-  // Leave first and sign-out (AC-F17-09, 12, 16) ask the calls' own stores, through one shared helper.
-  const register = useCallCorner((state) => state.register);
-  useEffect(() => {
-    register({ inCall: inCallNow, leave: () => useCallScreen.getState().controls?.leave() });
-    return () => register(undefined);
-  }, [register]);
+  useHostUpkeep(current !== undefined && !current.live && !full);
   // Let in while the lobby shows full: the host already shows the call, so its path follows.
   const fullPath = current?.fullPath;
   useEffect(() => {

@@ -4,7 +4,7 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { useVisit, type Joined } from "../meetings/index.ts";
 import { useChatCall, type ChatCall } from "./chat-call.ts";
-import { useCallOutcome, useCurrentCall } from "./current-call.ts";
+import { inCallNow, useCallOutcome, useCurrentCall } from "./current-call.ts";
 
 const visit = (status: Joined["status"]): Joined => ({
   attendanceId: "00000000-0000-4000-8000-000000000001",
@@ -35,12 +35,18 @@ describe("useCurrentCall", () => {
   it("TC-F17-21 [AC-F17-08] a meeting, a lobby, a chat call, and nothing without a call", () => {
     expect(current()).toBeUndefined();
     useVisit.getState().start(visit("admitted"));
-    expect(current()).toEqual({ kind: "meeting", title: "Design review", fullPath: "/meeting/call" });
+    expect(current()).toEqual({ kind: "meeting", title: "Design review", fullPath: "/meeting/call", live: true });
     useVisit.getState().start(visit("waiting"));
-    expect(current()).toEqual({ kind: "meeting", title: "Design review", fullPath: "/meeting/lobby" });
+    expect(current()).toEqual({ kind: "meeting", title: "Design review", fullPath: "/meeting/lobby", live: true });
     useVisit.getState().start(visit("admitted"));
     useChatCall.setState({ call: chat("in_call") });
-    expect(current()).toEqual({ kind: "chat", conversationId: "conv1", title: "Release team", fullPath: "/call" });
+    expect(current()).toEqual({
+      kind: "chat",
+      conversationId: "conv1",
+      title: "Release team",
+      fullPath: "/call",
+      live: true,
+    });
     useChatCall.setState({ call: chat("ringing") });
     expect(current()?.fullPath).toBe("/call");
   });
@@ -52,5 +58,21 @@ describe("useCurrentCall", () => {
     useVisit.getState().start(visit("left"));
     useCallOutcome.getState().clear();
     expect(current()).toBeUndefined();
+  });
+
+  it("TC-F17-21 [AC-F17-08] an old call's outcome never hides a newer call (verify, bug H1)", () => {
+    useCallOutcome.getState().set({ ...visit("left"), leftReason: "ended" });
+    useVisit.getState().start({ ...visit("admitted"), attendanceId: "00000000-0000-4000-8000-000000000002" });
+    expect(current()?.fullPath).toBe("/meeting/call");
+    expect(inCallNow()).toBe(true);
+  });
+
+  it("TC-F17-21 [AC-F17-09] a declined or unanswered chat call shows its screen but is no live call (bug H3)", () => {
+    useVisit.getState().start(visit("admitted"));
+    for (const phase of ["declined", "no_answer"] as const) {
+      useChatCall.setState({ call: chat(phase) });
+      expect(current()).toMatchObject({ kind: "chat", fullPath: "/call", live: false });
+      expect(inCallNow()).toBe(false);
+    }
   });
 });
