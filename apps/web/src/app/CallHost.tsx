@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
 import { LeaveFirstDialog, useCallScreen, useSmallCallView } from "../features/call-windows/index.ts";
-import { inCallNow, useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
+import { cancelRing, inCallNow, useCallOutcome, useChatCall, useCurrentCall } from "../features/calls/index.ts";
 import { leaveMeeting, outcomeOf, useRejoin, useVisit, type Attendance } from "../features/meetings/index.ts";
 import { CallNavRail, type AppScreen } from "../features/workspaces/index.ts";
 import { ChatCallPage } from "../pages/ChatCallPage/index.ts";
@@ -80,7 +80,8 @@ function OutcomeBanner() {
         icon={which === "lost" ? "signal" : "info"}
         title={t(`meetings.ended.${which}.title`)}
         action={
-          which === "lost" && visit && !rejoin.isPending
+          // Rejoin only the call this outcome belongs to, never a newer one (re-check, M-B).
+          which === "lost" && visit?.attendanceId === outcome.attendanceId && !rejoin.isPending
             ? { label: t("meetings.ended.rejoin"), onClick: again }
             : { label: t("meetings.call.dismiss"), onClick: dismiss }
         }
@@ -95,6 +96,9 @@ function OutcomeBanner() {
 function leaveNow() {
   const controls = useCallScreen.getState().controls;
   if (controls) return controls.leave();
+  // A chat call still ringing stops ringing the others too, as its Cancel does.
+  const chat = useChatCall.getState().call;
+  if (chat?.phase === "ringing") void cancelRing(chat.callId).catch(() => undefined);
   void leaveMeeting(useVisit.getState().visit);
   useChatCall.getState().end();
   useVisit.getState().end();

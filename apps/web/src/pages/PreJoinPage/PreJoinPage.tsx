@@ -69,12 +69,13 @@ function useJoinSubmit({ meeting, userName, onJoined, inCall }: PreJoinPageProps
   const [leaving, setLeaving] = useState<"no" | "yes" | "failed">("no");
   // Leaving the pre-join while "Leave call and join" waits cancels the join (verify, M5).
   const shown = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Set again on every mount: React's development double-mount runs the clean-up once.
+    shown.current = true;
+    return () => {
       shown.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   const [guestName, setGuestName] = useState("");
   const [nameError, setNameError] = useState<string>();
   const guest = userName === undefined;
