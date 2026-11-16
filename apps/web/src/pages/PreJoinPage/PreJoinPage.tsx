@@ -3,7 +3,7 @@
 // whether the person goes straight in or waits in the lobby, for guests their name (1–60 characters)
 // and the Terms sentence as plain text (D051), then Join now and Cancel.
 import { Button, Input, Notice } from "@meetapp/ui";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import {
   meetingErrorText,
@@ -67,6 +67,14 @@ function useJoinSubmit({ meeting, userName, onJoined, inCall }: PreJoinPageProps
   const { t } = useTranslation();
   const join = useJoinMeeting();
   const [leaving, setLeaving] = useState<"no" | "yes" | "failed">("no");
+  // Leaving the pre-join while "Leave call and join" waits cancels the join (verify, M5).
+  const shown = useRef(true);
+  useEffect(
+    () => () => {
+      shown.current = false;
+    },
+    [],
+  );
   const [guestName, setGuestName] = useState("");
   const [nameError, setNameError] = useState<string>();
   const guest = userName === undefined;
@@ -85,7 +93,7 @@ function useJoinSubmit({ meeting, userName, onJoined, inCall }: PreJoinPageProps
     if (!inCall) return joinNow();
     // F17: leave the current call first, then join (AC-F17-12).
     setLeaving("yes");
-    void leaveCallAndRun(joinNow).then((left) => setLeaving(left ? "no" : "failed"));
+    void leaveCallAndRun(() => shown.current && joinNow()).then((left) => setLeaving(left ? "no" : "failed"));
   };
   return { join, leaving, guest, guestName, setGuestName, nameError, submit };
 }

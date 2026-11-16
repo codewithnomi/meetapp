@@ -213,4 +213,12 @@ describe("CallHost", () => {
     expect(useCallOutcome.getState().outcome?.status).toBe("timed_out");
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
+
+  it("TC-F17-23 [AC-F17-09] Leave before the call screen shows its buttons ends the call at once (verify, M1)", () => {
+    useVisit.getState().start(visit("waiting"));
+    app("/chat");
+    useCallScreen.getState().clear();
+    act(() => useCallCorner.getState().access?.leave());
+    expect(useVisit.getState().visit).toBeUndefined();
+  });
 });

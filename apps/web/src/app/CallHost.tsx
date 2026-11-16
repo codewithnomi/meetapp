@@ -91,6 +91,15 @@ function OutcomeBanner() {
   );
 }
 
+/** The call screen's own Leave; before it has shown its buttons, the call is ended directly (verify, M1). */
+function leaveNow() {
+  const controls = useCallScreen.getState().controls;
+  if (controls) return controls.leave();
+  void leaveMeeting(useVisit.getState().visit);
+  useChatCall.getState().end();
+  useVisit.getState().end();
+}
+
 /**
  * What the host keeps up besides drawing: leave first and sign-out (AC-F17-09, 12, 16) ask the calls' own
  * stores through one shared helper; a declined or unanswered chat call left behind on another screen
@@ -99,7 +108,7 @@ function OutcomeBanner() {
 function useHostUpkeep(finished: boolean) {
   const register = useCallCorner((state) => state.register);
   useEffect(() => {
-    register({ inCall: inCallNow, leave: () => useCallScreen.getState().controls?.leave() });
+    register({ inCall: inCallNow, leave: leaveNow });
     return () => register(undefined);
   }, [register]);
   useEffect(() => {

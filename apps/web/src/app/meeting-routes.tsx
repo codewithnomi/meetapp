@@ -82,8 +82,8 @@ function PreJoinRoute({ back, userName }: { back: string; userName: string | und
       meeting={meeting}
       userName={userName}
       inCall={current?.title}
-      // During a call Cancel goes back to where the person was; the call is untouched (AC-F17-12).
-      onCancel={() => void (current ? navigate(-1) : navigate(back))}
+      // During a call Cancel shows the call again, untouched (AC-F17-12); the history may be empty (M4).
+      onCancel={() => void navigate(current ? current.fullPath : back)}
       onJoined={afterJoin}
     />
   );
