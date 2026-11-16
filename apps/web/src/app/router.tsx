@@ -30,6 +30,7 @@ import { RequestsPage } from "../pages/RequestsPage/index.ts";
 import { SignInPage } from "../pages/SignInPage/index.ts";
 import { TermsPage } from "../pages/TermsPage/index.ts";
 import { useFocusOnScreenChange } from "./focus.ts";
+import { useCallsFollowSession } from "./session-calls.ts";
 import { CallPlace, GUEST_PLACES, MEMBER_PLACES, meetingRoutes, memberMeetingRoutes } from "./meeting-routes.tsx";
 import { settingsRoutes } from "./settings-routes.tsx";
 
@@ -179,7 +180,9 @@ function SignedInRoutes() {
 export function AppRoutes() {
   const session = useSession();
   useFocusOnScreenChange();
-  if (session.isPending) return <Waiting />;
+  // F17: a change of who is signed in clears the old person's call first.
+  const settled = useCallsFollowSession(session.data?.id);
+  if (session.isPending || !settled) return <Waiting />;
   // Only when it was never known who is signed in: a failed check in the background (a window getting
   // focus on a busy computer) keeps the app as it is instead of rebuilding every screen.
   if (session.isError && session.data === undefined)

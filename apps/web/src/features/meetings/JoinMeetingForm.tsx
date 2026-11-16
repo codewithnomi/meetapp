@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { ActionErrorNotice } from "../auth/index.ts";
 import { useOpenedLink } from "../desktop-app/index.ts";
-import { idAddress, linkAddress } from "./meeting-address.ts";
+import { addressKey, idAddress, linkAddress } from "./meeting-address.ts";
 import { meetingErrorText } from "./meeting-errors.ts";
 import { useFindMeeting, type PreJoinState } from "./meetings-api.ts";
 
@@ -92,13 +92,13 @@ function useJoinForm(onFound: (found: PreJoinState) => void) {
   const submit = (event?: FormEvent) => {
     event?.preventDefault();
     const address = way === "link" ? linkAddress(values.link) : idAddress(values.meetingNumber, values.passcode);
-    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: JSON.stringify(address) }) });
+    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: addressKey(address) }) });
   };
   useOpenedLink((link) => {
     setWay("link");
     setValues((old) => ({ ...old, link }));
     const address = linkAddress(link);
-    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: JSON.stringify(address) }) });
+    find.mutate(address, { onSuccess: (found) => onFound({ ...found, address: addressKey(address) }) });
   });
   return { way, setWay, values, set, find, submit };
 }

@@ -58,7 +58,10 @@ The host gives the pages callbacks that change screens **only while the full cal
 
 ### 3.6 Window close, sign-out, F16 (AC-F17-14, 16, 19)
 - F04 hides the window on close and F16 shows the mini window when MeetApp isn't in front; the host keeps the call, so only tests are new.
-- Sign out during a call: first the call's Leave, wait until the call is over (at most 5 s), then sign out; otherwise a banner says "Couldn't leave the call. Try again." and the person stays signed in. Built as `useSignOutLeavingFirst` in `features/auth`, reading `features/call-corner`, which the host keeps up to date with "in a call" and the call's Leave (so the sign-in code and the status menu need not depend on the calls).
+- Sign out and Sign out everywhere during a call: first the call's Leave, waiting until the call is over (at most 5 s), then sign out, whatever happened: a person must always be able to sign out (security review). Built as `useSignOutLeavingFirst` and `useSignOutEverywhereLeavingFirst` in `features/auth`, through the one shared `leaveAndWait` in `features/call-corner` (the host registers how to tell "in a call" and how to leave).
+- **A call belongs to the person signed in (security review):** whenever that changes, any way (Sign out, Sign out everywhere, a session that ended or was ended elsewhere, someone else signing in), `app/session-calls.ts` leaves the meeting (best effort) and clears the visit with its ticket, the chat call, the outcome and the call-screen state, showing the waiting screen until done, so no screen shows the old call to the next person.
+- The address kept to know the same meeting again is a fingerprint (`addressKey`), never the link or passcode itself.
+- Switching workspace during a call (Low, accepted): the call is the person's own; it keeps running over the other workspace's screens, as in Teams.
 - F16's "back to the call" (`use-call-windows`) now also shows the current call full: it navigates to `useCurrentCall().fullPath` (new `toPath` route callback) as the desktop app brings the window forward.
 
 ## Data stored

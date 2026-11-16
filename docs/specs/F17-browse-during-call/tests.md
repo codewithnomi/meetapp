@@ -402,13 +402,13 @@ Test names must include the TC and AC IDs, e.g. `TC-F17-08 [AC-F17-03] the call 
 - **When** A signs out from the picture's menu
 - **Then** the other window sees A leave first, then A is signed out, and the small view and F16 windows are closed
 
-### TC-F17-47: Sign out when leaving is slow
+### TC-F17-47: Sign out when leaving is slow (changed at verify: sign-out always completes; TC-F17-47b: any change of who is signed in clears the call, `apps/web/src/app/session-calls.test.tsx`)
 - **Covers:** AC-F17-16
 - **Level:** security
 - **File:** `apps/web/src/features/auth/sign-out-leaving.test.tsx`
 - **Given** `controls.leave` never finishes (fake clock)
 - **When** the person signs out
-- **Then** after 5 s "Couldn't leave the call. Try again." shows and the person is not signed out half-way (no open call without a session)
+- **Then** after 5 s the person is signed out anyway, and the session change clears what is left of the call (no open call without a session)
 
 ### TC-F17-48: Bad link during a call changes nothing
 - **Covers:** AC-F17-11 (Security & privacy)
