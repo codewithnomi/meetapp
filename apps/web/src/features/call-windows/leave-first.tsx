@@ -71,9 +71,15 @@ export function LeaveFirstDialog() {
         <Button variant="ghost" disabled={leaving} onClick={close}>
           {t("calls.leaveFirst.cancel")}
         </Button>
-        <Button variant="danger" disabled={leaving} onClick={() => void leaveThen(ask.then)}>
-          {t(ask.kind === "start" ? "calls.leaveFirst.leaveStart" : "calls.leaveFirst.leaveJoin")}
-        </Button>
+        {leaving ? (
+          <Button variant="danger" loading loadingLabel={t("calls.leaveFirst.leaving")}>
+            {t(ask.kind === "start" ? "calls.leaveFirst.leaveStart" : "calls.leaveFirst.leaveJoin")}
+          </Button>
+        ) : (
+          <Button variant="danger" onClick={() => void leaveThen(ask.then)}>
+            {t(ask.kind === "start" ? "calls.leaveFirst.leaveStart" : "calls.leaveFirst.leaveJoin")}
+          </Button>
+        )}
       </div>
     </Dialog>
   );

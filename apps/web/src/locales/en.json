@@ -1311,7 +1311,8 @@
       "leaveStart": "Leave call and start",
       "leaveJoin": "Leave call and join",
       "cancel": "Cancel",
-      "failed": "Couldn't leave the call. Try again."
+      "failed": "Couldn't leave the call. Try again.",
+      "leaving": "Leaving the call…"
     }
   },
   "devices": {

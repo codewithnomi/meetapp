@@ -88,7 +88,7 @@ describe("leave first", () => {
     ask("join", then);
     await userEvent.click(screen.getByRole("button", { name: "Leave call and join" }));
     expect(leave).toHaveBeenCalledOnce();
-    expect(screen.getByRole("button", { name: "Leave call and join" })).toBeDisabled();
+    expect(screen.getByText("Leaving the call…")).toBeInTheDocument();
     expect(then).not.toHaveBeenCalled();
     await vi.waitFor(() => expect(then).toHaveBeenCalledOnce());
     expect(screen.queryByRole("dialog")).toBeNull();

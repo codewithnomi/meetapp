@@ -4,7 +4,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router";
 
-export const SCREEN_TITLE = "main:not([data-call-host][hidden] *) h1";
+const SCREEN_TITLE = "main:not([data-call-host][hidden] *) h1";
 
 export function useFocusOnScreenChange(): void {
   const { pathname } = useLocation();

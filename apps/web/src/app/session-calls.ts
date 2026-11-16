@@ -9,7 +9,7 @@ import { useCallScreen } from "../features/call-windows/index.ts";
 import { useCallOutcome, useChatCall } from "../features/calls/index.ts";
 import { leaveMeeting, useVisit } from "../features/meetings/index.ts";
 
-export function clearCalls(): void {
+function clearCalls(): void {
   void leaveMeeting(useVisit.getState().visit);
   useVisit.getState().end();
   useChatCall.setState({ call: undefined, left: undefined, backTo: undefined });
