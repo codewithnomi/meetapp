@@ -4,7 +4,7 @@
 // The pages' callbacks move between screens only while the call is full; a call that ends while hidden
 // leaves the person where they are, with a banner saying what happened (and Rejoin after a lost connection).
 import { Notice, SmallCallView } from "@meetapp/ui";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
@@ -35,7 +35,9 @@ function useMoves(full: boolean) {
   };
 }
 
-function Hosted({ full, userName }: { full: boolean; userName: string }) {
+// Drawn again only when its own props change: the call screen publishes its state to a store the host reads,
+// so redrawing it with every host redraw would never stop.
+const Hosted = memo(function Hosted({ full, userName }: { full: boolean; userName: string }) {
   const moves = useMoves(full);
   const chat = useChatCall((state) => state.call);
   const visit = useVisit((state) => state.visit);
@@ -51,7 +53,7 @@ function Hosted({ full, userName }: { full: boolean; userName: string }) {
       />
     );
   return <MeetingPage hosted onLeft={moves.toHome} onOutcome={moves.outcome} />;
-}
+});
 
 /** What happened to a call that ended while another screen showed (AC-F17-06). */
 function OutcomeBanner() {
