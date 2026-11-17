@@ -180,7 +180,7 @@ export function ChatsPage({ onNavigate }: ChatsPageProps) {
   };
   return (
     <WorkspaceShell screen="chat" onNavigate={onNavigate}>
-      <div className="grid h-screen min-h-0 grid-cols-1 md:grid-cols-[360px_1fr]">
+      <div className="grid h-[calc(100vh-var(--corner-room,0px))] min-h-0 grid-cols-1 md:grid-cols-[360px_1fr]">
         <ChatList
           {...listProps(t, {
             items,

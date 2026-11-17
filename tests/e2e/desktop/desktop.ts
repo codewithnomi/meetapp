@@ -102,7 +102,8 @@ export async function launch(
   if (loadServer) env["LIVEKIT_PORT"] = loadServer;
   for (const [key, value] of Object.entries(process.env))
     if (value !== undefined && !(key in env) && !LEFT_OUT.has(key)) env[key] = value;
-  const app = await _electron.launch({ args: [DESKTOP, ...switches], cwd: DESKTOP, env });
+  // Silent on the speakers (test beeps, ringtones): the app still plays sound, so audio checks still work.
+  const app = await _electron.launch({ args: [DESKTOP, "--mute-audio", ...switches], cwd: DESKTOP, env });
   started.add(app);
   const page = await app.firstWindow();
   await page.waitForLoadState("domcontentloaded");

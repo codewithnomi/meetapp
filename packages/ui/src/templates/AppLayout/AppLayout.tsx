@@ -5,8 +5,11 @@ import type { ReactNode } from "react";
 import { cx } from "../../lib/cx.ts";
 import { NavRail, type NavFold, type NavItem } from "../../organisms/NavRail/index.ts";
 
-/** Room below the content for the small call view: its height (about 200 px) and 16 px on each side. */
-const CORNER_ROOM = "pb-58";
+/**
+ * Room below the content for the small call view: its height (about 200 px) and 16 px on each side. Screens
+ * that are one window tall (Chat) subtract `--corner-room` from their height so nothing sits under the view.
+ */
+const CORNER_ROOM = "pb-58 [--corner-room:--spacing(58)]";
 
 /** One menu item (kept under its F01 name for the pages). */
 export type AppNavItem = NavItem;
