@@ -1,8 +1,9 @@
 // The routes of a visit to a meeting (F02): pre-join, lobby, the call and how it ended. Guests get the
 // screens on their own paths; for signed-in people the call host shows the lobby and the call (F17 D091).
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, Route, useLocation, useNavigate } from "react-router";
-import { useCallOutcome, useCurrentCall } from "../features/calls/index.ts";
+import { useCurrentCall } from "../features/calls/index.ts";
 import {
   meetingErrorText,
   useRejoin,
@@ -32,12 +33,14 @@ export function meetingRoutes({ home, join, userName }: { home: string; join: st
 
 /**
  * F17: for signed-in people the call host shows the lobby and the call (design.md 3.1); their paths only
- * say "show it full". Without a call they lead back to Meetings.
+ * say "show it full". Opened without a call (e.g. after a reload) they lead back to Meetings. A call that
+ * ends here moves on by itself (the Ended screen, the chat, Meetings): the call stops being current before
+ * that move lands, so redirecting then would send the person to Meetings instead.
  */
 export function CallPlace() {
   const current = useCurrentCall();
-  const ended = useCallOutcome((state) => state.outcome !== undefined);
-  return current || ended ? null : <Navigate to="/meetings" replace />;
+  const [openedWithCall] = useState(() => current !== undefined);
+  return openedWithCall ? null : <Navigate to="/meetings" replace />;
 }
 
 export function memberMeetingRoutes({

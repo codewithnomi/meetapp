@@ -4,7 +4,7 @@
 // The pages' callbacks move between screens only while the call is full; a call that ends while hidden
 // leaves the person where they are, with a banner saying what happened (and Rejoin after a lost connection).
 import { Notice, SmallCallView } from "@meetapp/ui";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router";
 import { useCallCorner } from "../features/call-corner/index.ts";
@@ -22,16 +22,24 @@ const STILL_IN = new Set(["waiting", "admitted", "in_call"]);
 /** Where the call shows full. All of them: on being let in, the lobby's path still shows until it moves on. */
 const CALL_PATHS = new Set(["/meeting/lobby", "/meeting/call", "/call"]);
 
-/** Callbacks for the hosted page: they move between screens only while the call shows full. */
+/**
+ * Callbacks for the hosted page: they move between screens only while the call shows full. Whether it does
+ * is read when they run: the call keeps the callbacks it was given when it connected, often before it showed.
+ */
 function useMoves(full: boolean) {
   const navigate = useNavigate();
   const keep = useCallOutcome((state) => state.set);
-  const only = (move: () => void) => () => (full ? move() : undefined);
+  const shows = useRef(full);
+  useLayoutEffect(() => {
+    shows.current = full;
+  }, [full]);
+  const only = (move: () => void) => () => (shows.current ? move() : undefined);
   return {
     toCall: only(() => void navigate("/meeting/call")),
     toHome: only(() => void navigate(HOME)),
     toChat: only(() => void navigate("/chat")),
-    outcome: (outcome: Attendance) => (full ? void navigate("/meeting/ended", { state: outcome }) : keep(outcome)),
+    outcome: (outcome: Attendance) =>
+      shows.current ? void navigate("/meeting/ended", { state: outcome }) : keep(outcome),
   };
 }
 
