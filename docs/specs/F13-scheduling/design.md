@@ -1,7 +1,7 @@
 ---
 feature: F13
 title: Scheduling & calendar
-status: draft
+status: approved
 updated: 2026-11-20
 ---
 
