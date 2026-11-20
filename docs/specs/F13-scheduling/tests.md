@@ -501,13 +501,9 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **When** they open the calendar, and the meeting link
 - **Then** the calendar does not list it unless they were invited as a member; the link opens the F02 pre-join
 
-### TC-F13-61: Chat before the meeting
-- **Covers:** AC-F13-04
-- **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.chat.test.ts`
-- **Given** an invited member, an uninvited member
-- **When** each opens the meeting chat before it starts, after being uninvited, and after cancellation
-- **Then** the invited member can, the others get 404
+### TC-F13-61: (moved out, D096)
+- **Covers:** none in F13
+- **Note:** chat before the meeting for invited members moved to its own follow-up feature (owner, 2026-11-20, D096); its test case goes with it.
 
 ### TC-F13-62: Reminders job
 - **Covers:** AC-F13-21, AC-F13-22
@@ -684,7 +680,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 | AC-F13-01 | TC-F13-16, TC-F13-18, TC-F13-19, TC-F13-20, TC-F13-67, TC-F13-75, TC-F13-81 |
 | AC-F13-02 | TC-F13-03, TC-F13-17, TC-F13-21, TC-F13-43, TC-F13-81 |
 | AC-F13-03 | TC-F13-22, TC-F13-76 |
-| AC-F13-04 | TC-F13-24, TC-F13-61, TC-F13-75 |
+| AC-F13-04 | TC-F13-24, TC-F13-75 |
 | AC-F13-05 | TC-F13-25, TC-F13-81 |
 | AC-F13-06 | TC-F13-23, TC-F13-81 |
 | AC-F13-07 | TC-F13-10, TC-F13-14, TC-F13-26, TC-F13-27, TC-F13-76, TC-F13-79 |

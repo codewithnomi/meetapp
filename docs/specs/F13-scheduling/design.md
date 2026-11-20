@@ -42,7 +42,7 @@ New module `apps/api/src/modules/scheduling/` (routes → service → repository
 - **Live line** (`user:<id>` channel, D064): `{ t: "calendar", meetingId, change: "added" | "changed" | "removed" }` to organizer and member invitees; `{ t: "reminder", meetingId, originalStart, kind }` when a reminder is due; `{ t: "reminder-dismissed", … }` so other windows/devices close the card.
 - **Jobs** (BullMQ queue `scheduling`): a "reminders" job every minute finds occurrences starting in 15 minutes or now (window of the last minute, so a restart misses nothing) and sends `reminder` to members who haven't declined, haven't dismissed, and aren't in Do not disturb (the app decides DND, F04). All-day occurrences get one reminder at 09:00 in the person's own time zone (the app reports its zone when the line connects), never 15 minutes before 00:00 (AC-F13-07). A daily "privacy sweep" (AC-F13-30).
 - **Emails** (existing outbox, `apps/api/src/emails`): new templates `meeting-invite`, `meeting-update`, `meeting-cancel`, each with text + HTML and an `.ics` attachment built with **ical-generator**: `METHOD:REQUEST` (invite/update) or `CANCEL`, stable `UID` = meeting id, `SEQUENCE`, `DTSTART;TZID`, `RRULE`, `EXDATE`s for cancelled occurrences and `RECURRENCE-ID` events for changed ones, `ORGANIZER`, `ATTENDEE;RSVP=FALSE` (answers aren't tracked by email, AC-F13-16). Footer: who invited you and why (AC-F13-30). The provider sends the calendar file as nodemailer's `icalEvent` (the calendar part plus `invite.ics`). Times in the file are written in the meeting's own zone (TZID), never the server's. The outbox gains an optional result callback: after the queue's last of its 5 tries the invitee row is marked `failed` (or `sent`); the details panel shows "Some invites couldn't be sent", and Retry re-queues only `failed` rows.
-- **Meeting chat before the meeting (AC-F13-04):** invited members are added to the F03 meeting chat when invited, and removed when uninvited or when the meeting is cancelled.
+- **Meeting chat (AC-F13-04):** unchanged from F03 (opens for people who joined the meeting). Chat before the meeting for invited members is a follow-up feature (D096).
 - Member invitees also get a corner card through the live line `{ t: "invited", … }` (AC-F13-17), controlled by a new notification setting "Meeting invites" (F04 settings).
 
 ## Edge cases & errors
@@ -76,7 +76,7 @@ None now: Mailpit locally (free). Online later, the email service's free tier (e
 | AC | Level |
 |---|---|
 | 01, 02, 05, 06 | component + desktop |
-| 03, 04, 23 | component + desktop; 04's chat access: integration |
+| 03, 04, 23 | component + desktop |
 | 07, 08, 10, 11 | unit (rules, validation, all-day reminder) + component; 10 also integration (server checks) |
 | 09, 12, 13, 14 | integration + desktop (09); 13 includes F02 `kind` handling |
 | 15 | unit (.ics) + integration (Mailpit) |

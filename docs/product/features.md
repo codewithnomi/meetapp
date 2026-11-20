@@ -99,6 +99,7 @@ As in Teams: during a call or meeting, the person can open Chat, Meetings, Setti
 - Invite people by email; they get a calendar invite (works with Google Calendar, Outlook, Apple Calendar)
 - Upcoming meetings list on the home screen, with reminders
 - Later: two-way sync with Google/Outlook calendars
+- Follow-up right after F13 (D096): invited people can read and write in the meeting chat before the meeting, as in Teams
 - **Depends on:** F01, F02 · **Size:** medium
 
 ---

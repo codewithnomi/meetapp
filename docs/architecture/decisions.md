@@ -617,3 +617,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** a scheduled meeting is an F02 meeting (`kind: scheduled`) plus a schedule row; a repeat is one rule, expanded when the calendar is read (at most 1 year ahead), with single-occurrence changes stored separately. Invitees are their own table; external emails are encrypted.
 - **Why:** reuses all of F02 (link, lobby, roles, call); one rule matches the calendar standard and the .ics file, and a series without an end date needs no endless rows.
 - **Cost:** none.
+
+### D096: Meeting chat before the meeting is a follow-up to F13 (owner, 2026-11-20)
+- **Date:** 2026-11-20. **Status:** accepted (owner: "Later, own step").
+- **Decision:** F13 keeps F03's meeting chat rules (the chat opens for people who joined the meeting). Letting invited members read and write in a scheduled meeting's chat before it starts, as in Teams, becomes its own small feature right after F13.
+- **Why:** it changes the F03/F14 chat access rules (today built on joins), about 1–2 days; F13 finishes sooner without it.
+- **Cost:** none.
