@@ -8,3 +8,4 @@ export * from "./schema/meetings.ts";
 export * from "./schema/workspaces.ts";
 export * from "./schema/calls.ts";
 export * from "./schema/call-rings.ts";
+export * from "./schema/scheduling.ts";

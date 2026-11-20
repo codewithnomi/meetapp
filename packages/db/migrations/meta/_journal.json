@@ -78,6 +78,20 @@
       "when": 1793795778978,
       "tag": "0010_f04_status_and_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795176645645,
+      "tag": "0011_scheduled_meeting_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795176689350,
+      "tag": "0012_scheduling",
+      "breakpoints": true
     }
   ]
 }

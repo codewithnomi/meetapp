@@ -1,0 +1,1 @@
+ALTER TYPE "public"."meeting_kind" ADD VALUE 'scheduled';

@@ -6,7 +6,7 @@ import { user } from "./auth.ts";
 import { id, moment, timestamps } from "./columns.ts";
 import { workspaces } from "./workspaces.ts";
 
-export const meetingKind = pgEnum("meeting_kind", ["meet_now", "link"]);
+export const meetingKind = pgEnum("meeting_kind", ["meet_now", "link", "scheduled"]);
 /** Who skips the lobby, and who presents (AC-F02-16, AC-F02-36): the same three choices. */
 export const meetingAudience = pgEnum("meeting_audience", ["everyone", "workspace", "organizers"]);
 export const callEndReason = pgEnum("call_end_reason", ["last_left", "ended", "time_limit"]);

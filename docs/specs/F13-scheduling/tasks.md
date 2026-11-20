@@ -1,7 +1,7 @@
 ---
 feature: F13
 title: Scheduling & calendar
-status: approved
+status: in-progress
 updated: 2026-11-20
 ---
 
@@ -11,10 +11,10 @@ Small steps, done in order. Each step should be finishable and testable in one s
 Tick `[x]` when done and verified. Per D052/D092, each task runs only its own tests plus typecheck and lint;
 small UI tests and pictures run at `/spec-verify`, with only `calendar.spec.ts` of the desktop tests on the Mac.
 
-- [ ] **T1: Database.** Migration (via `db-migration`): `scheduled` added to `meeting_kind` in its own step; `meeting_schedules`, `meeting_occurrence_changes`, `meeting_invitees`, `meeting_invitee_answers`, `reminder_dismissals` (id, timestamps, indexed workspace_id, 250-invitee trigger); F02 code that switches on `kind` updated; expiry for scheduled meetings (D093). Covers: AC-F13-13. Tests: TC-F13-05, 64, 65.
+- [x] **T1: Database.** Migration (via `db-migration`): `scheduled` added to `meeting_kind` in its own step; `meeting_schedules`, `meeting_occurrence_changes`, `meeting_invitees`, `meeting_invitee_answers`, `reminder_dismissals` (id, timestamps, indexed workspace_id, 250-invitee trigger); F02 code that switches on `kind` updated; expiry for scheduled meetings (D093). Covers: AC-F13-13. Tests: TC-F13-05, plus `packages/db/src/scheduling.integration.test.ts` (migration on F02 data, invitee rules, 250 limit). TC-F13-64 and 65 need a scheduled meeting made by the API, so they run with T4.
 - [ ] **T2: Repeat rules.** Vet and add `rrule` (`add-dependency`); expansion in the meeting's zone, month ends, summer time, 1-year and 500 caps, occurrence changes applied. Covers: AC-F13-11, 02. Tests: TC-F13-01, 02, 03, 04.
 - [ ] **T3: Contracts and rules.** Zod schemas in `packages/contracts` (form limits, repeat, answers, scopes); permissions per role (`scheduling.permissions.ts`). Covers: AC-F13-10, 20, 26. Tests: TC-F13-10, 11, 12.
-- [ ] **T4: Create and read.** Scheduling module: create (meeting + schedule + invitees in one transaction, external emails encrypted), the calendar range endpoint, details endpoint; workspace scoping; 50/hour limit; Meet now and links stay out of the calendar. Covers: AC-F13-09, 10, 12, 13, 14, 26, 27. Tests: TC-F13-47, 48, 49, 57, 58, 59, 60, 66, 67.
+- [ ] **T4: Create and read.** Scheduling module: create (meeting + schedule + invitees in one transaction, external emails encrypted), the calendar range endpoint, details endpoint; workspace scoping; 50/hour limit; Meet now and links stay out of the calendar. Covers: AC-F13-09, 10, 12, 13, 14, 26, 27. Tests: TC-F13-47, 48, 49, 57, 58, 59, 60, 64, 65, 66, 67.
 - [ ] **T5: Calendar files and emails.** Vet and add `ical-generator`; .ics builder (REQUEST/CANCEL, SEQUENCE, RRULE, EXDATE, RECURRENCE-ID, escaping); invite/update/cancel templates with footer; email attachments in the provider; outbox result callback and `email_status`; jobs hold only the invitee id; atomic 1,000/hour reserve; Retry. Covers: AC-F13-15, 27, 28, 30, 31. Tests: TC-F13-06, 07, 08, 09, 50, 51, 52, 71, 72, 73.
 - [ ] **T6: Answer, update, cancel.** Answer (series or one occurrence), update with this/series (series time change resets answers), cancel with message; 403/404; live line `calendar` and `invited` events; meeting chat membership for invitees. Covers: AC-F13-04, 16, 17, 18, 19, 20. Tests: TC-F13-53, 54, 55, 56, 61.
 - [ ] **T7: Reminders and clean-up jobs.** Reminder job (15 min, start, all-day 09:00 in the person's zone, snooze, once per person, dismiss across devices), due reminders on start; organizer/invitee leaving the workspace; 30-day privacy sweep. Covers: AC-F13-21, 22, 29, 30. Tests: TC-F13-13, 14, 15, 62, 63, 69, 70, 74.
