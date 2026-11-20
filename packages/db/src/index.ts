@@ -25,7 +25,12 @@ export {
   featureFlags,
   livekitEvents,
   meetingCoOrganizers,
+  meetingInviteeAnswers,
+  meetingInvitees,
+  meetingOccurrenceChanges,
+  meetingSchedules,
   meetings,
+  reminderDismissals,
   invitations,
   joinRequests,
   memberRemovals,
@@ -42,6 +47,8 @@ export {
   type ChatPoll,
   type FeatureFlag,
   type Meeting,
+  type MeetingInvitee,
+  type MeetingSchedule,
   type User,
 } from "./schema.ts";
 export { SEED_FLAGS, clearSeed, seedDatabase } from "./seed.ts";

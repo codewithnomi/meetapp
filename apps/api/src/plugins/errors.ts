@@ -10,6 +10,8 @@ export class AppError extends Error {
   readonly status: number;
   readonly code: ErrorCode;
   readonly retryAfterSeconds: number | undefined;
+  /** Which fields are wrong, as for a schema error (F13: a start in the past). */
+  details: ErrorResponse["error"]["details"];
 
   constructor(status: number, code: ErrorCode, message: string, retryAfterSeconds?: number) {
     super(message);
@@ -17,6 +19,13 @@ export class AppError extends Error {
     this.code = code;
     this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+/** 400 naming one wrong field, as a schema error does (`/startsAt`). */
+export function fieldError(field: string, message: string): AppError {
+  const error = new AppError(400, "BAD_REQUEST", "The request is not valid.");
+  error.details = [{ path: `/${field}`, message }];
+  return error;
 }
 
 /** 429: too many tries; the message says how long to wait (AC-F01-13). */
@@ -35,7 +44,8 @@ function handleError(error: FastifyError | AppError, request: FastifyRequest, re
   if (error instanceof AppError) {
     const { retryAfterSeconds } = error;
     if (retryAfterSeconds === undefined) {
-      return send(reply, error.status, { code: error.code, message: error.message, requestId });
+      const details = error.details ? { details: error.details } : {};
+      return send(reply, error.status, { code: error.code, message: error.message, requestId, ...details });
     }
     reply.header("retry-after", String(retryAfterSeconds));
     return send(reply, error.status, { code: error.code, message: error.message, requestId, retryAfterSeconds });

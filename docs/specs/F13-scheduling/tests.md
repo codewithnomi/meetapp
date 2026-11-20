@@ -392,7 +392,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-47: Create a scheduled meeting
 - **Covers:** AC-F13-09, AC-F13-13
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.create.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a signed-in member and invitees (members and one outside email)
 - **When** they POST a valid meeting
 - **Then** 201; the F02 meeting has `kind: scheduled` and the sender as organizer; schedule, invitees and one email each are created in one transaction; it is in the organizer's and each member invitee's calendar within 5 seconds, with a live `calendar: added` event
@@ -400,7 +400,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-48: Server refuses wrong fields
 - **Covers:** AC-F13-10
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.create.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** the TC-F13-10 errors, sent straight to the API
 - **When** each is POSTed
 - **Then** 400 with the field named; no meeting, invitee or email exists afterwards
@@ -408,7 +408,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-49: 50 meetings an hour
 - **Covers:** AC-F13-14
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.limits.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a member who created 50 scheduled meetings this hour
 - **When** they create a 51st
 - **Then** 429 with the wait time; nothing created; counted with F02's limit
@@ -480,7 +480,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-58: Workspace scoping
 - **Covers:** AC-F13-26
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.security.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a meeting in workspace A and a member of both A and B not invited
 - **When** calendar and details are asked through workspace B's path and A's path
 - **Then** B's calendar never lists it; details through any path give 404; a calendar range over 42 days gives 400
@@ -488,7 +488,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-59: Invitee names visible, external emails only to organizers
 - **Covers:** AC-F13-26, AC-F13-27
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.security.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a meeting with members and outside invitees
 - **When** an invited member, a co-organizer and the organizer ask for the details
 - **Then** the invited member sees member names and answers but no outside address; organizers see the addresses; the response never contains the hash or the encrypted value
@@ -496,7 +496,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-60: External people are not in the app calendar
 - **Covers:** AC-F13-26
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.security.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** an outside invitee who later signs up with the same email
 - **When** they open the calendar, and the meeting link
 - **Then** the calendar does not list it unless they were invited as a member; the link opens the F02 pre-join
@@ -528,7 +528,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-64: F02 behaviour for scheduled meetings
 - **Covers:** AC-F13-13
 - **Level:** integration
-- **File:** `apps/api/src/modules/meetings/meetings.scheduled.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a scheduled meeting
 - **When** people join, the lobby is used, roles are set, 100 people join, the F02 expiry runs, `extendedExpiry` runs and the meetings list is read
 - **Then** lobby, roles and limits behave as F02; the scheduler is the organizer; `extendedExpiry` leaves it unchanged; the list handles the new `kind`
@@ -536,7 +536,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-65: Link works until 60 days after the last occurrence
 - **Covers:** AC-F13-13
 - **Level:** integration
-- **File:** `apps/api/src/modules/meetings/meetings.scheduled.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** an ended series and a series without end date, with a fake clock
 - **When** joining is tried at day 59 and day 61, and a year later
 - **Then** ended: works at 59, "expired" at 61; no end date: still works
@@ -544,7 +544,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-66: Meet now and meeting links stay out of the calendar
 - **Covers:** AC-F13-12
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.create.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** Meet now and Get a meeting link
 - **When** both are used as in F02, then the calendar is read
 - **Then** they work as before and are not in the calendar or the Upcoming list
@@ -552,7 +552,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-67: Calendar range and truncation
 - **Covers:** AC-F13-01, AC-F13-11
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.calendar.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
 - **Given** a daily series with no end date and many more
 - **When** the calendar is read for a day, a week, a 42-day month and a range beyond a year
 - **Then** correct occurrences with `canJoin`; `truncated: true` over 500; nothing beyond a year

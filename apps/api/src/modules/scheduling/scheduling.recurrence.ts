@@ -9,7 +9,7 @@ export type Weekday = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
 export interface Repeat {
   kind: RepeatKind;
   /** Weekly only; the start's weekday when empty. */
-  days?: Weekday[];
+  days?: Weekday[] | undefined;
 }
 
 export interface Series {

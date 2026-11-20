@@ -85,3 +85,72 @@ export type ScheduleBody = z.infer<typeof scheduleBodySchema>;
 export type ScheduleUpdateBody = z.infer<typeof scheduleUpdateBodySchema>;
 export type InviteAnswer = (typeof INVITE_ANSWERS)[number];
 export type RepeatKind = (typeof REPEAT_KINDS)[number];
+
+/** The longest range one calendar read may ask for (a month view is 6 weeks). */
+export const CALENDAR_MAX_DAYS = 42;
+
+export const calendarQuerySchema = z
+  .object({ from: z.iso.datetime(), to: z.iso.datetime() })
+  .refine((q) => Date.parse(q.to) > Date.parse(q.from), { message: "to_before_from", path: ["to"] })
+  .refine((q) => Date.parse(q.to) - Date.parse(q.from) <= CALENDAR_MAX_DAYS * 86_400_000, {
+    message: "range_too_long",
+    path: ["to"],
+  });
+
+const personSchema = z.object({ id: z.uuid(), name: z.string() });
+
+export const calendarOccurrenceSchema = z
+  .object({
+    meetingId: z.uuid(),
+    originalStart: z.iso.datetime(),
+    startsAt: z.iso.datetime(),
+    endsAt: z.iso.datetime(),
+    allDay: z.boolean(),
+    title: z.string(),
+    organizer: personSchema,
+    repeats: z.boolean(),
+    /** Null for the organizer when not invited. */
+    myAnswer: z.enum(INVITE_ANSWERS).nullable(),
+    /** From 5 minutes before the start until the end (AC-F13-03). */
+    canJoin: z.boolean(),
+  })
+  .meta({ id: "CalendarOccurrence" });
+
+export const calendarResponseSchema = z
+  .object({ occurrences: z.array(calendarOccurrenceSchema), truncated: z.boolean() })
+  .meta({ id: "Calendar" });
+
+export const scheduleDetailsSchema = z
+  .object({
+    meetingId: z.uuid(),
+    title: z.string(),
+    description: z.string(),
+    startsAt: z.iso.datetime(),
+    endsAt: z.iso.datetime(),
+    allDay: z.boolean(),
+    timeZone: z.string(),
+    repeat: repeatSchema,
+    organizer: personSchema,
+    /** For Join and Copy (AC-F13-04). */
+    link: z.string(),
+    meetingNumber: z.string(),
+    passcode: z.string(),
+    /** Invited members with their answers; outside invitees' addresses only for organizers (AC-F13-26, 27). */
+    invitees: z.array(
+      z.object({
+        id: z.uuid(),
+        member: personSchema.nullable(),
+        email: z.string().nullable(),
+        answer: z.enum(INVITE_ANSWERS),
+      }),
+    ),
+    /** Outside invitees the caller may not see the address of. */
+    hiddenExternal: z.number().int(),
+    myAnswer: z.enum(INVITE_ANSWERS).nullable(),
+    canManage: z.boolean(),
+    cancelled: z.boolean(),
+  })
+  .meta({ id: "ScheduleDetails" });
+
+export type CalendarOccurrence = z.infer<typeof calendarOccurrenceSchema>;
+export type ScheduleDetails = z.infer<typeof scheduleDetailsSchema>;

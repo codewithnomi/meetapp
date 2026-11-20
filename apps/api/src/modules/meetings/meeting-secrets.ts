@@ -57,6 +57,8 @@ export function createMeetingSecrets(dataKey: string, publicUrl: string) {
     },
     passcodeCheck: (meetingNumber: string, passcode: string) =>
       hmac(`passcode:${normaliseMeetingNumber(meetingNumber)}:${passcode.trim()}`),
+    /** An outside invitee's email (F13): looked up by keyed hash, stored only sealed. */
+    emailLookup: (email: string) => hmac(`email:${email.trim().toLowerCase()}`),
     /** A guest's device key, per meeting, so one guest's meetings can't be linked (design section 5). */
     guestDeviceHash: (meetingId: string, deviceKey: string) => hmac(`device:${meetingId}:${deviceKey}`),
   };

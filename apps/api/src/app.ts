@@ -35,6 +35,7 @@ import { chatPollsRoutes } from "./modules/chat/chat-polls.routes.ts";
 import { chatRoutes } from "./modules/chat/chat.routes.ts";
 import { liveKitWebhookRoutes } from "./modules/calls/livekit-webhook.routes.ts";
 import { meetingsRoutes } from "./modules/meetings/meetings.routes.ts";
+import { schedulingRoutes } from "./modules/scheduling/scheduling.routes.ts";
 import { invitationsRoutes } from "./modules/invitations/invitations.routes.ts";
 import { workspacesRoutes } from "./modules/workspaces/workspaces.routes.ts";
 import { testErrorRoutes } from "./modules/test-support/test-error.routes.ts";
@@ -157,6 +158,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
   await app.register(joinRequestsRoutes, { joinLink, joinRequests, lookup: membershipLookup });
   const {
     meetings,
+    scheduling,
     lookups,
     join,
     lobby,
@@ -171,6 +173,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
     chatAfter,
   } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
+  await app.register(schedulingRoutes, { scheduling, lookup: membershipLookup });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
   await app.register(liveKitWebhookRoutes, { webhooks });
   await app.register(controlsRoutes, { controls });
