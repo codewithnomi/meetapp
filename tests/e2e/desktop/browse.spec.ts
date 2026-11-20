@@ -157,15 +157,17 @@ test("TC-F17-39 [AC-F17-21] at the smallest window the small view leaves the mes
       ?.setSize(800, 600),
   );
   await chatWith(mo.page, "Olivia", /Olivia Owner/);
-  const box = await mo.page.getByRole("textbox", { name: /^Message / }).boundingBox();
-  const view = await small(mo.page).boundingBox();
-  expect(box && view).toBeTruthy();
-  if (box && view) {
-    const overlaps =
+  // Measured until the window has finished resizing: the page lays out again a moment after setSize.
+  const overlaps = async () => {
+    const box = await mo.page.getByRole("textbox", { name: /^Message / }).boundingBox();
+    const view = await small(mo.page).boundingBox();
+    if (!box || !view) return undefined;
+    return (
       box.x < view.x + view.width &&
       view.x < box.x + box.width &&
       box.y < view.y + view.height &&
-      view.y < box.y + box.height;
-    expect(overlaps).toBe(false);
-  }
+      view.y < box.y + box.height
+    );
+  };
+  await expect.poll(overlaps).toBe(false);
 });

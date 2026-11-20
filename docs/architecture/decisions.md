@@ -593,3 +593,9 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Why:** the call screen holds the LiveKit room and all its state (panels, layout, chat). Keeping it mounted keeps all of it with little change; moving the room into a separate store would mean rewriting much of the 3,400-line call screen. Downside: the hidden screen still runs its timers and its own listeners while browsing (small; videos not shown are not downloaded).
 - **Also (verify, 2026-11-16):** `features/call-corner` is the one small store the app frames and sign-out read (the small view is up; how to tell "in a call" and leave, registered by the host), so they need not depend on the calls; the hidden call is `inert`. The leave-first dialog and the side menu beside the call (`CallNavRail`) are app-level pieces made of existing design-system parts (Dialog, Button, NavRail, which have stories), so they have no stories of their own, as no app-level piece has.
 - **Alternatives:** move the room and its state into an app-wide store (bigger change, more risk); keep the call on its own screen (what F17 replaces).
+
+### D092: Faster feature checks: the full desktop run moves to GitHub (owner, 2026-11-20)
+- **Date:** 2026-11-20. **Status:** accepted (owner: "Yes, go faster"). **Changes D052.**
+- **Decision:** at `/spec-verify` the Mac runs the quick tests (unit, integration), the checks, the screenshots and **only the new feature's own desktop window tests**. The full desktop run happens on GitHub (the Desktop app tests check) on the Pull Request. Flaky tests are fixed once instead of rerun. One review round per feature (no second re-check round unless a Critical/High was found). Features are built back to back.
+- **Why:** the full desktop run took about 2 hours on the Mac, needed the owner away, and often failed on timing only; the project felt slow.
+- **Cost:** none (GitHub's free minutes for this public repo).
