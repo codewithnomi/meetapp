@@ -3,7 +3,7 @@
 - **No MeetApp icon in the menu bar** (Windows: the taskbar's notification area): MeetApp isn't running. Open it from Applications (Start menu). Windows may hide tray icons behind the "^" arrow.
 - **Closing the window vs Quit:** the red ✕ (⌘W) only hides the window; MeetApp keeps running, so calls ring and cards come. Quit (⌘Q, or Quit MeetApp in the menu-bar menu) ends it, and asks first during a call.
 - **Start at login:** Settings → General → "Start MeetApp when I log in". It starts hidden in the menu bar. On macOS 13 and later the system's Login Items list shows MeetApp too (System Settings → General → Login Items). In development a stand-in file is used, so the computer's real list isn't touched.
-- **A meeting link does nothing:** only `meetapp://m/<code>` links open Join a meeting; any other `meetapp://` address just brings MeetApp forward. During a call the link waits until you open Meetings (Teams' way comes with F17, D088). An installed app is needed for the system to know the link (`pnpm desktop:dist`, then install).
+- **A meeting link does nothing:** only `meetapp://m/<code>` links open Join a meeting; any other `meetapp://` address just brings MeetApp forward. During a call, a link to another meeting opens its pre-join at once and the call keeps running in the small call view; Join leaves the call (F17, D091). A guest in a call: the link waits until Join a meeting opens. An installed app is needed for the system to know the link (`pnpm desktop:dist`, then install).
 - **No notification cards:**
   - Settings → Notifications: are chat messages, mentions or lobby switched on?
   - Your status: Do not disturb silences cards (calls still ring).

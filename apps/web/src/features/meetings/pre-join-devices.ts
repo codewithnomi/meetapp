@@ -4,7 +4,8 @@ import { useState } from "react";
 import { loadPrefs, savePrefs, type DevicePrefs } from "../devices/index.ts";
 import { useDeviceLists, useLocalDevice, useMicLevel } from "../devices/index.ts";
 
-export function usePreJoinDevices() {
+/** `previewOn` false keeps the camera off whatever is chosen (F17: a lobby hidden behind another screen). */
+export function usePreJoinDevices(previewOn = true) {
   const [prefs, setPrefs] = useState<DevicePrefs>(() => loadPrefs());
   const change = (next: Partial<DevicePrefs>) =>
     setPrefs((old) => {
@@ -12,7 +13,7 @@ export function usePreJoinDevices() {
       savePrefs(updated);
       return updated;
     });
-  const camera = useLocalDevice("camera", prefs.cameraId, prefs.cameraOn);
+  const camera = useLocalDevice("camera", prefs.cameraId, prefs.cameraOn && previewOn);
   const microphone = useLocalDevice("microphone", prefs.microphoneId, prefs.microphoneOn);
   const level = useMicLevel(microphone.stream);
   // Device names show only after access is given, so the lists are read again then.

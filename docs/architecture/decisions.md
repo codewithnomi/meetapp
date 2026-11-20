@@ -571,7 +571,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D088: Browsing during a call becomes its own feature, F17 (owner, 2026-11-04)
 - **Date:** 2026-11-04. **Status:** accepted (owner: "follow how Teams handles this", then "you know better, do the stuff").
-- **Decision:** Teams keeps a call running while the person opens other screens, in a small call view inside the app. A meeting link clicked during a call then shows that meeting's pre-join, and Join leaves the current call. MeetApp's call lives on its own screen today, so this needs the call to keep running above every screen. That is a new feature, F17 Browse during a call, built right after F04. Until then, AC-F04-10 keeps the safe behaviour from T6: a link clicked during a call never ends it; it waits until the person opens Meetings.
+- **Decision:** Teams keeps a call running while the person opens other screens, in a small call view inside the app. A meeting link clicked during a call then shows that meeting's pre-join, and Join leaves the current call. MeetApp's call lives on its own screen today, so this needs the call to keep running above every screen. That is a new feature, F17 Browse during a call, built right after F04. Built by F17 (D091, 2026-11-14): a signed-in person's link during a call opens that meeting's pre-join at once, the call keeps running in the small call view, and Join leaves it. Guests still wait until Join a meeting opens.
 - **Why:** it touches calls, meetings and chats, and is about the size of F16. Inside F04 it would delay the desktop app; on its own it gets proper requirements and Teams-style screens.
 - **Alternatives:** build it inside F04 now (bigger F04, later PR); leave a link during a call doing nothing (worse than waiting).
 
@@ -586,3 +586,16 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Decision:** F04 is verified without the T19 hand checks on a Windows PC (installer, tray, notification area words, start at login, link from a browser). The nightly Windows job (`nightly-windows.yml`) builds the installer, unsigned and with a throwaway certificate, and runs the `@windows` desktop tests on a real Windows runner. The hand checks are done when a Windows PC is available, before the first public Windows release.
 - **Why:** the owner has no Windows PC; free first (D017) rules out a paid Windows machine. The nightly job covers the build and the window behaviour that doesn't need a person.
 - **Risk accepted:** Windows-only look and feel (tray menu, SmartScreen warning, start-up after a real log-in) isn't seen by a person until then.
+
+### D091: During a call the call screen stays mounted in a call host above the screens (F17)
+- **Date:** 2026-11-13. **Status:** accepted (owner approved the F17 design, 2026-11-14).
+- **Decision:** a call host in the signed-in app keeps the lobby, meeting or chat-call screen mounted for as long as the person is in a call. On another screen it is hidden (not removed) and a small call view shows instead; the call routes only choose "full". The small view reads the call and its buttons from the existing `useCallScreen` store (F16).
+- **Why:** the call screen holds the LiveKit room and all its state (panels, layout, chat). Keeping it mounted keeps all of it with little change; moving the room into a separate store would mean rewriting much of the 3,400-line call screen. Downside: the hidden screen still runs its timers and its own listeners while browsing (small; videos not shown are not downloaded).
+- **Also (verify, 2026-11-16):** `features/call-corner` is the one small store the app frames and sign-out read (the small view is up; how to tell "in a call" and leave, registered by the host), so they need not depend on the calls; the hidden call is `inert`. The leave-first dialog and the side menu beside the call (`CallNavRail`) are app-level pieces made of existing design-system parts (Dialog, Button, NavRail, which have stories), so they have no stories of their own, as no app-level piece has.
+- **Alternatives:** move the room and its state into an app-wide store (bigger change, more risk); keep the call on its own screen (what F17 replaces).
+
+### D092: Faster feature checks: the full desktop run moves to GitHub (owner, 2026-11-20)
+- **Date:** 2026-11-20. **Status:** accepted (owner: "Yes, go faster"). **Changes D052.**
+- **Decision:** at `/spec-verify` the Mac runs the quick tests (unit, integration), the checks, the screenshots and **only the new feature's own desktop window tests**. The full desktop run happens on GitHub (the Desktop app tests check) on the Pull Request. Flaky tests are fixed once instead of rerun. One review round per feature (no second re-check round unless a Critical/High was found). Features are built back to back.
+- **Why:** the full desktop run took about 2 hours on the Mac, needed the owner away, and often failed on timing only; the project felt slow.
+- **Cost:** none (GitHub's free minutes for this public repo).

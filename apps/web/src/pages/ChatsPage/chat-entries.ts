@@ -21,10 +21,11 @@ function lastLineOf(t: TFunction, item: ChatItem): string | undefined {
 export function entryOf(
   t: TFunction,
   item: ChatItem,
-  context: { now: Date; locale: string; current: boolean; onSelect: () => void },
+  context: { now: Date; locale: string; current: boolean; onSelect: () => void; inCall?: boolean },
 ): ChatListEntry {
   const time = item.lastMessage ? timeLabel(new Date(item.lastMessage.at), context.now, context.locale) : undefined;
-  const lastLine = lastLineOf(t, item);
+  // F17: the chat whose call the person is in says so (AC-F17-08).
+  const lastLine = context.inCall ? t("calls.small.inProgress") : lastLineOf(t, item);
   const status = item.status ? { value: item.status, label: t(`chats.status.${item.status}`) } : null;
   const details = [
     item.unread > 0 ? t("chats.unread", { count: item.unread }) : undefined,

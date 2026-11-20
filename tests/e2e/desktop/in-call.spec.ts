@@ -67,10 +67,10 @@ test("TC-F15-28 [AC-F15-12] equal controls, hand and reactions reach the other p
   await mo.page.getByRole("menuitem", { name: /Applause/ }).click();
 
   // The call's Chat panel is the chat itself.
-  await olivia.page.getByRole("button", { name: /^Chat/ }).click();
+  await controls(olivia.page).getByRole("button", { name: /^Chat/ }).click();
   await olivia.page.getByRole("textbox").last().fill("Shared in the call");
   await olivia.page.keyboard.press("Enter");
-  await mo.page.getByRole("button", { name: /^Chat/ }).click();
+  await controls(mo.page).getByRole("button", { name: /^Chat/ }).click();
   await expect(mo.page.getByRole("log", { name: "Messages" })).toContainText("Shared in the call", {
     timeout: 10_000,
   });

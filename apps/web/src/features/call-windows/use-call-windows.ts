@@ -4,7 +4,7 @@
 import type { CallWindowsMainAction, CallWindowsMissed, RingMessage } from "@meetapp/contracts";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAnswer, useChatCall, useEnterCall, useIncomingCalls, startCall } from "../calls/index.ts";
+import { useAnswer, useChatCall, useCurrentCall, useEnterCall, useIncomingCalls, startCall } from "../calls/index.ts";
 import { useLiveLine } from "../chats/index.ts";
 import { useNotices } from "../notices/index.ts";
 import { useVisit } from "../meetings/index.ts";
@@ -112,6 +112,8 @@ export interface CallWindowsRoutes {
   toCall: () => void;
   /** Opens the Chat screen (the chat to show is already chosen). */
   toChat: () => void;
+  /** F17: shows a path; "back to the call" shows the current call full, whatever screen was open. */
+  toPath: (path: string) => void;
 }
 
 /** Mounted once in the signed-in app, next to the in-app incoming calls. */
@@ -120,7 +122,7 @@ const SCREEN_CONTROLS = ["leave", "share", "toggleCamera", "toggleHand"] as cons
 const isScreenControl = (name: string): name is (typeof SCREEN_CONTROLS)[number] =>
   (SCREEN_CONTROLS as readonly string[]).includes(name);
 
-export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
+export function useCallWindows({ toCall, toChat, toPath }: CallWindowsRoutes): void {
   // F04: MeetApp's own cards for new messages and mentions share the small windows' line.
   useNotices({ toChat });
   const bridge = mainBridge();
@@ -132,14 +134,19 @@ export function useCallWindows({ toCall, toChat }: CallWindowsRoutes): void {
   const chooseChat = useChatCall((state) => state.openChat);
   const openChat = (id: string) => (chooseChat(id), toChat());
   const callBack = useCallBack(toCall, openChat);
+  const current = useCurrentCall();
+  const ringAction = (action: CallWindowsMainAction, ring: RingMessage) => {
+    if (action.name === "accept") accept.mutate({ ring, media: action.video ? "video" : "audio" });
+    else if (action.name === "decline") decline(ring);
+    else if (action.name === "hide") silence(ring.callId);
+  };
   const run = useRef<(action: CallWindowsMainAction) => void>(() => undefined);
   run.current = (action) => {
     const ring = "callId" in action ? rings.find((r) => r.callId === action.callId) : undefined;
     const screen = useCallScreen.getState();
-    if (action.name === "accept" && ring) accept.mutate({ ring, media: action.video ? "video" : "audio" });
-    else if (action.name === "decline" && ring) decline(ring);
-    else if (action.name === "hide" && ring) silence(ring.callId);
+    if (ring) ringAction(action, ring);
     else if (action.name === "openChat") openChat(action.conversationId);
+    else if (action.name === "backToCall" && current) toPath(current.fullPath);
     else if (action.name === "callBack") {
       const last = missed.byChat.get(action.conversationId);
       callBack(action.conversationId, action.video, last?.chatName ?? last?.from ?? "", !last?.chatName);

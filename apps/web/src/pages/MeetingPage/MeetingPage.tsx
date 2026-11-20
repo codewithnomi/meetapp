@@ -276,11 +276,12 @@ function Call(props: MeetingPageProps & { visit: Joined }) {
   );
 }
 
-export function MeetingPage({ onLeft, onOutcome }: MeetingPageProps) {
+export function MeetingPage({ onLeft, onOutcome, hosted = false }: MeetingPageProps) {
   const visit = useVisit((state) => state.visit);
   // Opened without a visit (e.g. the screen was reloaded): back to the start. A visit that ends here
   // (left, removed, ended) shows nothing while the app moves on to its message.
   const [openedWithVisit] = useState(() => Boolean(visit?.call));
-  if (!visit?.call) return openedWithVisit ? null : <Navigate to="/" replace />;
+  // F17: the call host decides where to go; it never moves on from here.
+  if (!visit?.call) return openedWithVisit || hosted ? null : <Navigate to="/" replace />;
   return <Call visit={visit} onLeft={onLeft} onOutcome={onOutcome} />;
 }

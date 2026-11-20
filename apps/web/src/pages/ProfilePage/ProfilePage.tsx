@@ -2,7 +2,11 @@
 // name, email and sign-in, Sign out and Sign out everywhere, and where to ask about one's data.
 import { Button, Spinner } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
-import { ActionErrorNotice, useSignOut, useSignOutEverywhere } from "../../features/auth/index.ts";
+import {
+  ActionErrorNotice,
+  useSignOutEverywhereLeavingFirst,
+  useSignOutLeavingFirst,
+} from "../../features/auth/index.ts";
 import { SettingsShell, type SettingsScreen } from "../../features/profile/index.ts";
 import { useMe } from "../../features/workspaces/index.ts";
 import { AccountSection } from "./AccountSection.tsx";
@@ -16,8 +20,9 @@ export interface ProfilePageProps {
 /** Sign out (this computer) or Sign out everywhere (every device), as in AC-F01-12. */
 function SignOutSection() {
   const { t } = useTranslation();
-  const signOut = useSignOut();
-  const everywhere = useSignOutEverywhere();
+  // F17: during a call, signing out leaves it first (AC-F17-16).
+  const signOut = useSignOutLeavingFirst();
+  const everywhere = useSignOutEverywhereLeavingFirst();
   const busy = signOut.isPending || everywhere.isPending;
   return (
     <section aria-labelledby="sign-out-title" className="flex flex-col gap-4">

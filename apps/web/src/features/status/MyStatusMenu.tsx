@@ -4,7 +4,7 @@ import { StatusMenu, type StatusDuration } from "@meetapp/ui";
 import type { Status } from "@meetapp/contracts";
 import { useTranslation } from "react-i18next";
 import { apiFileUrl } from "../api/index.ts";
-import { useSession, useSignOut } from "../auth/index.ts";
+import { useSession, useSignOutLeavingFirst } from "../auth/index.ts";
 import { useMyStatus } from "./use-my-status.ts";
 
 const STATUSES: Status[] = ["available", "busy", "dnd", "brb", "away", "in_call", "offline"];
@@ -25,7 +25,8 @@ function endLabel(until: string | null, t: Words): string | null {
 export function MyStatusMenu({ onSettings }: { onSettings: () => void }) {
   const { t } = useTranslation();
   const { data: me } = useSession();
-  const signOut = useSignOut();
+  // F17: during a call, signing out leaves it first (AC-F17-16).
+  const signOut = useSignOutLeavingFirst();
   const { mine, duration, choose, reset } = useMyStatus();
   if (!me) return null;
   const statusLabels = Object.fromEntries(

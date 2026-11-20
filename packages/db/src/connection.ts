@@ -21,14 +21,17 @@ export function databaseUrl(settings: DatabaseSettings): string {
 
 export interface DatabaseOptions {
   max?: number;
-  /** Called when an idle connection breaks (e.g. Postgres restarts). Without it such errors are ignored. */
+  /** Called when a connection breaks (e.g. Postgres restarts), idle or in use. Without it such errors are ignored. */
   onPoolError?: (error: Error) => void;
 }
 
-/** A pool that survives the database going away: idle-connection errors are reported, never thrown. */
+/** A pool that survives the database going away: connection errors are reported, never thrown. */
 export function createDatabase(url: string, options: DatabaseOptions = {}) {
   const pool = new Pool({ connectionString: url, max: options.max ?? 10, connectionTimeoutMillis: 5000 });
   pool.on("error", (error) => options.onPoolError?.(error));
+  // A connection in use (e.g. inside a transaction) is no longer the pool's idle one, so its own error
+  // would otherwise go unhandled and stop the server.
+  pool.on("connect", (client) => client.on("error", (error) => options.onPoolError?.(error)));
   const db = drizzle({ client: pool, schema });
   return { db, pool, close: () => pool.end() };
 }

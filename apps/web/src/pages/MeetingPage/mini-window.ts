@@ -13,7 +13,8 @@ export function usePublishForMiniWindow(call: CallState, share: () => void) {
   const { room, me, actions, visit } = call;
   // The live video the mini window shows: the shared screen, else the speaker's camera (design.md 3.5).
   const speaker = speakerOf(room.people);
-  useFrameSender((speaker?.screen ?? (speaker?.cameraOn ? speaker.video : undefined))?.mediaStreamTrack);
+  const video = speaker?.screen ?? (speaker?.cameraOn ? speaker.video : undefined);
+  useFrameSender(video?.mediaStreamTrack);
   useEffect(() => {
     publish(
       callForWindows({
@@ -31,6 +32,8 @@ export function usePublishForMiniWindow(call: CallState, share: () => void) {
         toggleHand: actions.hand,
         leave: actions.leave,
       },
+      // F17: the small call view shows the same track, and sends organizers to the Leave menu (AC-F17-05).
+      { video, leaveChoices: can(me?.role, "end"), sharing: Boolean(me?.screen) },
     );
   });
   useEffect(() => clear, [clear]);

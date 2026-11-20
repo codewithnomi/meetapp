@@ -4,7 +4,7 @@
 import { MessageCard, type IconName } from "@meetapp/ui";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
-import type { Attendance } from "../../features/meetings/index.ts";
+import { outcomeOf, type Attendance, type Outcome } from "../../features/meetings/index.ts";
 
 export interface MeetingEndedPageProps {
   outcome: Pick<Attendance, "status" | "leftReason" | "actedByName"> | undefined;
@@ -13,20 +13,6 @@ export interface MeetingEndedPageProps {
   onTryAgain: () => void;
   /** After a lost connection: Rejoin, with its waiting state and what went wrong. */
   rejoin?: { onRejoin: () => void; pending: boolean; error: string | undefined } | undefined;
-}
-
-type Outcome = "denied" | "timedOut" | "removed" | "ended" | "locked" | "noGuests" | "lost" | "left";
-
-function outcomeOf(outcome: MeetingEndedPageProps["outcome"]): Outcome {
-  if (!outcome) return "left";
-  if (outcome.status === "denied") return "denied";
-  if (outcome.status === "timed_out") return "timedOut";
-  if (outcome.status === "removed") return "removed";
-  if (outcome.leftReason === "ended") return "ended";
-  if (outcome.leftReason === "locked") return "locked";
-  if (outcome.leftReason === "guests_off") return "noGuests";
-  if (outcome.leftReason === "dropped") return "lost";
-  return "left";
 }
 
 const LOOK: Record<Outcome, { icon: IconName; tone: "neutral" | "warning" | "danger" }> = {

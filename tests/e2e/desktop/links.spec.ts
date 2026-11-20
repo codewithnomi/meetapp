@@ -76,14 +76,43 @@ test("TC-F04-31 [AC-F04-11] other meetapp:// addresses only bring MeetApp to the
   await expect(member.page.getByRole("button", { name: "Join now" })).toHaveCount(0);
 });
 
-test("TC-F04-28 [AC-F04-10] a link during a call keeps the call; Meetings then opens that meeting's pre-join", async () => {
+// F17 replaced AC-F04-10's waiting: a link during a call opens that meeting's pre-join at once, the call
+// running on in the small call view; Cancel goes back untouched, Leave call and join leaves first.
+test("TC-F04-28 TC-F17-27 TC-F17-30 TC-F17-32 TC-F17-31 [AC-F04-10, AC-F17-11, 12] a link during a call opens its pre-join; Cancel keeps the call; Leave call and join moves", async () => {
   const people = await team();
   const first = await hostMeeting(people);
   windows.push(first.host);
   const second = await hostMeeting({ ...people, owner: people.member });
   windows.push(second.host);
+  const mo = second.host.page;
+  const sent = Date.now();
   await deliver(second.host.app, first.link, "mac");
-  await expect.poll(() => visible(second.host.app)).toBe(true);
-  await expect(controls(second.host.page)).toBeVisible();
-  await expect(second.host.page.getByRole("button", { name: "Join now" })).toHaveCount(0);
+  await expect(mo.getByText(/^You're in .+\. Joining this meeting leaves it\.$/)).toBeVisible({ timeout: 3_000 });
+  expect(Date.now() - sent).toBeLessThan(3_000);
+  await expect(mo.getByRole("region", { name: /^Call: / })).toBeVisible();
+  // TC-F17-30: the preview shares the camera with the call, or says the camera is busy with it.
+  await expect(
+    mo
+      .getByText(/^Camera in use by your current call/)
+      .or(mo.getByRole("main").locator("video"))
+      .first(),
+  ).toBeVisible({ timeout: 10_000 });
+  // Cancel: back where Mo was; the call never stopped.
+  await mo.getByRole("button", { name: "Cancel" }).click();
+  await expect(controls(mo)).toBeVisible();
+  // Again, and this time leave and join Olivia's meeting.
+  await deliver(second.host.app, first.link, "mac");
+  await mo.getByRole("button", { name: "Leave call and join" }).click();
+  await expect(controls(mo)).toBeVisible({ timeout: 20_000 });
+  await expect(first.host.page.getByRole("figure", { name: /^Mo Member/ })).toBeVisible({ timeout: 20_000 });
+  await expect(mo.getByRole("region", { name: /^Call: / })).toHaveCount(0);
+});
+
+test("TC-F17-48 [AC-F04-11, AC-F17-11] a bad link during a call changes nothing", async () => {
+  const people = await team();
+  const { host } = await hostMeeting(people);
+  windows.push(host);
+  await deliver(host.app, "meetapp://m/x/../admin", "mac");
+  await expect(controls(host.page)).toBeVisible();
+  await expect(host.page.getByRole("button", { name: "Leave call and join" })).toHaveCount(0);
 });

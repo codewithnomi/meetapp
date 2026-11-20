@@ -44,4 +44,16 @@ describe("AppLayout", () => {
     expect(screen.getByRole("button", { name: "Requests 3" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "People" })).toBeInTheDocument();
   });
+
+  it("TC-F17-07 [AC-F17-21] while the small call view shows, the content keeps room below it", () => {
+    const layout = (reserveCorner: boolean) => (
+      <AppLayout navLabel="Main" switcher={null} items={[]} reserveCorner={reserveCorner}>
+        <main>Content</main>
+      </AppLayout>
+    );
+    const { rerender } = render(layout(true));
+    expect(screen.getByRole("main").parentElement).toHaveClass("pb-58");
+    rerender(layout(false));
+    expect(screen.getByRole("main").parentElement).not.toHaveClass("pb-58");
+  });
 });
