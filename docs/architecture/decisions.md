@@ -601,7 +601,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 - **Cost:** none (GitHub's free minutes for this public repo).
 
 ### D093: Scheduled meetings' link lifetime (F13)
-- **Date:** 2026-11-20. **Status:** proposed (with F13 requirements).
+- **Date:** 2026-11-20. **Status:** accepted (owner approved F13 requirements).
 - **Decision:** a scheduled meeting's link, ID and passcode stop working 60 days after its last occurrence ends; a repeating meeting with no end date keeps working while it repeats. Meet now and link meetings keep F02's rules (AC-F02-04).
 - **Why:** as in Teams; a weekly meeting nobody joined for two months must still work next week.
 - **Cost:** none.
