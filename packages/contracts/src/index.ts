@@ -245,3 +245,20 @@ export type {
   NoticeChoice,
 } from "./call-windows.ts";
 export { APP_LINK_SCHEME, appMeetingLink, asAppMeetingLink, isMeetingCode, readAppMeetingLink } from "./app-links.ts";
+export {
+  INVITE_ANSWERS,
+  REPEAT_KINDS,
+  SCHEDULE_LIMITS,
+  SCHEDULE_SCOPES,
+  WEEKDAYS,
+  inviteeSchema,
+  repeatSchema,
+  scheduleAnswerBodySchema,
+  scheduleBodySchema,
+  scheduleCancelBodySchema,
+  scheduleUpdateBodySchema,
+  type InviteAnswer,
+  type RepeatKind,
+  type ScheduleBody,
+  type ScheduleUpdateBody,
+} from "./scheduling.ts";
