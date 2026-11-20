@@ -608,7 +608,7 @@ Status: **accepted** (decided) or **proposed** (waiting for the owner's OK).
 
 ### D094: Libraries for repeat rules and calendar files (F13)
 - **Date:** 2026-11-20. **Status:** accepted (owner approved F13 design).
-- **Decision:** `rrule` expands repeat rules (RFC 5545) in the meeting's time zone; `ical-generator` builds the .ics files attached to invite, update and cancel emails. Both are vetted with `add-dependency` at the first task that uses them.
+- **Decision:** `rrule-temporal` expands repeat rules (RFC 5545) in the meeting's time zone (chosen at T2 instead of `rrule`, whose last release was in 2023 and whose time-zone handling is weak; MIT, maintained, its time library bundled, no install scripts); `ical-generator` builds the .ics files attached to invite, update and cancel emails. Both are vetted with `add-dependency` at the first task that uses them.
 - **Why:** both are the standard, widely used JavaScript libraries for this; writing date rules and the calendar format by hand is easy to get wrong.
 - **Cost:** none (free, open source).
 

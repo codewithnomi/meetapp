@@ -31,7 +31,7 @@ New tables (via the `db-migration` skill). All five have `id`, `created_at`, `up
 
 ## Backend endpoints / messages
 New module `apps/api/src/modules/scheduling/` (routes → service → repository, as the other modules). All need a signed-in workspace member; inputs checked with Zod in `packages/contracts`.
-- `GET /workspaces/:ws/calendar?from&to` → occurrences in the range (max 42 days per request) the person organizes or is invited to: `{ meetingId, originalStart, startsAt, endsAt, allDay, title, organizer, repeats, myAnswer, cancelled:false, canJoin }`. Occurrences are expanded with **rrule** in the meeting's time zone, at most 1 year ahead. If a range would return more than 500 occurrences, the response says `truncated: true` and the calendar shows "+N more".
+- `GET /workspaces/:ws/calendar?from&to` → occurrences in the range (max 42 days per request) the person organizes or is invited to: `{ meetingId, originalStart, startsAt, endsAt, allDay, title, organizer, repeats, myAnswer, cancelled:false, canJoin }`. Occurrences are expanded with **rrule-temporal** in the meeting's time zone, at most 1 year ahead. If a range would return more than 500 occurrences, the response says `truncated: true` and the calendar shows "+N more".
 - `GET /meetings/:id/schedule` → details (invitees with names and answers; external emails only for organizers, AC-F13-26/27).
 - `POST /workspaces/:ws/scheduled-meetings` → create (title, invitees, start, end, allDay, timeZone, repeat, description). Creates the F02 meeting (`kind: scheduled`) and schedule in one transaction, then queues emails. Errors: 400 field errors (checked on the server too: no title or over 100 characters, end not after start, start more than 5 minutes ago, description over 2,000, over 250 invitees, a bad email), 429 with wait time (F02's 50/hour; emails 1,000/hour checked **before** anything is saved, AC-F13-14, 27).
 - `PATCH /meetings/:id/schedule` `{ scope: "occurrence" | "series", originalStart?, …changes }` → update; series time change resets answers and clears occurrence changes (AC-F13-18). Organizer/co-organizer only: an invitee gets 403 (they can see the meeting anyway), anyone else 404.
@@ -94,6 +94,6 @@ None now: Mailpit locally (free). Online later, the email service's free tier (e
 | 32 | component (offline: data kept, buttons disabled) |
 
 ## Decisions made here
-- **D094 (proposed):** libraries **rrule** (repeat rules, RFC 5545) and **ical-generator** (calendar files); vetted with the `add-dependency` skill at the first task that needs them.
+- **D094 (proposed):** libraries **rrule-temporal** (repeat rules, RFC 5545) and **ical-generator** (calendar files); vetted with the `add-dependency` skill at the first task that needs them.
 - **D095 (proposed):** a scheduled meeting is an F02 meeting with `kind: scheduled` plus a schedule; repeats are stored as one rule and expanded on read, not stored per occurrence.
 - **Design system first (D029):** Calendar grid, meeting block, date/time field, repeat picker, schedule form, details panel and reminder card are added to the design system and screen designs before their UI tasks; the owner sees them at that milestone.
