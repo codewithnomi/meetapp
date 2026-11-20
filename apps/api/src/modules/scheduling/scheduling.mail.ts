@@ -104,19 +104,18 @@ function fileOf(deps: MeetingMailDeps, facts: MailFacts, { mail, link, only, to,
   });
 }
 
+interface Recipient {
+  to: string;
+  changes: OccurrenceChangeRow[];
+}
+
 function messageOf(
   deps: MeetingMailDeps,
   facts: MailFacts,
   data: Record<string, string>,
-  changes: OccurrenceChangeRow[],
-): EmailMessage | undefined {
-  const { invitee, meeting, schedule } = facts;
-  const to =
-    facts.memberEmail ??
-    (invitee.emailEnc && invitee.keyVersion !== null
-      ? deps.secrets.open(invitee.emailEnc, invitee.keyVersion)
-      : undefined);
-  if (!to) return undefined;
+  { to, changes }: Recipient,
+): EmailMessage {
+  const { meeting, schedule } = facts;
   const mail = data.mail as MeetingMail;
   const only = data.originalStart ? new Date(data.originalStart) : undefined;
   const length = schedule.endsAt.getTime() - schedule.startsAt.getTime();
@@ -140,12 +139,31 @@ function messageOf(
   return { to, ...email, calendar: { method: mail === "cancel" ? "CANCEL" : "REQUEST", content: calendar } };
 }
 
+/** The meeting and the address: an invitee's row, or (removed people) the meeting plus a member or sealed address. */
+async function factsFor(deps: MeetingMailDeps, data: Record<string, string>) {
+  const open = (sealed: string | null | undefined, version: number | null | undefined) =>
+    sealed && version !== null && version !== undefined ? deps.secrets.open(sealed, version) : undefined;
+  if (data.inviteeId) {
+    const facts = await deps.scheduling.mailFacts(data.inviteeId);
+    const to = facts?.memberEmail ?? open(facts?.invitee.emailEnc, facts?.invitee.keyVersion);
+    return facts && to ? { facts, to } : undefined;
+  }
+  if (!data.meetingId) return undefined;
+  const facts = await deps.scheduling.meetingMailFacts(data.meetingId, data.userId);
+  const to = facts?.memberEmail ?? open(data.sealed, Number(data.keyVersion));
+  return facts && to ? { facts, to } : undefined;
+}
+
+/** Someone just removed from a meeting: a member, or an outside address kept sealed (encrypted). */
+export type RemovedRecipient = { userId: string } | { sealed: string; keyVersion: number };
+
 export function createMeetingMail(deps: MeetingMailDeps) {
   deps.outbox.register(RESOLVER, {
     message: async (data) => {
-      const facts = data.inviteeId ? await deps.scheduling.mailFacts(data.inviteeId) : undefined;
-      if (!facts) return undefined;
-      return messageOf(deps, facts, data, await deps.scheduling.changesFor([facts.meeting.id]));
+      const found = await factsFor(deps, data);
+      if (!found) return undefined;
+      const changes = await deps.scheduling.changesFor([found.facts.meeting.id]);
+      return messageOf(deps, found.facts, data, { to: found.to, changes });
     },
     settled: async (data, sent) => {
       if (data.inviteeId) await deps.scheduling.setEmailStatus(data.inviteeId, sent ? "sent" : "failed");
@@ -167,6 +185,16 @@ export function createMeetingMail(deps: MeetingMailDeps) {
       for (const inviteeId of inviteeIds) {
         await deps.scheduling.setEmailStatus(inviteeId, "queued");
         await deps.outbox.enqueue({ resolver: RESOLVER, data: { inviteeId, mail, ...extra } });
+      }
+    },
+    /** A cancellation to people removed by an update; their rows are gone, so the job names the meeting. */
+    sendRemoved: async (meetingId: string, removed: RemovedRecipient[]) => {
+      for (const person of removed) {
+        const who =
+          "userId" in person
+            ? { userId: person.userId }
+            : { sealed: person.sealed, keyVersion: String(person.keyVersion) };
+        await deps.outbox.enqueue({ resolver: RESOLVER, data: { meetingId, mail: "cancel", ...who } });
       }
     },
   };

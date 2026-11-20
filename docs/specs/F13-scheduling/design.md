@@ -27,7 +27,7 @@ New tables (via the `db-migration` skill). All five have `id`, `created_at`, `up
 - **`meeting_invitee_answers`** (an answer for one occurrence): `invitee_id`, `original_start`, `answer`.
 - **`reminder_dismissals`**: `user_id`, `meeting_id`, `original_start`, `kind` (`before` | `start`), `snoozed_until` (null, or when to show again) so a reminder shows once per person across windows and devices (AC-F13-21).
 - Expiry (D093): for scheduled meetings `meetings.expires_at` = last occurrence end + 60 days; a series without end date gets `expires_at` = far future and is recalculated when the rule gets an end. F02's `extendedExpiry` leaves scheduled meetings unchanged.
-- Privacy (AC-F13-30): external emails live only in `meeting_invitees`; a daily sweep deletes invitee rows of meetings cancelled or expired more than 30 days ago. Account and workspace deletion cascade. Email jobs in the queue hold only the invitee id and the template; the address is decrypted in the worker, so no address sits in Redis.
+- Privacy (AC-F13-30): external emails live only in `meeting_invitees`; a daily sweep deletes invitee rows of meetings cancelled or expired more than 30 days ago. Account and workspace deletion cascade. Email jobs in the queue hold only the invitee id and the kind of email; the address is decrypted in the worker, so no plain address sits in Redis. A cancellation to someone just removed by an update (their row is gone) carries their member id, or their address still sealed (encrypted, as stored).
 
 ## Backend endpoints / messages
 New module `apps/api/src/modules/scheduling/` (routes → service → repository, as the other modules). All need a signed-in workspace member; inputs checked with Zod in `packages/contracts`.

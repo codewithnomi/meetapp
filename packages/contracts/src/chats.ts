@@ -4,6 +4,7 @@ import { z } from "zod";
 import { chatEventSchema } from "./chat-news.ts";
 import { ringMessageSchema, ringStopMessageSchema, ringtoneSettingsSchema } from "./chat-calls.ts";
 import { systemNoteSchema } from "./chat-notes.ts";
+import { calendarMessageSchema, invitedMessageSchema } from "./scheduling.ts";
 
 export const CONVERSATION_KINDS = ["direct", "group", "meeting"] as const;
 export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
@@ -261,6 +262,9 @@ export const lineServerMessageSchema = z.discriminatedUnion("t", [
   /** F15: ringing (AC-F15-05–09, 34). */
   ringMessageSchema,
   ringStopMessageSchema,
+  /** F13: calendar changes and invitations. */
+  calendarMessageSchema,
+  invitedMessageSchema,
 ]);
 export type LineServerMessage = z.infer<typeof lineServerMessageSchema>;
 

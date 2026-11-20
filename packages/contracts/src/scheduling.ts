@@ -156,3 +156,17 @@ export const scheduleDetailsSchema = z
 
 export type CalendarOccurrence = z.infer<typeof calendarOccurrenceSchema>;
 export type ScheduleDetails = z.infer<typeof scheduleDetailsSchema>;
+
+/** Live line (D064): a meeting in this person's calendar was added, changed or removed (AC-F13-09, 16, 18, 19). */
+export const calendarMessageSchema = z.object({
+  t: z.literal("calendar"),
+  meetingId: z.uuid(),
+  change: z.enum(["added", "changed", "removed"]),
+});
+/** Live line: this person was invited (AC-F13-17); the app shows a notification. */
+export const invitedMessageSchema = z.object({
+  t: z.literal("invited"),
+  meetingId: z.uuid(),
+  title: z.string(),
+  organizerName: z.string(),
+});

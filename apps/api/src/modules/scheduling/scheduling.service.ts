@@ -1,7 +1,13 @@
 // Scheduling meetings and reading the calendar (F13 design.md "Backend endpoints"; AC-F13-01, 03, 09–14,
 // 26, 27). A scheduled meeting is an F02 meeting (kind `scheduled`, D095) with a schedule and invitees,
 // saved in one transaction after the limits are checked. Rights come from scheduling.permissions.ts.
-import { SCHEDULE_LIMITS, type CalendarOccurrence, type ScheduleBody, type ScheduleDetails } from "@meetapp/contracts";
+import {
+  SCHEDULE_LIMITS,
+  type CalendarOccurrence,
+  type LineServerMessage,
+  type ScheduleBody,
+  type ScheduleDetails,
+} from "@meetapp/contracts";
 import { AppError, fieldError } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import { scheduledExpiry } from "../meetings/expiry.ts";
@@ -31,6 +37,8 @@ export interface SchedulingDeps {
   secrets: MeetingSecretBox;
   limiter: RateLimiter;
   mail: MeetingMailer;
+  /** The live line (D064): calendars update within seconds, invited people get a notification. */
+  live?: { toPerson: (userId: string, message: LineServerMessage) => Promise<void> };
   now?: () => Date;
 }
 
@@ -53,7 +61,11 @@ const seriesOf = (row: {
 }): Series => row;
 
 /** Members must be in the meeting's workspace; outside people come by email (sealed, looked up by hash). */
-async function inviteesFor(deps: SchedulingDeps, workspaceId: string, body: ScheduleBody): Promise<NewInvitee[]> {
+export async function inviteesFor(
+  deps: Pick<SchedulingDeps, "meetings" | "secrets">,
+  workspaceId: string,
+  body: Pick<ScheduleBody, "invitees">,
+): Promise<NewInvitee[]> {
   const userIds = [...new Set(body.invitees.flatMap((i) => ("userId" in i ? [i.userId] : [])))];
   const members = await deps.meetings.membersAmong(workspaceId, userIds);
   if (members.length !== userIds.length) throw fieldError("invitees", "not_a_member");
@@ -68,15 +80,25 @@ async function inviteesFor(deps: SchedulingDeps, workspaceId: string, body: Sche
   ];
 }
 
-async function create(deps: Required<SchedulingDeps>, caller: Caller, membership: Membership, body: ScheduleBody) {
-  const now = deps.now();
+/** Live news for a new meeting: it appears in calendars, and invited members get a notification. */
+async function announceNew(
+  deps: Required<SchedulingDeps>,
+  caller: Caller,
+  made: { meetingId: string; title: string; invitees: NewInvitee[] },
+) {
+  const { meetingId, title } = made;
+  const members = made.invitees.flatMap((invitee) => ("userId" in invitee ? [invitee.userId] : []));
+  for (const id of new Set([caller.id, ...members])) {
+    await deps.live.toPerson(id, { t: "calendar", meetingId, change: "added" });
+  }
+  for (const id of members)
+    await deps.live.toPerson(id, { t: "invited", meetingId, title, organizerName: caller.name });
+}
+
+/** The schedule row for a new meeting. */
+function scheduleOf(body: ScheduleBody) {
   const startsAt = new Date(body.startsAt);
-  if (startsAt.getTime() < now.getTime() - SCHEDULE_LIMITS.pastGraceMs) throw fieldError("startsAt", "in_past");
-  const invitees = await inviteesFor(deps, membership.workspaceId, body);
-  const wait = await deps.limiter.take(RATE_RULES.meetingCreates, caller.id);
-  if (wait !== undefined)
-    throw new AppError(429, "TOO_MANY_ATTEMPTS", "You've made many meetings. Try again later.", wait);
-  const schedule = {
+  return {
     startsAt,
     endsAt: new Date(body.endsAt),
     timeZone: body.timeZone,
@@ -85,6 +107,17 @@ async function create(deps: Required<SchedulingDeps>, caller: Caller, membership
     repeatUntil: body.repeat.kind !== "none" && body.repeat.until ? new Date(body.repeat.until) : null,
     description: body.description,
   };
+}
+
+async function create(deps: Required<SchedulingDeps>, caller: Caller, membership: Membership, body: ScheduleBody) {
+  const now = deps.now();
+  const startsAt = new Date(body.startsAt);
+  if (startsAt.getTime() < now.getTime() - SCHEDULE_LIMITS.pastGraceMs) throw fieldError("startsAt", "in_past");
+  const invitees = await inviteesFor(deps, membership.workspaceId, body);
+  const wait = await deps.limiter.take(RATE_RULES.meetingCreates, caller.id);
+  if (wait !== undefined)
+    throw new AppError(429, "TOO_MANY_ATTEMPTS", "You've made many meetings. Try again later.", wait);
+  const schedule = scheduleOf(body);
   const linkPart = newLinkPart();
   const passcode = newPasscode();
   // The emails are reserved first (AC-F13-27): refused before anything is saved, given back if saving fails.
@@ -115,7 +148,9 @@ async function create(deps: Required<SchedulingDeps>, caller: Caller, membership
       throw error;
     });
   await deps.mail.send(saved.inviteeIds, "invite");
-  return { meetingId: saved.meetingId };
+  await announceNew(deps, caller, { meetingId: saved.meetingId, title: body.title, invitees });
+  const { meetingId } = saved;
+  return { meetingId };
 }
 
 function occurrencesOf(row: CalendarRow, changes: OccurrenceChangeRow[], range: CalendarRange) {
@@ -134,7 +169,7 @@ function occurrencesOf(row: CalendarRow, changes: OccurrenceChangeRow[], range: 
       title: titles.get(o.originalStart.getTime()) ?? row.title,
       organizer: { id: row.organizerId, name: row.organizerName },
       repeats: row.schedule.rrule !== null,
-      myAnswer: row.myAnswer,
+      myAnswer: row.occurrenceAnswers.get(o.originalStart.getTime()) ?? row.myAnswer,
       canJoin: o.startsAt.getTime() - JOIN_EARLY_MS <= now && now < o.endsAt.getTime(),
     })),
   };
@@ -222,7 +257,7 @@ async function details(deps: Required<SchedulingDeps>, caller: Caller, meetingId
 }
 
 export function createSchedulingService(deps: SchedulingDeps) {
-  const full = { now: () => new Date(), ...deps };
+  const full = { now: () => new Date(), live: { toPerson: () => Promise.resolve() }, ...deps };
   return {
     create: (caller: Caller, membership: Membership, body: ScheduleBody) => create(full, caller, membership, body),
     calendar: (caller: Caller, membership: Membership, asked: { from: Date; to: Date }) =>

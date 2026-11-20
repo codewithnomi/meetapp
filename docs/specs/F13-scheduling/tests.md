@@ -440,7 +440,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-53: Answers reach the organizer
 - **Covers:** AC-F13-16
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.answers.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** an invited member
 - **When** they PUT Accept, Tentative and Decline for the series and for one occurrence
 - **Then** answers are saved; the organizer's live line gets the change within 5 seconds; the occurrence answer overrides the series one only for that date; an external person shows "No answer"; a non-invited member gets 404
@@ -448,7 +448,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-54: Invited member notification
 - **Covers:** AC-F13-17
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.live.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** an invited member online
 - **When** they are invited
 - **Then** an `invited` event with organizer name and title arrives on their line; nothing is sent to the organizer; a member added later by an update also gets it
@@ -456,7 +456,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-55: Update sends emails and live changes
 - **Covers:** AC-F13-18
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.update.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** a series with invitees
 - **When** the organizer then a co-organizer PATCH title, time, invitees, description, for one occurrence and for the series
 - **Then** everyone's calendar changes within 5 seconds; updated .ics (higher SEQUENCE) emailed; removed invitees get a cancellation, added ones a new invite; a whole-series time change resets answers to none and deletes occurrence changes; the invitee is removed from the meeting chat
@@ -464,7 +464,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-56: Cancel an occurrence and the series
 - **Covers:** AC-F13-19
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.cancel.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** a series with a message
 - **When** the organizer cancels one occurrence, then the series
 - **Then** the occurrence is skipped (EXDATE); the series leaves every calendar, the cancellation emails carry the message and `METHOD:CANCEL`, and the link stops working for the series; calendar `removed` events arrive
@@ -472,7 +472,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-57: Only organizers may change; others see nothing
 - **Covers:** AC-F13-20, AC-F13-26
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.permissions.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** an organizer, co-organizer, invited member, uninvited member and an outsider
 - **When** each tries to read, PATCH, cancel, resend and answer
 - **Then** invitee: 403 on change, cancel, resend; uninvited member and outsider: 404 on everything with the same body as a missing meeting; nothing changes

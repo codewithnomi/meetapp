@@ -4,6 +4,7 @@
 // is never listed (AC-F13-29, D093).
 import {
   meetingCoOrganizers,
+  meetingInviteeAnswers,
   meetingInvitees,
   meetingOccurrenceChanges,
   meetings,
@@ -33,6 +34,8 @@ export interface CalendarRow {
   organizerName: string;
   /** The caller's own answer; null when not invited (an organizer who didn't invite themselves). */
   myAnswer: MeetingInvitee["answer"] | null;
+  /** The caller's answers for single occurrences, by their original start (ms). */
+  occurrenceAnswers: Map<number, MeetingInvitee["answer"]>;
 }
 
 export interface OccurrenceChangeRow {
@@ -74,6 +77,26 @@ export interface CalendarRange {
   now: Date;
 }
 
+/** The caller's one-occurrence answers in this workspace, by meeting. */
+async function occurrenceAnswersOf(executor: Executor, userId: string, workspaceId: string) {
+  const rows = await executor
+    .select({
+      meetingId: meetingInvitees.meetingId,
+      originalStart: meetingInviteeAnswers.originalStart,
+      answer: meetingInviteeAnswers.answer,
+    })
+    .from(meetingInviteeAnswers)
+    .innerJoin(meetingInvitees, eq(meetingInvitees.id, meetingInviteeAnswers.inviteeId))
+    .where(and(eq(meetingInviteeAnswers.workspaceId, workspaceId), eq(meetingInvitees.userId, userId)));
+  const byMeeting = new Map<string, Map<number, MeetingInvitee["answer"]>>();
+  for (const row of rows) {
+    const map = byMeeting.get(row.meetingId) ?? new Map<number, MeetingInvitee["answer"]>();
+    map.set(row.originalStart.getTime(), row.answer);
+    byMeeting.set(row.meetingId, map);
+  }
+  return byMeeting;
+}
+
 /** Schedules in this workspace the caller is part of that may have an occurrence in [from, to). */
 async function calendarRows(
   executor: Executor,
@@ -86,6 +109,7 @@ async function calendarRows(
     .from(meetingInvitees)
     .where(and(eq(meetingInvitees.workspaceId, workspaceId), eq(meetingInvitees.userId, userId)));
   const answers = new Map(mine.map((row) => [row.meetingId, row.answer]));
+  const perOccurrence = await occurrenceAnswersOf(executor, userId, workspaceId);
   const rows = await executor
     .select({
       schedule: meetingSchedules,
@@ -117,7 +141,11 @@ async function calendarRows(
         involves(userId),
       ),
     );
-  return rows.map((row): CalendarRow => ({ ...row, myAnswer: answers.get(row.schedule.meetingId) ?? null }));
+  return rows.map((row): CalendarRow => ({
+    ...row,
+    myAnswer: answers.get(row.schedule.meetingId) ?? null,
+    occurrenceAnswers: perOccurrence.get(row.schedule.meetingId) ?? new Map(),
+  }));
 }
 
 const inviteesOf = (executor: Executor, meetingId: string): Promise<InviteeRow[]> =>
@@ -176,11 +204,28 @@ async function mailFacts(executor: Executor, inviteeId: string) {
   return { ...row, organizerName: organizer?.name ?? "" };
 }
 
-export type MailFacts = NonNullable<Awaited<ReturnType<typeof mailFacts>>>;
+/** The same without an invitee: for people just removed from the meeting (their row is gone). */
+async function meetingMailFacts(executor: Executor, meetingId: string, userId: string | undefined) {
+  const [row] = await executor
+    .select({ meeting: meetings, schedule: meetingSchedules, organizerName: user.name })
+    .from(meetings)
+    .innerJoin(meetingSchedules, eq(meetingSchedules.meetingId, meetings.id))
+    .innerJoin(user, eq(user.id, meetings.organizerId))
+    .where(eq(meetings.id, meetingId));
+  if (!row) return undefined;
+  const [member] = userId ? await executor.select({ email: user.email }).from(user).where(eq(user.id, userId)) : [];
+  return { ...row, memberEmail: member?.email ?? null };
+}
+
+export type MailFacts = Pick<
+  NonNullable<Awaited<ReturnType<typeof mailFacts>>>,
+  "meeting" | "schedule" | "organizerName"
+>;
 
 export function createSchedulingRepository(executor: Executor) {
   return {
     mailFacts: (inviteeId: string) => mailFacts(executor, inviteeId),
+    meetingMailFacts: (meetingId: string, userId?: string) => meetingMailFacts(executor, meetingId, userId),
     setEmailStatus: async (inviteeId: string, status: "queued" | "sent" | "failed"): Promise<void> => {
       await executor.update(meetingInvitees).set({ emailStatus: status }).where(eq(meetingInvitees.id, inviteeId));
     },

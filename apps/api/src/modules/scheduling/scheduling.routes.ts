@@ -6,14 +6,18 @@ import {
   calendarQuerySchema,
   calendarResponseSchema,
   meetingParamsSchema,
+  scheduleAnswerBodySchema,
   scheduleBodySchema,
+  scheduleCancelBodySchema,
   scheduleDetailsSchema,
+  scheduleUpdateBodySchema,
   workspaceParamsSchema,
 } from "@meetapp/contracts";
 import type { FastifyPluginAsyncZod } from "@fastify/type-provider-zod";
 import { z } from "zod";
 import { signedInUser } from "../../plugins/session.ts";
 import { idParam, memberOf, workspaceAccess, type MembershipLookup } from "../../plugins/workspace-access.ts";
+import type { SchedulingChangesService } from "./scheduling-changes.service.ts";
 import type { SchedulingService } from "./scheduling.service.ts";
 
 const tags = ["scheduling"];
@@ -64,10 +68,46 @@ const RESEND = {
   },
 };
 
+const MANAGERS = "Organizer and co-organizers; an invitee gets 403, anyone else 404.";
+
+const UPDATE = {
+  schema: {
+    summary: "Change a scheduled meeting (this occurrence or the series)",
+    description: `${MANAGERS} Moving the series' time resets everyone's answers and drops one-occurrence changes. Invitees change only with the series. Emails: update, invite (added) and cancel (removed), counted toward 1,000 an hour (429).`,
+    tags,
+    params: meetingParamsSchema,
+    body: scheduleUpdateBodySchema,
+    response: { 200: scheduleDetailsSchema },
+  },
+};
+
+const CANCEL = {
+  schema: {
+    summary: "Cancel a scheduled meeting (this occurrence or the series)",
+    description: `${MANAGERS} The series' link stops working at once; every invitee gets a cancellation.`,
+    tags,
+    params: meetingParamsSchema,
+    body: scheduleCancelBodySchema,
+    response: { 200: z.object({ cancelled: z.boolean() }) },
+  },
+};
+
+const ANSWER = {
+  schema: {
+    summary: "Accept, Tentative or Decline (this occurrence or the series)",
+    description: "Invited members only; anyone else gets 404. The organizer sees it within seconds.",
+    tags,
+    params: meetingParamsSchema,
+    body: scheduleAnswerBodySchema,
+    response: { 200: scheduleDetailsSchema },
+  },
+};
+
 export const schedulingRoutes: FastifyPluginAsyncZod<{
   scheduling: SchedulingService;
+  changes: SchedulingChangesService;
   lookup: MembershipLookup;
-}> = async (app, { scheduling, lookup }) => {
+}> = async (app, { scheduling, changes, lookup }) => {
   app.addHook("preValidation", workspaceAccess(lookup));
 
   app.post("/api/v1/workspaces/:workspaceId/scheduled-meetings", CREATE, async (request, reply) =>
@@ -83,6 +123,18 @@ export const schedulingRoutes: FastifyPluginAsyncZod<{
 
   app.post("/api/v1/meetings/:meetingId/schedule/resend", RESEND, async (request) =>
     scheduling.resend(signedInUser(request), idParam(request.params.meetingId)),
+  );
+
+  app.patch("/api/v1/meetings/:meetingId/schedule", UPDATE, async (request) =>
+    changes.update(signedInUser(request), idParam(request.params.meetingId), request.body),
+  );
+
+  app.post("/api/v1/meetings/:meetingId/schedule/cancel", CANCEL, async (request) =>
+    changes.cancel(signedInUser(request), idParam(request.params.meetingId), request.body),
+  );
+
+  app.put("/api/v1/meetings/:meetingId/schedule/answer", ANSWER, async (request) =>
+    changes.answer(signedInUser(request), idParam(request.params.meetingId), request.body),
   );
 
   app.get("/api/v1/meetings/:meetingId/schedule", DETAILS, async (request) =>

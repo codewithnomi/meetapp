@@ -39,6 +39,8 @@ import { createMeetingsRepository } from "./modules/meetings/meetings.repository
 import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import { createSchedulingRepository } from "./modules/scheduling/scheduling.repository.ts";
 import { createMeetingMail } from "./modules/scheduling/scheduling.mail.ts";
+import { createSchedulingChangesRepository } from "./modules/scheduling/scheduling-changes.repository.ts";
+import { createSchedulingChangesService } from "./modules/scheduling/scheduling-changes.service.ts";
 import { createSchedulingService } from "./modules/scheduling/scheduling.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
@@ -219,8 +221,9 @@ const desktopPieces = (db: Database, limiter: RateLimiter) => ({
 });
 
 /** Scheduled meetings and the calendar (F13). */
-function schedulingFor({ db, outbox, config }: MeetingWiring, calls: CallsDeps) {
+function schedulingFor({ db, outbox, config, redis }: MeetingWiring, calls: CallsDeps) {
   const scheduling = createSchedulingRepository(db);
+  const live = createLivePublisher(redis);
   const mail = createMeetingMail({
     scheduling,
     secrets: calls.secrets,
@@ -228,14 +231,16 @@ function schedulingFor({ db, outbox, config }: MeetingWiring, calls: CallsDeps) 
     limiter: calls.limiter,
     emailFrom: config.EMAIL_FROM,
   });
-  return createSchedulingService({
-    scheduling,
-    meetings: calls.meetings,
-    secrets: calls.secrets,
-    limiter: calls.limiter,
-    mail,
-    now: calls.now,
-  });
+  const shared = { meetings: calls.meetings, secrets: calls.secrets, mail, live, now: calls.now };
+  const service = createSchedulingService({ ...shared, scheduling, limiter: calls.limiter });
+  return {
+    scheduling: service,
+    schedulingChanges: createSchedulingChangesService({
+      ...shared,
+      service,
+      changes: createSchedulingChangesRepository(db),
+    }),
+  };
 }
 
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
@@ -254,7 +259,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
   };
   return {
     meetings: createMeetingsService({ ...shared, onChange }),
-    scheduling: schedulingFor(wiring, callsDeps),
+    ...schedulingFor(wiring, callsDeps),
     lookups: createLookupService(shared),
     join: createJoinService(callsDeps),
     lobby: createLobbyService(callsDeps),
