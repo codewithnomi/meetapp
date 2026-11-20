@@ -14,6 +14,7 @@ import {
 } from "../meetings/meeting-secrets.ts";
 import type { MeetingsRepository } from "../meetings/meetings.repository.ts";
 import type { Membership } from "../workspaces/workspaces.permissions.ts";
+import type { MeetingMailer } from "./scheduling.mail.ts";
 import { decide, type ScheduleAction } from "./scheduling.permissions.ts";
 import { expand, lastEnd, ruleFor, type Series } from "./scheduling.recurrence.ts";
 import type {
@@ -29,6 +30,7 @@ export interface SchedulingDeps {
   meetings: MeetingsRepository;
   secrets: MeetingSecretBox;
   limiter: RateLimiter;
+  mail: MeetingMailer;
   now?: () => Date;
 }
 
@@ -85,27 +87,35 @@ async function create(deps: Required<SchedulingDeps>, caller: Caller, membership
   };
   const linkPart = newLinkPart();
   const passcode = newPasscode();
-  const meetingId = await deps.scheduling.create(
-    () => {
-      const meetingNumber = newMeetingNumber();
-      return {
-        workspaceId: membership.workspaceId,
-        organizerId: caller.id,
-        kind: "scheduled" as const,
-        title: body.title,
-        meetingNumber,
-        linkLookup: deps.secrets.linkLookup(linkPart),
-        linkSecretEnc: deps.secrets.seal(linkPart),
-        passcodeCheck: deps.secrets.passcodeCheck(meetingNumber, passcode),
-        passcodeEnc: deps.secrets.seal(passcode),
-        keyVersion: MEETING_KEY_VERSION,
-        expiresAt: scheduledExpiry(lastEnd(seriesOf(schedule))),
-      };
-    },
-    schedule,
-    invitees,
-  );
-  return { meetingId };
+  // The emails are reserved first (AC-F13-27): refused before anything is saved, given back if saving fails.
+  const release = await deps.mail.reserve(caller.id, invitees.length);
+  const saved = await deps.scheduling
+    .create(
+      () => {
+        const meetingNumber = newMeetingNumber();
+        return {
+          workspaceId: membership.workspaceId,
+          organizerId: caller.id,
+          kind: "scheduled" as const,
+          title: body.title,
+          meetingNumber,
+          linkLookup: deps.secrets.linkLookup(linkPart),
+          linkSecretEnc: deps.secrets.seal(linkPart),
+          passcodeCheck: deps.secrets.passcodeCheck(meetingNumber, passcode),
+          passcodeEnc: deps.secrets.seal(passcode),
+          keyVersion: MEETING_KEY_VERSION,
+          expiresAt: scheduledExpiry(lastEnd(seriesOf(schedule))),
+        };
+      },
+      schedule,
+      invitees,
+    )
+    .catch(async (error: unknown) => {
+      await release();
+      throw error;
+    });
+  await deps.mail.send(saved.inviteeIds, "invite");
+  return { meetingId: saved.meetingId };
 }
 
 function occurrencesOf(row: CalendarRow, changes: OccurrenceChangeRow[], range: CalendarRange) {
@@ -206,6 +216,7 @@ async function details(deps: Required<SchedulingDeps>, caller: Caller, meetingId
     hiddenExternal: invitees.length - listed.length,
     myAnswer: me?.answer ?? null,
     canManage,
+    unsentInvites: canManage ? invitees.filter((invitee) => invitee.emailStatus === "failed").length : 0,
     cancelled: schedule.cancelledAt !== null,
   };
 }
@@ -219,6 +230,14 @@ export function createSchedulingService(deps: SchedulingDeps) {
     details: (caller: Caller, meetingId: string) => details(full, caller, meetingId),
     /** Shared with the change, cancel and answer steps (T6). */
     access: (caller: Caller, meetingId: string, action: ScheduleAction) => access(full, caller, meetingId, action),
+    /** Sends the invites that couldn't be sent again (AC-F13-31). */
+    resend: async (caller: Caller, meetingId: string) => {
+      const { invitees } = await access(full, caller, meetingId, "edit");
+      const failed = invitees.filter((invitee) => invitee.emailStatus === "failed").map((invitee) => invitee.id);
+      await full.mail.reserve(caller.id, failed.length);
+      await full.mail.send(failed, "invite");
+      return { resent: failed.length };
+    },
   };
 }
 

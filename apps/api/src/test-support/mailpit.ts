@@ -56,3 +56,9 @@ export async function latestCode(address: string, since: Date): Promise<string> 
   if (!code) throw new Error("The code email has no 6-digit code in its subject");
   return code;
 }
+
+/** The whole message as sent (headers and every part, e.g. the calendar file). */
+export async function rawEmail(id: string): Promise<string> {
+  const response = await fetch(mailpit(`message/${id}/raw`), { signal: AbortSignal.timeout(5_000) });
+  return response.text();
+}

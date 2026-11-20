@@ -56,7 +56,11 @@ export async function startAuthTestApp(options: TestAppOptions = {}): Promise<Au
   await runMigrations(database.url);
   const log = options.logs ? pino(loggerOptions("debug"), options.logs) : pino({ level: "silent" });
   const email = createEmailProvider(config);
-  const emails = createEmailOutbox({ host: config.REDIS_HOST, port: config.REDIS_PORT }, email);
+  const emails = createEmailOutbox(
+    { host: config.REDIS_HOST, port: config.REDIS_PORT },
+    email,
+    `emails-test-${randomUUID()}`,
+  );
   const cache = createCacheProvider(config, log);
   const storage = createStorageProvider(config);
   // Wait for Redis, or the first limit checks would be let through as "Redis unavailable".

@@ -12,7 +12,24 @@ export type EmailTemplate =
   | { kind: "joinRequest"; person: string; email: string; workspace: string }
   | { kind: "requestDecided"; outcome: "approved" | "rejected"; workspace: string }
   | { kind: "someoneTried" }
-  | { kind: "joinMe"; inviter: string; email: string; link: string };
+  | { kind: "joinMe"; inviter: string; email: string; link: string }
+  | MeetingTemplate;
+
+/** F13 invite, update and cancellation; times already written out in the meeting's zone. */
+export interface MeetingTemplate {
+  kind: "meeting";
+  mail: "invite" | "update" | "cancel";
+  title: string;
+  organizer: string;
+  when: string;
+  /** Empty when it doesn't repeat. */
+  repeat: string;
+  description: string;
+  message: string;
+  link: string;
+  meetingNumber: string;
+  passcode: string;
+}
 
 export interface RenderedEmail {
   subject: string;
@@ -40,7 +57,14 @@ interface Body {
   values: Values;
   code?: string;
   button?: { label: string; link: string };
+  /** Paragraphs whose web addresses become links in the HTML version (typed text, AC-F13-28). */
+  linked?: string[];
 }
+
+const URL_PATTERN = /https?:\/\/[^\s<>"']+/g;
+
+/** Escapes, then turns web addresses into links (the address itself is escaped too). */
+const linkify = (value: string) => escapeHtml(value).replace(URL_PATTERN, (url) => `<a href="${url}">${url}</a>`);
 
 function render(body: Body): RenderedEmail {
   const subject = fill(body.subject, body.values, (value) => value.replace(/[<>]/g, ""));
@@ -48,11 +72,14 @@ function render(body: Body): RenderedEmail {
   const htmlParagraphs = body.paragraphs.map(
     (paragraph) => `<p>${fill(escapeHtml(paragraph), body.values, escapeHtml)}</p>`,
   );
+  const linkedText = (body.linked ?? []).filter((paragraph) => paragraph.trim() !== "");
+  const linkedHtml = linkedText.map((paragraph) => `<p style="white-space:pre-wrap">${linkify(paragraph)}</p>`);
   const text = [
     messages.brand,
     "",
     ...(body.code ? [body.code, ""] : []),
     ...textParagraphs.flatMap((paragraph) => [paragraph, ""]),
+    ...linkedText.flatMap((paragraph) => [paragraph, ""]),
     ...(body.button ? [`${body.button.label}: ${body.button.link}`, ""] : []),
     messages.footer,
   ].join("\n");
@@ -67,11 +94,31 @@ function render(body: Body): RenderedEmail {
     `<p style="font-size:20px;font-weight:700">${messages.brand}</p>`,
     code,
     ...htmlParagraphs,
+    ...linkedHtml,
     button,
     `<p style="color:${EMAIL_COLORS.inkMuted};font-size:13px">${escapeHtml(messages.footer)}</p>`,
     "</body></html>",
   ].join("");
   return { subject, text, html };
+}
+
+function meetingBody(template: MeetingTemplate): Body {
+  const m = messages.meeting;
+  const cancel = template.mail === "cancel";
+  return {
+    subject: m.subject[template.mail],
+    paragraphs: [
+      m.intro[template.mail],
+      m.when,
+      ...(template.repeat ? [m.repeats] : []),
+      ...(template.message ? [m.message] : []),
+      ...(cancel ? [m.removedFromCalendar] : [m.howToJoin, m.addToCalendar]),
+      m.why,
+    ],
+    values: { ...template },
+    linked: cancel ? [] : [template.description],
+    ...(cancel ? {} : { button: { label: m.button, link: template.link } }),
+  };
 }
 
 function bodyFor(template: EmailTemplate): Body {
@@ -109,6 +156,8 @@ function bodyFor(template: EmailTemplate): Body {
         values: template,
         button: { label: messages.joinMe.button, link: template.link },
       };
+    case "meeting":
+      return meetingBody(template);
     case "someoneTried":
       return {
         subject: messages.someoneTried.subject,

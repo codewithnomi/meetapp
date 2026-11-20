@@ -38,6 +38,7 @@ import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
 import { createMeetingsRepository } from "./modules/meetings/meetings.repository.ts";
 import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
 import { createSchedulingRepository } from "./modules/scheduling/scheduling.repository.ts";
+import { createMeetingMail } from "./modules/scheduling/scheduling.mail.ts";
 import { createSchedulingService } from "./modules/scheduling/scheduling.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
@@ -218,14 +219,24 @@ const desktopPieces = (db: Database, limiter: RateLimiter) => ({
 });
 
 /** Scheduled meetings and the calendar (F13). */
-const schedulingFor = (db: Database, calls: CallsDeps) =>
-  createSchedulingService({
-    scheduling: createSchedulingRepository(db),
+function schedulingFor({ db, outbox, config }: MeetingWiring, calls: CallsDeps) {
+  const scheduling = createSchedulingRepository(db);
+  const mail = createMeetingMail({
+    scheduling,
+    secrets: calls.secrets,
+    outbox,
+    limiter: calls.limiter,
+    emailFrom: config.EMAIL_FROM,
+  });
+  return createSchedulingService({
+    scheduling,
     meetings: calls.meetings,
     secrets: calls.secrets,
     limiter: calls.limiter,
+    mail,
     now: calls.now,
   });
+}
 
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
@@ -243,7 +254,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
   };
   return {
     meetings: createMeetingsService({ ...shared, onChange }),
-    scheduling: schedulingFor(db, callsDeps),
+    scheduling: schedulingFor(wiring, callsDeps),
     lookups: createLookupService(shared),
     join: createJoinService(callsDeps),
     lobby: createLobbyService(callsDeps),

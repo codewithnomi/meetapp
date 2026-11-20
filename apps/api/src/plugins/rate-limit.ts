@@ -65,11 +65,15 @@ export const RATE_RULES = {
   /** Status asks per meeting ticket: 120 a minute (the app asks every 2 seconds), so a ticket can't flood the
    * database or the call server (S5; F02 verification). */
   attendanceStatus: { name: "attendance-status", limit: 120, windowSeconds: 60 },
+  /** F13: invite, update and cancel emails per person: 1,000 an hour, reserved before anything is saved (AC-F13-27). */
+  meetingEmails: { name: "meeting-emails", limit: 1000, windowSeconds: 60 * 60 },
 } as const satisfies Record<string, RateRule>;
 
 /** The few Redis commands the limiter uses (ioredis has them). */
 export interface CounterStore {
   incr: (key: string) => Promise<number>;
+  incrby: (key: string, increment: number) => Promise<number>;
+  decrby: (key: string, decrement: number) => Promise<number>;
   get: (key: string) => Promise<string | null>;
   pexpire: (key: string, milliseconds: number) => Promise<number>;
   decr: (key: string) => Promise<number>;
@@ -99,6 +103,41 @@ function counterKeys(secret: string) {
   const hmacKey = Buffer.from(hkdfSync("sha256", secret, "meetapp", "rate-limit-v1", 32));
   const subjectOf = (value: string) => createHmac("sha256", hmacKey).update(value.trim().toLowerCase()).digest("hex");
   return (rule: RateRule, subject: string, index: number) => `rate:${rule.name}:${subjectOf(subject)}:${String(index)}`;
+}
+
+interface ReservationParts {
+  store: CounterStore;
+  keyOf: ReturnType<typeof counterKeys>;
+  now: () => number;
+  safely: (work: () => Promise<Verdict>) => Promise<Verdict>;
+}
+
+/** Counting several at once (F13 meeting emails). */
+function reservations({ store, keyOf, now, safely }: ReservationParts) {
+  return {
+    /**
+     * Reserves `count` at once (one atomic step, so two at the same moment can't both pass); when that
+     * goes over the limit nothing stays reserved and the wait is returned (F13 meeting emails).
+     */
+    reserve: (rule: RateRule, subject: string, count: number): Promise<Verdict> =>
+      safely(async () => {
+        if (count <= 0) return undefined;
+        const { index, size, retryAfter } = windowAt(rule, now());
+        const key = keyOf(rule, subject, index);
+        const total = await store.incrby(key, count);
+        if (total === count) await store.pexpire(key, size);
+        if (total <= rule.limit) return undefined;
+        await store.decrby(key, count);
+        return retryAfter;
+      }),
+    /** Gives back a reservation whose work didn't happen (the save failed). */
+    release: async (rule: RateRule, subject: string, count: number): Promise<void> => {
+      await safely(async () => {
+        if (count > 0) await store.decrby(keyOf(rule, subject, windowAt(rule, now()).index), count);
+        return undefined;
+      });
+    },
+  };
 }
 
 export function createRateLimiter({
@@ -138,6 +177,7 @@ export function createRateLimiter({
         return undefined;
       });
     },
+    ...reservations({ store, keyOf, now, safely }),
     /** Counts this request and says whether it is over the limit. */
     take: (rule: RateRule, subject: string): Promise<Verdict> =>
       safely(async () => {

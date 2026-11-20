@@ -51,6 +51,7 @@ export interface InviteeRow {
   emailEnc: string | null;
   keyVersion: number | null;
   answer: MeetingInvitee["answer"];
+  emailStatus: MeetingInvitee["emailStatus"];
 }
 
 const organizerMember = aliasedTable(workspaceMembers, "organizer_member");
@@ -128,23 +129,63 @@ const inviteesOf = (executor: Executor, meetingId: string): Promise<InviteeRow[]
       emailEnc: meetingInvitees.emailEnc,
       keyVersion: meetingInvitees.keyVersion,
       answer: meetingInvitees.answer,
+      emailStatus: meetingInvitees.emailStatus,
     })
     .from(meetingInvitees)
     .leftJoin(user, eq(user.id, meetingInvitees.userId))
     .where(eq(meetingInvitees.meetingId, meetingId))
     .orderBy(meetingInvitees.createdAt);
 
+/** The meeting, its schedule and its invitees, all or nothing. */
+const createScheduled = (
+  executor: Executor,
+  build: () => NewMeeting,
+  schedule: NewSchedule,
+  invitees: NewInvitee[],
+): Promise<{ meetingId: string; inviteeIds: string[] }> =>
+  executor.transaction(async (tx) => {
+    const meeting = await createMeetingsRepository(tx).insert(build);
+    const scope = { meetingId: meeting.id, workspaceId: meeting.workspaceId };
+    await tx.insert(meetingSchedules).values({ ...schedule, ...scope });
+    const rows =
+      invitees.length > 0
+        ? await tx
+            .insert(meetingInvitees)
+            .values(invitees.map((i) => ({ ...i, ...scope })))
+            .returning({ id: meetingInvitees.id })
+        : [];
+    return { meetingId: meeting.id, inviteeIds: rows.map((row) => row.id) };
+  });
+
+/** What one meeting email needs (the address is opened only when it is sent, design "Privacy"). */
+async function mailFacts(executor: Executor, inviteeId: string) {
+  const [row] = await executor
+    .select({
+      invitee: meetingInvitees,
+      memberEmail: user.email,
+      meeting: meetings,
+      schedule: meetingSchedules,
+    })
+    .from(meetingInvitees)
+    .innerJoin(meetings, eq(meetings.id, meetingInvitees.meetingId))
+    .innerJoin(meetingSchedules, eq(meetingSchedules.meetingId, meetingInvitees.meetingId))
+    .leftJoin(user, eq(user.id, meetingInvitees.userId))
+    .where(eq(meetingInvitees.id, inviteeId));
+  if (!row) return undefined;
+  const [organizer] = await executor.select({ name: user.name }).from(user).where(eq(user.id, row.meeting.organizerId));
+  return { ...row, organizerName: organizer?.name ?? "" };
+}
+
+export type MailFacts = NonNullable<Awaited<ReturnType<typeof mailFacts>>>;
+
 export function createSchedulingRepository(executor: Executor) {
   return {
-    /** The meeting, its schedule and its invitees, all or nothing. */
-    create: (build: () => NewMeeting, schedule: NewSchedule, invitees: NewInvitee[]): Promise<string> =>
-      executor.transaction(async (tx) => {
-        const meeting = await createMeetingsRepository(tx).insert(build);
-        const scope = { meetingId: meeting.id, workspaceId: meeting.workspaceId };
-        await tx.insert(meetingSchedules).values({ ...schedule, ...scope });
-        if (invitees.length > 0) await tx.insert(meetingInvitees).values(invitees.map((i) => ({ ...i, ...scope })));
-        return meeting.id;
-      }),
+    mailFacts: (inviteeId: string) => mailFacts(executor, inviteeId),
+    setEmailStatus: async (inviteeId: string, status: "queued" | "sent" | "failed"): Promise<void> => {
+      await executor.update(meetingInvitees).set({ emailStatus: status }).where(eq(meetingInvitees.id, inviteeId));
+    },
+    create: (build: () => NewMeeting, schedule: NewSchedule, invitees: NewInvitee[]) =>
+      createScheduled(executor, build, schedule, invitees),
 
     calendar: (userId: string, workspaceId: string, range: CalendarRange) =>
       calendarRows(executor, userId, workspaceId, range),

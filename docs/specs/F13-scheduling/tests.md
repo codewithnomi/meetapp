@@ -64,7 +64,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-06: Calendar file for an invite or update
 - **Covers:** AC-F13-15, AC-F13-18
 - **Level:** unit
-- **File:** `apps/api/src/emails/meeting-ics.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.ics.test.ts`
 - **Given** a single and a repeating meeting with a description
 - **When** the .ics is built
 - **Then** `METHOD:REQUEST`, stable UID = meeting id, SEQUENCE grows per change, `DTSTART;TZID`, `RRULE`, ORGANIZER, `ATTENDEE;RSVP=FALSE`; parses with a standard iCalendar parser
@@ -72,7 +72,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-07: Calendar file for one changed or skipped occurrence
 - **Covers:** AC-F13-18, AC-F13-19
 - **Level:** unit
-- **File:** `apps/api/src/emails/meeting-ics.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.ics.test.ts`
 - **Given** a series with one cancelled and one moved occurrence
 - **When** the .ics is built
 - **Then** the cancelled one is an `EXDATE`; the moved one is a `RECURRENCE-ID` event with the new time
@@ -80,7 +80,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-08: Calendar file for a cancellation
 - **Covers:** AC-F13-19
 - **Level:** unit
-- **File:** `apps/api/src/emails/meeting-ics.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.ics.test.ts`
 - **Given** a cancelled meeting, and a cancelled series
 - **When** the .ics is built
 - **Then** `METHOD:CANCEL` with the same UID and a higher SEQUENCE
@@ -88,7 +88,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-09: Plain-text escaping in the .ics, email HTML and text
 - **Covers:** AC-F13-28
 - **Level:** unit
-- **File:** `apps/api/src/emails/meeting-ics.test.ts and apps/api/src/emails/meeting-invite.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.ics.test.ts and apps/api/src/modules/scheduling/scheduling.mail.test.ts`
 - **Given** a title and description with `<script>`, `<img onerror>`, commas, semicolons, newlines and a link
 - **When** the .ics, the HTML and the text email are built
 - **Then** HTML is escaped, the .ics follows RFC 5545 escaping, a link is clickable in HTML, and nothing runs
@@ -416,7 +416,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-50: 1,000 emails an hour refused before saving
 - **Covers:** AC-F13-27
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.limits.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.emails.integration.test.ts and apps/api/src/plugins/rate-limit.test.ts`
 - **Given** a person near 1,000 meeting emails this hour
 - **When** a Send, then a Send update and a cancellation, would go over
 - **Then** 429 with the wait time; nothing is created or changed; updates and cancellations count
@@ -424,7 +424,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-51: Two Sends at once cannot pass the email limit
 - **Covers:** AC-F13-27
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.limits.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.emails.integration.test.ts`
 - **Given** a person with room for one 600-email Send only
 - **When** two such Sends are sent at the same moment
 - **Then** exactly one succeeds; the reserved count is given back when a transaction fails
@@ -432,7 +432,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-52: Invite email in Mailpit
 - **Covers:** AC-F13-15, AC-F13-30
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.emails.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.emails.integration.test.ts`
 - **Given** a created meeting with an outside and a member invitee
 - **When** the queue runs
 - **Then** each gets an email with title, time and zone, organizer, description, Join link, ID and passcode, and a valid .ics attachment (repeat rule included); the footer names who invited them and why
@@ -584,7 +584,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-71: No address in the queue
 - **Covers:** AC-F13-30
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.sweep.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.mail.test.ts`
 - **Given** an outside invitee and a paused email queue
 - **When** the Send is made and Redis is read
 - **Then** job data holds only invitee id and template, no address; the database holds only the encrypted value and hash
@@ -592,7 +592,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-72: Failed email and Retry
 - **Covers:** AC-F13-31
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.emails.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.emails.integration.test.ts`
 - **Given** a mail server that refuses one address
 - **When** the queue uses its 5 tries, then the organizer reads the details and POSTs resend
 - **Then** the meeting exists; that invitee is `failed`, others `sent`; resend re-queues only the failed ones; an invitee calling resend gets 403
@@ -600,7 +600,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-73: Injection and open relay
 - **Covers:** AC-F13-28, AC-F13-27
 - **Level:** security
-- **File:** `apps/api/src/modules/scheduling/scheduling.security.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling.emails.integration.test.ts`
 - **Given** titles and descriptions with HTML, script, header-breaking newlines (`\r\nBcc:`), and `.ics` injection lines (`END:VEVENT`)
 - **When** the meeting is created, emailed and read back
 - **Then** text is returned unchanged and shown as text; no extra header, recipient or calendar line appears; mail goes only to the meeting's invitees

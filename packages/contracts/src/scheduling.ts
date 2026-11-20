@@ -148,6 +148,8 @@ export const scheduleDetailsSchema = z
     hiddenExternal: z.number().int(),
     myAnswer: z.enum(INVITE_ANSWERS).nullable(),
     canManage: z.boolean(),
+    /** Invites that couldn't be sent after every try; organizers only, 0 for others (AC-F13-31). */
+    unsentInvites: z.number().int(),
     cancelled: z.boolean(),
   })
   .meta({ id: "ScheduleDetails" });

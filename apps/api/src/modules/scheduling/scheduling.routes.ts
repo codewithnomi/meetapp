@@ -53,6 +53,17 @@ const DETAILS = {
   },
 };
 
+const RESEND = {
+  schema: {
+    summary: "Send again the invites that couldn't be sent",
+    description:
+      "Organizer and co-organizers (an invitee: 403; anyone else: 404). Counts toward the 1,000 meeting emails an hour (429).",
+    tags,
+    params: meetingParamsSchema,
+    response: { 200: z.object({ resent: z.number().int() }) },
+  },
+};
+
 export const schedulingRoutes: FastifyPluginAsyncZod<{
   scheduling: SchedulingService;
   lookup: MembershipLookup;
@@ -68,6 +79,10 @@ export const schedulingRoutes: FastifyPluginAsyncZod<{
       from: new Date(request.query.from),
       to: new Date(request.query.to),
     }),
+  );
+
+  app.post("/api/v1/meetings/:meetingId/schedule/resend", RESEND, async (request) =>
+    scheduling.resend(signedInUser(request), idParam(request.params.meetingId)),
   );
 
   app.get("/api/v1/meetings/:meetingId/schedule", DETAILS, async (request) =>

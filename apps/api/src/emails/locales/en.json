@@ -53,5 +53,25 @@
     "intro": "{{inviter}} invited you to MeetApp, an app for chats, calls and meetings.",
     "howTo": "Create a free account with {{email}}. Then {{inviter}} can send you a chat request.",
     "button": "Get MeetApp"
+  },
+  "meeting": {
+    "subject": {
+      "invite": "Invitation: {{title}} ({{when}})",
+      "update": "Updated: {{title}} ({{when}})",
+      "cancel": "Cancelled: {{title}} ({{when}})"
+    },
+    "intro": {
+      "invite": "{{organizer}} invited you to “{{title}}”.",
+      "update": "{{organizer}} changed “{{title}}”.",
+      "cancel": "{{organizer}} cancelled “{{title}}”."
+    },
+    "when": "When: {{when}}",
+    "repeats": "Repeats: {{repeat}}",
+    "howToJoin": "Join with the link, or with meeting ID {{meetingNumber}} and passcode {{passcode}}.",
+    "addToCalendar": "The attached calendar file adds it to Google Calendar, Outlook or Apple Calendar.",
+    "removedFromCalendar": "The attached calendar file removes it from your calendar.",
+    "message": "Message from {{organizer}}: {{message}}",
+    "button": "Join the meeting",
+    "why": "You got this email because {{organizer}} added your address to a MeetApp meeting."
   }
 }

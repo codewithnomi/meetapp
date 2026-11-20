@@ -9,11 +9,13 @@ const TEST_SECRET = "test-key-" + "x".repeat(32);
 function memoryStore() {
   const values = new Map<string, number>();
   const store: CounterStore = {
-    incr: async (key) => {
-      const next = (values.get(key) ?? 0) + 1;
+    incr: async (key) => store.incrby(key, 1),
+    incrby: async (key, increment) => {
+      const next = (values.get(key) ?? 0) + increment;
       values.set(key, next);
       return next;
     },
+    decrby: async (key, decrement) => store.incrby(key, -decrement),
     get: async (key) => {
       const value = values.get(key);
       return value === undefined ? null : String(value);
@@ -133,6 +135,8 @@ describe("TC-F01-35 [AC-F01-13] limits reveal nothing", () => {
       get: async () => Promise.reject(new Error("redis is down")),
       pexpire: async () => Promise.reject(new Error("redis is down")),
       decr: async () => Promise.reject(new Error("redis is down")),
+      incrby: async () => Promise.reject(new Error("redis is down")),
+      decrby: async () => Promise.reject(new Error("redis is down")),
       del: async () => Promise.reject(new Error("redis is down")),
     };
     const limiter = createRateLimiter({
@@ -143,5 +147,21 @@ describe("TC-F01-35 [AC-F01-13] limits reveal nothing", () => {
     expect(await limiter.take(RATE_RULES.codeEmails, "d@example.test")).toBeUndefined();
     expect(await limiter.blocked(RATE_RULES.wrongPassword, "d@example.test")).toBeUndefined();
     expect(problems).toHaveLength(2);
+  });
+});
+
+describe("reserving several at once (F13 meeting emails)", () => {
+  it("TC-F13-50 [AC-F13-27] a reservation over the limit keeps nothing and returns the wait; a release gives back", async () => {
+    const clock = { now: 0 };
+    const { store } = memoryStore();
+    const limiter = limiterAt(clock, store);
+    const rule = RATE_RULES.meetingEmails;
+    expect(await limiter.reserve(rule, "p1", 600)).toBeUndefined();
+    expect(await limiter.reserve(rule, "p1", 401)).toBe(3600);
+    expect(await limiter.reserve(rule, "p1", 400)).toBeUndefined();
+    expect(await limiter.reserve(rule, "p1", 1)).toBe(3600);
+    await limiter.release(rule, "p1", 400);
+    expect(await limiter.reserve(rule, "p1", 400)).toBeUndefined();
+    expect(await limiter.reserve(rule, "p2", 1000)).toBeUndefined();
   });
 });

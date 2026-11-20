@@ -9,6 +9,8 @@ export interface EmailMessage {
   text: string;
   /** Optional HTML version; mail apps that can't show it use `text`. */
   html?: string;
+  /** A calendar file (F13): sent as the calendar part and as invite.ics. */
+  calendar?: { method: "REQUEST" | "CANCEL"; content: string };
 }
 
 export function createEmailProvider(config: Config) {
@@ -21,7 +23,14 @@ export function createEmailProvider(config: Config) {
   });
   return {
     async send(message: EmailMessage): Promise<void> {
-      await transport.sendMail({ from: config.EMAIL_FROM, ...message });
+      const { calendar, ...rest } = message;
+      await transport.sendMail({
+        from: config.EMAIL_FROM,
+        ...rest,
+        ...(calendar
+          ? { icalEvent: { method: calendar.method, filename: "invite.ics", content: calendar.content } }
+          : {}),
+      });
     },
     close: async () => {
       transport.close();
