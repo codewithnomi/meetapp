@@ -160,6 +160,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
     meetings,
     scheduling,
     schedulingChanges,
+    reminders,
     lookups,
     join,
     lobby,
@@ -174,7 +175,7 @@ async function registerAccountRoutes(app: FastifyInstance, config: Config, accou
     chatAfter,
   } = accounts;
   await app.register(meetingsRoutes, { meetings, lookups, lookup: membershipLookup, idempotency });
-  await app.register(schedulingRoutes, { scheduling, changes: schedulingChanges, lookup: membershipLookup });
+  await app.register(schedulingRoutes, { scheduling, changes: schedulingChanges, reminders, lookup: membershipLookup });
   await app.register(callsRoutes, { join, lobby, rejoin, record });
   await app.register(liveKitWebhookRoutes, { webhooks });
   await app.register(controlsRoutes, { controls });

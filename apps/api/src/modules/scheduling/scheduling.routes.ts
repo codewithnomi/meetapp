@@ -6,6 +6,9 @@ import {
   calendarQuerySchema,
   calendarResponseSchema,
   meetingParamsSchema,
+  reminderDismissBodySchema,
+  remindersDueQuerySchema,
+  remindersDueSchema,
   scheduleAnswerBodySchema,
   scheduleBodySchema,
   scheduleCancelBodySchema,
@@ -19,6 +22,7 @@ import { signedInUser } from "../../plugins/session.ts";
 import { idParam, memberOf, workspaceAccess, type MembershipLookup } from "../../plugins/workspace-access.ts";
 import type { SchedulingChangesService } from "./scheduling-changes.service.ts";
 import type { SchedulingService } from "./scheduling.service.ts";
+import type { RemindersService } from "./reminders.service.ts";
 
 const tags = ["scheduling"];
 
@@ -103,11 +107,34 @@ const ANSWER = {
   },
 };
 
+const DUE = {
+  schema: {
+    summary: "Reminders that should be showing now",
+    description:
+      "For the app on start and reconnect (AC-F13-22): due, not dismissed (or snoozed past), meeting not ended. The app's time zone is kept for all-day reminders at 09:00.",
+    tags,
+    params: workspaceParamsSchema,
+    querystring: remindersDueQuerySchema,
+    response: { 200: remindersDueSchema },
+  },
+};
+
+const DISMISS = {
+  schema: {
+    summary: "Dismiss or snooze (5 minutes) a reminder",
+    description: "Closes it in every window and device of this person. 404 for a meeting the caller may not see.",
+    tags,
+    body: reminderDismissBodySchema,
+    response: { 200: z.object({ snoozedUntil: z.iso.datetime().nullable() }) },
+  },
+};
+
 export const schedulingRoutes: FastifyPluginAsyncZod<{
   scheduling: SchedulingService;
   changes: SchedulingChangesService;
+  reminders: RemindersService;
   lookup: MembershipLookup;
-}> = async (app, { scheduling, changes, lookup }) => {
+}> = async (app, { scheduling, changes, reminders, lookup }) => {
   app.addHook("preValidation", workspaceAccess(lookup));
 
   app.post("/api/v1/workspaces/:workspaceId/scheduled-meetings", CREATE, async (request, reply) =>
@@ -135,6 +162,14 @@ export const schedulingRoutes: FastifyPluginAsyncZod<{
 
   app.put("/api/v1/meetings/:meetingId/schedule/answer", ANSWER, async (request) =>
     changes.answer(signedInUser(request), idParam(request.params.meetingId), request.body),
+  );
+
+  app.get("/api/v1/workspaces/:workspaceId/reminders/due", DUE, async (request) =>
+    reminders.due(signedInUser(request), memberOf(request), request.query.timeZone),
+  );
+
+  app.post("/api/v1/reminders/dismiss", DISMISS, async (request) =>
+    reminders.dismiss(signedInUser(request), request.body),
   );
 
   app.get("/api/v1/meetings/:meetingId/schedule", DETAILS, async (request) =>

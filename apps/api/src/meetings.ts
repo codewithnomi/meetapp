@@ -37,11 +37,6 @@ import { createLookupTokens } from "./modules/meetings/lookup-token.ts";
 import { createMeetingSecrets } from "./modules/meetings/meeting-secrets.ts";
 import { createMeetingsRepository } from "./modules/meetings/meetings.repository.ts";
 import { createMeetingsService } from "./modules/meetings/meetings.service.ts";
-import { createSchedulingRepository } from "./modules/scheduling/scheduling.repository.ts";
-import { createMeetingMail } from "./modules/scheduling/scheduling.mail.ts";
-import { createSchedulingChangesRepository } from "./modules/scheduling/scheduling-changes.repository.ts";
-import { createSchedulingChangesService } from "./modules/scheduling/scheduling-changes.service.ts";
-import { createSchedulingService } from "./modules/scheduling/scheduling.service.ts";
 import type { RateLimiter } from "./plugins/rate-limit.ts";
 import type { LiveKitProvider } from "./providers/livekit.ts";
 import { createChatsRepository } from "./modules/chats/chats.repository.ts";
@@ -63,8 +58,9 @@ import { createPresenceStore } from "./modules/chats/chats-presence.ts";
 import { createChatsStatusService, type StatusDeps } from "./modules/chats/chats-status.service.ts";
 import { createManualStatusRepository } from "./modules/chats/chats-manual-status.repository.ts";
 import { chatCallsFor } from "./chat-calls.ts";
+import { schedulingFor } from "./scheduling.ts";
 
-interface MeetingWiring {
+export interface MeetingWiring {
   config: Config;
   db: Database;
   livekit: LiveKitProvider;
@@ -221,37 +217,26 @@ const desktopPieces = (db: Database, limiter: RateLimiter) => ({
 });
 
 /** Scheduled meetings and the calendar (F13). */
-function schedulingFor({ db, outbox, config, redis }: MeetingWiring, calls: CallsDeps) {
-  const scheduling = createSchedulingRepository(db);
-  const live = createLivePublisher(redis);
-  const mail = createMeetingMail({
-    scheduling,
-    secrets: calls.secrets,
-    outbox,
-    limiter: calls.limiter,
-    emailFrom: config.EMAIL_FROM,
+
+/**
+ * The call jobs (F02), with chat's own clean-up (F03 design 3.4, 6) and scheduling's reminders and
+ * clean-ups (F13) in the same minute-by-minute run; one failing doesn't stop the others.
+ */
+function callJobsFor(wiring: MeetingWiring, calls: CallsDeps, more: (() => Promise<unknown>)[]) {
+  return createCallJobs(calls, {
+    keepSimulated: wiring.config.CALLS_KEEP_SIMULATED_PEOPLE === "true",
+    alsoCleanUp: async () => {
+      await Promise.allSettled(more.map((run) => run()));
+    },
   });
-  const shared = { meetings: calls.meetings, secrets: calls.secrets, mail, live, now: calls.now };
-  const service = createSchedulingService({ ...shared, scheduling, limiter: calls.limiter });
-  return {
-    scheduling: service,
-    schedulingChanges: createSchedulingChangesService({
-      ...shared,
-      service,
-      changes: createSchedulingChangesRepository(db),
-    }),
-  };
 }
 
 export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter) {
   const callsDeps = callsDepsFor(wiring, limiter);
   const shared = { ...callsDeps, repository: callsDeps.meetings };
   const chat = chatPieces(wiring, callsDeps);
-  const callJobs = createCallJobs(callsDeps, {
-    keepSimulated: wiring.config.CALLS_KEEP_SIMULATED_PEOPLE === "true",
-    // Chat's own clean-up runs in the same minute-by-minute job (F03 design 3.4, 6).
-    alsoCleanUp: () => chat.chatUpkeep.cleanUp(),
-  });
+  const scheduling = schedulingFor(wiring, callsDeps);
+  const callJobs = callJobsFor(wiring, callsDeps, [chat.chatUpkeep.cleanUp, scheduling.schedulingUpkeep.minute]);
   const { config, db } = wiring;
   const onChange = async (meetingId: string, change: { chatModeBy?: string } = {}) => {
     await refreshCall(callsDeps, meetingId);
@@ -259,7 +244,7 @@ export function createMeetingPieces(wiring: MeetingWiring, limiter: RateLimiter)
   };
   return {
     meetings: createMeetingsService({ ...shared, onChange }),
-    ...schedulingFor(wiring, callsDeps),
+    ...scheduling,
     lookups: createLookupService(shared),
     join: createJoinService(callsDeps),
     lobby: createLobbyService(callsDeps),

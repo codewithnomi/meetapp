@@ -4,7 +4,12 @@ import { z } from "zod";
 import { chatEventSchema } from "./chat-news.ts";
 import { ringMessageSchema, ringStopMessageSchema, ringtoneSettingsSchema } from "./chat-calls.ts";
 import { systemNoteSchema } from "./chat-notes.ts";
-import { calendarMessageSchema, invitedMessageSchema } from "./scheduling.ts";
+import {
+  calendarMessageSchema,
+  invitedMessageSchema,
+  reminderDismissedMessageSchema,
+  reminderMessageSchema,
+} from "./scheduling.ts";
 
 export const CONVERSATION_KINDS = ["direct", "group", "meeting"] as const;
 export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
@@ -265,6 +270,8 @@ export const lineServerMessageSchema = z.discriminatedUnion("t", [
   /** F13: calendar changes and invitations. */
   calendarMessageSchema,
   invitedMessageSchema,
+  reminderMessageSchema,
+  reminderDismissedMessageSchema,
 ]);
 export type LineServerMessage = z.infer<typeof lineServerMessageSchema>;
 

@@ -170,3 +170,35 @@ export const invitedMessageSchema = z.object({
   title: z.string(),
   organizerName: z.string(),
 });
+
+export const REMINDER_KINDS = ["before", "start"] as const;
+/** Snooze is 5 minutes, as in Teams (AC-F13-21). */
+export const SNOOZE_MINUTES = 5;
+
+const reminderFields = {
+  meetingId: z.uuid(),
+  originalStart: z.iso.datetime(),
+  kind: z.enum(REMINDER_KINDS),
+};
+
+export const reminderSchema = z
+  .object({
+    ...reminderFields,
+    title: z.string(),
+    startsAt: z.iso.datetime(),
+    endsAt: z.iso.datetime(),
+    allDay: z.boolean(),
+  })
+  .meta({ id: "Reminder" });
+
+/** Live line: a reminder is due (AC-F13-21). */
+export const reminderMessageSchema = reminderSchema.extend({ t: z.literal("reminder") });
+/** Live line: dismissed or snoozed in one window, so every other window and device closes it. */
+export const reminderDismissedMessageSchema = z.object({ t: z.literal("reminder-dismissed"), ...reminderFields });
+
+export const remindersDueQuerySchema = z.object({ timeZone: z.string().min(1).max(64) });
+export const remindersDueSchema = z.object({ reminders: z.array(reminderSchema) }).meta({ id: "RemindersDue" });
+export const reminderDismissBodySchema = z
+  .object({ ...reminderFields, snooze: z.boolean().default(false) })
+  .meta({ id: "DismissReminder" });
+export type Reminder = z.infer<typeof reminderSchema>;
