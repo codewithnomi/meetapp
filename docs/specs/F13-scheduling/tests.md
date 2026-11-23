@@ -192,7 +192,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-22: Join button window
 - **Covers:** AC-F13-03
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingBlock/MeetingBlock.test.tsx`
+- **File:** `packages/ui/src/molecules/MeetingBlock/MeetingBlock.test.tsx`
 - **Given** a meeting starting in 6 min, 5 min, now (half over) and ended
 - **When** each renders
 - **Then** Join shows from 5 minutes before start until the end only, and goes to the pre-join of that meeting or occurrence; the same on the details panel
@@ -200,7 +200,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-23: Block states and spoken text
 - **Covers:** AC-F13-06, AC-F13-24
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingBlock/MeetingBlock.test.tsx`
+- **File:** `packages/ui/src/molecules/MeetingBlock/MeetingBlock.test.tsx`
 - **Given** answers Declined, Tentative, Accepted and No answer, in a series
 - **When** blocks render
 - **Then** Declined is dimmed and struck through but present; Tentative striped; a repeat icon for a series; the accessible name reads title, time and the person's answer
@@ -384,7 +384,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-46: Pictures of the new parts
 - **Covers:** AC-F13-24
 - **Level:** visual
-- **File:** `packages/ui/src/organisms/*/*.stories.tsx`
+- **File:** `packages/ui/src/{molecules,organisms}/*/*.stories.tsx`
 - **Given** stories for CalendarGrid, MeetingBlock, DateTimeField, RepeatPicker, ScheduleForm, MeetingDetailsPanel, ReminderCard in every state
 - **When** the screenshot check runs in light and dark
 - **Then** pictures match, and the gallery axe check (contrast, WCAG 2.2 AA) passes

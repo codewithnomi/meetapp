@@ -64,6 +64,7 @@ import {
   Upload,
   type LucideIcon,
   PhoneMissed,
+  Repeat,
 } from "lucide-react";
 
 export const ICONS = {
@@ -135,6 +136,8 @@ export const ICONS = {
   "phone-missed": PhoneMissed,
   // F04 desktop app: Settings → Notifications.
   bell: Bell,
+  // F13 scheduling: a meeting that repeats.
+  repeat: Repeat,
 } satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICONS;

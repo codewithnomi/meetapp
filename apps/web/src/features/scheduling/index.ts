@@ -6,3 +6,4 @@ export {
   type ScheduleError,
   type ScheduleField,
 } from "./schedule-validation.ts";
+export { dayLabels, formatRange, formatTime, hourLabels, minuteOfDay, type TimeFormat } from "./time-format.ts";
