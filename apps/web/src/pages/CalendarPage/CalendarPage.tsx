@@ -9,6 +9,7 @@ import { useSession } from "../../features/auth/index.ts";
 import type { PreJoinState } from "../../features/meetings/index.ts";
 import {
   CALENDAR_VIEWS,
+  firstDayOf,
   hourLabels,
   minuteOfDay,
   rangeOf,
@@ -124,7 +125,7 @@ function Header({
 function useCalendarState(now: () => Date) {
   const [view, setView] = useState<CalendarView>(savedView);
   const [anchor, setAnchor] = useState(now);
-  const range = useMemo(() => rangeOf(view, anchor), [view, anchor]);
+  const range = useMemo(() => rangeOf(view, anchor, firstDayOf(navigator.language)), [view, anchor]);
   return {
     view,
     anchor,

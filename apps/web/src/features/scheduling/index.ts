@@ -19,6 +19,7 @@ export {
 } from "./calendar-api.ts";
 export {
   CALENDAR_VIEWS,
+  firstDayOf,
   rangeOf,
   sameDay,
   savedView,

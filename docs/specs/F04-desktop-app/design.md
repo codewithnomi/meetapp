@@ -40,7 +40,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - `features/notifications/`: Settings → Notifications' switches (AC-36). `features/desktop-app/`: tray commands, start at login, meeting links, About.
 - Pages:
   - Settings → **General**: start at login (AC-09).
-  - Settings → **Notifications**: the five switches (AC-36).
+  - Settings → **Notifications**: the five switches (AC-36), and Meeting invites (added by F13).
   - Settings → **About**: version and "Updates are turned off" (AC-50).
   - Opening a meeting link goes to F02's pre-join (AC-10).
 
@@ -117,7 +117,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
   - the × closes a card.
   
   A click is sent back to the main window that sent the card (open chat, View lobby, Admit).
-- **Main checks every card** with a Zod schema: the kind is message, mention, lobby or running; the text is cut to 100 characters and names to 80; photos follow F16's rules (PNG, JPEG or WebP, about 400 KB at most); at most 10 cards a second from one window, the rest dropped. The preload list in apps/desktop gains `notices` and the new `app` calls (a design change, as F16 did).
+- **Main checks every card** with a Zod schema: the kind is message, mention, lobby or running (F13 adds reminder, with Join, Snooze and Dismiss and no 8-second timer, and invite; both shown once across windows of one person); the text is cut to 100 characters and names to 80; photos follow F16's rules (PNG, JPEG or WebP, about 400 KB at most); at most 10 cards a second from one window, the rest dropped. The preload list in apps/desktop gains `notices` and the new `app` calls (a design change, as F16 did).
 - Sound: one short chime per card, from the app's own files, if Sound is on.
 - Missed calls are left as they are (F16 Mac notification, D080; AC-35).
 
@@ -134,7 +134,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
 - **Server, `users`:**
   - `manual_status` (text, null)
   - `manual_status_until` (timestamp, null)
-  - `notify_messages`, `notify_mentions`, `notify_lobby`, `notify_sound`, `notify_preview` (booleans, default true)
+  - `notify_messages`, `notify_mentions`, `notify_lobby`, `notify_sound`, `notify_preview` (booleans, default true); F13 adds `notify_invites`
   
   One migration, adding columns only (db-migration skill). They are part of the account's export and are removed with the account (privacy-legal.md).
 - **This computer (userData):**
@@ -150,7 +150,7 @@ The window remembers its size and place. A self-updater from GitHub releases is 
   - Answers 200 with `{ status, chosen, until }`: the effective status, the hand-set one (or null) and its end. A wrong value or `until` gives 400.
   - `GET /api/v1/me/status` gives the same, so the picture menu shows it (added during T8).
   - Being rate-limited (20 a minute) gives 429.
-- `GET /api/v1/me/notification-settings` returns the five switches. `PUT` saves them (partial update allowed; unknown keys give 400; 20 a minute).
+- `GET /api/v1/me/notification-settings` returns the switches (F13 adds `invites`). `PUT` saves them (partial update allowed; unknown keys give 400; 20 a minute).
 - Live line: `status` messages can carry the new values. Older apps ignore values they don't know.
 
 ## 6. Edge cases & errors

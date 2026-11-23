@@ -67,6 +67,8 @@ describe("the calendar", () => {
   });
 
   it("TC-F13-19 [AC-F13-01] Day, Week, Month, back, forward and Today; the view is remembered", async () => {
+    // A region whose week starts on Monday (US English starts on Sunday, TC-F13-43).
+    vi.spyOn(navigator, "language", "get").mockReturnValue("en-GB");
     fakeApi({ [calendarPath(IDS.aria)]: () => json({ occurrences: [], truncated: false }) });
     open();
     const last = () => {
@@ -266,4 +268,23 @@ describe("a meeting's details", () => {
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     await vi.waitFor(() => expect(api.callsTo("POST", `/api/v1/meetings/${MEETING}/schedule/resend`)).toHaveLength(1));
   });
+});
+
+describe("another language and region", () => {
+  it.each([
+    ["de-DE", "Montag, 23. November", "Sonntag, 29. November"],
+    ["ja-JP", "11月22日日曜日", "11月28日土曜日"],
+  ])(
+    "TC-F13-43 [AC-F13-02, AC-F13-25] %s: weekday names, dates and the first day of the week follow it",
+    async (language, first, last) => {
+      vi.spyOn(navigator, "language", "get").mockReturnValue(language);
+      localStorage.setItem("meetapp:calendar-view", "week");
+      fakeApi({ [calendarPath(IDS.aria)]: () => json({ occurrences: [], truncated: false }) });
+      open();
+      await screen.findByRole("group", { name: first });
+      const days = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
+      expect(days[0]).toBe(first);
+      expect(days.at(-1)).toBe(last);
+    },
+  );
 });

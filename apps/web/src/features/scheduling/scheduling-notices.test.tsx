@@ -39,7 +39,9 @@ const shown: NoticeCard[] = [];
 const removed: string[] = [];
 let press: (action: unknown) => void = () => undefined;
 
-const minutes = (n: number) => new Date(Date.now() + n * 60_000).toISOString();
+// One clock reading per test, so the same reminder built twice is exactly the same.
+let base = Date.now();
+const minutes = (n: number) => new Date(base + n * 60_000).toISOString();
 const reminder = (kind: "before" | "start" = "before") => ({
   t: "reminder",
   meetingId: MEETING,
@@ -71,6 +73,7 @@ function start(status?: { chosen: string; until: null }) {
 }
 
 beforeEach(() => {
+  base = Date.now();
   shown.length = 0;
   removed.length = 0;
   fake.settings = { messages: true, mentions: true, lobby: true, sound: true, preview: true, invites: true };

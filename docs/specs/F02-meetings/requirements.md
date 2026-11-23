@@ -27,7 +27,7 @@ The owner asked for meetings to work like Microsoft Teams, so people coming from
 - **Two ways to make a meeting:**
   - **Meet now** starts a meeting at once.
   - **Get a meeting link** makes a meeting to join later and gives a link to share.
-  - Meetings with a date and time are F13.
+  - Meetings with a date and time are F13 (done: the Calendar, and Upcoming on the Meetings screen, AC-F13-23).
 - **Join** with the link, or with the **meeting ID and passcode** shown under it.
 - **Lobby:**
   - By default, workspace members join directly. External people and guests wait in the lobby until the organizer, a co-organizer or a presenter lets them in.

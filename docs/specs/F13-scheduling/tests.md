@@ -362,7 +362,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **Level:** component
 - **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`
 - **Given** the language and region set to German and to Japanese, 24-hour
-- **When** the calendar and form render
+- **When** the calendar renders (the Week view; the Work week stays Monday to Friday)
 - **Then** dates, weekday names and first day of the week follow them
 
 ### TC-F13-44: Description links and plain text

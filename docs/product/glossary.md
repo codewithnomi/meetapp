@@ -58,6 +58,15 @@ Words used in MeetApp's documents and code, in plain English.
 - **Small call view:** the small panel at the bottom right of the MeetApp window that shows the call while the person is on another screen (F17): who is talking, the time, mute, camera, Leave; one click shows the full call.
 - **Missed-call notification:** the Mac's own notification for a call nobody answered while MeetApp wasn't in front (needs a signed app, D080).
 
+## Scheduling and calendar (F13)
+- **Scheduled meeting:** a meeting with a date and time, and people invited to it; it has a normal meeting link, ID and passcode.
+- **Series / occurrence:** a repeating meeting is a series; each date of it is an occurrence. Changes and answers apply to "This meeting" (one occurrence) or "The whole series".
+- **Invitee:** someone invited: a member of the workspace, or anyone by email address (they get the invite as an email with a calendar file).
+- **Answer:** an invitee's Accept, Maybe (tentative) or Decline; "No answer" until they choose.
+- **Calendar file (.ics):** the standard file in invite emails that Outlook, Google Calendar and Apple Calendar understand.
+- **Reminder:** the corner card 15 minutes before a meeting and at its start, with Join, Snooze (5 minutes) and Dismiss; it stays until answered.
+- **Upcoming:** today's and tomorrow's scheduled meetings on the Meetings screen.
+
 ## Desktop app (F04)
 - **Menu bar / tray icon:** MeetApp's icon in the Mac menu bar (Windows: the taskbar's notification area); its menu opens MeetApp, sets a status, opens Settings or quits. Closing the window keeps MeetApp running there.
 - **Notification card (notice card):** MeetApp's own small card at the bottom right of the screen for a new message, an @mention or someone waiting in the lobby; it goes after 8 seconds, at most 3 at once.
