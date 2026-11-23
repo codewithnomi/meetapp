@@ -5,3 +5,10 @@ import { afterEach } from "vitest";
 import "./app/i18n.ts";
 
 afterEach(() => cleanup());
+
+// jsdom has no ResizeObserver; Radix switches (e.g. All day in the schedule form) use one to measure.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};

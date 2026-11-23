@@ -24,15 +24,16 @@ import {
 } from "../../features/scheduling/index.ts";
 import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../features/workspaces/index.ts";
 import { gridDays } from "./calendar-days.ts";
-import { DetailsPane } from "./DetailsPane.tsx";
+import { DetailsPane, type CalendarEdit } from "./DetailsPane.tsx";
 import { MoreDialog } from "./MoreDialog.tsx";
 import { MonthView } from "./MonthView.tsx";
 
 export interface CalendarPageProps {
   onNavigate: (screen: AppScreen) => void;
   onPreJoin: (state: PreJoinState) => void;
-  /** T11: the New meeting form. */
-  onNewMeeting?: (() => void) | undefined;
+  /** The New meeting form, with a range dragged in the grid. */
+  onNewMeeting?: ((range?: { startsAt: Date; endsAt: Date }) => void) | undefined;
+  onEdit?: ((edit: CalendarEdit) => void) | undefined;
   /** Tests set the clock. */
   now?: () => Date;
 }
@@ -109,7 +110,7 @@ function Header({
       </strong>
       <ViewSwitch view={view} onView={onView} />
       {onNewMeeting ? (
-        <Button icon="plus" onClick={onNewMeeting} disabled={!online}>
+        <Button icon="plus" onClick={() => onNewMeeting()} disabled={!online}>
           {t("calendar.newMeeting")}
         </Button>
       ) : null}
@@ -131,6 +132,16 @@ function useCalendarState(now: () => Date) {
   };
 }
 
+/** A range dragged in the grid opens New meeting with it (AC-F13-07). */
+const pickTime = (onNewMeeting: CalendarPageProps["onNewMeeting"], online: boolean) =>
+  onNewMeeting && online
+    ? (dayKey: string, start: number, end: number) => {
+        const day = new Date(dayKey);
+        const at = (minute: number) => new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, minute);
+        onNewMeeting({ startsAt: at(start), endsAt: at(end) });
+      }
+    : undefined;
+
 function Body({
   view,
   month,
@@ -139,6 +150,7 @@ function Body({
   clock,
   onOpen,
   onMore,
+  onPickTime,
   children,
 }: {
   view: CalendarView;
@@ -148,6 +160,7 @@ function Body({
   clock: Date;
   onOpen: (id: string) => void;
   onMore: (ids: string[]) => void;
+  onPickTime: ((dayKey: string, start: number, end: number) => void) | undefined;
   children: ReactNode;
 }) {
   const { t } = useTranslation();
@@ -164,6 +177,7 @@ function Body({
           nowMinute={minuteOfDay(clock, format)}
           onOpen={onOpen}
           onMore={onMore}
+          onPickTime={onPickTime}
         />
       )}
       {children}
@@ -188,7 +202,8 @@ function useCalendarData(now: () => Date) {
   return { state, clock, format, online, calendar, occurrences, days, byId };
 }
 
-export function CalendarPage({ onNavigate, onPreJoin, onNewMeeting, now = () => new Date() }: CalendarPageProps) {
+export function CalendarPage(props: CalendarPageProps) {
+  const { onNavigate, onPreJoin, onNewMeeting, onEdit, now = () => new Date() } = props;
   const { state, clock, format, online, calendar, occurrences, days, byId } = useCalendarData(now);
   const [open, setOpen] = useState<CalendarOccurrence>();
   const [more, setMore] = useState<CalendarOccurrence[]>();
@@ -207,6 +222,7 @@ export function CalendarPage({ onNavigate, onPreJoin, onNewMeeting, now = () => 
           clock={clock}
           onOpen={openId}
           onMore={showMore}
+          onPickTime={pickTime(onNewMeeting, online)}
         >
           {open ? (
             <DetailsPane
@@ -216,6 +232,7 @@ export function CalendarPage({ onNavigate, onPreJoin, onNewMeeting, now = () => 
               online={online}
               onClose={() => setOpen(undefined)}
               onPreJoin={onPreJoin}
+              onEdit={(edit) => onEdit?.(edit)}
             />
           ) : null}
         </Body>

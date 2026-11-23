@@ -5,7 +5,7 @@
 import { useEffect, useRef } from "react";
 import { MeetingBlock, type MeetingBlockState } from "../../molecules/MeetingBlock/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
-import { layoutDay } from "./layout.ts";
+import { layoutDay, type MoreChip } from "./layout.ts";
 
 export const HOUR_PX = 48;
 
@@ -44,6 +44,8 @@ export interface CalendarGridProps {
   scrollToMinute?: number;
   onOpen: (id: string) => void;
   onMore: (ids: string[]) => void;
+  /** Dragging (or clicking) empty time: that range, in minutes of the day, snapped to half hours. */
+  onPickTime?: ((dayKey: string, start: number, end: number) => void) | undefined;
 }
 
 /** Where a block sits in its day column. */
@@ -53,6 +55,31 @@ const box = (start: number, end: number, lane: number, slots: number) => ({
   left: `calc(${String((lane / slots) * 100)}% + 2px)`,
   width: `calc(${String(100 / slots)}% - 4px)`,
 });
+
+const HALF = 30;
+/** The half hour under the pointer, in minutes of the day. */
+const halfHourAt = (event: React.PointerEvent<HTMLElement>) => {
+  const box = event.currentTarget.getBoundingClientRect();
+  const minute = ((event.clientY - box.top) / HOUR_PX) * 60;
+  return Math.min(24 * 60 - HALF, Math.max(0, Math.floor(minute / HALF) * HALF));
+};
+
+/** Press on empty time and let go: the half hours between, at least one. */
+function useDragTime(dayKey: string, onPickTime: CalendarGridProps["onPickTime"]) {
+  const from = useRef<number | undefined>(undefined);
+  return {
+    down: (event: React.PointerEvent<HTMLElement>) => {
+      from.current = event.target === event.currentTarget ? halfHourAt(event) : undefined;
+    },
+    up: (event: React.PointerEvent<HTMLElement>) => {
+      const start = from.current;
+      from.current = undefined;
+      if (start === undefined || !onPickTime) return;
+      const end = halfHourAt(event);
+      onPickTime(dayKey, Math.min(start, end), Math.max(start, end) + HALF);
+    },
+  };
+}
 
 function NowLine({ minute }: { minute: number }) {
   return (
@@ -65,18 +92,38 @@ function NowLine({ minute }: { minute: number }) {
   );
 }
 
+function MoreChipButton({ chip, label, onMore }: { chip: MoreChip; label: string; onMore: (ids: string[]) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onMore(chip.ids)}
+      style={box(chip.start, chip.end, chip.lane, chip.slots)}
+      className={cx(
+        "absolute cursor-pointer rounded-sm border-0 bg-surface-sunken px-1 text-[12px] font-semibold text-accent-text",
+        FOCUS_RING,
+      )}
+    >
+      {label}
+    </button>
+  );
+}
+
 function DayColumn({
   day,
   nowMinute,
   onOpen,
   onMore,
   moreLabel,
-}: { day: GridDay } & Pick<CalendarGridProps, "nowMinute" | "onOpen" | "onMore" | "moreLabel">) {
+  onPickTime,
+}: { day: GridDay } & Pick<CalendarGridProps, "nowMinute" | "onOpen" | "onMore" | "moreLabel" | "onPickTime">) {
   const { placed, more } = layoutDay(day.meetings);
+  const drag = useDragTime(day.key, onPickTime);
   const byId = new Map(day.meetings.map((m) => [m.id, m]));
   return (
     <div
       role="group"
+      onPointerDown={drag.down}
+      onPointerUp={drag.up}
       aria-label={day.fullLabel}
       className="relative border-l border-line bg-[linear-gradient(var(--line)_1px,transparent_1px)] bg-size-[100%_24px]"
       style={{ height: 24 * HOUR_PX }}
@@ -96,18 +143,7 @@ function DayColumn({
         );
       })}
       {more.map((chip) => (
-        <button
-          key={chip.ids.join()}
-          type="button"
-          onClick={() => onMore(chip.ids)}
-          style={box(chip.start, chip.end, chip.lane, chip.slots)}
-          className={cx(
-            "absolute cursor-pointer rounded-sm border-0 bg-surface-sunken px-1 text-[12px] font-semibold text-accent-text",
-            FOCUS_RING,
-          )}
-        >
-          {moreLabel(chip.ids.length)}
-        </button>
+        <MoreChipButton key={chip.ids.join()} chip={chip} label={moreLabel(chip.ids.length)} onMore={onMore} />
       ))}
       {day.today && nowMinute !== undefined ? <NowLine minute={nowMinute} /> : null}
     </div>

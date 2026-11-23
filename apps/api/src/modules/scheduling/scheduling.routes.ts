@@ -65,7 +65,7 @@ const RESEND = {
   schema: {
     summary: "Send again the invites that couldn't be sent",
     description:
-      "Organizer and co-organizers (an invitee: 403; anyone else: 404). Counts toward the 1,000 meeting emails an hour (429).",
+      "Organizer and co-organizers (an invitee: 403; anyone else: 404). Counts toward the 1,000 meeting emails an hour (429 TOO_MANY_EMAILS).",
     tags,
     params: meetingParamsSchema,
     response: { 200: z.object({ resent: z.number().int() }) },
@@ -77,7 +77,7 @@ const MANAGERS = "Organizer and co-organizers; an invitee gets 403, anyone else 
 const UPDATE = {
   schema: {
     summary: "Change a scheduled meeting (this occurrence or the series)",
-    description: `${MANAGERS} Moving the series' time resets everyone's answers and drops one-occurrence changes. Invitees change only with the series. Emails: update, invite (added) and cancel (removed), counted toward 1,000 an hour (429).`,
+    description: `${MANAGERS} Moving the series' time resets everyone's answers and drops one-occurrence changes. Invitees change only with the series. Emails: update, invite (added) and cancel (removed), counted toward 1,000 an hour (429 TOO_MANY_EMAILS).`,
     tags,
     params: meetingParamsSchema,
     body: scheduleUpdateBodySchema,

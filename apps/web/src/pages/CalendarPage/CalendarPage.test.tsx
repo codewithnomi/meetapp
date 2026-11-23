@@ -40,7 +40,10 @@ beforeEach(() => {
   installFakeAuth(PAT);
   localStorage.clear();
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+});
 
 function open() {
   renderWithApp(
@@ -127,7 +130,7 @@ describe("a meeting's details", () => {
     repeats: true,
   });
 
-  it("TC-F13-24 TC-F13-41 [AC-F13-05] [AC-F13-24] a block opens by keyboard; the panel shows Join, the answer and people", async () => {
+  it("TC-F13-24 TC-F13-32 TC-F13-41 [AC-F13-05] [AC-F13-16] [AC-F13-24] a block opens by keyboard; the panel shows Join, the answer and people", async () => {
     const api = fakeApi({
       [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
       [`/api/v1/meetings/${MEETING}/schedule`]: () => json(details),
@@ -143,6 +146,10 @@ describe("a meeting's details", () => {
     expect(within(panel).getByText("1 person from outside")).toBeInTheDocument();
     expect(within(panel).getByRole("link", { name: "https://plan.example.com/week" })).toBeInTheDocument();
     await userEvent.click(within(panel).getByRole("radio", { name: "Accept" }));
+    // A repeating meeting asks first (TC-F13-32).
+    const ask = await screen.findByRole("dialog", { name: "Answer a repeating meeting" });
+    await userEvent.click(within(ask).getByRole("radio", { name: "All in series" }));
+    await userEvent.click(within(ask).getByRole("button", { name: "Continue" }));
     await vi.waitFor(() => expect(api.callsTo("PUT", `/api/v1/meetings/${MEETING}/schedule/answer`)).toHaveLength(1));
     expect(api.callsTo("PUT", `/api/v1/meetings/${MEETING}/schedule/answer`)[0]?.body).toEqual({
       answer: "accepted",
@@ -165,5 +172,98 @@ describe("a meeting's details", () => {
     expect(screen.queryByRole("radio", { name: "Accept" })).not.toBeInTheDocument();
     act(() => void window.dispatchEvent(new Event("online")));
     expect(await screen.findByRole("radio", { name: "Accept" })).toBeInTheDocument();
+  });
+
+  const organizer = { ...details, organizer: { id: PAT.id, name: PAT.name }, myAnswer: null, canManage: true };
+
+  it("TC-F13-32 [AC-F13-16] answering one meeting of a series sends that meeting's start", async () => {
+    const api = fakeApi({
+      [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
+      [`/api/v1/meetings/${MEETING}/schedule`]: () => json(details),
+      [`PUT /api/v1/meetings/${MEETING}/schedule/answer`]: () => json({}),
+    });
+    open();
+    await userEvent.click(await screen.findByRole("button", { name: /^Weekly planning/ }));
+    await userEvent.click(await screen.findByRole("radio", { name: "Decline" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Continue" }));
+    await vi.waitFor(() => expect(api.callsTo("PUT", `/api/v1/meetings/${MEETING}/schedule/answer`)).toHaveLength(1));
+    expect(api.callsTo("PUT", `/api/v1/meetings/${MEETING}/schedule/answer`)[0]?.body).toEqual({
+      answer: "declined",
+      scope: "occurrence",
+      originalStart: now.originalStart,
+    });
+  });
+
+  it("TC-F13-35 [AC-F13-18] an invited member has no Edit or Cancel; the organizer has both", async () => {
+    const api = fakeApi({
+      [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
+      [`/api/v1/meetings/${MEETING}/schedule`]: () => json(details),
+    });
+    open();
+    await userEvent.click(await screen.findByRole("button", { name: /^Weekly planning/ }));
+    await screen.findByRole("radio", { name: "Accept" });
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Cancel meeting" })).not.toBeInTheDocument();
+    api.handlers[`/api/v1/meetings/${MEETING}/schedule`] = () => json(organizer);
+    await userEvent.click(screen.getByRole("button", { name: "Close details" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Weekly planning/ }));
+    expect(await screen.findByRole("button", { name: "Edit" })).toBeInTheDocument();
+  });
+
+  it("TC-F13-33 [AC-F13-18] Edit on a series asks this meeting or the series, then opens the form for it", async () => {
+    fakeApi({
+      [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
+      [`/api/v1/meetings/${MEETING}/schedule`]: () => json(organizer),
+    });
+    const onEdit = vi.fn();
+    renderWithApp(
+      <CurrentWorkspaceProvider>
+        <CalendarPage onNavigate={vi.fn()} onPreJoin={vi.fn()} onEdit={onEdit} now={() => NOW} />
+      </CurrentWorkspaceProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: /^Weekly planning/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Continue" }));
+    expect(onEdit).toHaveBeenCalledWith({
+      meetingId: MEETING,
+      scope: "occurrence",
+      occurrence: { originalStart: now.originalStart, startsAt: now.startsAt, endsAt: now.endsAt },
+    });
+  });
+
+  it("TC-F13-34 [AC-F13-20] Cancel meeting offers this meeting or the series and a message, and sends them", async () => {
+    const api = fakeApi({
+      [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
+      [`/api/v1/meetings/${MEETING}/schedule`]: () => json(organizer),
+      [`POST /api/v1/meetings/${MEETING}/schedule/cancel`]: () => json({}),
+    });
+    open();
+    await userEvent.click(await screen.findByRole("button", { name: /^Weekly planning/ }));
+    await userEvent.click(await screen.findByRole("button", { name: "Cancel meeting" }));
+    const dialog = await screen.findByRole("dialog", { name: 'Cancel "Weekly planning"?' });
+    await userEvent.click(within(dialog).getByRole("radio", { name: "The series" }));
+    await userEvent.type(
+      within(dialog).getByLabelText("Message to the people invited (optional)"),
+      "Moving to Thursdays.",
+    );
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel meeting" }));
+    await vi.waitFor(() => expect(api.callsTo("POST", `/api/v1/meetings/${MEETING}/schedule/cancel`)).toHaveLength(1));
+    expect(api.callsTo("POST", `/api/v1/meetings/${MEETING}/schedule/cancel`)[0]?.body).toEqual({
+      scope: "series",
+      message: "Moving to Thursdays.",
+    });
+  });
+
+  it("TC-F13-39 [AC-F13-31] invites that couldn't be sent show for the organizer, and Retry sends them again", async () => {
+    const api = fakeApi({
+      [calendarPath(IDS.aria)]: () => json({ occurrences: [now], truncated: false }),
+      [`/api/v1/meetings/${MEETING}/schedule`]: () => json({ ...organizer, unsentInvites: 2 }),
+      [`POST /api/v1/meetings/${MEETING}/schedule/resend`]: () => json({}),
+    });
+    open();
+    await userEvent.click(await screen.findByRole("button", { name: /^Weekly planning/ }));
+    expect(await screen.findByText("2 invites couldn't be sent.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await vi.waitFor(() => expect(api.callsTo("POST", `/api/v1/meetings/${MEETING}/schedule/resend`)).toHaveLength(1));
   });
 });

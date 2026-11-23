@@ -1440,5 +1440,102 @@
       },
       "until": "{{repeat}}, until {{date}}"
     }
+  },
+  "schedule": {
+    "newHeading": "New meeting",
+    "editHeading": "Edit meeting",
+    "editOneHeading": "Edit this meeting",
+    "cancel": "Cancel",
+    "send": "Send",
+    "sendUpdate": "Send update",
+    "sending": "Sending…",
+    "title": "Title",
+    "people": "People to invite",
+    "peopleHint": "Colleagues by name, or anyone by email.",
+    "suggestions": "Suggestions",
+    "remove": "Remove {{name}}",
+    "outside": "Outside",
+    "addEmail": "Add {{email}}",
+    "addEmailText": "{{email}} will get an email invite.",
+    "overCallSize": "A meeting holds 100 people at once. Everyone can be invited, but only the first 100 can be in it together.",
+    "starts": "Starts",
+    "ends": "Ends",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "allDay": "All day",
+    "timeZone": "Time zone: {{zone}}",
+    "repeat": "Repeat",
+    "repeatKinds": {
+      "none": "Does not repeat",
+      "weekdays": "Every weekday (Mon – Fri)",
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "yearly": "Yearly"
+    },
+    "repeatOn": "Repeat on",
+    "endRepeat": "End repeat",
+    "endRepeatHint": "Leave empty to keep repeating.",
+    "notes": "Notes",
+    "footnote": "Everyone gets an email with a calendar file, so it also shows in Outlook, Google and Apple Calendar. People in your workspace see it in MeetApp right away.",
+    "occurrenceNote": "Only this meeting changes. People to invite and repeat change only for the whole series.",
+    "fieldErrors": {
+      "title": {
+        "required": "Give the meeting a title.",
+        "tooLong": "Use 100 characters or fewer."
+      },
+      "invitees": {
+        "badEmail": "One of the email addresses isn't valid.",
+        "tooMany": "You can invite up to 250 people."
+      },
+      "startsAt": {
+        "inPast": "Choose a start time that hasn't passed.",
+        "tooLong": "Check the start."
+      },
+      "endsAt": {
+        "endBeforeStart": "The end must be after the start."
+      },
+      "description": {
+        "tooLong": "Use 2,000 characters or fewer."
+      },
+      "until": "End repeat must be on or after the first meeting."
+    },
+    "errors": {
+      "tooManyMeetings_one": "You've made a lot of meetings. Try again in {{count}} minute.",
+      "tooManyMeetings_other": "You've made a lot of meetings. Try again in {{count}} minutes.",
+      "tooManyEmails_one": "You've sent a lot of meeting emails. Try again in {{count}} minute.",
+      "tooManyEmails_other": "You've sent a lot of meeting emails. Try again in {{count}} minutes.",
+      "offline": "Can't reach MeetApp. Check your connection and send again.",
+      "failed": "The meeting couldn't be sent. Try again.",
+      "notFound": "This meeting can't be found, or you can't change it."
+    },
+    "seriesMove": {
+      "title": "Change the time of every meeting?",
+      "body": "Everyone's answers start over, and changes made to single meetings in the series are dropped.",
+      "confirm": "Change and send",
+      "back": "Go back"
+    },
+    "scope": {
+      "editTitle": "Edit a repeating meeting",
+      "editBody": "Change only this meeting, or every meeting in the series?",
+      "answerTitle": "Answer a repeating meeting",
+      "answerBody": "Answer for this meeting only, or for all in the series?",
+      "occurrence": "This meeting",
+      "series": "The series",
+      "allSeries": "All in series",
+      "continue": "Continue",
+      "back": "Go back"
+    },
+    "cancelDialog": {
+      "title": "Cancel \"{{title}}\"?",
+      "body": "Everyone invited gets a cancellation email, and it leaves their calendars.",
+      "which": "What to cancel",
+      "occurrence": "This meeting ({{date}})",
+      "series": "The series",
+      "message": "Message to the people invited (optional)",
+      "keep": "Keep meeting",
+      "confirm": "Cancel meeting",
+      "failed": "The meeting couldn't be cancelled. Try again."
+    }
   }
 }

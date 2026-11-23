@@ -1,6 +1,6 @@
 // CalendarGrid tests (AC-F13-01, 02): meetings are placed and open, "+N more" reports its meetings, and the
 // now-line sits in today's column only and moves with the clock.
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { CalendarGrid, HOUR_PX, type CalendarGridProps, type GridDay } from "./CalendarGrid.tsx";
@@ -57,5 +57,17 @@ describe("CalendarGrid", () => {
     expect(onOpen).toHaveBeenCalledWith("0");
     await userEvent.click(screen.getByRole("button", { name: "+2 more" }));
     expect(onMore).toHaveBeenCalledWith(["4", "5"]);
+  });
+
+  it("TC-F13-26 [AC-F13-07] dragging over empty time picks that range in half hours; a block doesn't start one", () => {
+    const onPickTime = vi.fn();
+    render(<CalendarGrid {...props({ onPickTime })} />);
+    const column = screen.getByRole("group", { name: "Day Tue" });
+    fireEvent.pointerDown(column, { clientY: 14 * HOUR_PX + 5 });
+    fireEvent.pointerUp(column, { clientY: 15 * HOUR_PX + 5 });
+    expect(onPickTime).toHaveBeenCalledWith("Tue", 14 * 60, 15 * 60 + 30);
+    fireEvent.pointerDown(screen.getByRole("button", { name: /^Meeting a/ }), { clientY: 10 * HOUR_PX });
+    fireEvent.pointerUp(screen.getByRole("group", { name: "Day Wed" }), { clientY: 10 * HOUR_PX });
+    expect(onPickTime).toHaveBeenCalledTimes(1);
   });
 });

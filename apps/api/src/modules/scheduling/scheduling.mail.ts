@@ -177,7 +177,7 @@ export function createMeetingMail(deps: MeetingMailDeps) {
     reserve: async (senderId: string, count: number) => {
       const wait = await deps.limiter.reserve(RATE_RULES.meetingEmails, senderId, count);
       if (wait !== undefined) {
-        throw new AppError(429, "TOO_MANY_ATTEMPTS", "You've sent many meeting emails. Try again later.", wait);
+        throw new AppError(429, "TOO_MANY_EMAILS", "You've sent many meeting emails. Try again later.", wait);
       }
       return () => deps.limiter.release(RATE_RULES.meetingEmails, senderId, count);
     },

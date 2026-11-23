@@ -124,7 +124,7 @@ describe("email limits", () => {
     await t.accounts.callsDeps.limiter.reserve(RATE_RULES.meetingEmails, owner.id, 1000);
     const refused = await schedule(owner, workspaceId, body([{ userId: ana.id }]));
     expect(refused.statusCode).toBe(429);
-    expect(errorCode(refused)).toBe("TOO_MANY_ATTEMPTS");
+    expect(errorCode(refused)).toBe("TOO_MANY_EMAILS");
     expect(Number(refused.headers["retry-after"])).toBeGreaterThan(0);
     expect(await t.database.db.select().from(meetings).where(eq(meetings.organizerId, owner.id))).toHaveLength(0);
     expect((await schedule(owner, workspaceId, body([]))).statusCode).toBe(201);

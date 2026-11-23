@@ -224,7 +224,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-26: Form fields and defaults
 - **Covers:** AC-F13-07
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ScheduleForm/ScheduleForm.test.tsx`
+- **File:** `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`, `apps/web/src/features/scheduling/form-values.test.ts`, `packages/ui/src/organisms/CalendarGrid/CalendarGrid.test.tsx` (drag)
 - **Given** New meeting pressed, and a drag over 14:00-15:30
 - **When** the form opens
 - **Then** fields are title, invitees, start, end, all day, repeat, description; the default is the next half hour for 30 minutes; the dragged range fills start and end; title stops at 100 and description at 2,000
@@ -232,7 +232,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-27: All day hides the time
 - **Covers:** AC-F13-07
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ScheduleForm/ScheduleForm.test.tsx`
+- **File:** `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`, `apps/web/src/features/scheduling/form-values.test.ts`
 - **Given** the form
 - **When** All day is turned on and off
 - **Then** time fields hide and show; the value spans the whole day in the organizer's zone
@@ -240,7 +240,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-28: Invitee suggestions and any email
 - **Covers:** AC-F13-08
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ScheduleForm/ScheduleForm.test.tsx`
+- **File:** `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`
 - **Given** workspace members and typed text
 - **When** typing a name, an email, a valid outside email and a bad one
 - **Then** members are suggested by name or email; a valid outside email is added as external; a bad one is not; the 100-person note shows above 100; the 251st is refused
@@ -248,7 +248,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-29: Field errors stop Send
 - **Covers:** AC-F13-10
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ScheduleForm/ScheduleForm.test.tsx`
+- **File:** `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`
 - **Given** a form with each error from TC-F13-10
 - **When** Send is pressed
 - **Then** each field says what is wrong, focus goes to the first, and no request is sent
@@ -256,7 +256,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-30: Repeat picker
 - **Covers:** AC-F13-11
 - **Level:** component
-- **File:** `packages/ui/src/organisms/RepeatPicker/RepeatPicker.test.tsx`
+- **File:** `packages/ui/src/molecules/RepeatPicker/RepeatPicker.test.tsx`, `apps/web/src/features/scheduling/form-values.test.ts`
 - **Given** the picker
 - **When** each of the six choices is picked
 - **Then** the six choices exist; Weekly shows day toggles; End repeat is optional and empty by default; the text reads like "Weekly on Mon, Wed until 31 Dec"
@@ -272,7 +272,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-32: Answer buttons
 - **Covers:** AC-F13-16
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
+- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`
 - **Given** an invited member on a series
 - **When** Accept, Tentative, Decline are pressed with "This meeting" and "All in series"
 - **Then** the right request is sent with the scope and the occurrence; the pressed answer shows as chosen; an organizer-only view has no answer buttons
@@ -280,7 +280,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-33: Edit asks this one or the series
 - **Covers:** AC-F13-18
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ScheduleForm/ScheduleForm.test.tsx`
+- **File:** `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`, `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`
 - **Given** editing one occurrence of a series, and a change to the series time
 - **When** the choice is made and Send update pressed
 - **Then** it asks "This meeting / The series"; a series time change warns that answers reset and single changes are dropped, and goes ahead only after confirming
@@ -288,7 +288,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-34: Cancel dialog
 - **Covers:** AC-F13-19
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
+- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`
 - **Given** a series
 - **When** Cancel meeting is pressed
 - **Then** it offers an optional message and "This meeting / The series", and sends the chosen scope and message
@@ -296,7 +296,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-35: Invitee cannot edit or cancel
 - **Covers:** AC-F13-20
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
+- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`, `apps/web/src/pages/SchedulePage/SchedulePage.test.tsx`
 - **Given** an invited member who is not an organizer, and a co-organizer
 - **When** the panel shows
 - **Then** the invitee has no Edit, Cancel or Meeting options; the co-organizer does; the edit page for the invitee shows "not found"
@@ -328,7 +328,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-39: Failed invites notice
 - **Covers:** AC-F13-31
 - **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
+- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`, `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
 - **Given** an organizer's meeting with a failed invitee
 - **When** the panel shows, then Retry is pressed
 - **Then** "Some invites couldn't be sent" with Retry shows for organizers only; Retry calls resend and the notice goes when none fail
