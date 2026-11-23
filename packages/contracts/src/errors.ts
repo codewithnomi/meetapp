@@ -11,6 +11,8 @@ export const ERROR_CODES = [
   "TERMS_REQUIRED",
   "PASSWORD_WEAK",
   "TOO_MANY_ATTEMPTS",
+  /** F13: the hourly limit on meeting emails (with retryAfterSeconds). */
+  "TOO_MANY_EMAILS",
   "CODE_INVALID",
   "CODE_EXPIRED",
   "PASSWORD_WRONG",
@@ -68,7 +70,7 @@ export const errorResponseSchema = z
       message: z.string(),
       requestId: z.string(),
       details: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
-      /** With TOO_MANY_ATTEMPTS: seconds until trying again works (also in the Retry-After header). */
+      /** With TOO_MANY_ATTEMPTS or TOO_MANY_EMAILS: seconds until trying again works (also in the Retry-After header). */
       retryAfterSeconds: z.number().int().positive().optional(),
     }),
   })

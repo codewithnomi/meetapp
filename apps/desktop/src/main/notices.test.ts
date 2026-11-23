@@ -168,4 +168,20 @@ describe("notice cards", () => {
     expect(computer.toMain[1]).toEqual([7, { name: "noticeChosen", cardId: "msg", choice: "open" }]);
     expect(computer.focused).toEqual([7]);
   });
+
+  it("TC-F13-37 [AC-F13-21] a reminder stays until answered, shows once across windows, and has Join, Snooze, Dismiss", () => {
+    const computer = fakeComputer();
+    const board = new NoticeBoard(computer.deps);
+    const reminder = card("reminder:u1:m1", { kind: "reminder", join: "Join", snooze: "Snooze", dismiss: "Dismiss" });
+    expect(cleanCard(card("r", { kind: "reminder" }))).toBeUndefined();
+    board.show(1, reminder);
+    board.show(2, reminder);
+    expect(computer.open()).toHaveLength(1);
+    computer.advance(SHOW_MS * 10);
+    expect(computer.open()).toHaveLength(1);
+    board.act(computer.open()[0]?.id ?? 0, { name: "notice", choice: "snooze" });
+    expect(computer.toMain).toEqual([[1, { name: "noticeChosen", cardId: "reminder:u1:m1", choice: "snooze" }]]);
+    expect(computer.focused).toEqual([]);
+    expect(computer.open()).toHaveLength(0);
+  });
 });

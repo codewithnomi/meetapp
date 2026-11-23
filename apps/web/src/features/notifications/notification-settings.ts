@@ -4,7 +4,14 @@ import type { NotificationSettings } from "@meetapp/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "../api/index.ts";
 
-const ALL_ON: NotificationSettings = { messages: true, mentions: true, lobby: true, sound: true, preview: true };
+const ALL_ON: NotificationSettings = {
+  messages: true,
+  mentions: true,
+  lobby: true,
+  sound: true,
+  preview: true,
+  invites: true,
+};
 const KEY = ["me", "notification-settings"];
 const URL = "/api/v1/me/notification-settings";
 /** Tries again every 30 seconds after a failure. */

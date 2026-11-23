@@ -6,7 +6,7 @@ import { MAX_AGE_MS, Merger, SHOWING_MS, decide, isQuiet, previewText, type Inco
 const NOW = Date.parse("2026-11-05T10:00:00Z");
 const ME = "00000000-0000-4000-8000-000000000001";
 const B = "00000000-0000-4000-8000-000000000002";
-const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true };
+const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true, invites: true };
 
 const paragraph = (...content: object[]) =>
   ({ v: 1, blocks: [{ type: "paragraph", content }] }) as unknown as ChatMessageView["body"];

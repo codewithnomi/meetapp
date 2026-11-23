@@ -304,7 +304,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-36: Reminder card
 - **Covers:** AC-F13-21
 - **Level:** component
-- **File:** `packages/ui/src/organisms/ReminderCard/ReminderCard.test.tsx`
+- **File:** `packages/ui/src/molecules/ReminderCard/ReminderCard.test.tsx`, `apps/web/src/features/scheduling/scheduling-notices.test.tsx`
 - **Given** a 15-minute and a start-time reminder
 - **When** the card shows and its buttons are pressed
 - **Then** it reads "Starts in 15 min · title" or "Starting now"; Join opens the pre-join; Snooze sends 5 minutes; Dismiss sends dismiss; clicking the body opens the details; a `reminder-dismissed` event closes it
@@ -312,10 +312,10 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-37: Reminder and invite settings, Do not disturb
 - **Covers:** AC-F13-17, AC-F13-21
 - **Level:** component
-- **File:** `apps/web/src/features/scheduling/scheduling-notices.test.tsx`
+- **File:** `apps/web/src/features/scheduling/scheduling-notices.test.tsx`, `apps/desktop/src/main/notices.test.ts`
 - **Given** the "Meeting invites" setting on and off, and Do not disturb on and off
 - **When** an `invited` and a `reminder` event arrive
-- **Then** an invite card "<Organizer> invited you to <title>" shows only when the setting is on; reminders follow F04 settings and show nothing in Do not disturb; both on a second window show once
+- **Then** an invite card "<Organizer> invited you to <title>" shows only when the setting is on; reminders follow F04 settings and show nothing in Do not disturb; the same reminder twice in one window shows once, and the desktop app shows it once when two windows send it; a reminder card stays until answered
 
 ### TC-F13-38: Upcoming card on Meetings
 - **Covers:** AC-F13-23
@@ -555,9 +555,9 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 
 ### TC-F13-68: Upcoming list on Meetings
 - **Covers:** AC-F13-23
-- **Level:** integration
-- **File:** `apps/api/src/modules/meetings/meetings.upcoming.test.ts`
-- **Given** scheduled meetings today, tomorrow, later, cancelled and declined
+- **Level:** unit (the list comes from the calendar endpoint, which already leaves out cancelled meetings)
+- **File:** `apps/web/src/features/scheduling/upcoming.test.ts`
+- **Given** scheduled meetings today, tomorrow, later, ended and declined
 - **When** the list is read
 - **Then** only today's and tomorrow's, in order, with the Join flag
 

@@ -35,6 +35,8 @@ export const user = pgTable("user", {
   notifyLobby: boolean("notify_lobby").notNull().default(true),
   notifySound: boolean("notify_sound").notNull().default(true),
   notifyPreview: boolean("notify_preview").notNull().default(true),
+  /** F13: a card when a colleague invites you to a meeting (AC-F13-17). */
+  notifyInvites: boolean("notify_invites").notNull().default(true),
   ...timestamps(),
 });
 

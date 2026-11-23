@@ -213,6 +213,8 @@ export const notificationSettingsSchema = z
     lobby: z.boolean(),
     sound: z.boolean(),
     preview: z.boolean(),
+    /** F13 AC-F13-17: "<Organizer> invited you to <title>". */
+    invites: z.boolean(),
   })
   .meta({ id: "NotificationSettings" });
 /** Any of them, at least one; unknown keys are refused. */

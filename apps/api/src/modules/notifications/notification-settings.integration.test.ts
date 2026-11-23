@@ -16,7 +16,7 @@ afterAll(async () => {
 }, 60_000);
 
 const URL = "/api/v1/me/notification-settings";
-const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true };
+const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true, invites: true };
 
 describe("notification settings", { timeout: 60_000 }, () => {
   it("TC-F04-65 [AC-F04-36] all on by default; partial changes keep the rest and follow the account", async () => {

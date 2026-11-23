@@ -38,7 +38,9 @@ describe("Settings → Notifications (F04 T9)", () => {
     let works = false;
     fakeApi({
       [`GET ${URL}`]: () =>
-        works ? json({ messages: false, mentions: true, lobby: true, sound: true, preview: true }) : json({}, 503),
+        works
+          ? json({ messages: false, mentions: true, lobby: true, sound: true, preview: true, invites: true })
+          : json({}, 503),
     });
     renderWithApp(<NotificationSettingsPage onNavigate={vi.fn()} onBack={vi.fn()} />);
     for (const name of NAMES) expect(screen.getByRole("switch", { name })).toBeChecked();

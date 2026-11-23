@@ -63,7 +63,7 @@ export type CallWindowView =
 export interface NoticeCard {
   /** The main window's own id for the card; a click comes back with it. */
   id: string;
-  kind: "message" | "mention" | "lobby" | "running";
+  kind: "message" | "mention" | "lobby" | "running" | "reminder" | "invite";
   /** The sender, the person waiting, or "MeetApp is still running". */
   title: string;
   /** The chat or meeting, or "3 new messages". */
@@ -76,12 +76,17 @@ export interface NoticeCard {
   /** Lobby: the buttons' words (no Admit on the "<n> people are waiting" card). */
   admit?: string;
   viewLobby?: string;
+  /** F13 reminder (AC-F13-21): the title is the meeting, `detail` its time, `tag` "Starts in 15 min"; the
+   * buttons' words (no Join once it can't be joined). It stays until it is answered. */
+  join?: string;
+  snooze?: string;
+  dismiss?: string;
   /** The ×'s name for screen readers. */
   close: string;
 }
 
-/** What a card's buttons ask: to its main window (open the chat, Admit, View lobby). */
-export type NoticeChoice = "open" | "admit" | "viewLobby";
+/** What a card's buttons ask: to its main window (open the chat, Admit, View lobby; F13 Join, Snooze, Dismiss). */
+export type NoticeChoice = "open" | "admit" | "viewLobby" | "join" | "snooze" | "dismiss";
 
 /** A small window's button press (design.md 3.2). */
 export type CallWindowAction =

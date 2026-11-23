@@ -3,6 +3,7 @@
 // dialog without joining; Join a meeting finds one by ID and passcode or by link. Meetings belong to
 // the open workspace. Each press of Meet now or Get link uses one Idempotency-Key, so a double click
 // makes one meeting (AC-F02-46). Recent meetings offer Open chat for a past meeting's chat (AC-F03-42).
+// Upcoming lists today's and tomorrow's scheduled meetings (AC-F13-23).
 import { Button, Icon, Input, Notice } from "@meetapp/ui";
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
@@ -23,6 +24,7 @@ import {
 import { GET_LINK_ID, LinkReadyDialog } from "./LinkReadyDialog.tsx";
 import { useCurrentCall } from "../../features/calls/index.ts";
 import { useLeaveFirst } from "../../features/call-windows/index.ts";
+import { UpcomingMeetings } from "./UpcomingMeetings.tsx";
 import { PastChat, RecentMeetings, type PastMeeting } from "./RecentMeetings.tsx";
 
 export interface MeetingsPageProps {
@@ -170,12 +172,14 @@ function CurrentCallNote({ onBackToCall }: Pick<MeetingsPageProps, "onBackToCall
 
 /** The start cards, joining, and the recent meetings with Open chat. */
 function MeetingsMain({
+  onNavigate,
   onPreJoin,
   onCreated,
   onOpenPast,
   failed,
   onBackToCall,
 }: {
+  onNavigate: MeetingsPageProps["onNavigate"];
   onPreJoin: MeetingsPageProps["onPreJoin"];
   onBackToCall: MeetingsPageProps["onBackToCall"];
   onCreated: (meeting: MeetingCreated) => void;
@@ -203,6 +207,13 @@ function MeetingsMain({
           <GetLinkCard workspaceId={current.id} onCreated={onCreated} />
         </section>
       ) : null}
+      {current ? (
+        <UpcomingMeetings
+          workspaceId={current.id}
+          onPreJoin={onPreJoin}
+          onViewCalendar={() => onNavigate("calendar")}
+        />
+      ) : null}
       <JoinMeetingForm onFound={onPreJoin} note={t("meetings.join.guestNote")} />
       {failed ? <Notice tone="danger">{t("meetings.recent.failed")}</Notice> : null}
       <RecentMeetings onOpen={onOpenPast} />
@@ -221,6 +232,7 @@ export function MeetingsPage({ onNavigate, onPreJoin, onBackToCall }: MeetingsPa
     <WorkspaceShell screen="meetings" onNavigate={onNavigate}>
       <div className="flex min-h-0 flex-1">
         <MeetingsMain
+          onNavigate={onNavigate}
           onPreJoin={onPreJoin}
           onBackToCall={onBackToCall}
           onCreated={setReady}

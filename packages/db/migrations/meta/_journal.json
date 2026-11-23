@@ -92,6 +92,13 @@
       "when": 1795176689350,
       "tag": "0012_scheduling",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795435524714,
+      "tag": "0013_notify_invites",
+      "breakpoints": true
     }
   ]
 }

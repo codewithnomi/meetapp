@@ -4,7 +4,14 @@ import { AppError } from "../../plugins/errors.ts";
 import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import type { NotificationSettingsRepository } from "./notification-settings.repository.ts";
 
-const ALL_ON: NotificationSettings = { messages: true, mentions: true, lobby: true, sound: true, preview: true };
+const ALL_ON: NotificationSettings = {
+  messages: true,
+  mentions: true,
+  lobby: true,
+  sound: true,
+  preview: true,
+  invites: true,
+};
 
 export function createNotificationSettingsService(deps: {
   settings: NotificationSettingsRepository;

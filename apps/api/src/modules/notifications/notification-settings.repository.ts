@@ -9,6 +9,7 @@ const COLUMNS = {
   lobby: user.notifyLobby,
   sound: user.notifySound,
   preview: user.notifyPreview,
+  invites: user.notifyInvites,
 };
 const FIELDS = {
   messages: "notifyMessages",
@@ -16,6 +17,7 @@ const FIELDS = {
   lobby: "notifyLobby",
   sound: "notifySound",
   preview: "notifyPreview",
+  invites: "notifyInvites",
 } as const;
 
 export function createNotificationSettingsRepository(db: Database) {

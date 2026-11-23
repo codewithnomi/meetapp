@@ -9,12 +9,12 @@ import { useNotices } from "./use-notices.ts";
 
 const ME = "00000000-0000-4000-8000-000000000001";
 const BEA = "00000000-0000-4000-8000-000000000002";
-const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true };
+const ALL_ON = { messages: true, mentions: true, lobby: true, sound: true, preview: true, invites: true };
 
 const fake = vi.hoisted(() => ({
   line: undefined as ((message: unknown) => void) | undefined,
   stillRunning: undefined as ((where: "tray" | "menuBar") => void) | undefined,
-  settings: { messages: true, mentions: true, lobby: true, sound: true, preview: true },
+  settings: { messages: true, mentions: true, lobby: true, sound: true, preview: true, invites: true },
   shownChat: undefined as string | undefined,
   openChat: vi.fn(),
   chime: vi.fn(),

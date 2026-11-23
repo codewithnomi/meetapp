@@ -1,5 +1,5 @@
-// Settings → Notifications (F04 AC-F04-36): chat messages, mentions, lobby waiting, sound and message
-// preview, each on its own; all on by default; a change applies at once and follows the account.
+// Settings → Notifications (F04 AC-F04-36): chat messages, mentions, lobby waiting, meeting invites (F13),
+// sound and message preview, each on its own; all on by default; a change applies at once and follows the account.
 import type { NotificationSettings } from "@meetapp/contracts";
 import { Notice, Toggle } from "@meetapp/ui";
 import { useTranslation } from "react-i18next";
@@ -11,7 +11,7 @@ export interface NotificationSettingsPageProps {
   onBack: () => void;
 }
 
-const SWITCHES: (keyof NotificationSettings)[] = ["messages", "mentions", "lobby", "sound", "preview"];
+const SWITCHES: (keyof NotificationSettings)[] = ["messages", "mentions", "lobby", "invites", "sound", "preview"];
 
 export function NotificationSettingsPage({ onNavigate, onBack }: NotificationSettingsPageProps) {
   const { t } = useTranslation();

@@ -109,6 +109,8 @@
       "mentionsHint": "When someone @mentions you, even in a muted chat.",
       "lobby": "Someone waiting in the lobby",
       "lobbyHint": "For meetings where you can let people in.",
+      "invites": "Meeting invites",
+      "invitesHint": "When a colleague invites you to a meeting.",
       "sound": "Sound",
       "soundHint": "Play a sound with message cards.",
       "preview": "Show message preview",
@@ -1032,6 +1034,14 @@
       "loadFailed": "The messages couldn't be loaded.",
       "loading": "Loading messages…"
     },
+    "upcoming": {
+      "title": "Upcoming",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "join": "Join",
+      "joinFor": "Join {{title}}",
+      "viewCalendar": "View calendar"
+    },
     "recent": {
       "title": "Recent meetings",
       "empty": "Meetings you take part in show here, so you can read their chat afterwards.",
@@ -1356,6 +1366,15 @@
   },
   "notices": {
     "open": "Open the chat with {{name}}",
+    "invited": "invited you to {{title}}",
+    "reminder": {
+      "soon": "Starts in {{minutes}} min",
+      "now": "Starting now",
+      "open": "Open the details of {{name}}",
+      "join": "Join",
+      "snooze": "Snooze",
+      "dismiss": "Dismiss"
+    },
     "newMessage": "New message",
     "newMessages_one": "{{count}} new message",
     "newMessages_other": "{{count}} new messages",

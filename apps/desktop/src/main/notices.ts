@@ -1,13 +1,17 @@
 // F04's notification cards in main (design.md 3.4; AC-F04-30): at most 3 at the bottom right, stacked
 // above F16's ring windows and never over the mini call window; each goes after 8 s unless the pointer is
-// on it; × closes it. At most 10 cards a second from one window. A card's choice goes back only to the
+// on it (F13 reminders stay until answered); × closes it. At most 10 cards a second from one window. A card's choice goes back only to the
 // main window that sent it. Free of Electron (notices-bridge wiring is in call-windows-bridge.ts).
 import type { CallWindowAction, CallWindowView, NoticeCard, NoticeChoice } from "@meetapp/contracts";
 import { CHOICES, cleanCard } from "./notices-checks.ts";
 import { EDGE, GAP, type Display, type Rect } from "./call-windows.ts";
 
 export const NOTICE_WIDTH = 360;
-const noticeHeight = (card: NoticeCard) => (card.kind === "lobby" ? 132 : 96);
+const HEIGHTS: Partial<Record<NoticeCard["kind"], number>> = { lobby: 132, reminder: 150 };
+const noticeHeight = (card: NoticeCard) => HEIGHTS[card.kind] ?? 96;
+/** F13: one card per person even with several windows signed in to the same account (the ids carry it). */
+const IN_PLACE: readonly NoticeChoice[] = ["admit", "snooze", "dismiss"];
+const SHARED: readonly NoticeCard["kind"][] = ["reminder", "invite"];
 export const MAX_CARDS = 3;
 export const SHOW_MS = 8_000;
 const PER_SECOND = 10;
@@ -72,6 +76,7 @@ export class NoticeBoard {
   show(owner: number, value: unknown): void {
     const card = cleanCard(value);
     if (!card || !this.withinRate(owner)) return;
+    if (SHARED.includes(card.kind) && this.shown.some((s) => s.owner !== owner && s.card.id === card.id)) return;
     const same = this.shown.find((s) => s.owner === owner && s.card.id === card.id);
     if (same) {
       // The same card again (merged messages): new words, the timer starts again.
@@ -120,8 +125,8 @@ export class NoticeBoard {
     }
     if (!CHOICES[entry.card.kind].includes(action.choice)) return;
     if (action.choice === "admit" && entry.card.admit === undefined) return;
-    // Admit acts in place; opening a chat or the lobby brings the window forward.
-    if (action.choice !== "admit") this.deps.focusMain(entry.owner);
+    // Admit, Snooze and Dismiss act in place; opening a chat, the lobby or a meeting brings the window forward.
+    if (!IN_PLACE.includes(action.choice)) this.deps.focusMain(entry.owner);
     this.deps.toMain(entry.owner, { name: "noticeChosen", cardId: entry.card.id, choice: action.choice });
     this.drop(entry);
   }
@@ -157,7 +162,8 @@ export class NoticeBoard {
     entry.cancel?.();
     entry.cancel = undefined;
     // New words in a card under the pointer don't start its timer (bug review).
-    if (entry.hovered) return;
+    // A reminder stays until it is answered (AC-F13-21).
+    if (entry.hovered || entry.card.kind === "reminder") return;
     entry.cancel = this.deps.later(SHOW_MS, () => this.drop(entry));
   }
 

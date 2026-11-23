@@ -17,6 +17,7 @@ import { CallHost } from "./CallHost.tsx";
 import { useCallWindows } from "../features/call-windows/index.ts";
 import { useDesktopCommands } from "./desktop-commands.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
+import { useJoinScheduled, useSchedulingNotices } from "../features/scheduling/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
 import type { PreJoinState } from "../features/meetings/index.ts";
@@ -158,6 +159,12 @@ function Ringing() {
   const toCall = () => void navigate("/call");
   // F16: rings and the call also show in small windows above other apps (desktop app only).
   useCallWindows({ toCall, toChat: () => void navigate("/chat"), toPath: (path) => void navigate(path) });
+  // F13: meeting reminders and invites as corner cards.
+  const join = useJoinScheduled((state) => void navigate("/meeting/pre-join", { state }));
+  useSchedulingNotices({
+    onJoin: join,
+    onOpen: (meetingId, originalStart) => void navigate("/calendar", { state: { open: { meetingId, originalStart } } }),
+  });
   return (
     <>
       <IncomingCalls onAccepted={toCall} />

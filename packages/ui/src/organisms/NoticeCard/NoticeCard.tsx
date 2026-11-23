@@ -7,7 +7,8 @@ import { Button } from "../../atoms/Button/index.ts";
 import { IconButton } from "../../atoms/IconButton/index.ts";
 import { FOCUS_RING, cx } from "../../lib/cx.ts";
 
-export type NoticeKind = "message" | "mention" | "lobby" | "running";
+/** "invite": F13's "<Organizer> invited you to <title>" card. */
+export type NoticeKind = "message" | "mention" | "lobby" | "running" | "invite";
 
 export interface NoticeCardProps {
   kind: NoticeKind;

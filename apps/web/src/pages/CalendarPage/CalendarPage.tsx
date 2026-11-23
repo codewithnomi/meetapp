@@ -27,6 +27,7 @@ import { gridDays } from "./calendar-days.ts";
 import { DetailsPane, type CalendarEdit } from "./DetailsPane.tsx";
 import { MoreDialog } from "./MoreDialog.tsx";
 import { MonthView } from "./MonthView.tsx";
+import { useOpenOnLoad, type OpenOnLoad } from "./open-on-load.ts";
 
 export interface CalendarPageProps {
   onNavigate: (screen: AppScreen) => void;
@@ -34,6 +35,8 @@ export interface CalendarPageProps {
   /** The New meeting form, with a range dragged in the grid. */
   onNewMeeting?: ((range?: { startsAt: Date; endsAt: Date }) => void) | undefined;
   onEdit?: ((edit: CalendarEdit) => void) | undefined;
+  /** A meeting to show the details of once the calendar has it (a reminder or invite card was clicked). */
+  openOnLoad?: OpenOnLoad | undefined;
   /** Tests set the clock. */
   now?: () => Date;
 }
@@ -208,6 +211,7 @@ export function CalendarPage(props: CalendarPageProps) {
   const [open, setOpen] = useState<CalendarOccurrence>();
   const [more, setMore] = useState<CalendarOccurrence[]>();
   const openId = (id: string) => setOpen(byId(id));
+  useOpenOnLoad(props.openOnLoad, occurrences, setOpen);
   const showMore = (ids: string[]) => setMore(ids.map(byId).filter((o): o is CalendarOccurrence => o !== undefined));
   return (
     <WorkspaceShell screen="calendar" onNavigate={onNavigate}>

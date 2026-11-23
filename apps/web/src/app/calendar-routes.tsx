@@ -41,9 +41,11 @@ function Calendar({
   onPreJoin: (state: PreJoinState) => void;
 }) {
   const navigate = useNavigate();
+  const { open } = (useLocation().state ?? {}) as { open?: { meetingId: string; originalStart?: string } };
   return (
     <CalendarPage
       onNavigate={onNavigate}
+      openOnLoad={open}
       onPreJoin={onPreJoin}
       onNewMeeting={(range) =>
         void navigate("/calendar/new", {

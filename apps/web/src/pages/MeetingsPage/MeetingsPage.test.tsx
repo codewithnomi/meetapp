@@ -7,7 +7,7 @@ import { installFakeAuth, PAT, renderWithApp } from "../../features/auth/fake-au
 import { never } from "../../features/meetings/fake-visit.ts";
 import { useVisit } from "../../features/meetings/index.ts";
 import { CurrentWorkspaceProvider } from "../../features/workspaces/index.ts";
-import { fakeApi, IDS, refuse } from "../../features/workspaces/fake-api.ts";
+import { fakeApi, IDS, json, refuse } from "../../features/workspaces/fake-api.ts";
 import { MeetingsPage } from "./MeetingsPage.tsx";
 
 const MEETINGS = `POST /api/v1/workspaces/${IDS.aria}/meetings`;
@@ -99,5 +99,54 @@ describe("Meetings during a call (F17)", () => {
     open();
     expect(await screen.findByRole("heading", { name: "Meetings" })).toBeInTheDocument();
     expect(screen.queryByText(/You're in/)).toBeNull();
+  });
+});
+
+describe("TC-F13-38 the Upcoming card", () => {
+  // Today's starts in a minute (so it hasn't ended whenever the test runs); the others at noon.
+  const day = (offset: number) => {
+    const now = new Date();
+    if (offset === 0) return new Date(now.getTime() + 60_000).toISOString();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset, 12).toISOString();
+  };
+  const occurrence = (title: string, offset: number, canJoin = false) => ({
+    meetingId: "00000000-0000-4000-8000-0000000000b1",
+    originalStart: day(offset),
+    startsAt: day(offset),
+    endsAt: new Date(Date.parse(day(offset)) + 60_000).toISOString(),
+    allDay: false,
+    title,
+    organizer: { id: "00000000-0000-4000-8000-0000000000aa", name: "Olivia Owner" },
+    repeats: false,
+    myAnswer: "accepted",
+    canJoin,
+  });
+  const CALENDAR = `/api/v1/workspaces/${IDS.aria}/calendar`;
+
+  it("TC-F13-38 [AC-F13-23] shows today's and tomorrow's, with Join when allowed and View calendar", async () => {
+    const onNavigate = vi.fn();
+    const list = [occurrence("Later one", 2), occurrence("Tomorrow plan", 1), occurrence("Today sync", 0, true)];
+    fakeApi({ [CALENDAR]: () => json({ occurrences: list, truncated: false }) });
+    renderWithApp(
+      <CurrentWorkspaceProvider>
+        <MeetingsPage onNavigate={onNavigate} onPreJoin={vi.fn()} />
+      </CurrentWorkspaceProvider>,
+    );
+    const upcoming = await screen.findByRole("region", { name: "Upcoming" });
+    const titles = [...upcoming.querySelectorAll("li")].map((li) => li.textContent);
+    expect(titles).toHaveLength(2);
+    expect(titles[0]).toMatch(/^Today sync.*Today · /);
+    expect(titles[1]).toMatch(/^Tomorrow plan.*Tomorrow · /);
+    expect(screen.getByRole("button", { name: "Join Today sync" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Join Tomorrow plan" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "View calendar" }));
+    expect(onNavigate).toHaveBeenCalledWith("calendar");
+  });
+
+  it("TC-F13-38 [AC-F13-23] with none, there's no Upcoming card", async () => {
+    fakeApi({ [CALENDAR]: () => json({ occurrences: [occurrence("Later one", 2)], truncated: false }) });
+    open();
+    expect(await screen.findByRole("button", { name: "Meet now" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Upcoming" })).not.toBeInTheDocument();
   });
 });
