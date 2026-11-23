@@ -300,7 +300,8 @@
       "workspace": "Workspace settings",
       "chat": "Chat",
       "chatUnread_one": "Chat, {{count}} unread chat",
-      "chatUnread_other": "Chat, {{count}} unread chats"
+      "chatUnread_other": "Chat, {{count}} unread chats",
+      "calendar": "Calendar"
     },
     "create": {
       "title": "Create a company workspace",
@@ -1372,6 +1373,72 @@
       "guest": "Guest",
       "admit": "Admit",
       "view": "View lobby"
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next",
+    "view": "View",
+    "views": {
+      "day": "Day",
+      "workweek": "Work week",
+      "week": "Week",
+      "month": "Month"
+    },
+    "newMeeting": "New meeting",
+    "allDay": "All day",
+    "more": "+{{count}} more",
+    "empty": "No meetings. Select New meeting to schedule one.",
+    "truncated": "Some meetings aren't shown. Pick a shorter time.",
+    "failed": "The calendar couldn't be loaded.",
+    "retry": "Try again",
+    "offline": "You're offline. You're seeing the calendar as it was; changes wait until you're back online.",
+    "moreTitle": "Meetings at this time",
+    "states": {
+      "accepted": "Accepted",
+      "none": "No answer",
+      "tentative": "Maybe",
+      "declined": "Declined",
+      "cancelled": "Cancelled",
+      "organizer": "You organize this"
+    },
+    "details": {
+      "close": "Close details",
+      "loading": "Loading the meeting",
+      "join": "Join",
+      "edit": "Edit",
+      "cancel": "Cancel meeting",
+      "answerLabel": "Your answer",
+      "answers": {
+        "accepted": "Accept",
+        "tentative": "Maybe",
+        "declined": "Decline"
+      },
+      "link": "Meeting link",
+      "meetingId": "Meeting ID",
+      "passcode": "Passcode",
+      "organizer": "Organizer",
+      "notes": "Notes",
+      "people": "People · {{accepted}} accepted, {{tentative}} maybe, {{declined}} declined, {{none}} no answer",
+      "organizerTag": "Organizer",
+      "outside": "Outside",
+      "hiddenOutside_one": "{{count}} person from outside",
+      "hiddenOutside_other": "{{count}} people from outside",
+      "unsent_one": "{{count}} invite couldn't be sent.",
+      "unsent_other": "{{count}} invites couldn't be sent.",
+      "retry": "Retry",
+      "cancelled": "This meeting was cancelled.",
+      "answerFailed": "Your answer couldn't be saved. Try again.",
+      "repeats": {
+        "daily": "Every day",
+        "weekdays": "Every weekday",
+        "weekly": "Every week",
+        "monthly": "Every month",
+        "yearly": "Every year"
+      },
+      "until": "{{repeat}}, until {{date}}"
     }
   }
 }

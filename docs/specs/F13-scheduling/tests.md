@@ -344,7 +344,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-41: Keyboard and screen reader
 - **Covers:** AC-F13-24
 - **Level:** component
-- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.a11y.test.tsx`
+- **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx` (keyboard and spoken names); the axe check runs on the real calendar in the desktop test (TC-F13-79), as the app has axe only there
 - **Given** the calendar, details panel and form
 - **When** used only with the keyboard, and checked with axe
 - **Then** every block, button and field can be reached and used, with a visible focus; blocks read title, time and answer; no axe errors

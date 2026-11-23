@@ -17,6 +17,7 @@ import { CallHost } from "./CallHost.tsx";
 import { useCallWindows } from "../features/call-windows/index.ts";
 import { useDesktopCommands } from "./desktop-commands.ts";
 import { LiveLineProvider } from "../features/chats/index.ts";
+import { CalendarPage } from "../pages/CalendarPage/index.ts";
 import { ChatsPage } from "../pages/ChatsPage/index.ts";
 import { HomePage } from "../pages/HomePage/index.ts";
 import type { PreJoinState } from "../features/meetings/index.ts";
@@ -86,6 +87,7 @@ function SignedOutRoutes() {
 const PATHS: Record<AppScreen, string> = {
   home: "/",
   chat: "/chat",
+  calendar: "/calendar",
   meetings: "/meetings",
   people: "/people",
   requests: "/requests",
@@ -116,6 +118,7 @@ function SignedInScreens() {
       <Routes>
         <Route path="/" element={<HomePage onNavigate={go} />} />
         <Route path="/chat" element={<ChatsPage onNavigate={go} />} />
+        <Route path="/calendar" element={<CalendarPage onNavigate={go} onPreJoin={preJoin} />} />
         <Route path="/call" element={<CallPlace />} />
         <Route
           path="/meetings"

@@ -24,7 +24,8 @@ import { useCallCorner } from "../call-corner/index.ts";
 import { useWorkspaceName } from "./workspace-name.ts";
 
 /** The signed-in screens the side menu and the switcher lead to. */
-export type AppScreen = "home" | "chat" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
+export type AppScreen =
+  "home" | "chat" | "calendar" | "meetings" | "people" | "requests" | "workspace" | "settings" | "join";
 
 export interface WorkspaceShellProps {
   /** None for the call shown beside the menu (F17): no item is the current one. */
@@ -36,6 +37,7 @@ export interface WorkspaceShellProps {
 const ICONS: Record<Exclude<AppScreen, "join">, IconName> = {
   home: "home",
   chat: "chat",
+  calendar: "calendar",
   meetings: "camera",
   people: "users",
   requests: "send",
@@ -52,6 +54,7 @@ function useNavItems(current: MyWorkspace | undefined, { screen, onNavigate }: O
   const screens: Exclude<AppScreen, "join">[] = [
     "home",
     "chat",
+    "calendar",
     "meetings",
     ...(company ? (["people", "requests"] as const) : []),
     ...(manages ? (["workspace"] as const) : []),
