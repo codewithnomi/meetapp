@@ -639,7 +639,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **File:** `tests/e2e/desktop/calendar.spec.ts`
 - **Given** B accepted a meeting starting in 15 minutes (fake clock), two windows open
 - **When** the reminder is due; B presses Snooze in one window, later Join
-- **Then** one card appears per person, closes in the other window on Snooze, returns after 5 minutes, and Join opens the pre-join; a declined meeting gives none
+- **Then** each of the person's app windows shows one card, Snooze closes it in the other window too, it returns when the snooze ends (the test ends it early in the database), and Join opens the pre-join; a declined meeting gives none
 
 ### TC-F13-79: Keyboard only and accessibility
 - **Covers:** AC-F13-07, AC-F13-24

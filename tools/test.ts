@@ -79,9 +79,11 @@ function fakeMicrosoft(apiUrl: string, port: number): Record<string, string> {
   };
 }
 
-async function waitForApi(url: string): Promise<boolean> {
+/** Waits for this run's own backend; false if it stopped (e.g. its port was taken by a leftover one). */
+async function waitForApi(url: string, api: ChildProcess): Promise<boolean> {
   const deadline = Date.now() + API_WAIT_MS;
   while (Date.now() < deadline) {
+    if (api.exitCode !== null) return false;
     try {
       if ((await fetch(`${url}/api/v1/health`)).ok) return true;
     } catch {
@@ -115,8 +117,10 @@ async function desktopTests(env: Record<string, string>): Promise<boolean> {
     DATA_ENCRYPTION_KEY: `e2e-${randomUUID()}`,
   });
   try {
-    if (!(await waitForApi(apiUrl))) {
-      process.stderr.write(`✗ The backend did not answer at ${apiUrl} within 60 s.\n`);
+    if (!(await waitForApi(apiUrl, api))) {
+      process.stderr.write(
+        `✗ The backend did not start at ${apiUrl} (is another one still running there?). See ${API_LOG}.\n`,
+      );
       return false;
     }
     const passed = process.argv.indexOf("--");

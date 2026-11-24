@@ -16,7 +16,8 @@ const photo = z
 const person = z.strictObject({ name: cut(80), initials: z.string().max(4), photo: photo.optional() });
 
 const base = {
-  id: z.string().min(1).max(100),
+  // F13 reminder ids carry the person, the meeting and the time (about 115 characters).
+  id: z.string().min(1).max(200),
   title: cut(80),
   detail: cut(80).optional(),
   text: cut(100).optional(),

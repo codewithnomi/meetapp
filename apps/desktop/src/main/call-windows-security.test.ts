@@ -96,6 +96,10 @@ describe("TC-F16-55 [AC-F16-22, AC-F16-03, AC-F16-16] allow-list and sender chec
     expect(isCallWindowAction({ name: "accept", callId: "c1", video: true })).toBe(true);
     expect(isCallWindowAction({ name: "decline", callId: "c1" })).toBe(true);
     expect(isCallWindowAction({ name: "toggleMic" })).toBe(true);
+    // F13 (TC-F13-78): a reminder card's buttons.
+    for (const choice of ["join", "snooze", "dismiss"])
+      expect(isCallWindowAction({ name: "notice", choice })).toBe(true);
+    expect(isCallWindowAction({ name: "notice", choice: "delete" })).toBe(false);
     for (const bad of [
       null,
       "accept",

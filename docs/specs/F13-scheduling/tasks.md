@@ -24,4 +24,4 @@ small UI tests and pictures run at `/spec-verify`, with only `calendar.spec.ts` 
 - [x] **T11: Form, answers, edit and cancel screens.** New/edit form (drag to fill, all day, invitees with any email, repeat picker, field errors, wait time), answer buttons, this/series question, cancel dialog, failed-invites notice. Covers: AC-F13-07, 08, 10, 11, 14, 16, 18, 19, 20, 31. Tests: TC-F13-26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 39.
 - [x] **T12: Reminder cards, invite notifications, Meetings "Upcoming".** Corner cards with Join/Snooze/Dismiss, the "Meeting invites" setting (F04 settings spec updated), Do not disturb; Upcoming card on Meetings. Covers: AC-F13-17, 21, 23. Tests: TC-F13-36, 37, 38, 68.
 - [x] **T13: Translations and docs.** Every text in `en.json`, region formats; runbook, READMEs, glossary, F02/F04 spec notes. Covers: AC-F13-25. Tests: TC-F13-42, 43.
-- [ ] **T14: Desktop tests.** `tests/e2e/desktop/calendar.spec.ts`. Covers: the user journeys. Tests: TC-F13-75, 76, 77, 78, 79, 80, 81, 82.
+- [x] **T14: Desktop tests.** `tests/e2e/desktop/calendar.spec.ts`. Covers: the user journeys. Tests: TC-F13-75, 76, 77, 78, 79, 80, 81, 82.

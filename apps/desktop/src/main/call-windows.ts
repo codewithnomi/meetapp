@@ -217,7 +217,8 @@ const CALL_ACTIONS = new Set(["toggleMic", "toggleCamera", "share", "toggleHand"
 /** These open something in the main window, so it comes to the front first (AC-F16-03, 17). */
 const BRING_FORWARD = new Set(["accept", "share", "backToCall"]);
 
-const NOTICE_CHOICES = new Set(["open", "admit", "viewLobby", "close"]);
+// F13 adds a reminder's Join, Snooze and Dismiss.
+const NOTICE_CHOICES = new Set(["open", "admit", "viewLobby", "join", "snooze", "dismiss", "close"]);
 
 /** Checks a small window's button press; true shape and names only (design.md 3.2). */
 export function isCallWindowAction(value: unknown): value is CallWindowAction {
