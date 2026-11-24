@@ -2,7 +2,9 @@
 // emails, reminders and the minute-by-minute upkeep. Used by meetings.ts, so server.ts and the
 // integration tests run the same wiring.
 import type { Redis } from "ioredis";
-import type { MeetingWiring } from "./meetings.ts";
+import type { Database } from "@meetapp/db";
+import type { Config } from "./config/config.ts";
+import type { Outbox } from "./emails/outbox.ts";
 import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createLivePublisher } from "./modules/chats/chats-live.ts";
 import {
@@ -26,7 +28,15 @@ const storeOf = (redis: Redis): ReminderStore => ({
   },
 });
 
-export function schedulingFor({ db, outbox, config, redis }: MeetingWiring, calls: CallsDeps) {
+/** The parts of the meeting wiring scheduling needs (its own type, so meetings.ts and this file don't import each other). */
+export interface SchedulingWiring {
+  config: Config;
+  db: Database;
+  outbox: Outbox;
+  redis: Redis;
+}
+
+export function schedulingFor({ db, outbox, config, redis }: SchedulingWiring, calls: CallsDeps) {
   const scheduling = createSchedulingRepository(db);
   const changes = createSchedulingChangesRepository(db);
   const live = createLivePublisher(redis);

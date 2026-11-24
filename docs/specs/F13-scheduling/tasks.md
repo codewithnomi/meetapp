@@ -25,3 +25,14 @@ small UI tests and pictures run at `/spec-verify`, with only `calendar.spec.ts` 
 - [x] **T12: Reminder cards, invite notifications, Meetings "Upcoming".** Corner cards with Join/Snooze/Dismiss, the "Meeting invites" setting (F04 settings spec updated), Do not disturb; Upcoming card on Meetings. Covers: AC-F13-17, 21, 23. Tests: TC-F13-36, 37, 38, 68.
 - [x] **T13: Translations and docs.** Every text in `en.json`, region formats; runbook, READMEs, glossary, F02/F04 spec notes. Covers: AC-F13-25. Tests: TC-F13-42, 43.
 - [x] **T14: Desktop tests.** `tests/e2e/desktop/calendar.spec.ts`. Covers: the user journeys. Tests: TC-F13-75, 76, 77, 78, 79, 80, 81, 82.
+
+## Fixes from verification round 1 (2026-11-24)
+- [ ] **T-fix-1: Time zones checked (security High + Low).** The contract accepts only real time zones (due query and schedule body, 400 `/timeZone`); the minute job falls back to the meeting's zone and one bad entry can't stop it; minute-job errors get a log line.
+- [ ] **T-fix-2: Reminders follow single-meeting changes (bug High).** The job reads occurrence changes: no reminder for a cancelled one, the moved time for a moved one; `dueFor` reads all-day dates in the meeting's zone; occurrences moved into a range show.
+- [ ] **T-fix-3: Dismiss limits and Join check (security Medium + Low).** Rate limit on `POST /reminders/dismiss`, only real occurrences; desktop passes Join only when the card has it; a reminder card isn't pushed out silently (the page hears of it).
+- [ ] **T-fix-4: Smaller bugs.** All-day end by calendar day; outbox result saving can't cause a second send; an unbuildable invite is marked failed; cancelled occurrences don't count toward 500.
+- [ ] **T-fix-5: Failing tests.** db migration tests with migration 0013; TC-F02-102 (the schedule PATCH answers 404 to outsiders before checking the body); desktop F04 notice tests TC-F04-54, 67, 62.
+- [ ] **T-fix-6: Chat in the details (AC-F13-04).** A Chat button for people who were in the meeting (F03's chat), or the AC reworded with the owner.
+- [ ] **T-fix-7: UI review.** Month grid and the "more" list into packages/ui with stories and tests; FOCUS_RING; Upcoming loading and error states; ReminderCard announced; DateTimeField error on the time box; loading text; missing stories (NoticeCard invite, CalendarGrid states); trailing full stop in links.
+- [ ] **T-fix-8: Unused code and screenshots.** Remove the 30 unused exports; make the screenshot baselines for the approved F13 look; then `pnpm check` green.
+- [ ] **T-fix-9: Documents.** design.md, tests.md, overview, security, privacy-legal, operations, project-structure, F02 design, READMEs, glossary, progress; the spec uses the app's words ("Maybe", "This meeting / The series", the failed-invites text).
