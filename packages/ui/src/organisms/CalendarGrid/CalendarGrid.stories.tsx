@@ -60,6 +60,7 @@ const meta = {
     days: week,
     hourLabels: Array.from({ length: 24 }, (_, h) => `${String(h).padStart(2, "0")}:00`),
     allDayLabel: "All day",
+    hoursLabel: "Hours",
     moreLabel: (n: number) => `+${String(n)} more`,
     nowMinute: 10 * 60 + 20,
     onOpen: fn(),

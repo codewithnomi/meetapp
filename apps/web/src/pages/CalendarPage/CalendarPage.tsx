@@ -146,6 +146,13 @@ const pickTime = (onNewMeeting: CalendarPageProps["onNewMeeting"], online: boole
       }
     : undefined;
 
+/** The day number, and whether a day belongs to another month (dimmed). */
+const monthDays = (days: GridDay[], month: number) =>
+  days.map((day) => {
+    const date = new Date(day.key);
+    return { ...day, dayNumber: String(date.getDate()), outside: date.getMonth() !== month };
+  });
+
 function Body({
   view,
   month,
@@ -172,10 +179,7 @@ function Body({
     <div className="flex min-h-0 flex-1">
       {view === "month" ? (
         <CalendarMonth
-          days={days.map((day) => {
-            const date = new Date(day.key);
-            return { ...day, dayNumber: String(date.getDate()), outside: date.getMonth() !== month };
-          })}
+          days={monthDays(days, month)}
           moreLabel={(count) => t("calendar.more", { count })}
           onOpen={onOpen}
           onMore={onMore}
@@ -185,6 +189,7 @@ function Body({
           days={days}
           hourLabels={hourLabels(format)}
           allDayLabel={t("calendar.allDay")}
+          hoursLabel={t("calendar.hours")}
           moreLabel={(count) => t("calendar.more", { count })}
           nowMinute={minuteOfDay(clock, format)}
           onOpen={onOpen}

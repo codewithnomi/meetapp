@@ -29,6 +29,7 @@ function props(overrides: Partial<CalendarGridProps> = {}): CalendarGridProps {
     days: [day("Tue", false), day("Wed", true, [meeting("a", 600, 630)])],
     hourLabels: hours,
     allDayLabel: "All day",
+    hoursLabel: "Hours",
     moreLabel: (n) => `+${String(n)} more`,
     onOpen: vi.fn(),
     onMore: vi.fn(),

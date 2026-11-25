@@ -1399,6 +1399,7 @@
   },
   "calendar": {
     "loading": "Loading your calendar",
+    "hours": "Hours",
     "title": "Calendar",
     "today": "Today",
     "previous": "Previous",

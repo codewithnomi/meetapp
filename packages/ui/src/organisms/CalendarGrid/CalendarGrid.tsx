@@ -37,6 +37,8 @@ export interface CalendarGridProps {
   /** 24 hour labels, already formatted for the person's 12/24-hour setting. */
   hourLabels: string[];
   allDayLabel: string;
+  /** Names the scrolling hours, which the keyboard can reach and scroll: "Hours". */
+  hoursLabel: string;
   /** "+{n} more" made by the caller. */
   moreLabel: (count: number) => string;
   /** Minutes from midnight now, shown as a line in today's column. */
@@ -150,8 +152,42 @@ function DayColumn({
   );
 }
 
+/** The day names and the all-day row, above the hours. */
+function GridHead({
+  days,
+  allDayLabel,
+  onOpen,
+  columns,
+}: Pick<CalendarGridProps, "days" | "allDayLabel" | "onOpen"> & { columns: React.CSSProperties }) {
+  return (
+    <div className="grid border-b border-line" style={columns}>
+      <span />
+      {days.map((day) => (
+        <div
+          key={day.key}
+          className={cx(
+            "border-l border-line px-2.5 py-2 text-[13px]",
+            day.today ? "font-bold text-accent-text" : "text-ink",
+          )}
+        >
+          <span aria-hidden="true">{day.label}</span>
+          <span className="sr-only">{day.fullLabel}</span>
+        </div>
+      ))}
+      <span className="pt-2 pr-1.5 text-right text-[11px] text-ink-muted">{allDayLabel}</span>
+      {days.map((day) => (
+        <div key={day.key} className="flex min-h-7.5 flex-col gap-0.5 border-l border-line p-0.75">
+          {day.allDay.map((m) => (
+            <MeetingBlock key={m.id} {...m} compact onOpen={() => onOpen(m.id)} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function CalendarGrid(props: CalendarGridProps) {
-  const { days, hourLabels, allDayLabel, scrollToMinute = 8 * 60 } = props;
+  const { days, hourLabels, hoursLabel, scrollToMinute = 8 * 60 } = props;
   const scroller = useRef<HTMLDivElement>(null);
   useEffect(() => {
     scroller.current?.scrollTo?.({ top: (scrollToMinute / 60) * HOUR_PX - HOUR_PX / 2 });
@@ -159,30 +195,15 @@ export function CalendarGrid(props: CalendarGridProps) {
   const columns = { gridTemplateColumns: `56px repeat(${String(days.length)}, minmax(110px, 1fr))` };
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
-      <div className="grid border-b border-line" style={columns}>
-        <span />
-        {days.map((day) => (
-          <div
-            key={day.key}
-            className={cx(
-              "border-l border-line px-2.5 py-2 text-[13px]",
-              day.today ? "font-bold text-accent-text" : "text-ink",
-            )}
-          >
-            <span aria-hidden="true">{day.label}</span>
-            <span className="sr-only">{day.fullLabel}</span>
-          </div>
-        ))}
-        <span className="pt-2 pr-1.5 text-right text-[11px] text-ink-muted">{allDayLabel}</span>
-        {days.map((day) => (
-          <div key={day.key} className="flex min-h-7.5 flex-col gap-0.5 border-l border-line p-0.75">
-            {day.allDay.map((m) => (
-              <MeetingBlock key={m.id} {...m} compact onOpen={() => props.onOpen(m.id)} />
-            ))}
-          </div>
-        ))}
-      </div>
-      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto">
+      <GridHead {...props} columns={columns} />
+      <div
+        ref={scroller}
+        role="region"
+        aria-label={hoursLabel}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- a scrolling area must be reachable by keyboard (axe "scrollable-region-focusable")
+        tabIndex={0}
+        className={cx("min-h-0 flex-1 overflow-y-auto", FOCUS_RING)}
+      >
         <div className="grid" style={columns}>
           <div aria-hidden="true">
             {hourLabels.map((label) => (
