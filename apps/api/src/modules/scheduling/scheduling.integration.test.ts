@@ -133,6 +133,24 @@ describe("scheduling a meeting", () => {
 });
 
 describe("reading the calendar", () => {
+  it("TC-F13-22 [AC-F13-03] Join is offered from 5 minutes before the start until the end", async () => {
+    const { owner, workspaceId } = await team("join", 0);
+    const MIN = 60 * 1000;
+    const make = async (title: string, startIn: number) => {
+      const startsAt = new Date(Date.now() + startIn * MIN).toISOString();
+      const endsAt = new Date(Date.now() + (startIn + 30) * MIN).toISOString();
+      expect((await schedule(owner, workspaceId, body([], { title, startsAt, endsAt }))).statusCode).toBe(201);
+    };
+    await make("In six", 6);
+    await make("In four", 4);
+    await make("Started", -4);
+    const read = await calendar(owner, workspaceId, new Date(Date.now() - HOUR).toISOString(), at(DAY));
+    const join = Object.fromEntries(
+      read.json<{ occurrences: { title: string; canJoin: boolean }[] }>().occurrences.map((o) => [o.title, o.canJoin]),
+    );
+    expect(join).toEqual({ "In six": false, "In four": true, Started: true });
+  });
+
   it("TC-F13-67 [AC-F13-01, AC-F13-11] occurrences of a daily series for a day, a week and 42 days, with canJoin", async () => {
     const { owner, workspaceId } = await team("range", 0);
     const startsAt = new Date(Date.now() + 2 * 60 * 1000).toISOString();
@@ -186,7 +204,7 @@ describe("who sees what", () => {
     expect((await calendar(stranger, workspaceId)).statusCode).toBe(404);
   });
 
-  it("TC-F13-59 [AC-F13-26, AC-F13-27] invitees see names and answers; only organizers see outside addresses", async () => {
+  it("TC-F13-59, TC-F13-45 [AC-F13-26, AC-F13-27] invitees see names and answers; only organizers see outside addresses", async () => {
     const { owner, others, workspaceId } = await team("emails", 1);
     const [ana] = others as [Person];
     const { meetingId } = (

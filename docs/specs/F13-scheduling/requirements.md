@@ -19,7 +19,7 @@ People plan meetings ahead, as in Microsoft Teams: pick a date and time, invite 
 - As a member, I want to schedule a meeting for a date and time, so that everyone can plan for it.
 - As a member, I want a weekly or daily repeating meeting, so that I don't create the same meeting again and again.
 - As an organizer, I want invitees to get a calendar invite by email, so that the meeting shows in whatever calendar they use.
-- As an invitee, I want to say Accept, Tentative or Decline, so that the organizer knows who's coming.
+- As an invitee, I want to say Accept, Maybe or Decline, so that the organizer knows who's coming.
 - As a member, I want a calendar of my meetings and a reminder before each one, so that I don't miss any.
 - As an organizer, I want to change or cancel a meeting, and everyone is told.
 
@@ -29,7 +29,7 @@ People plan meetings ahead, as in Microsoft Teams: pick a date and time, invite 
 - **AC-F13-01:** WHEN a signed-in member opens **Calendar** in the side menu, THEN they see a work week (Monday–Friday) of the open workspace's meetings they organize or are invited to, with each meeting as a block at its time showing its title and organizer. They can switch to **Day**, **Week** and **Month**, move back and forward, and press **Today**. The calendar shows only the open workspace; switching workspace switches it. Meetings at the same time show side by side, up to 4, then "+N more".
 - **AC-F13-02:** WHEN the calendar shows, THEN times are in the computer's time zone and its 12/24-hour setting; a red line marks the current time in today's column.
 - **AC-F13-03:** WHEN a meeting starts within 5 minutes or is under way (until it ends), THEN its block shows a **Join** button that opens that meeting's (or occurrence's) pre-join (F02). The same Join appears on the meeting's details.
-- **AC-F13-04:** WHEN the person clicks a meeting block, THEN its details show: title, date and time, repeat, organizer, invitees with their answers (Accepted, Tentative, Declined, No answer), the description, the link, ID and passcode, and Join, Chat (F03's meeting chat, as today: for people who have joined the meeting; chat before the meeting is a follow-up, D096), and for invitees their answer buttons.
+- **AC-F13-04:** WHEN the person clicks a meeting block, THEN its details show: title, date and time, repeat, organizer, invitees with their answers (Accepted, Maybe, Declined, No answer), the description, the link, ID and passcode, and Join, Chat (F03's meeting chat, as today: for people who have joined the meeting; chat before the meeting is a follow-up, D096), and for invitees their answer buttons.
 - **AC-F13-05:** WHEN the person has no meetings in the shown period, THEN the calendar is empty with a hint "No meetings. Select New meeting to schedule one."
 - **AC-F13-06:** WHEN the person's answer is Declined, THEN the meeting still shows, dimmed and struck through, as in Teams.
 
@@ -45,11 +45,11 @@ People plan meetings ahead, as in Microsoft Teams: pick a date and time, invite 
 
 ### Invites and answers
 - **AC-F13-15:** WHEN an invite is sent, THEN each invitee gets an email with the title, date and time (with time zone), organizer, description, the **Join** link, meeting ID and passcode, and a calendar file that Google Calendar, Outlook and Apple Calendar can add in one click (repeats included).
-- **AC-F13-16:** WHEN an invited member answers **Accept**, **Tentative** or **Decline** (in the meeting's details, for the whole series or one occurrence), THEN the organizer sees the answer within 5 seconds. An external person's answer from their own calendar app is not tracked (shows "No answer").
+- **AC-F13-16:** WHEN an invited member answers **Accept**, **Maybe** or **Decline** (in the meeting's details, for the whole series or one occurrence), THEN the organizer sees the answer within 5 seconds. An external person's answer from their own calendar app is not tracked (shows "No answer").
 - **AC-F13-17:** WHEN a member is invited, THEN they also get a MeetApp notification (F04's notifications, can be turned off in Settings) "<Organizer> invited you to <title>".
 
 ### Changing and cancelling
-- **AC-F13-18:** WHEN the organizer or a co-organizer changes the title, time, repeat, invitees or description and presses **Send update**, THEN everyone's calendar shows the change within 5 seconds, and invitees are emailed the update with an updated calendar file. Removed invitees are emailed a cancellation; added ones a new invite. For a repeating meeting, they choose **This occurrence** or **The whole series**. Changing the whole series' time, after a warning, resets everyone's answers to No answer and drops changes made to single occurrences.
+- **AC-F13-18:** WHEN the organizer or a co-organizer changes the title, time, repeat, invitees or description and presses **Send update**, THEN everyone's calendar shows the change within 5 seconds, and invitees are emailed the update with an updated calendar file. Removed invitees are emailed a cancellation; added ones a new invite. For a repeating meeting, they choose **This meeting** or **The series**. Changing the whole series' time, after a warning, resets everyone's answers to No answer and drops changes made to single occurrences.
 - **AC-F13-19:** WHEN the organizer cancels the meeting (one occurrence or the series), optionally with a message, THEN it leaves every calendar, invitees are emailed a cancellation that removes it from their calendar app, and its link stops working (for the series) or that occurrence is skipped.
 - **AC-F13-20:** WHEN anyone else (not organizer or co-organizer) opens the meeting, THEN they cannot edit or cancel it; the server refuses it too.
 
@@ -58,7 +58,7 @@ People plan meetings ahead, as in Microsoft Teams: pick a date and time, invite 
 - **AC-F13-22:** WHEN MeetApp was closed and opens later, THEN no reminder shows for meetings that have already ended.
 
 ### Problems
-- **AC-F13-31:** WHEN some invite emails cannot be sent, THEN the meeting still exists and the organizer sees "Some invites couldn't be sent" with **Retry**.
+- **AC-F13-31:** WHEN some invite emails cannot be sent, THEN the meeting still exists and the organizer sees "N invites couldn't be sent" (or "1 invite couldn't be sent.") with **Retry**.
 - **AC-F13-32:** WHEN there's no connection, THEN the calendar shows what it last loaded with an offline notice, and Send, Send update, Cancel and the answer buttons are disabled.
 
 ### Home and Meetings

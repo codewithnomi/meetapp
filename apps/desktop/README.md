@@ -22,7 +22,7 @@ The Electron window that shows the app's screens (apps/web), locked down for saf
 | `src/main/tray-menu.ts`, `tray.ts`, `platform-words.ts` | F04: the menu-bar / tray icon and its menu (`build-resources/trayTemplate*.png`); each system's words and keys |
 | `src/main/login-item.ts`, `login-item-bridge.ts` | F04: start at login, hidden (system login items when packaged, a stand-in file otherwise) |
 | `src/main/links.ts`, `meeting-links.ts` | F04: `meetapp://m/<code>` links (shapes in `@meetapp/contracts/app-links`); a link only opens Join a meeting |
-| `src/main/notices.ts`, `notices-checks.ts` | F04 (D085): notification cards, a third kind of F16 small window: at most 3, 8 s, above F16's windows; every card checked with Zod, 10 a second at most |
+| `src/main/notices.ts`, `notices-checks.ts` | F04 (D085): notification cards, a third kind of F16 small window: at most 3 (a 4th pushes the oldest out and its page is told, `pushed`), 8 s, above F16's windows; every card checked with Zod, 10 a second at most. F13 adds meeting invite cards and reminder cards (Join only when the card has it, Snooze, Dismiss; they stay until answered and show once across windows) |
 | `src/main/window-state.ts`, `window-state-bridge.ts` | F04: the window's size and place (`window-state.json`), checked against the screens |
 | `src/main/updates.ts`, `updates-bridge.ts` | F04 (D084): electron-updater, switched off (`UPDATES_ENABLED = false`, never loaded while off); Settings → About |
 | `app-identity.ts`, `electron-builder.config.ts` | F04: name, app id, link scheme, icon (D087); the installers (D084) |

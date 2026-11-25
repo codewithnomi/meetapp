@@ -12,6 +12,7 @@ Zod schemas shared by the backend and the apps: what each endpoint receives and 
 - `src/call-windows.ts` (F16, types only): what a main window reports to the desktop app for the small call windows, what a small window shows, and the button presses that come back; never sent over the network.
 - `src/app-links.ts` (F04): `meetapp://m/<code>` meeting links, read strictly; its own small entry (`@meetapp/contracts/app-links`) so the desktop preload stays small.
 - `src/chat-calls.ts` (F15): calls from chats: start, the running call with its members, Add people, accept and decline, the `ring` and `ring_stop` messages, active calls on other devices, transfer, ringtone settings (the start answer `startedCallSchema` sits in `src/calls.ts`).
+- `src/scheduling.ts` (F13): scheduled meetings: create, update, cancel, answer, the calendar, details, reminders due and dismiss (only real IANA time zones, `isTimeZone`), and the `calendar`, `invited`, `reminder` and `reminder-dismissed` live messages
 - `src/chat-notes.ts` (F14/F15): chat notes, including the call notes (started, ended, missed).
 - `src/chats.ts` (F14): chats: conversations and the chat list, New chat's people, requests, blocks, groups, read marks, status, and the live line's messages both ways.
 

@@ -191,19 +191,19 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 
 ### TC-F13-22: Join button window
 - **Covers:** AC-F13-03
-- **Level:** component
-- **File:** `packages/ui/src/molecules/MeetingBlock/MeetingBlock.test.tsx`
-- **Given** a meeting starting in 6 min, 5 min, now (half over) and ended
-- **When** each renders
-- **Then** Join shows from 5 minutes before start until the end only, and goes to the pre-join of that meeting or occurrence; the same on the details panel
+- **Level:** integration (the server decides `canJoin`; blocks, details and Upcoming show Join from it)
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts`
+- **Given** meetings starting in 6 minutes, in 4 minutes, and 4 minutes ago
+- **When** the calendar is read
+- **Then** Join (`canJoin`) is offered for the last two only: from 5 minutes before start until the end
 
 ### TC-F13-23: Block states and spoken text
 - **Covers:** AC-F13-06, AC-F13-24
 - **Level:** component
 - **File:** `packages/ui/src/molecules/MeetingBlock/MeetingBlock.test.tsx`
-- **Given** answers Declined, Tentative, Accepted and No answer, in a series
+- **Given** answers Declined, Maybe, Accepted and No answer, in a series
 - **When** blocks render
-- **Then** Declined is dimmed and struck through but present; Tentative striped; a repeat icon for a series; the accessible name reads title, time and the person's answer
+- **Then** Declined is dimmed and struck through but present; Maybe striped; a repeat icon for a series; the accessible name reads title, time and the person's answer
 
 ### TC-F13-24: Details panel content
 - **Covers:** AC-F13-04
@@ -274,7 +274,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **Level:** component
 - **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`
 - **Given** an invited member on a series
-- **When** Accept, Tentative, Decline are pressed with "This meeting" and "All in series"
+- **When** Accept, Maybe, Decline are pressed with "This meeting" and "All in series"
 - **Then** the right request is sent with the scope and the occurrence; the pressed answer shows as chosen; an organizer-only view has no answer buttons
 
 ### TC-F13-33: Edit asks this one or the series
@@ -331,7 +331,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **File:** `apps/web/src/pages/CalendarPage/CalendarPage.test.tsx`, `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
 - **Given** an organizer's meeting with a failed invitee
 - **When** the panel shows, then Retry is pressed
-- **Then** "Some invites couldn't be sent" with Retry shows for organizers only; Retry calls resend and the notice goes when none fail
+- **Then** "N invites couldn't be sent" (or "1 invite couldn't be sent.") with Retry shows for organizers only; Retry calls resend and the notice goes when none fail
 
 ### TC-F13-40: Offline
 - **Covers:** AC-F13-32
@@ -375,11 +375,11 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 
 ### TC-F13-45: External emails hidden from non-organizers
 - **Covers:** AC-F13-26, AC-F13-27
-- **Level:** component
-- **File:** `packages/ui/src/organisms/MeetingDetailsPanel/MeetingDetailsPanel.test.tsx`
-- **Given** an invitee list with external people, shown to an organizer and to an invited member
-- **When** the panel shows
-- **Then** the organizer sees the addresses; the invited member sees no external address
+- **Level:** integration (the server leaves the addresses out; the panel shows what it gets)
+- **File:** `apps/api/src/modules/scheduling/scheduling.integration.test.ts` (with TC-F13-59)
+- **Given** an invitee list with external people, read by an organizer and by an invited member
+- **When** the details are read
+- **Then** the organizer sees the addresses; the invited member sees no external address, only how many are hidden
 
 ### TC-F13-46: Pictures of the new parts
 - **Covers:** AC-F13-24
@@ -442,7 +442,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 - **Level:** integration
 - **File:** `apps/api/src/modules/scheduling/scheduling-changes.integration.test.ts`
 - **Given** an invited member
-- **When** they PUT Accept, Tentative and Decline for the series and for one occurrence
+- **When** they PUT Accept, Maybe and Decline for the series and for one occurrence
 - **Then** answers are saved; the organizer's live line gets the change within 5 seconds; the occurrence answer overrides the series one only for that date; an external person shows "No answer"; a non-invited member gets 404
 
 ### TC-F13-54: Invited member notification
@@ -508,7 +508,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-62: Reminders job
 - **Covers:** AC-F13-21, AC-F13-22
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/reminders.job.test.ts`
+- **File:** `apps/api/src/modules/scheduling/reminders.integration.test.ts`
 - **Given** real Redis and Postgres, meetings in 15 minutes and now, a declined one, a cancelled one, a dismissed one, one person with two windows
 - **When** the job runs, twice, and after a restart with a gap of a few minutes
 - **Then** one `reminder` per eligible person and kind; none for declined, cancelled or dismissed; a snooze sends again once at its time; `reminder-dismissed` goes out on dismiss
@@ -516,7 +516,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-63: Due reminders on start
 - **Covers:** AC-F13-22
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/reminders.due.test.ts`
+- **File:** `apps/api/src/modules/scheduling/reminders.integration.test.ts`
 - **Given** meetings that have ended, are running and are coming
 - **When** the app asks `GET /reminders/due`
 - **Then** only meetings not yet ended are returned
@@ -564,7 +564,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-69: Invitee or organizer leaves the workspace
 - **Covers:** AC-F13-29
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.leave.test.ts`
+- **File:** `apps/api/src/modules/scheduling/reminders.integration.test.ts`
 - **Given** an invitee, then the organizer with co-organizers present
 - **When** each leaves the workspace
 - **Then** the invitee no longer sees any of its meetings (404); the organizer's meetings stop (F02) and every invitee gets a cancellation email
@@ -572,7 +572,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-70: Privacy sweep
 - **Covers:** AC-F13-30
 - **Level:** integration
-- **File:** `apps/api/src/modules/scheduling/scheduling.sweep.test.ts`
+- **File:** `apps/api/src/modules/scheduling/reminders.integration.test.ts`
 - **Given** external invitees of a meeting cancelled 31 days ago, one cancelled 29 days ago, one expired 31 days ago, an active one, and the same address in two meetings
 - **When** the daily sweep runs
 - **Then** rows of the first and third are deleted, the others stay; the address of one meeting never shows in another's data
@@ -604,7 +604,7 @@ Test names must include the TC and AC IDs, e.g. `TC-F13-02 [AC-F13-11] monthly o
 ### TC-F13-74: Privacy sweep of the code and logs
 - **Covers:** AC-F13-27, AC-F13-30
 - **Level:** security
-- **File:** `apps/api/src/modules/scheduling/scheduling.security.test.ts`
+- **File:** `apps/api/src/modules/scheduling/scheduling-logs.integration.test.ts`
 - **Given** a Send, an update and a cancel with outside addresses and the logger captured
 - **When** logs and error bodies are read
 - **Then** no email address, passcode or description appears in logs or errors

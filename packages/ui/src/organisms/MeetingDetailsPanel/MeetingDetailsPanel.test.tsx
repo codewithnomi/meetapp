@@ -17,7 +17,7 @@ describe("MeetingDetailsPanel", () => {
     expect(on).toHaveBeenCalledTimes(2);
   });
 
-  it("TC-F13-28 [AC-F13-28] a web address in the notes is a link that opens outside; text stays text", () => {
+  it("TC-F13-44 [AC-F13-28] a web address in the notes is a link that opens outside; text stays text", () => {
     render(
       <MeetingDetailsPanel
         {...detailsExample(vi.fn())}
@@ -30,7 +30,7 @@ describe("MeetingDetailsPanel", () => {
     expect(screen.getByText(/<b>x<\/b>/)).toBeInTheDocument();
   });
 
-  it("TC-F13-28 [AC-F13-28] a full stop after an address isn't part of the link", () => {
+  it("TC-F13-44 [AC-F13-28] a full stop after an address isn't part of the link", () => {
     render(
       <MeetingDetailsPanel {...detailsExample(vi.fn())} notes={{ label: "Notes", text: "See https://a.example/x." }} />,
     );
