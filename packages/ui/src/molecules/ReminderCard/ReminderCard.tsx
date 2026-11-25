@@ -27,6 +27,7 @@ export interface ReminderCardProps {
 export function ReminderCard({ heading, title, time, open, join, snooze, dismiss }: ReminderCardProps) {
   return (
     <section
+      role="status"
       aria-label={`${heading}: ${title}`}
       className="flex w-85 flex-col gap-3 rounded-xl border border-line bg-surface-raised p-4 text-ink shadow-2"
     >

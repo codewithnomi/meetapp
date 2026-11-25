@@ -34,6 +34,8 @@ export function DateTimeField({ id, label, timeLabel, date, time, allDay, error,
           id={`${id}-time`}
           type="time"
           aria-label={timeLabel}
+          // The date's error speaks for the time box too.
+          {...(error ? { "aria-describedby": `${id}-date-error` } : {})}
           value={time}
           step={900}
           onChange={(event) => onChange({ date, time: event.target.value })}

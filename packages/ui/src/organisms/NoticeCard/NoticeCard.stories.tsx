@@ -90,3 +90,7 @@ export const StillRunning: Story = {
     open: undefined,
   },
 };
+/** F13: someone invited you to a meeting; clicking opens it in the Calendar. */
+export const Invite: Story = {
+  args: { kind: "invite", title: "Olivia Owner", detail: undefined, text: "invited you to Design review" },
+};

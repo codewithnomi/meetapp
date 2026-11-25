@@ -18,7 +18,7 @@ describe("ReminderCard", () => {
       dismiss: action("Dismiss"),
     };
     render(<ReminderCard {...props} />);
-    expect(screen.getByRole("region", { name: "Starts in 15 min: Planning" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Starts in 15 min: Planning" })).toBeInTheDocument();
     for (const name of ["Open Planning", "Join", "Snooze 5 min", "Dismiss"]) {
       await userEvent.click(screen.getByRole("button", { name }));
     }

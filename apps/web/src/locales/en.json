@@ -1040,7 +1040,10 @@
       "tomorrow": "Tomorrow",
       "join": "Join",
       "joinFor": "Join {{title}}",
-      "viewCalendar": "View calendar"
+      "viewCalendar": "View calendar",
+      "loading": "Loading upcoming meetings",
+      "failed": "Upcoming meetings couldn't load.",
+      "retry": "Reload upcoming"
     },
     "recent": {
       "title": "Recent meetings",
@@ -1395,6 +1398,7 @@
     }
   },
   "calendar": {
+    "loading": "Loading your calendar",
     "title": "Calendar",
     "today": "Today",
     "previous": "Previous",

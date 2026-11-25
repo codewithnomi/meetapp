@@ -86,3 +86,7 @@ export const Busy: Story = {
   },
 };
 export const Empty: Story = { args: { days: week.map((d) => ({ ...d, meetings: [], allDay: [] })) } };
+/** Not today: no now-line. */
+export const NoNowLine: Story = { args: { days: week.map((d) => ({ ...d, today: false })), nowMinute: undefined } };
+/** An all-day meeting above the hours. */
+export const AllDay: Story = { args: { days: [week[3] as GridDay] } };

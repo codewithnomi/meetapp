@@ -2,7 +2,7 @@
 // Day / Work week / Week / Month (remembered on this computer), New meeting, the meetings of the open
 // workspace by time, and a meeting's details beside the grid. Changes made elsewhere arrive on the live
 // line. Offline, the last calendar stays with a notice.
-import { Button, CalendarGrid, IconButton, Notice, SegmentedControl, Spinner, type GridDay } from "@meetapp/ui";
+import { Button, CalendarGrid, CalendarMonth, IconButton, SegmentedControl, type GridDay } from "@meetapp/ui";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useSession } from "../../features/auth/index.ts";
@@ -27,7 +27,7 @@ import { WorkspaceShell, useCurrentWorkspace, type AppScreen } from "../../featu
 import { gridDays } from "./calendar-days.ts";
 import { DetailsPane, type CalendarEdit } from "./DetailsPane.tsx";
 import { MoreDialog } from "./MoreDialog.tsx";
-import { MonthView } from "./MonthView.tsx";
+import { Status } from "./CalendarStatus.tsx";
 import { useOpenOnLoad, type OpenOnLoad } from "./open-on-load.ts";
 
 export interface CalendarPageProps {
@@ -171,7 +171,15 @@ function Body({
   return (
     <div className="flex min-h-0 flex-1">
       {view === "month" ? (
-        <MonthView days={days} month={month} onOpen={onOpen} onMore={onMore} />
+        <CalendarMonth
+          days={days.map((day) => {
+            const date = new Date(day.key);
+            return { ...day, dayNumber: String(date.getDate()), outside: date.getMonth() !== month };
+          })}
+          moreLabel={(count) => t("calendar.more", { count })}
+          onOpen={onOpen}
+          onMore={onMore}
+        />
       ) : (
         <CalendarGrid
           days={days}
@@ -252,41 +260,4 @@ export function CalendarPage(props: CalendarPageProps) {
       </main>
     </WorkspaceShell>
   );
-}
-
-function Status({
-  online,
-  calendar,
-  empty,
-}: {
-  online: boolean;
-  calendar: ReturnType<typeof useCalendar>;
-  empty: boolean;
-}) {
-  const { t } = useTranslation();
-  if (!online)
-    return (
-      <Notice tone="neutral" icon="signal" className="m-3">
-        {t("calendar.offline")}
-      </Notice>
-    );
-  if (calendar.isError && !calendar.data)
-    return (
-      <Notice
-        tone="danger"
-        className="m-3"
-        action={{ label: t("calendar.retry"), onClick: () => void calendar.refetch() }}
-      >
-        {t("calendar.failed")}
-      </Notice>
-    );
-  if (calendar.isPending) return <Spinner label={t("calendar.title")} className="m-3" />;
-  if (calendar.data?.truncated)
-    return (
-      <Notice tone="neutral" className="m-3">
-        {t("calendar.truncated")}
-      </Notice>
-    );
-  if (empty) return <p className="m-0 px-5 py-3 text-[14px] text-ink-muted">{t("calendar.empty")}</p>;
-  return null;
 }

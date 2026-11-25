@@ -23,5 +23,7 @@ export * from "./RingWindow/index.ts";
 export * from "./SmallCallView/index.ts";
 export * from "./NoticeCard/index.ts";
 export * from "./CalendarGrid/index.ts";
+export * from "./CalendarMonth/index.ts";
+export * from "./MeetingListDialog/index.ts";
 export * from "./MeetingDetailsPanel/index.ts";
 export * from "./ScheduleForm/index.ts";

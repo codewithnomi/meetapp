@@ -28,4 +28,20 @@ describe("DateTimeField", () => {
     );
     expect(screen.queryByLabelText("Start time")).not.toBeInTheDocument();
   });
+
+  it("TC-F13-29 [AC-F13-10] the error is read out for the time box too", () => {
+    render(
+      <DateTimeField
+        id="e"
+        label="Ends"
+        timeLabel="End time"
+        date="2026-11-25"
+        time="09:00"
+        error="Ends before it starts"
+        onChange={vi.fn()}
+      />,
+    );
+    const box = screen.getByLabelText("End time");
+    expect(box).toHaveAccessibleDescription("Ends before it starts");
+  });
 });

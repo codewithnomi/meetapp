@@ -43,7 +43,8 @@ export interface MeetingDetailsPanelProps<A extends string> {
   cancelledNote?: string | undefined;
 }
 
-const URL_PART = /(https?:\/\/[^\s<>"]+)/g;
+// A full stop, comma or bracket at the end belongs to the sentence, not the address.
+const URL_PART = /(https?:\/\/[^\s<>"]*[^\s<>".,;:!?)\]])/g;
 
 /** Plain text with its web addresses as links that open outside the app. */
 function Linked({ text }: { text: string }) {

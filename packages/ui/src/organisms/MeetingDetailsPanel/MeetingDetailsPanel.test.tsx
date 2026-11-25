@@ -30,6 +30,13 @@ describe("MeetingDetailsPanel", () => {
     expect(screen.getByText(/<b>x<\/b>/)).toBeInTheDocument();
   });
 
+  it("TC-F13-28 [AC-F13-28] a full stop after an address isn't part of the link", () => {
+    render(
+      <MeetingDetailsPanel {...detailsExample(vi.fn())} notes={{ label: "Notes", text: "See https://a.example/x." }} />,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("href", "https://a.example/x");
+  });
+
   it("TC-F13-39 [AC-F13-31] unsent invites offer Retry; a cancelled meeting hides actions and answer", async () => {
     const retry = vi.fn();
     const { rerender } = render(

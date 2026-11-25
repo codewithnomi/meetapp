@@ -149,4 +149,17 @@ describe("TC-F13-38 the Upcoming card", () => {
     expect(await screen.findByRole("button", { name: "Meet now" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Upcoming" })).not.toBeInTheDocument();
   });
+
+  it("TC-F13-38 [AC-F13-23] while loading, a spinner (T-fix-7)", async () => {
+    fakeApi({ [CALENDAR]: never });
+    open();
+    expect(await screen.findByText("Loading upcoming meetings")).toBeInTheDocument();
+  });
+
+  it("TC-F13-38 [AC-F13-23] on failure, a note with Reload (T-fix-7)", async () => {
+    fakeApi({ [CALENDAR]: () => refuse("INTERNAL", 500) });
+    open();
+    expect(await screen.findByText("Upcoming meetings couldn't load.", {}, { timeout: 5_000 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reload upcoming" })).toBeInTheDocument();
+  });
 });
