@@ -30,6 +30,19 @@ export const repeatSchema = z
   })
   .meta({ id: "Repeat" });
 
+/** True for a time zone this computer knows (IANA names such as "Europe/London"). */
+export function isTimeZone(zone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** An IANA time zone; made-up names are refused (they would break the reminder job). */
+const timeZoneSchema = z.string().min(1).max(64).refine(isTimeZone, { message: "unknown_time_zone" });
+
 const scheduleFields = {
   title: meetingTitleSchema,
   invitees: z.array(inviteeSchema).max(SCHEDULE_LIMITS.invitees),
@@ -37,7 +50,7 @@ const scheduleFields = {
   endsAt: z.iso.datetime(),
   allDay: z.boolean(),
   /** The organizer's IANA time zone. */
-  timeZone: z.string().min(1).max(64),
+  timeZone: timeZoneSchema,
   repeat: repeatSchema,
   description: z.string().max(SCHEDULE_LIMITS.description),
 };
@@ -196,7 +209,7 @@ export const reminderMessageSchema = reminderSchema.extend({ t: z.literal("remin
 /** Live line: dismissed or snoozed in one window, so every other window and device closes it. */
 export const reminderDismissedMessageSchema = z.object({ t: z.literal("reminder-dismissed"), ...reminderFields });
 
-export const remindersDueQuerySchema = z.object({ timeZone: z.string().min(1).max(64) });
+export const remindersDueQuerySchema = z.object({ timeZone: timeZoneSchema });
 export const remindersDueSchema = z.object({ reminders: z.array(reminderSchema) }).meta({ id: "RemindersDue" });
 export const reminderDismissBodySchema = z
   .object({ ...reminderFields, snooze: z.boolean().default(false) })

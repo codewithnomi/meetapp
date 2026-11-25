@@ -4,7 +4,9 @@
 import type { RequestsDeps } from "./modules/chats/chats-requests.service.ts";
 import { hkdfSync } from "node:crypto";
 import type { Database } from "@meetapp/db";
+import { pino } from "pino";
 import { callServerUrl, type Config } from "./config/config.ts";
+import { loggerOptions } from "./plugins/logging.ts";
 import type { CallsDeps } from "./modules/calls/admission.ts";
 import { createAttendancesRepository } from "./modules/calls/attendances.repository.ts";
 import { createCallEventsRepository } from "./modules/calls/call-events.repository.ts";
@@ -223,10 +225,13 @@ const desktopPieces = (db: Database, limiter: RateLimiter) => ({
  * clean-ups (F13) in the same minute-by-minute run; one failing doesn't stop the others.
  */
 function callJobsFor(wiring: MeetingWiring, calls: CallsDeps, more: (() => Promise<unknown>)[]) {
+  const log = pino(loggerOptions("info"));
   return createCallJobs(calls, {
     keepSimulated: wiring.config.CALLS_KEEP_SIMULATED_PEOPLE === "true",
     alsoCleanUp: async () => {
-      await Promise.allSettled(more.map((run) => run()));
+      const results = await Promise.allSettled(more.map((run) => run()));
+      for (const result of results)
+        if (result.status === "rejected") log.error({ err: result.reason }, "minute job failed");
     },
   });
 }

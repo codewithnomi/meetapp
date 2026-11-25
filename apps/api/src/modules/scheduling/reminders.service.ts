@@ -3,7 +3,7 @@
 // every open window and device; a Redis key per reminder keeps it from going twice. Dismiss and Snooze are
 // saved per person and closed everywhere. The app reports its time zone when it asks what's due, so an
 // all-day meeting reminds at 09:00 where the person is.
-import { SNOOZE_MINUTES, type LineServerMessage, type Reminder } from "@meetapp/contracts";
+import { isTimeZone, SNOOZE_MINUTES, type LineServerMessage, type Reminder } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
 import { expand, type Series } from "./scheduling.recurrence.ts";
 import { dueBetween, showingNow, type DueReminder, type ReminderKind, type ReminderState } from "./reminders.ts";
@@ -104,19 +104,32 @@ async function run(deps: Required<RemindersDeps>) {
     dismissals: await deps.reminders.dismissals(ids),
   };
   let sent = 0;
-  for (const { candidate, occurrence, person } of pendingOf(candidates, range)) {
-    const { meetingId, allDay, timeZone } = candidate.schedule;
-    const zone = (await deps.store.get(zoneKey(person.userId))) ?? timeZone;
-    const state = stateFor(person, meetingId, occurrence.originalStart, lookups);
-    const due = dueBetween({ ...occurrence, meetingId, allDay, timeZone }, state, { from, to: now, personZone: zone });
-    for (const reminder of due) {
-      const id = key(person.userId, meetingId, reminder.originalStart.getTime(), reminder.kind, reminder.at.getTime());
-      if (!(await deps.store.once(`meetapp:scheduling:reminded:${id}`, SENT_KEPT_SECONDS))) continue;
-      await deps.live.toPerson(person.userId, { t: "reminder", ...reminderOf(reminder, candidate, occurrence) });
-      sent++;
-    }
-  }
+  for (const pending of pendingOf(candidates, range))
+    // One bad entry doesn't stop the others; the next run tries it again.
+    sent += await remindOne(deps, pending, { from, now, lookups }).catch(() => 0);
   return { sent };
+}
+
+/** The due reminders of one (occurrence, person) pair, sent once; how many went. */
+async function remindOne(
+  deps: Required<RemindersDeps>,
+  { candidate, occurrence, person }: Pending,
+  { from, now, lookups }: { from: Date; now: Date; lookups: Parameters<typeof stateFor>[3] },
+) {
+  const { meetingId, allDay, timeZone } = candidate.schedule;
+  const saved = await deps.store.get(zoneKey(person.userId));
+  // A saved zone the computer doesn't know falls back to the meeting's own.
+  const zone = saved && isTimeZone(saved) ? saved : timeZone;
+  const state = stateFor(person, meetingId, occurrence.originalStart, lookups);
+  const due = dueBetween({ ...occurrence, meetingId, allDay, timeZone }, state, { from, to: now, personZone: zone });
+  let sent = 0;
+  for (const reminder of due) {
+    const id = key(person.userId, meetingId, reminder.originalStart.getTime(), reminder.kind, reminder.at.getTime());
+    if (!(await deps.store.once(`meetapp:scheduling:reminded:${id}`, SENT_KEPT_SECONDS))) continue;
+    await deps.live.toPerson(person.userId, { t: "reminder", ...reminderOf(reminder, candidate, occurrence) });
+    sent++;
+  }
+  return sent;
 }
 
 /** What should be showing for this person now, in this workspace (on start and reconnect, AC-F13-22). */

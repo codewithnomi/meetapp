@@ -1,7 +1,12 @@
 // F13 schedule schemas: the limits the server enforces (AC-F13-10, TC-F13-11).
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { scheduleAnswerBodySchema, scheduleBodySchema, scheduleUpdateBodySchema } from "./scheduling.ts";
+import {
+  remindersDueQuerySchema,
+  scheduleAnswerBodySchema,
+  scheduleBodySchema,
+  scheduleUpdateBodySchema,
+} from "./scheduling.ts";
 
 const valid = {
   title: "Weekly sync",
@@ -18,6 +23,12 @@ const fails = (change: object) => !scheduleBodySchema.safeParse({ ...valid, ...c
 describe("schedule body", () => {
   it("TC-F13-11 [AC-F13-10] a valid body passes", () => {
     expect(scheduleBodySchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("TC-F13-11 [AC-F13-10] a made-up time zone is refused (security, T-fix-1)", () => {
+    expect(fails({ timeZone: "Mars/Olympus" })).toBe(true);
+    expect(fails({ timeZone: "America/New_York" })).toBe(false);
+    expect(remindersDueQuerySchema.safeParse({ timeZone: "Nowhere/Land" }).success).toBe(false);
   });
 
   it("TC-F13-11 [AC-F13-10] each limit is refused", () => {

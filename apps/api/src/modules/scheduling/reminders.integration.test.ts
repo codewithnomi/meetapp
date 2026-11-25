@@ -102,6 +102,21 @@ describe("the reminders job", () => {
       await expect.poll(() => reminders(ana, soon).length).toBe(2);
     },
   );
+
+  it(
+    "TC-F13-62 [AC-F13-21] a bad saved time zone falls back to the meeting's; the job goes on (T-fix-1)",
+    SLOW,
+    async () => {
+      const { owner, ana, workspaceId } = await team("zone");
+      const soon = await scheduled(owner, workspaceId, 14 * MIN, [{ userId: ana.id }]);
+      const redis = new Redis({ host: "127.0.0.1", port: Number(setting("REDIS_PORT")) });
+      await redis.set(`meetapp:scheduling:zone:${ana.id}`, "Mars/Olympus", "EX", 60);
+      await redis.quit();
+      await run();
+      await expect.poll(() => reminders(ana, soon).map((h) => h.message.kind)).toEqual(["before"]);
+      expect(reminders(owner, soon).map((h) => h.message.kind)).toEqual(["before"]);
+    },
+  );
 });
 
 describe("reminders due on start", () => {

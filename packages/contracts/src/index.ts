@@ -254,6 +254,7 @@ export {
   CALENDAR_MAX_DAYS,
   REMINDER_KINDS,
   SNOOZE_MINUTES,
+  isTimeZone,
   reminderDismissBodySchema,
   reminderSchema,
   remindersDueQuerySchema,
