@@ -128,6 +128,15 @@ describe("meeting cards", () => {
     expect(bodies).toEqual([true, false]);
   });
 
+  it("TC-F13-36 [AC-F13-21] pushed out by newer cards: not dismissed, and it can show again (T-fix-3)", () => {
+    start();
+    act(() => fake.line?.(reminder()));
+    press({ name: "noticeChosen", cardId: shown[0]?.id, choice: "pushed" });
+    expect(fake.api).not.toHaveBeenCalledWith("/api/v1/reminders/dismiss", expect.anything());
+    act(() => fake.line?.(reminder()));
+    expect(shown).toHaveLength(2);
+  });
+
   it("TC-F13-36 [AC-F13-21] dismissed in another window: the card closes", () => {
     start();
     const r = reminder();

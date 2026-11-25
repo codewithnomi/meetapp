@@ -5,6 +5,7 @@
 // all-day meeting reminds at 09:00 where the person is.
 import { isTimeZone, SNOOZE_MINUTES, type LineServerMessage, type Reminder } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
+import { RATE_RULES, type RateLimiter } from "../../plugins/rate-limit.ts";
 import { expand, type OccurrenceChange, type Series } from "./scheduling.recurrence.ts";
 import { dueBetween, showingNow, type DueReminder, type ReminderKind, type ReminderState } from "./reminders.ts";
 import type { DismissalRow, ReminderCandidate, RemindersRepository } from "./reminders.repository.ts";
@@ -28,6 +29,7 @@ export interface RemindersDeps {
   reminders: RemindersRepository;
   scheduling: SchedulingService;
   store: ReminderStore;
+  limiter: RateLimiter;
   live: { toPerson: (userId: string, message: LineServerMessage) => Promise<void> };
   now?: () => Date;
 }
@@ -188,14 +190,23 @@ interface DismissBody {
 }
 
 async function dismiss(deps: Required<RemindersDeps>, caller: Caller, body: DismissBody) {
-  const { row } = await deps.scheduling.access(caller, body.meetingId, "see").catch(() => {
+  const wait = await deps.limiter.take(RATE_RULES.reminderDismissals, caller.id);
+  if (wait !== undefined) throw new AppError(429, "TOO_MANY_ATTEMPTS", "Too many tries. Wait a minute.", wait);
+  const { row, schedule } = await deps.scheduling.access(caller, body.meetingId, "see").catch(() => {
     throw new AppError(404, "NOT_FOUND", "Not found.");
   });
+  const originalStart = new Date(body.originalStart);
+  // Only a real occurrence of this meeting is saved, so made-up times can't fill the table.
+  const at = { from: originalStart, to: new Date(originalStart.getTime() + 1), now: deps.now() };
+  const real = expand(seriesOf(schedule), at).occurrences.some(
+    (o) => o.originalStart.getTime() === originalStart.getTime(),
+  );
+  if (!real) throw new AppError(404, "NOT_FOUND", "Not found.");
   const snoozedUntil = body.snooze ? new Date(deps.now().getTime() + SNOOZE_MINUTES * 60 * 1000) : null;
   const fields = { meetingId: body.meetingId, originalStart: body.originalStart, kind: body.kind };
   await deps.reminders.dismiss({
     ...fields,
-    originalStart: new Date(body.originalStart),
+    originalStart,
     userId: caller.id,
     workspaceId: row.meeting.workspaceId,
     snoozedUntil,

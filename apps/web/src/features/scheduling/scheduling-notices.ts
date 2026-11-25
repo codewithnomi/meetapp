@@ -104,7 +104,7 @@ function useChosen(shown: Map<string, Shown>, options: SchedulingNoticesOptions)
   useEffect(
     () =>
       bridge()?.callWindows?.onAction((action) => {
-        const chosen = action as { name?: string; cardId?: string; choice?: NoticeChoice | "close" };
+        const chosen = action as { name?: string; cardId?: string; choice?: NoticeChoice | "close" | "pushed" };
         const card = chosen.name === "noticeChosen" ? shown.get(chosen.cardId ?? "") : undefined;
         if (!card || !chosen.cardId) return;
         shown.delete(chosen.cardId);

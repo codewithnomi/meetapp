@@ -54,6 +54,7 @@ export function schedulingFor({ db, outbox, config, redis }: SchedulingWiring, c
     reminders: createRemindersRepository(db),
     scheduling: service,
     store,
+    limiter: calls.limiter,
     live,
     now: calls.now,
   });

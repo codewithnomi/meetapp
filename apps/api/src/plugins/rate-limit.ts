@@ -49,6 +49,8 @@ export const RATE_RULES = {
   // F15: calls started plus people rung by Add people, 10 a minute per person (AC-F15-22).
   chatCalls: { name: "chat-calls", limit: 10, windowSeconds: 60 },
   chatReactions: { name: "chat-reactions", limit: 30, windowSeconds: 60 },
+  // F13: Dismiss and Snooze presses per person, 60 a minute.
+  reminderDismissals: { name: "reminder-dismissals", limit: 60, windowSeconds: 60 },
   // 10 file uploads a minute per person, sent or not (AC-F03-34).
   chatUploads: { name: "chat-uploads", limit: 10, windowSeconds: 60 },
   /** "Recent meetings" with Open chat per person: 30 a minute (each checks up to 50 meetings; F03 verification). */

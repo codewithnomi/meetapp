@@ -102,7 +102,7 @@ export type CallWindowsNotificationAction =
   | { name: "openChat"; conversationId: string }
   | { name: "callBack"; conversationId: string; video: boolean }
   /** F04: a card's choice (or its ×), back to the main window that sent the card. */
-  | { name: "noticeChosen"; cardId: string; choice: NoticeChoice | "close" }
+  | { name: "noticeChosen"; cardId: string; choice: NoticeChoice | "close" | "pushed" }
   /** F04: the main window came to the front or left it (shown, focused, not minimised). */
   | { name: "windowFront"; on: boolean };
 

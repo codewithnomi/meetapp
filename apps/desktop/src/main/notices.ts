@@ -31,7 +31,7 @@ export interface NoticeDeps {
   cornerDisplayId: () => number;
   toMain: (
     mainWindowId: number,
-    action: { name: "noticeChosen"; cardId: string; choice: NoticeChoice | "close" },
+    action: { name: "noticeChosen"; cardId: string; choice: NoticeChoice | "close" | "pushed" },
   ) => void;
   focusMain: (mainWindowId: number) => void;
   now: () => number;
@@ -85,7 +85,7 @@ export class NoticeBoard {
       this.startTimer(same);
       return this.place();
     }
-    while (this.shown.length >= MAX_CARDS) this.drop(this.shown[0] as Shown);
+    while (this.shown.length >= MAX_CARDS) this.pushOut(this.shown[0] as Shown);
     const entry: Shown = { owner, card, window: this.deps.open(), cancel: undefined, hovered: false };
     this.shown.push(entry);
     entry.window.send({ kind: "notice", card });
@@ -125,6 +125,7 @@ export class NoticeBoard {
     }
     if (!CHOICES[entry.card.kind].includes(action.choice)) return;
     if (action.choice === "admit" && entry.card.admit === undefined) return;
+    if (action.choice === "join" && entry.card.join === undefined) return;
     // Admit, Snooze and Dismiss act in place; opening a chat, the lobby or a meeting brings the window forward.
     if (!IN_PLACE.includes(action.choice)) this.deps.focusMain(entry.owner);
     this.deps.toMain(entry.owner, { name: "noticeChosen", cardId: entry.card.id, choice: action.choice });
@@ -165,6 +166,12 @@ export class NoticeBoard {
     // A reminder stays until it is answered (AC-F13-21).
     if (entry.hovered || entry.card.kind === "reminder") return;
     entry.cancel = this.deps.later(SHOW_MS, () => this.drop(entry));
+  }
+
+  /** A 4th card pushes the oldest out; the page hears of it (not as a dismissal), so it can come back. */
+  private pushOut(entry: Shown): void {
+    this.deps.toMain(entry.owner, { name: "noticeChosen", cardId: entry.card.id, choice: "pushed" });
+    this.drop(entry);
   }
 
   private drop(entry: Shown): void {

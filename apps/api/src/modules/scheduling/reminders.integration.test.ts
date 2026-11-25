@@ -159,6 +159,27 @@ describe("reminders follow single-meeting changes (T-fix-2)", () => {
   );
 });
 
+describe("dismiss limits (T-fix-3)", () => {
+  it("TC-F13-62 [AC-F13-21] only a real occurrence is saved; more than 60 a minute is refused", SLOW, async () => {
+    const { owner, workspaceId } = await team("limits");
+    const meetingId = await scheduled(owner, workspaceId, 60 * MIN, []);
+    const press = (originalStart: string) =>
+      call(owner.token, "POST", "/api/v1/reminders/dismiss", {
+        meetingId,
+        originalStart,
+        kind: "before",
+        snooze: false,
+      });
+    expect((await press(new Date(Date.now() + 7 * MIN).toISOString())).statusCode).toBe(404);
+    const [row] = await t.database.db.select().from(meetingSchedules).where(eq(meetingSchedules.meetingId, meetingId));
+    const real = row?.startsAt.toISOString() ?? "";
+    const codes: number[] = [];
+    for (let i = 0; i < 60; i++) codes.push((await press(real)).statusCode);
+    expect(codes.filter((c) => c === 200).length).toBe(59);
+    expect(codes.at(-1)).toBe(429);
+  });
+});
+
 describe("reminders due on start", () => {
   it("TC-F13-63 [AC-F13-22] only meetings not yet ended; a dismissed one stays away", SLOW, async () => {
     const { owner, ana, workspaceId } = await team("due");

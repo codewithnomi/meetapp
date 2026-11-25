@@ -74,8 +74,12 @@ describe("notice cards", () => {
       board.show(1, card(id));
     }
     expect(computer.open()).toHaveLength(MAX_CARDS);
-    // The oldest went first: a and b are closed.
+    // The oldest went first: a and b are closed, and their pages hear of it (T-fix-3).
     expect(computer.windows.slice(0, 2).every((w) => w.closed)).toBe(true);
+    expect(computer.toMain).toEqual([
+      [1, { name: "noticeChosen", cardId: "a", choice: "pushed" }],
+      [1, { name: "noticeChosen", cardId: "b", choice: "pushed" }],
+    ]);
     expect(computer.open().every((w) => w.shown && !w.focused)).toBe(true);
     const placed = computer.open().map((w) => w.bounds as { x: number; y: number; height: number });
     expect(placed[0]).toEqual({ x: 1440 - 16 - NOTICE_WIDTH, y: 900 - 16 - 96, width: NOTICE_WIDTH, height: 96 });
@@ -185,5 +189,14 @@ describe("notice cards", () => {
     expect(computer.toMain).toEqual([[1, { name: "noticeChosen", cardId: id, choice: "snooze" }]]);
     expect(computer.focused).toEqual([]);
     expect(computer.open()).toHaveLength(0);
+  });
+
+  it("TC-F13-37 [AC-F13-21] a Join press on a reminder without Join is ignored (T-fix-3)", () => {
+    const computer = fakeComputer();
+    const board = new NoticeBoard(computer.deps);
+    board.show(1, card("reminder:x", { kind: "reminder", snooze: "Snooze", dismiss: "Dismiss" }));
+    board.act(computer.open()[0]?.id ?? 0, { name: "notice", choice: "join" });
+    expect(computer.toMain).toEqual([]);
+    expect(computer.open()).toHaveLength(1);
   });
 });
