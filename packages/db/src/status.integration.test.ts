@@ -7,7 +7,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { runMigrations } from "./migrate.ts";
 import { createTestDatabase, rowsOf } from "./test-database.ts";
 import { migrateBefore } from "./test-fixtures.ts";
 
@@ -30,7 +29,8 @@ describe("migration 0010 on an F16 database", () => {
       );
       await close();
 
-      await runMigrations(older.url);
+      // Up to 0010 only: later migrations add their own columns.
+      await (await migrateBefore(older.url, "0011", mkdtempSync(join(tmpdir(), "meetapp-migrations-")))).close();
       const after = await rowsOf(
         older.db,
         sql`select column_name from information_schema.columns where table_name = 'user'`,

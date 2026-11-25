@@ -40,6 +40,9 @@ const PAYLOAD = {
   userIds: ["00000000-0000-4000-8000-000000000004"],
   media: "video",
   fromAttendanceId: "00000000-0000-4000-8000-000000000005",
+  // F13: a valid schedule change, answer and cancel.
+  scope: "series",
+  answer: "accepted",
 };
 
 let t: AuthTestApp;

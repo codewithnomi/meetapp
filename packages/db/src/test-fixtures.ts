@@ -2,14 +2,18 @@
 import { randomUUID } from "node:crypto";
 import { cpSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { createDatabase, type Database } from "./connection.ts";
 import { MIGRATIONS_FOLDER } from "./migrate.ts";
-import { meetings, user, workspaceMembers, workspaces } from "./schema.ts";
+import { meetings, workspaceMembers, workspaces } from "./schema.ts";
 
 export async function newUser(db: Database): Promise<string> {
   const id = randomUUID();
-  await db.insert(user).values({ id, name: "Example person", email: `person-${id}@example.test` });
+  // Only the first columns, so it also works on a database from before later migrations.
+  await db.execute(
+    sql`insert into "user" (id, name, email) values (${id}, 'Example person', ${`person-${id}@example.test`})`,
+  );
   return id;
 }
 

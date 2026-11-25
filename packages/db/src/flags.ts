@@ -1,5 +1,5 @@
 // Reading and switching feature flags. All queries are parameterized by Drizzle (no SQL built from text).
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import type { Database } from "./connection.ts";
 import { featureFlags } from "./schema.ts";
 
@@ -22,7 +22,8 @@ export async function listFlags(db: Database): Promise<{ key: string; enabled: b
 export async function setFlag(db: Database, key: string, enabled: boolean): Promise<boolean> {
   const updated = await db
     .update(featureFlags)
-    .set({ enabled })
+    // The database's own clock, like the seeded time, so updated_at never goes backwards.
+    .set({ enabled, updatedAt: sql`now()` })
     .where(eq(featureFlags.key, key))
     .returning({ id: featureFlags.id });
   return updated.length > 0;
