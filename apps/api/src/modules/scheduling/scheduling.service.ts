@@ -166,6 +166,7 @@ function occurrencesOf(row: CalendarRow, changes: OccurrenceChangeRow[], range: 
       startsAt: o.startsAt.toISOString(),
       endsAt: o.endsAt.toISOString(),
       allDay: row.schedule.allDay,
+      timeZone: row.schedule.timeZone,
       title: titles.get(o.originalStart.getTime()) ?? row.title,
       organizer: { id: row.organizerId, name: row.organizerName },
       repeats: row.schedule.rrule !== null,

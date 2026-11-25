@@ -5,7 +5,7 @@
 // all-day meeting reminds at 09:00 where the person is.
 import { isTimeZone, SNOOZE_MINUTES, type LineServerMessage, type Reminder } from "@meetapp/contracts";
 import { AppError } from "../../plugins/errors.ts";
-import { expand, type Series } from "./scheduling.recurrence.ts";
+import { expand, type OccurrenceChange, type Series } from "./scheduling.recurrence.ts";
 import { dueBetween, showingNow, type DueReminder, type ReminderKind, type ReminderState } from "./reminders.ts";
 import type { DismissalRow, ReminderCandidate, RemindersRepository } from "./reminders.repository.ts";
 import type { SchedulingService } from "./scheduling.service.ts";
@@ -84,12 +84,17 @@ interface Pending {
 }
 
 /** Every (meeting occurrence, person) pair that may be reminded around now. */
-function pendingOf(candidates: ReminderCandidate[], range: { from: Date; to: Date; now: Date }): Pending[] {
-  return candidates.flatMap((candidate) =>
-    expand(seriesOf(candidate.schedule), range).occurrences.flatMap((occurrence) =>
+function pendingOf(
+  candidates: ReminderCandidate[],
+  range: { from: Date; to: Date; now: Date },
+  changes: (OccurrenceChange & { meetingId: string })[],
+): Pending[] {
+  return candidates.flatMap((candidate) => {
+    const own = changes.filter((change) => change.meetingId === candidate.schedule.meetingId);
+    return expand(seriesOf(candidate.schedule), range, own).occurrences.flatMap((occurrence) =>
       candidate.people.map((person) => ({ candidate, occurrence, person })),
-    ),
-  );
+    );
+  });
 }
 
 /** One run of the job: every reminder that became due in the last few minutes, sent once. */
@@ -104,7 +109,8 @@ async function run(deps: Required<RemindersDeps>) {
     dismissals: await deps.reminders.dismissals(ids),
   };
   let sent = 0;
-  for (const pending of pendingOf(candidates, range))
+  const changes = await deps.reminders.changes(ids);
+  for (const pending of pendingOf(candidates, range, changes))
     // One bad entry doesn't stop the others; the next run tries it again.
     sent += await remindOne(deps, pending, { from, now, lookups }).catch(() => 0);
   return { sent };
@@ -152,7 +158,8 @@ async function dueFor(deps: Required<RemindersDeps>, caller: Caller, membership:
       startsAt: new Date(o.startsAt),
       endsAt: new Date(o.endsAt),
       allDay: o.allDay,
-      timeZone,
+      // An all-day date is read in the meeting's zone; the reminder hour in the person's.
+      timeZone: o.timeZone ?? timeZone,
     };
     const state = stateFor({ userId: caller.id, answer: o.myAnswer }, o.meetingId, occurrence.originalStart, {
       answers: new Map(),

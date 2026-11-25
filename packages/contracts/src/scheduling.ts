@@ -119,6 +119,8 @@ export const calendarOccurrenceSchema = z
     startsAt: z.iso.datetime(),
     endsAt: z.iso.datetime(),
     allDay: z.boolean(),
+    /** The meeting's own zone; an all-day meeting's date is read in it. Optional for older servers. */
+    timeZone: z.string().optional(),
     title: z.string(),
     organizer: personSchema,
     repeats: z.boolean(),

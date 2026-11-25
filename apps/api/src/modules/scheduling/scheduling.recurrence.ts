@@ -128,14 +128,20 @@ export function expand(
   const from = new Date(range.from.getTime() - duration);
   const byStart = new Map(changes.map((change) => [change.originalStart.getTime(), change]));
   const found = starts(series, from, cap, MAX_OCCURRENCES + 1);
+  const seen = new Set(found.map((start) => start.getTime()));
+  // An occurrence moved into the range from outside it shows too.
+  const movedIn = changes
+    .filter((change) => !change.cancelled && change.startsAt && !seen.has(change.originalStart.getTime()))
+    .map((change) => change.originalStart);
   const occurrences: Occurrence[] = [];
-  for (const originalStart of found.slice(0, MAX_OCCURRENCES)) {
+  for (const originalStart of [...found.slice(0, MAX_OCCURRENCES), ...movedIn]) {
     const change = byStart.get(originalStart.getTime());
     if (change?.cancelled) continue;
     const startsAt = change?.startsAt ?? originalStart;
     const endsAt = change?.endsAt ?? new Date(startsAt.getTime() + duration);
     if (endsAt > range.from && startsAt < range.to) occurrences.push({ originalStart, startsAt, endsAt });
   }
+  occurrences.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
   return { occurrences, truncated: found.length > MAX_OCCURRENCES };
 }
 

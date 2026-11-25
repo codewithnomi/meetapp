@@ -1,6 +1,13 @@
 // Reminders, the organizer leaving and the privacy sweep, with real Redis, Postgres and Mailpit (F13 T7).
 // Own database; needs the `pnpm dev` services.
-import { meetingInvitees, meetings, meetingSchedules, reminderDismissals, workspaceMembers } from "@meetapp/db";
+import {
+  meetingInvitees,
+  meetingOccurrenceChanges,
+  meetings,
+  meetingSchedules,
+  reminderDismissals,
+  workspaceMembers,
+} from "@meetapp/db";
 import { and, eq } from "drizzle-orm";
 import { Redis } from "ioredis";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -115,6 +122,39 @@ describe("the reminders job", () => {
       await run();
       await expect.poll(() => reminders(ana, soon).map((h) => h.message.kind)).toEqual(["before"]);
       expect(reminders(owner, soon).map((h) => h.message.kind)).toEqual(["before"]);
+    },
+  );
+});
+
+describe("reminders follow single-meeting changes (T-fix-2)", () => {
+  it(
+    "TC-F13-62 [AC-F13-21] a cancelled occurrence isn't reminded; a moved one reminds at its new time",
+    SLOW,
+    async () => {
+      const { owner, ana, workspaceId } = await team("changes");
+      const cancelled = await scheduled(owner, workspaceId, 14 * MIN, [{ userId: ana.id }]);
+      const moved = await scheduled(owner, workspaceId, 3 * 60 * MIN, [{ userId: ana.id }]);
+      const startOf = async (meetingId: string) => {
+        const [row] = await t.database.db
+          .select()
+          .from(meetingSchedules)
+          .where(eq(meetingSchedules.meetingId, meetingId));
+        return row?.startsAt ?? new Date();
+      };
+      const movedTo = new Date(Math.floor((Date.now() + 14 * MIN) / 1000) * 1000);
+      await t.database.db.insert(meetingOccurrenceChanges).values([
+        { workspaceId, meetingId: cancelled, originalStart: await startOf(cancelled), cancelled: true },
+        {
+          workspaceId,
+          meetingId: moved,
+          originalStart: await startOf(moved),
+          startsAt: movedTo,
+          endsAt: new Date(movedTo.getTime() + 30 * MIN),
+        },
+      ]);
+      await run();
+      await expect.poll(() => reminders(ana, moved).map((h) => h.message.kind)).toEqual(["before"]);
+      expect(reminders(ana, cancelled)).toEqual([]);
     },
   );
 });

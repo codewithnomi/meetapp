@@ -75,6 +75,20 @@ describe("repeat choices", () => {
     ]);
     expect(occurrences[1]?.endsAt.toISOString()).toBe("2027-01-06T14:30:00.000Z");
   });
+
+  it("TC-F13-01 [AC-F13-11] an occurrence moved into the range from outside it shows (T-fix-2)", () => {
+    const weekly = series({ kind: "weekly" });
+    const moved = {
+      originalStart: new Date("2027-01-11T09:00:00Z"),
+      cancelled: false,
+      startsAt: new Date("2027-01-08T09:00:00Z"),
+      endsAt: new Date("2027-01-08T09:30:00Z"),
+    };
+    const range = { from: new Date("2027-01-05"), to: new Date("2027-01-09"), now: NOW };
+    expect(expand(weekly, range, [moved]).occurrences.map((o) => o.startsAt.toISOString())).toEqual([
+      "2027-01-08T09:00:00.000Z",
+    ]);
+  });
 });
 
 describe("month ends", () => {

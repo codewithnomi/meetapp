@@ -3,6 +3,7 @@
 // workspace, with the people to remind: the organizer and invited members still in the workspace.
 import {
   meetingInviteeAnswers,
+  meetingOccurrenceChanges,
   meetingInvitees,
   meetings,
   meetingSchedules,
@@ -113,10 +114,26 @@ async function occurrenceAnswers(executor: Executor, meetingIds: string[]): Prom
   return new Map(rows.map((r) => [`${r.meetingId}|${r.userId ?? ""}|${String(r.originalStart.getTime())}`, r.answer]));
 }
 
+async function occurrenceChanges(executor: Executor, meetingIds: string[]) {
+  if (meetingIds.length === 0) return [];
+  return executor
+    .select({
+      meetingId: meetingOccurrenceChanges.meetingId,
+      originalStart: meetingOccurrenceChanges.originalStart,
+      cancelled: meetingOccurrenceChanges.cancelled,
+      startsAt: meetingOccurrenceChanges.startsAt,
+      endsAt: meetingOccurrenceChanges.endsAt,
+    })
+    .from(meetingOccurrenceChanges)
+    .where(inArray(meetingOccurrenceChanges.meetingId, meetingIds));
+}
+
 export function createRemindersRepository(executor: Executor) {
   return {
     candidates: (range: { from: Date; to: Date; now: Date }) => candidates(executor, range),
     occurrenceAnswers: (meetingIds: string[]) => occurrenceAnswers(executor, meetingIds),
+    /** Single occurrences moved or cancelled, so reminders follow them. */
+    changes: (meetingIds: string[]) => occurrenceChanges(executor, meetingIds),
     dismissals: async (meetingIds: string[], userId?: string): Promise<DismissalRow[]> => {
       if (meetingIds.length === 0) return [];
       return executor

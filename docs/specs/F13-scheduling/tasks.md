@@ -28,7 +28,7 @@ small UI tests and pictures run at `/spec-verify`, with only `calendar.spec.ts` 
 
 ## Fixes from verification round 1 (2026-11-24)
 - [x] **T-fix-1: Time zones checked (security High + Low).** The contract accepts only real time zones (due query and schedule body, 400 `/timeZone`); the minute job falls back to the meeting's zone and one bad entry can't stop it; minute-job errors get a log line.
-- [ ] **T-fix-2: Reminders follow single-meeting changes (bug High).** The job reads occurrence changes: no reminder for a cancelled one, the moved time for a moved one; `dueFor` reads all-day dates in the meeting's zone; occurrences moved into a range show.
+- [x] **T-fix-2: Reminders follow single-meeting changes (bug High).** The job reads occurrence changes: no reminder for a cancelled one, the moved time for a moved one; `dueFor` reads all-day dates in the meeting's zone; occurrences moved into a range show.
 - [ ] **T-fix-3: Dismiss limits and Join check (security Medium + Low).** Rate limit on `POST /reminders/dismiss`, only real occurrences; desktop passes Join only when the card has it; a reminder card isn't pushed out silently (the page hears of it).
 - [ ] **T-fix-4: Smaller bugs.** All-day end by calendar day; outbox result saving can't cause a second send; an unbuildable invite is marked failed; cancelled occurrences don't count toward 500.
 - [ ] **T-fix-5: Failing tests.** db migration tests with migration 0013; TC-F02-102 (the schedule PATCH answers 404 to outsiders before checking the body); desktop F04 notice tests TC-F04-54, 67, 62.
