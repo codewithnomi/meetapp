@@ -25,6 +25,13 @@ const WEEKDAYS: Weekday[] = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 /** A local date and time as a moment. */
 const local = (date: string, time: string) => new Date(`${date}T${time || "00:00"}:00`);
 
+/** Midnight after `date` by the calendar, so a day the clocks change still ends at midnight. */
+const nextMidnight = (date: string) => {
+  const day = local(date, "00:00");
+  day.setDate(day.getDate() + 1);
+  return day;
+};
+
 export function blankForm(range: { startsAt: Date; endsAt: Date } | undefined, now: Date): FormValues {
   const { startsAt, endsAt } = range ?? defaultTimes(now);
   return {
@@ -40,9 +47,7 @@ export function blankForm(range: { startsAt: Date; endsAt: Date } | undefined, n
 
 export function toBody(values: FormValues, timeZone: string): ScheduleBody {
   const startsAt = values.allDay ? local(values.start.date, "00:00") : local(values.start.date, values.start.time);
-  const endsAt = values.allDay
-    ? new Date(local(values.end.date, "00:00").getTime() + 24 * 60 * 60 * 1000)
-    : local(values.end.date, values.end.time);
+  const endsAt = values.allDay ? nextMidnight(values.end.date) : local(values.end.date, values.end.time);
   const { kind, days, until } = values.repeat;
   return {
     title: values.title.trim(),

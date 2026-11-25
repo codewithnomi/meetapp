@@ -62,9 +62,11 @@ export function createEmailOutbox(connection: ConnectionOptions, sender: EmailSe
       if (!("resolver" in job)) return sender.send(messageFor(job));
       const resolver = resolverOf(resolvers, job.resolver);
       const message = await resolver.message(job.data);
-      if (!message) return;
+      // Nothing to send (no address any more): told as not sent, so it doesn't stay "queued".
+      if (!message) return resolver.settled?.(job.data, false).catch(() => undefined);
       await sender.send(message);
-      await resolver.settled?.(job.data, true);
+      // Once sent, a failing note mustn't make the job try (and send) again.
+      await resolver.settled?.(job.data, true).catch(() => undefined);
     },
     { connection, concurrency: 5 },
   );

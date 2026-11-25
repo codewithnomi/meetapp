@@ -166,4 +166,18 @@ describe("caps", () => {
         .truncated,
     ).toBe(false);
   });
+
+  it("TC-F13-04 [AC-F13-11] cancelled occurrences don't count toward the 500 (T-fix-4)", () => {
+    // 501 hourly occurrences, one cancelled: exactly 500 remain and nothing is cut.
+    const hourly: Series = {
+      ...series({ kind: "none" }),
+      rrule: "FREQ=HOURLY;COUNT=501",
+      repeatUntil: new Date("2027-02-04"),
+    };
+    const cancelled = { originalStart: start, cancelled: true, startsAt: null, endsAt: null };
+    const range = { from: new Date("2027-01-04"), to: new Date("2027-02-04"), now: NOW };
+    const got = expand(hourly, range, [cancelled]);
+    expect(got.occurrences).toHaveLength(MAX_OCCURRENCES);
+    expect(got.truncated).toBe(false);
+  });
 });

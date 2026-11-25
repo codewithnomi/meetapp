@@ -127,7 +127,11 @@ export function expand(
   // An occurrence that started before `from` may still be under way.
   const from = new Date(range.from.getTime() - duration);
   const byStart = new Map(changes.map((change) => [change.originalStart.getTime(), change]));
-  const found = starts(series, from, cap, MAX_OCCURRENCES + 1);
+  // Cancelled ones don't count toward the 500.
+  const cancelled = new Set(changes.filter((c) => c.cancelled).map((c) => c.originalStart.getTime()));
+  const found = starts(series, from, cap, MAX_OCCURRENCES + 1 + cancelled.size).filter(
+    (start) => !cancelled.has(start.getTime()),
+  );
   const seen = new Set(found.map((start) => start.getTime()));
   // An occurrence moved into the range from outside it shows too.
   const movedIn = changes

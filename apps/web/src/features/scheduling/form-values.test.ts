@@ -24,6 +24,16 @@ describe("form values", () => {
     expect(body.allDay).toBe(true);
   });
 
+  it("TC-F13-27 [AC-F13-07] an all-day meeting on a clock-change day ends at the next midnight (T-fix-4)", () => {
+    // Europe and the US change their clocks on these days; whichever zone runs the test, the end is midnight.
+    for (const date of ["2026-03-29", "2026-03-08", "2026-10-25", "2026-11-01"]) {
+      const values = { ...blankForm(undefined, NOW), title: "Offsite", allDay: true };
+      const body = toBody({ ...values, start: { date, time: "" }, end: { date, time: "" } }, "UTC");
+      const [y, m, d] = date.split("-").map(Number) as [number, number, number];
+      expect(new Date(body.endsAt)).toEqual(new Date(y, m - 1, d + 1));
+    }
+  });
+
   it("TC-F13-30 [AC-F13-10] weekly sends its days; an end date is the end of that day; none sends neither", () => {
     const base = blankForm(undefined, NOW);
     const weekly = toBody({ ...base, repeat: { kind: "weekly", days: ["MO", "WE"], until: "2026-12-30" } }, "UTC");
