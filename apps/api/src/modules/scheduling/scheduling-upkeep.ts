@@ -36,5 +36,3 @@ export function createSchedulingUpkeep(deps: UpkeepDeps) {
     },
   };
 }
-
-export type SchedulingUpkeep = ReturnType<typeof createSchedulingUpkeep>;

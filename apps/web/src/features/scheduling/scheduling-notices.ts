@@ -40,11 +40,7 @@ export const reminderCardId = (me: string, r: ReminderKey) =>
   `reminder:${me}:${r.meetingId}|${r.originalStart}|${r.kind}`;
 
 /** The reminder's card (TC-F13-36): minutes left, or "Starting now"; no Join once it has ended. */
-export function reminderCard(
-  me: string,
-  r: Reminder,
-  at: { now: number; t: TFunction; format: TimeFormat },
-): NoticeCard {
+function reminderCard(me: string, r: Reminder, at: { now: number; t: TFunction; format: TimeFormat }): NoticeCard {
   const { now, t, format: f } = at;
   const minutes = Math.round((Date.parse(r.startsAt) - now) / 60_000);
   return {
@@ -63,7 +59,7 @@ export function reminderCard(
 type Invite = Extract<Line, { t: "invited" }>;
 
 /** "<Organizer> invited you to <title>" (AC-F13-17). */
-export const inviteCard = (me: string, invite: Invite, t: TFunction): NoticeCard => ({
+const inviteCard = (me: string, invite: Invite, t: TFunction): NoticeCard => ({
   id: `invite:${me}:${invite.meetingId}`,
   kind: "invite",
   title: invite.organizerName,

@@ -18,7 +18,7 @@ import {
 import { aliasedTable, and, eq, exists, gt, inArray, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
 import { createMeetingsRepository, type NewMeeting } from "../meetings/meetings.repository.ts";
 
-export type { MeetingInvitee, MeetingSchedule } from "@meetapp/db";
+export type { MeetingSchedule } from "@meetapp/db";
 
 export type NewSchedule = Omit<
   typeof meetingSchedules.$inferInsert,

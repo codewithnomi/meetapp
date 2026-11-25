@@ -12,7 +12,7 @@ import {
 
 const DAY_MIN = 24 * 60;
 
-export function blockState(o: CalendarOccurrence, me: string | undefined): MeetingBlockState {
+function blockState(o: CalendarOccurrence, me: string | undefined): MeetingBlockState {
   if (o.myAnswer === null || o.organizer.id === me) return "accepted";
   return o.myAnswer;
 }

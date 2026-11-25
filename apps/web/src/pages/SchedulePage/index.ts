@@ -1,1 +1,1 @@
-export { SchedulePage, type SchedulePageProps } from "./SchedulePage.tsx";
+export { SchedulePage } from "./SchedulePage.tsx";

@@ -5,7 +5,7 @@ import { CHAT_MODES } from "./chat.ts";
 
 export const MEETING_KINDS = ["meet_now", "link"] as const;
 /** Every kind a meeting can have: scheduled ones are made through the calendar (F13). */
-export const ALL_MEETING_KINDS = [...MEETING_KINDS, "scheduled"] as const;
+const ALL_MEETING_KINDS = [...MEETING_KINDS, "scheduled"] as const;
 /** Who skips the lobby, and who presents (AC-F02-16, AC-F02-36). */
 export const MEETING_AUDIENCES = ["everyone", "workspace", "organizers"] as const;
 export const MAX_CO_ORGANIZERS = 10;

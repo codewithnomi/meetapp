@@ -6,8 +6,8 @@ import { smallPages } from "./call-window-steps.ts";
 import { openScreen } from "./workspace-steps.ts";
 
 const two = (n: number) => String(n).padStart(2, "0");
-export const dateText = (at: Date) => `${String(at.getFullYear())}-${two(at.getMonth() + 1)}-${two(at.getDate())}`;
-export const timeText = (at: Date) => `${two(at.getHours())}:${two(at.getMinutes())}`;
+const dateText = (at: Date) => `${String(at.getFullYear())}-${two(at.getMonth() + 1)}-${two(at.getDate())}`;
+const timeText = (at: Date) => `${two(at.getHours())}:${two(at.getMinutes())}`;
 /** The next whole minute from now, plus `minutes`. */
 export const minutesFromNow = (minutes: number) => {
   const at = new Date(Date.now() + minutes * 60_000);
@@ -30,7 +30,7 @@ export interface NewMeeting {
 }
 
 /** The form's fields filled from `meeting` (the form is open). */
-export async function fillForm(page: Page, meeting: NewMeeting): Promise<void> {
+async function fillForm(page: Page, meeting: NewMeeting): Promise<void> {
   await page.getByLabel("Title").fill(meeting.title);
   for (const name of meeting.invite ?? []) {
     await page.getByRole("combobox", { name: "People to invite" }).fill(name.split(" ")[0] ?? name);

@@ -29,7 +29,7 @@ export interface DueReminder {
   at: Date;
 }
 
-export const BEFORE_MS = 15 * 60 * 1000;
+const BEFORE_MS = 15 * 60 * 1000;
 const ALL_DAY_HOUR = 9;
 
 /** The date (y, m, d) of a moment in a zone. */
@@ -65,7 +65,7 @@ export function wallTime(date: { year: number; month: number; day: number }, hou
 }
 
 /** The reminder times of one occurrence for a person in `personZone`. */
-export function reminderTimes(occurrence: ReminderOccurrence, personZone: string): { kind: ReminderKind; at: Date }[] {
+function reminderTimes(occurrence: ReminderOccurrence, personZone: string): { kind: ReminderKind; at: Date }[] {
   if (occurrence.allDay) {
     const date = dateIn(occurrence.startsAt, occurrence.timeZone);
     return [{ kind: "start", at: wallTime(date, ALL_DAY_HOUR, personZone) }];

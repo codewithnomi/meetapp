@@ -29,7 +29,7 @@ export interface SeriesChange {
   timeMoved: boolean;
 }
 
-export interface OccurrenceEdit {
+interface OccurrenceEdit {
   startsAt?: Date | undefined;
   endsAt?: Date | undefined;
   title?: string | undefined;

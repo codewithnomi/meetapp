@@ -4,7 +4,7 @@
 import { SCHEDULE_LIMITS, scheduleBodySchema, type ScheduleBody } from "@meetapp/contracts";
 
 export type ScheduleField = "title" | "invitees" | "startsAt" | "endsAt" | "description";
-export type ScheduleError = "required" | "tooLong" | "endBeforeStart" | "inPast" | "badEmail" | "tooMany";
+type ScheduleError = "required" | "tooLong" | "endBeforeStart" | "inPast" | "badEmail" | "tooMany";
 
 export interface ScheduleCheck {
   errors: Partial<Record<ScheduleField, ScheduleError>>;

@@ -2,7 +2,7 @@
 // group; each gets the first free lane. Up to 4 lanes share the width side by side; meetings that don't
 // fit become one "+N more" chip beside them.
 
-export const MAX_LANES = 4;
+const MAX_LANES = 4;
 
 export interface Timed {
   id: string;

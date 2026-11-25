@@ -58,7 +58,7 @@ const stamp = (at: Date) =>
 const local = (at: Date) => stamp(new Date(at.getTime() - at.getTimezoneOffset() * 60_000)).replace("Z", "");
 
 /** The stored rule with its end (UNTIL is always in UTC, RFC 5545 3.3.10). */
-export const ruleLine = (rrule: string, until: Date | null) => (until ? `${rrule};UNTIL=${stamp(until)}` : rrule);
+const ruleLine = (rrule: string, until: Date | null) => (until ? `${rrule};UNTIL=${stamp(until)}` : rrule);
 
 /** Skipped occurrences as EXDATE lines right after the series' RRULE line. */
 function withSkipped(text: string, skipped: Date[], timeZone: string, zoned: (at: Date) => Date): string {

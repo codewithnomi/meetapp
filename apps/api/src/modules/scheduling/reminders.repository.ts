@@ -14,7 +14,7 @@ import {
 } from "@meetapp/db";
 import { aliasedTable, and, eq, gt, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
 
-export interface ReminderPerson {
+interface ReminderPerson {
   userId: string;
   /** The series answer; null for an organizer who didn't invite themselves. */
   answer: string | null;

@@ -3,8 +3,8 @@
 // summer time. Expansion never reaches past one year from now and returns at most 500 occurrences.
 import { RRuleTemporal } from "rrule-temporal";
 
-export type RepeatKind = "none" | "weekdays" | "daily" | "weekly" | "monthly" | "yearly";
-export type Weekday = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
+type RepeatKind = "none" | "weekdays" | "daily" | "weekly" | "monthly" | "yearly";
+type Weekday = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
 
 export interface Repeat {
   kind: RepeatKind;
